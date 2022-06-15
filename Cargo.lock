@@ -211,8 +211,12 @@ dependencies = [
  "hex",
  "maplit",
  "move-binary-format",
+ "move-bytecode-source-map",
+ "move-command-line-common",
  "move-compiler",
  "move-core-types",
+ "move-ir-types",
+ "move-symbol-pool",
  "wax",
 ]
 

@@ -2,7 +2,13 @@ use std::collections::BTreeMap;
 use std::io::Read;
 use std::io::Write;
 
+use move_binary_format::CompiledModule;
+use move_binary_format::file_format::AddressIdentifierIndex;
 use move_binary_format::file_format::FunctionHandleIndex;
+use move_binary_format::file_format::IdentifierIndex;
+use move_binary_format::file_format::ModuleHandle;
+use move_binary_format::file_format::ModuleHandleIndex;
+use move_binary_format::file_format_common::VERSION_MAX;
 use move_binary_format::{
     binary_views::BinaryIndexedView,
     control_flow_graph::{ControlFlowGraph, VMControlFlowGraph},
@@ -14,6 +20,13 @@ use move_binary_format::{
     },
 };
 use dis::Instruction;
+use move_bytecode_source_map::source_map::SourceMap;
+use move_command_line_common::files::FileHash;
+use move_compiler::compiled_unit::NamedCompiledModule;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
+use move_ir_types::location::Loc;
+use move_symbol_pool::Symbol;
 
 pub mod dis;
 pub mod error;
@@ -22,7 +35,11 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
     let mut buf = Default::default();
     let r_len = from.read_to_end(&mut buf)?;
 
-    // TODO: create Module here
+    // TODO: fill me
+    // NOTE: one code unit per function definition
+    let mut code_unit = CodeUnit::default();
+    // NOTE: then we can call `move_compiler::compiled_unit::verify_units()` and get some diagnostics.
+    // The same for CompiledModule - verify_module(module.module) placed there: move-bytecode-verifier/src/verifier.rs
 
     // TODO: calc using op::writes_to_storage
 
@@ -113,6 +130,51 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
             SelfDestruct => unimplemented!(),
         };
     }
+
+    // TODO: create Module here
+    let mut module = NamedCompiledModule {
+        package_name: todo!(),
+        address: todo!("address for this module, from config :NumericalAddress"),
+        name: Symbol::from("name of this module, from Eth-contract"),
+        module: CompiledModule {
+            version: VERSION_MAX,
+            // main
+            self_module_handle_idx: ModuleHandleIndex::new(0),
+            module_handles: vec![
+                // self:
+                ModuleHandle {
+                    address: AddressIdentifierIndex::from(AddressIdentifierIndex(0)),
+                    name: IdentifierIndex::from(IdentifierIndex(0)),
+                },
+            ],
+            struct_handles: Default::default(),
+            function_handles: Default::default(),
+            field_handles: Default::default(),
+            friend_decls: Default::default(),
+            struct_def_instantiations: Default::default(),
+				// entry points signatures:
+				// TODO: take fn-signatures from ABI and/or heuristically from bytecode
+            function_instantiations: Default::default(),
+            field_instantiations: Default::default(),
+            signatures: Default::default(),
+            identifiers: vec![
+                // self:
+                Identifier::new("name of this module, from Eth-contract")?,
+            ],
+            address_identifiers: vec![
+                // self
+                AccountAddress::new(todo!(
+                    "address for this module, from config :NumericalAddress"
+                )),
+            ],
+            constant_pool: Default::default(),
+            metadata: Default::default(),
+            struct_defs: Default::default(),
+            // TODO: bytecode bodies of functions
+            function_defs: Default::default(),
+        },
+        source_map: SourceMap::new(Loc::new(FileHash::new("eht-contract.bin"), 0, 0), None),
+    };
 
     Ok(())
 }
