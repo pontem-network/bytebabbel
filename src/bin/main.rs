@@ -4,6 +4,7 @@ extern crate clap;
 extern crate eth2move;
 extern crate serde_json;
 use eth2move::cfg::Abi;
+use eth2move::cfg::CfgOverrideMapping;
 use serde::de::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -60,8 +61,8 @@ fn run(mut args: Args) -> Result<(), error::Error> {
             config.address = address;
         }
 
-        if let Some(overs) = args.overrides.mapping {
-            config.mapping.extend(overs.mapping.into_iter());
+        if let Some(CfgOverrideMapping { mapping, .. }) = args.overrides.mapping {
+            config.mapping.extend(mapping.into_iter());
         }
     }
 

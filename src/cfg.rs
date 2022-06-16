@@ -21,6 +21,7 @@ pub struct CfgOverride {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+
 pub struct CfgOverrideMapping {
     pub mapping: HashMap<String, String>,
 }

@@ -128,6 +128,13 @@ fn read_abi(abi: Option<Abi>) -> Result<Vec<AbiFunctionDefinition>, error::Error
     }
 }
 
+fn try_find_entry_points(
+    entry_points: &[AbiFunctionDefinition],
+    ops: &BTreeMap<usize, Instruction>,
+) {
+    unimplemented();
+}
+
 pub fn translate<R: Read, W: Write>(
     mut from: R,
     mut to: W,
@@ -147,6 +154,8 @@ pub fn translate<R: Read, W: Write>(
 
     let entry_points = read_abi(abi)?;
     debug!("fns: {:#?}", entry_points);
+
+    let found_entry_points = try_find_entry_points(&entry_points, &ops);
 
     for (offset, op) in ops.iter() {
         use dis::Instruction::*;
