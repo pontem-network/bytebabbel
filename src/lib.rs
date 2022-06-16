@@ -1,7 +1,13 @@
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde;
+
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::io::Write;
 
+use cfg::Cfg;
 use move_binary_format::CompiledModule;
 use move_binary_format::file_format::AddressIdentifierIndex;
 use move_binary_format::file_format::FunctionHandleIndex;
@@ -28,10 +34,16 @@ use move_core_types::identifier::Identifier;
 use move_ir_types::location::Loc;
 use move_symbol_pool::Symbol;
 
+pub mod cfg;
 pub mod dis;
 pub mod error;
 
-pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error::Error> {
+pub fn translate<R: Read, W: Write>(
+    mut from: R,
+    mut to: W,
+    abi: Option<R>,
+    config: R,
+) -> Result<(), error::Error> {
     let mut buf = Default::default();
     let r_len = from.read_to_end(&mut buf)?;
 
@@ -152,8 +164,8 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
             field_handles: Default::default(),
             friend_decls: Default::default(),
             struct_def_instantiations: Default::default(),
-				// entry points signatures:
-				// TODO: take fn-signatures from ABI and/or heuristically from bytecode
+            // entry points signatures:
+            // TODO: take fn-signatures from ABI and/or heuristically from bytecode
             function_instantiations: Default::default(),
             field_instantiations: Default::default(),
             signatures: Default::default(),

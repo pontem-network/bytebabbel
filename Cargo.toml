@@ -9,7 +9,17 @@ repository = "https://github.com/pontem-network/eth2move.git"
 
 [dependencies]
 hex = "0.4"
-clap = { version = "3.1", features = ["derive"] }
+clap = { version = "3.2", features = [
+	"derive",
+	"color",
+	"suggestions",
+	"cargo",
+	"wrap_help",
+] }
+log = "0.4"
+env_logger = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
 
 # move:
 move-core-types = { git = "https://github.com/move-language/move.git" }
@@ -20,7 +30,7 @@ move-bytecode-source-map = { git = "https://github.com/move-language/move.git" }
 move-ir-types = { git = "https://github.com/move-language/move.git" }
 move-command-line-common = { git = "https://github.com/move-language/move.git" }
 move-symbol-pool = { git = "https://github.com/move-language/move.git" }
-# /Users/ak/.cargo/git/checkouts/move-0639dd674f581c30/fc59d4f/language/move-symbol-pool/src/symbol.rs
+
 
 [dev-dependencies]
 maplit = "1.0"
