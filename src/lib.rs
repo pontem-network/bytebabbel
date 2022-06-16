@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 use std::io::Read;
 use std::io::Write;
 
+use cfg::Abi;
 use cfg::Cfg;
 use move_binary_format::CompiledModule;
 use move_binary_format::file_format::AddressIdentifierIndex;
@@ -38,15 +39,91 @@ pub mod cfg;
 pub mod dis;
 pub mod error;
 
+/// Reads & deserialize input bytes
+fn deserialize_input<R: Read>(
+    mut input: R,
+) -> Result<BTreeMap<usize, Instruction>, error::Error> {
+    // input-bytes:
+    let mut bytes = Vec::new();
+    {
+        // Firstly, just read as-is:
+        let r_len = input.read_to_end(&mut bytes)?;
+        // Secondly, what if byte-input in hex-text? Typically it can be so.
+        let mut buf = Vec::new();
+        if hex::decode_to_slice(bytes.as_slice(), &mut buf).is_ok() {
+            bytes = buf;
+        }
+    }
+
+    Ok(dis::read(bytes.as_slice())?)
+}
+
+fn read_abi(
+    abi: Option<Abi>,
+) -> Result<
+    Vec<(
+        Identifier,
+        Signature,
+        Option<SignatureToken>,
+        FunctionHandle,
+        FunctionDefinition,
+    )>,
+    error::Error,
+> {
+    if let Some(abi) = abi {
+        let mut result = Vec::new();
+
+        for function in abi {
+            let fn_id = Identifier::new(function.name)?;
+            let mut fn_inputs = Vec::new();
+            for input in function.inputs.iter() {
+                let token = match input.ty.as_str() {
+                    "uint256" => SignatureToken::U128,
+                    _ => unimplemented!(),
+                };
+                fn_inputs.push(token);
+            }
+
+            let fn_return = if let Some(output) = function.outputs.first() {
+                Some(match output.ty.as_str() {
+                    "uint256" => SignatureToken::U128,
+                    _ => unimplemented!(),
+                })
+            } else {
+                None
+            };
+
+            let fn_sig = Signature(fn_inputs);
+            let fn_handle = FunctionHandle {
+                module: todo!(),
+                name: todo!("index of `fn_id`"),
+                parameters: todo!(),
+                return_: todo!("index of `fn_return`"),
+                type_parameters: vec![],
+            };
+            let mut def = FunctionDefinition {
+                function: todo!("index of `fn_handle`"),
+                // TODO: determine real vis:
+                visibility: Visibility::Public,
+                acquires_global_resources: vec![],
+                // TODO: feed me with code:
+                code: None,
+            };
+
+            result.push((fn_id, fn_sig, fn_return, fn_handle, def));
+        }
+        Ok(result)
+    } else {
+        Ok(vec![])
+    }
+}
+
 pub fn translate<R: Read, W: Write>(
     mut from: R,
     mut to: W,
-    abi: Option<R>,
-    config: R,
+    abi: Option<Abi>,
+    config: Cfg,
 ) -> Result<(), error::Error> {
-    let mut buf = Default::default();
-    let r_len = from.read_to_end(&mut buf)?;
-
     // TODO: fill me
     // NOTE: one code unit per function definition
     let mut code_unit = CodeUnit::default();
@@ -55,7 +132,12 @@ pub fn translate<R: Read, W: Write>(
 
     // TODO: calc using op::writes_to_storage
 
-    let ops = dis::read(buf.as_slice())?;
+    let ops = deserialize_input(from)?;
+    debug!("ops: {:#?}", ops);
+
+    let entry_points = read_abi(abi)?;
+    debug!("fns: {:#?}", entry_points);
+
     for (offset, op) in ops.iter() {
         use dis::Instruction::*;
 

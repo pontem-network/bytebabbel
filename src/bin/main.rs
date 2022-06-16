@@ -2,7 +2,12 @@
 extern crate log;
 extern crate clap;
 extern crate eth2move;
+extern crate serde_json;
+use eth2move::cfg::Abi;
+use serde::de::Deserialize;
+use serde::de::DeserializeOwned;
 
+use std::io::prelude::*;
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -42,23 +47,31 @@ fn main() {
 }
 
 fn run(mut args: Args) -> Result<(), error::Error> {
-    env_logger::init();
+    // read config:
+    let mut config: Cfg = {
+        let mut buf = String::new();
+        let _ = File::open(args.config)?.read_to_string(&mut buf)?;
+        serde_json::from_str(&buf)?
+    };
 
-	 let config = File::open(args.config)?;
-
-
-    // overrides -> args.config
+    // overrides -> args.config:
     {
-        // if let
+        if let Some(address) = args.overrides.address.take() {
+            config.address = address;
+        }
     }
 
+    // open input for feature read in translation:
     let input = File::open(args.input)?;
-    let abi = if let Some(file) = args.abi.map(File::open) {
-        Some(file?)
+    // read optional abi:
+    let abi: Option<Abi> = if let Some(file) = args.abi.map(File::open) {
+        let mut buf = String::new();
+        let _ = file?.read_to_string(&mut buf)?;
+        Some(serde_json::from_str(&buf)?)
     } else {
         None
     };
-
+    // open output for feature write at translation:
     let output = File::create(args.output)?;
 
     translate(input, output, abi, config)?;
