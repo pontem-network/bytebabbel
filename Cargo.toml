@@ -21,6 +21,8 @@ move-ir-types = { git = "https://github.com/move-language/move.git" }
 move-command-line-common = { git = "https://github.com/move-language/move.git" }
 move-symbol-pool = { git = "https://github.com/move-language/move.git" }
 # /Users/ak/.cargo/git/checkouts/move-0639dd674f581c30/fc59d4f/language/move-symbol-pool/src/symbol.rs
+lazy_static = "1.4.0"
+move-ir-compiler = { git = "https://github.com/move-language/move.git" }
 
 [dev-dependencies]
 maplit = "1.0"

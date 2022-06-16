@@ -72,14 +72,16 @@ mod tests {
     #[test]
     fn a_plus_b() -> Result<(), Error> {
         const BIN: &[u8] = include_bytes!(concat!("../../", env!("APlusB")));
-        read(&BIN[..])?;
+        let dis = read(&BIN[..])?;
+        dbg!(dis);
         Ok(())
     }
 
     #[test]
     fn two_functions() -> Result<(), Error> {
         const BIN: &[u8] = include_bytes!(concat!("../../", env!("TwoFunctions")));
-        read(&BIN[..])?;
+        let dis = read(&BIN[..])?;
+        dbg!(dis);
         Ok(())
     }
 }

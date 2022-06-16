@@ -106,16 +106,16 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "3.1.18"
+version = "3.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2dbdf4bdacb33466e854ce889eee8dfd5729abf7ccd7664d0a2d60cd384440b"
+checksum = "d53da17d37dba964b9b3ecb5c5a1f193a2762c700e6829201e645b9381c99dc7"
 dependencies = [
  "atty",
  "bitflags",
  "clap_derive",
  "clap_lex",
  "indexmap",
- "lazy_static",
+ "once_cell",
  "strsim",
  "termcolor",
  "textwrap",
@@ -123,9 +123,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.1.18"
+version = "3.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25320346e922cffe59c0bbc5410c8d8784509efb321488971081313cb1e1a33c"
+checksum = "c11d40217d16aee8508cc8e5fde8b4ff24639758608e5374e731b53f85749fb9"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -136,9 +136,9 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.2.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a37c35f1112dad5e6e0b1adaff798507497a18fceeb30cceb3bae7d1427b9213"
+checksum = "5538cd660450ebeb4234cfecf8f2284b844ffc4c50531e66d584ad5b91293613"
 dependencies = [
  "os_str_bytes",
 ]
@@ -155,9 +155,9 @@ dependencies = [
 
 [[package]]
 name = "const_format"
-version = "0.2.24"
+version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6a1316fa6a23fea1ee41cb80321590385e5f3e575e99f77c4d918ce5d44379d"
+checksum = "2906f2480cdc015e998deac388331a0f1c1cd88744948c749513020c83c370bc"
 dependencies = [
  "const_format_proc_macros",
 ]
@@ -209,12 +209,14 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "hex",
+ "lazy_static",
  "maplit",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
+ "move-ir-compiler",
  "move-ir-types",
  "move-symbol-pool",
  "wax",
@@ -247,9 +249,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9be70c98951c83b8d2f8f60d7065fa6d5146873094452a1008da8c2f1e4205ad"
+checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
 dependencies = [
  "cfg-if",
  "libc",
@@ -318,6 +320,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "itoa"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
+
+[[package]]
 name = "joinery"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -371,7 +379,7 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "move-core-types",
@@ -384,12 +392,12 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "bcs",
@@ -404,7 +412,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -416,7 +424,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "difference",
@@ -431,7 +439,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "bcs",
@@ -460,7 +468,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "bcs",
@@ -473,9 +481,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-ir-compiler"
+version = "0.1.0"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "clap",
+ "move-binary-format",
+ "move-bytecode-source-map",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-core-types",
+ "move-ir-to-bytecode",
+ "move-ir-types",
+ "move-symbol-pool",
+ "serde_json",
+]
+
+[[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -494,7 +521,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "hex",
@@ -507,7 +534,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "anyhow",
  "hex",
@@ -521,7 +548,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/move-language/move.git#fc59d4fb0abe9962244e138706e367f0a04d5d0d"
+source = "git+https://github.com/move-language/move.git#ae62d5f1955a9b92c3ddd31d3cc4467f9aff76ae"
 dependencies = [
  "once_cell",
  "serde",
@@ -780,6 +807,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ryu"
+version = "1.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695"
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -815,6 +848,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.81"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
 ]
 
 [[package]]
@@ -928,9 +972,9 @@ checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d22af068fba1eb5edcb4aea19d382b2a3deb4c8f9d475c589b6ada9e0fd493ee"
+checksum = "5bd2fe26506023ed7b5e1e315add59d6f584c621d037f9368fea9cfb988f368c"
 
 [[package]]
 name = "unicode-width"
@@ -973,9 +1017,9 @@ dependencies = [
 
 [[package]]
 name = "wasi"
-version = "0.10.2+wasi-snapshot-preview1"
+version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
+checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wax"

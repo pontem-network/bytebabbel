@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::io::Write;
+use std::path::Path;
 
 use move_binary_format::CompiledModule;
 use move_binary_format::file_format::AddressIdentifierIndex;
@@ -13,7 +14,7 @@ use move_binary_format::{
     binary_views::BinaryIndexedView,
     control_flow_graph::{ControlFlowGraph, VMControlFlowGraph},
     file_format::{
-        Ability, AbilitySet, Bytecode, CodeUnit, FieldHandleIndex, FunctionDefinition,
+        Ability, AbilitySet, Bytecode, FieldHandleIndex, FunctionDefinition,
         FunctionDefinitionIndex, FunctionHandle, Signature, SignatureIndex, SignatureToken,
         StructDefinition, StructDefinitionIndex, StructFieldInformation, StructTypeParameter,
         TableIndex, TypeSignature, Visibility,
@@ -30,6 +31,27 @@ use move_symbol_pool::Symbol;
 
 pub mod dis;
 pub mod error;
+mod translator;
+
+pub struct CodeUnit {
+    pub code: Vec<Bytecode>,
+}
+
+impl From<Vec<Bytecode>> for CodeUnit {
+    fn from(bytecode: Vec<Bytecode>) -> Self {
+        Self { code: bytecode }
+    }
+}
+
+impl From<Bytecode> for CodeUnit {
+    fn from(bytecode: Bytecode) -> Self {
+        Self {
+            code: vec![bytecode],
+        }
+    }
+}
+
+const ETH_MOVE_MODULE: &[u8] = include_bytes!("move/modules/0_EthOpcodes.mv");
 
 pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error::Error> {
     let mut buf = Default::default();
@@ -37,9 +59,13 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
 
     // TODO: fill me
     // NOTE: one code unit per function definition
-    let mut code_unit = CodeUnit::default();
+    // let mut code_unit = CodeUnit::default();
     // NOTE: then we can call `move_compiler::compiled_unit::verify_units()` and get some diagnostics.
     // The same for CompiledModule - verify_module(module.module) placed there: move-bytecode-verifier/src/verifier.rs
+    // TODO: create Module here
+    use move_ir_compiler::util::do_compile_module;
+    let inline_module = do_compile_module(Path::new("/home/singulared/sources/pontem/eth2move/src/move/eth.mvir"), &[]);
+    dbg!(inline_module);
 
     // TODO: calc using op::writes_to_storage
 
@@ -47,32 +73,35 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
     for (offset, op) in ops.iter() {
         use dis::Instruction::*;
 
-        println!("{:?}", op);
+        // println!("{:?}", op);
+        // let eth_module = CodeUnit {
+            // code: ETH_MOVE_MODULE.to_owned()
+        // };
 
         // TODO: mop:Vec, because we have to produce many instructions for one sometimes.
         let mop = match op {
             Stop => todo!(),
-            Add => Bytecode::Add,
-            Mul => Bytecode::Mul,
-            Sub => Bytecode::Sub,
-            Div => Bytecode::Div,
+            Add => CodeUnit::from(Bytecode::Add),
+            Mul => CodeUnit::from(Bytecode::Mul),
+            Sub => CodeUnit::from(Bytecode::Sub),
+            Div => CodeUnit::from(Bytecode::Div),
             SDiv => todo!(),
-            Mod => todo!(),
+            Mod => CodeUnit::from(Bytecode::Mod),
             SMod => todo!(),
-            AddMod => todo!(),
-            MulMod => todo!(),
+            AddMod => CodeUnit::from(vec![Bytecode::Add, Bytecode::Mod]),
+            MulMod => CodeUnit::from(vec![Bytecode::Mul, Bytecode::Mod]),
             Exp => todo!(),
             SignExtend => todo!(),
             Lt => todo!(),
             Gt => todo!(),
             SLt => todo!(),
             SGt => todo!(),
-            EQ => Bytecode::Eq,
+            EQ => CodeUnit::from(Bytecode::Eq),
             IsZero => todo!(),
-            And => Bytecode::And,
-            Or => Bytecode::Or,
-            Xor => Bytecode::Xor,
-            Not => Bytecode::Not,
+            And => CodeUnit::from(Bytecode::And),
+            Or => CodeUnit::from(Bytecode::Or),
+            Xor => Bytecode::Xor.into(),
+            Not => Bytecode::Not.into(),
             Byte => todo!(),
             Shl => todo!(),
             Shr => todo!(),
@@ -100,7 +129,7 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
             Number => todo!(),
             Difficulty => todo!(),
             GasLimit => todo!(),
-            Pop => Bytecode::Pop,
+            Pop => Bytecode::Pop.into(),
             MLoad => todo!(),
             MStore => todo!(),
             MStore8 => todo!(),
@@ -121,7 +150,7 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
             Call => todo!(),
             CallCode => todo!(),
             StaticCall => {
-                Bytecode::Call(resolve_create_function_handle_index(*offset, &op, &ops))
+                Bytecode::Call(resolve_create_function_handle_index(*offset, &op, &ops)).into()
             }
             DelegateCall => todo!(),
             Return => todo!(),
@@ -179,12 +208,19 @@ pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error:
     Ok(())
 }
 
+/// Think it's should be runtime MVM related and based on order of module loading
 fn resolve_create_function_handle_index(
     offset: usize,
     op: &Instruction,
     ops: &BTreeMap<usize, Instruction>,
 ) -> FunctionHandleIndex {
-    todo!();
+    match op {
+        Instruction::AddMod => Some(0),
+        Instruction::MulMod => Some(1),
+        _ => None,
+    }
+    .map(FunctionHandleIndex::new)
+    .expect("Unimplemented EVM opcode")
 }
 
 #[cfg(test)]
@@ -212,5 +248,11 @@ mod tests {
         let _ = translate(SRC_HELLO_WORLD, &mut buf)?;
 
         Ok(())
+    }
+
+    #[test]
+    fn test_inline_eth_module_bytecode() {
+        let mut buf = Vec::new();
+        let _ = translate(SRC_HELLO_WORLD, &mut buf);
     }
 }

@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
     let source_path = root.join(PathBuf::from(TEST_CONTRACTS_DIR));
     let script_path =
-        root.join(PathBuf::from(format!("./{TEST_CONTRACTS_DIR}")).join(BUILD_CONTRACTS_SH));
+        root.join(PathBuf::from(format!("{TEST_CONTRACTS_DIR}")).join(BUILD_CONTRACTS_SH));
     let output_path = source_path.join(BUILD_CONTRACTS_DIR);
 
     let status = Command::new(script_path)
