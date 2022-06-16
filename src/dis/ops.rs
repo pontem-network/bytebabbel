@@ -177,6 +177,7 @@ pub enum Instruction {
     CallDataLoad,
     CallDataSize,
     CallDataCopy,
+	 /// length of executing contract's code, in bytes
     CodeSize,
     CodeCopy,
     GasPrice,

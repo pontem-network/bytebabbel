@@ -60,15 +60,6 @@ fn deserialize_input<R: Read>(
 
 /**
     TODO: Implement construction FnDef from this. E.g.:
-    let mut def = FunctionDefinition {
-        is_entry: true,
-        // TODO: determine real vis:
-        visibility: Visibility::Public,
-        function: todo!("index of `this.handle`"),
-        // TODO: feed me with code:
-        code: None,
-        acquires_global_resources: vec![/* currently without resources */],
-    }
 */
 #[derive(Debug, Clone, PartialEq)]
 struct AbiFunctionDefinition {
@@ -78,8 +69,47 @@ struct AbiFunctionDefinition {
     sig: Signature,
     /// Return type
     ret: Option<SignatureToken>,
-    /// Function handle (entry for the pool)
-    handle: FunctionHandle,
+}
+impl AbiFunctionDefinition {
+    /// Creates function handle (entry for the pool).
+    /// Call this after you're already filled polls using containt of AbiFunctionDefinition.
+    ///
+    /// module: the module that defines the function.
+    /// name: IdentifierIndex of `this.id` Identifier, already placed into the pool.
+    /// inputs: SignatureIndex of `this.sig`, already placed into the pool.
+    /// output: SignatureIndex of `this.ret`, already placed into the pool.
+    pub fn create_function_handle(
+        &self,
+        module: ModuleHandleIndex,
+        name: IdentifierIndex,
+        inputs: SignatureIndex,
+        output: SignatureIndex,
+    ) -> FunctionHandle {
+        FunctionHandle {
+            module,
+            name,
+            parameters: inputs,
+            return_: output,
+            type_parameters: vec![],
+        }
+    }
+
+    /// Same as `create_function_handle`, but for FunctionDefinition.
+	 /// It's second step.
+    pub fn create_function_definition(
+        &self,
+        handle: FunctionHandleIndex,
+        code: Option<CodeUnit>,
+    ) -> FunctionDefinition {
+        FunctionDefinition {
+            is_entry: true,
+            // TODO: determine real vis:
+            visibility: Visibility::Public,
+            function: handle,
+            code,
+            acquires_global_resources: vec![/* currently without resources */],
+        }
+    }
 }
 
 fn read_abi(abi: Option<Abi>) -> Result<Vec<AbiFunctionDefinition>, error::Error> {
@@ -107,19 +137,11 @@ fn read_abi(abi: Option<Abi>) -> Result<Vec<AbiFunctionDefinition>, error::Error
             };
 
             let fn_sig = Signature(fn_inputs);
-            let fn_handle = FunctionHandle {
-                module: todo!(),
-                name: todo!("index of `fn_id`"),
-                parameters: todo!(),
-                return_: todo!("index of `fn_return`"),
-                type_parameters: vec![],
-            };
 
             result.push(AbiFunctionDefinition {
                 id: fn_id,
                 sig: fn_sig,
                 ret: fn_return,
-                handle: fn_handle,
             });
         }
         Ok(result)
@@ -132,7 +154,7 @@ fn try_find_entry_points(
     entry_points: &[AbiFunctionDefinition],
     ops: &BTreeMap<usize, Instruction>,
 ) {
-    unimplemented();
+    unimplemented!();
 }
 
 pub fn translate<R: Read, W: Write>(
