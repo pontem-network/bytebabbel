@@ -102,6 +102,7 @@ fn read_abi(
                 type_parameters: vec![],
             };
             let mut def = FunctionDefinition {
+                is_entry: todo!(),
                 function: todo!("index of `fn_handle`"),
                 // TODO: determine real vis:
                 visibility: Visibility::Public,

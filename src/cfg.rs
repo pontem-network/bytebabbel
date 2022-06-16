@@ -1,11 +1,14 @@
+use std::collections::HashMap;
+use std::str::FromStr;
+
 use clap::Parser;
 use serde::Deserialize;
 
-#[derive(Parser, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 // #[clap(author, version, about, long_about = None)]
 pub struct Cfg {
-    #[clap(long)]
     pub address: String,
+    pub mapping: HashMap<String, String>,
 }
 
 #[derive(Parser, Debug, Clone, PartialEq)]
@@ -13,6 +16,33 @@ pub struct Cfg {
 pub struct CfgOverride {
     #[clap(long)]
     pub address: Option<String>,
+    /// Format: "0xEthAddr=0xMoveAddr, ..."
+    pub mapping: Option<CfgOverrideMapping>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CfgOverrideMapping {
+    pub mapping: HashMap<String, String>,
+}
+
+impl FromStr for CfgOverrideMapping {
+    type Err = clap::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut mapping = HashMap::new();
+
+        s.split(",")
+            .into_iter()
+            .map(|row| {
+                let parts: Vec<_> = row.trim().split("=").map(|s| s.trim()).collect();
+                if let (Some(k), Some(v)) = (parts.get(0), parts.get(1)) {
+                    mapping.insert(k.to_string(), v.to_string());
+                }
+            })
+            .for_each(|_| {});
+
+        Ok(CfgOverrideMapping { mapping })
+    }
 }
 
 pub type Abi = Vec<AbiEntry>;

@@ -59,6 +59,10 @@ fn run(mut args: Args) -> Result<(), error::Error> {
         if let Some(address) = args.overrides.address.take() {
             config.address = address;
         }
+
+        if let Some(overs) = args.overrides.mapping {
+            config.mapping.extend(overs.mapping.into_iter());
+        }
     }
 
     // open input for feature read in translation:
