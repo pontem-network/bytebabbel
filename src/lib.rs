@@ -58,18 +58,31 @@ fn deserialize_input<R: Read>(
     Ok(dis::read(bytes.as_slice())?)
 }
 
-fn read_abi(
-    abi: Option<Abi>,
-) -> Result<
-    Vec<(
-        Identifier,
-        Signature,
-        Option<SignatureToken>,
-        FunctionHandle,
-        FunctionDefinition,
-    )>,
-    error::Error,
-> {
+/**
+    TODO: Implement construction FnDef from this. E.g.:
+    let mut def = FunctionDefinition {
+        is_entry: true,
+        // TODO: determine real vis:
+        visibility: Visibility::Public,
+        function: todo!("index of `this.handle`"),
+        // TODO: feed me with code:
+        code: None,
+        acquires_global_resources: vec![/* currently without resources */],
+    }
+*/
+#[derive(Debug, Clone, PartialEq)]
+struct AbiFunctionDefinition {
+    /// Name of function
+    id: Identifier,
+    /// Partial signature of function, contains inputs
+    sig: Signature,
+    /// Return type
+    ret: Option<SignatureToken>,
+    /// Function handle (entry for the pool)
+    handle: FunctionHandle,
+}
+
+fn read_abi(abi: Option<Abi>) -> Result<Vec<AbiFunctionDefinition>, error::Error> {
     if let Some(abi) = abi {
         let mut result = Vec::new();
 
@@ -101,17 +114,13 @@ fn read_abi(
                 return_: todo!("index of `fn_return`"),
                 type_parameters: vec![],
             };
-            let mut def = FunctionDefinition {
-                is_entry: todo!(),
-                function: todo!("index of `fn_handle`"),
-                // TODO: determine real vis:
-                visibility: Visibility::Public,
-                acquires_global_resources: vec![],
-                // TODO: feed me with code:
-                code: None,
-            };
 
-            result.push((fn_id, fn_sig, fn_return, fn_handle, def));
+            result.push(AbiFunctionDefinition {
+                id: fn_id,
+                sig: fn_sig,
+                ret: fn_return,
+                handle: fn_handle,
+            });
         }
         Ok(result)
     } else {
