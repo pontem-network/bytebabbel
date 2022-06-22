@@ -33,27 +33,17 @@ pub mod dis;
 pub mod error;
 mod translator;
 
-pub struct CodeUnit {
-    pub code: Vec<Bytecode>,
-}
+pub use translator::{CodeUnit, Translator};
 
-impl From<Vec<Bytecode>> for CodeUnit {
-    fn from(bytecode: Vec<Bytecode>) -> Self {
-        Self { code: bytecode }
-    }
-}
-
-impl From<Bytecode> for CodeUnit {
-    fn from(bytecode: Bytecode) -> Self {
-        Self {
-            code: vec![bytecode],
-        }
-    }
-}
 
 const ETH_MOVE_MODULE: &[u8] = include_bytes!("move/modules/0_EthOpcodes.mv");
 
 pub fn translate<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error::Error> {
+    let translator = Translator::new();
+    translator.translate(from,to)
+}
+
+pub fn translate2<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error::Error> {
     let mut buf = Default::default();
     let r_len = from.read_to_end(&mut buf)?;
 

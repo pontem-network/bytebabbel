@@ -1,9 +1,8 @@
-#![feature(main_separator_str)]
 extern crate wax;
 
 use std::env;
 use std::path::PathBuf;
-use std::path::MAIN_SEPARATOR_STR;
+use std::path::MAIN_SEPARATOR;
 use std::process::Command;
 
 const TEST_CONTRACTS_DIR: &str = "test/contracts";
@@ -53,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 let path = PathBuf::from(
                     &path.display().to_string()
-                        [(root.display().to_string().len() + MAIN_SEPARATOR_STR.len())..],
+                        [(root.display().to_string().len() + String::from(MAIN_SEPARATOR).len())..],
                 );
                 let stem = path
                     .file_stem()
