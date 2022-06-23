@@ -31,7 +31,7 @@ use move_symbol_pool::Symbol;
 
 pub mod dis;
 pub mod error;
-mod translator;
+pub mod translator;
 
 pub use translator::{CodeUnit, Translator};
 
@@ -54,7 +54,7 @@ pub fn translate2<R: Read, W: Write>(mut from: R, mut to: W) -> Result<(), error
     // The same for CompiledModule - verify_module(module.module) placed there: move-bytecode-verifier/src/verifier.rs
     // TODO: create Module here
     use move_ir_compiler::util::do_compile_module;
-    let inline_module = do_compile_module(Path::new("/home/singulared/sources/pontem/eth2move/src/move/eth.mvir"), &[]);
+    let inline_module = do_compile_module(Path::new("src/move/eth.mvir"), &[]);
     dbg!(inline_module);
 
     // TODO: calc using op::writes_to_storage

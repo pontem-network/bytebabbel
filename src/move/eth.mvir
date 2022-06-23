@@ -1,17 +1,19 @@
 module 0x1.EvmOpcodes {
-	public addmod(x: u64, y: u64, m: u64): u64 {
-	    let z: u64;
-	    label b0:
-	    z = move(x) + move(y);
-	    z = move(z) % move(m);
-	    return move(z);
-	}
-	
 	public mulmod(x: u64, y: u64, m: u64): u64 {
 	    let z: u64;
 	    label b0:
 	    z = move(x) * move(y);
 	    z = move(z) % move(m);
 	    return move(z);
+	}
+
+	public addmod(x: u64, y: u64, m: u64): u64 {
+	    label b0:
+	    return (move(x) + move(y)) % move(m);
+	}
+	
+	public mulmod(x: u64, y: u64, m: u64): u64 {
+	    label b0:
+	    return (move(x) * move(y)) % move(m);
 	}
 }

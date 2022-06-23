@@ -1,5 +1,6 @@
 use move_binary_format::file_format::Bytecode;
 
+#[derive(Debug)]
 pub struct CodeUnit {
     pub code: Vec<Bytecode>,
 }

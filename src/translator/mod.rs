@@ -1,21 +1,32 @@
 use std::{io::{Read, Write}, path::Path};
 
 use move_binary_format::{file_format::{FunctionHandleIndex, Bytecode}, CompiledModule};
+use move_compiler::compiled_unit::NamedCompiledModule;
 use move_ir_compiler::util::do_compile_module;
 use crate::{Instruction, error};
 pub use code::CodeUnit;
+pub use abi::MoveFunction;
 
 mod code;
+mod abi;
+mod opcodes;
 
-pub struct Translator;
+pub(crate) const ETH_MODULE_PATH: &'static str = "src/move/eth.mvir";
+
+pub struct Translator {
+    // module: NamedCompiledModule,
+    module: CompiledModule,
+}
 
 impl Translator {
     pub fn new() -> Self {
-        Translator
+        Translator {
+            module: Translator::load_eth_opcodes_module(),
+        }
     }
 
-    fn load_eth_opcodes_module(self) -> CompiledModule {
-        let (compiled_module, _) = do_compile_module(Path::new("./src/move/eth.mvir"), &[]);
+    fn load_eth_opcodes_module() -> CompiledModule {
+        let (compiled_module, _) = do_compile_module(Path::new(ETH_MODULE_PATH), &[]);
         compiled_module
     }  
 
@@ -24,9 +35,13 @@ impl Translator {
         R: Read,
         W: Write,
     { 
-        let eth_module = self.load_eth_opcodes_module();
+        let eth_module = Self::load_eth_opcodes_module();
         dbg!(&eth_module);
         Ok(())
+    }
+
+    fn add_function(self, module: &mut CompiledModule, code: CodeUnit) -> Result<(), error::Error> {
+        Ok(()) 
     }
 }
 
@@ -98,10 +113,10 @@ impl Translate for Instruction {
             Instruction::PC => unimplemented!(),
             Instruction::MSize => unimplemented!(),
             Instruction::Gas => unimplemented!(),
-            Instruction::Push(bytes) => unimplemented!(),
-            Instruction::Dup(value) => unimplemented!(),
-            Instruction::Swap(pointer) => unimplemented!(),
-            Instruction::Log(value) => unimplemented!(),
+            Instruction::Push(_bytes) => unimplemented!(),
+            Instruction::Dup(_value) => unimplemented!(),
+            Instruction::Swap(_pointer) => unimplemented!(),
+            Instruction::Log(_value) => unimplemented!(),
             Instruction::Create => unimplemented!(),
             Instruction::Create2 => unimplemented!(),
             Instruction::Call => unimplemented!(),
