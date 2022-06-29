@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR;
 use std::process::Command;
 
-const TEST_CONTRACTS_DIR: &str = "test/contracts";
+const TEST_CONTRACTS_DIR: &str = "tests/assets";
 const BUILD_CONTRACTS_SH: &str = "build.sh";
 const BUILD_CONTRACTS_DIR: &str = "bin";
 
@@ -58,10 +58,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .file_stem()
                     .expect("file name")
                     .to_string_lossy()
-                    .replace(".", "_")
-                    .replace(" ", "_");
-                println!("cargo:rustc-env={}={}", stem, path.display().to_string());
-                debug_println(format!("+ENV: {}={}", stem, path.display().to_string()));
+                    .replace('.', "_")
+                    .replace(' ', "_");
+                println!("cargo:rustc-env={}={}", stem, path.display());
+                debug_println(format!("+ENV: {}={}", stem, path.display()));
             }
         }
     }
@@ -91,6 +91,6 @@ fn debug_println<S: AsRef<str>>(s: S) {
         Ok(s) if s == "DEBUG" => {
             println!("{message}")
         }
-        _ => return,
+        _ => {}
     }
 }

@@ -1,9 +1,11 @@
-use std::{io::{Read, Write}, path::Path};
+use std::path::Path;
 
 use move_binary_format::{file_format::{FunctionHandleIndex, Bytecode}, CompiledModule};
 use move_compiler::compiled_unit::NamedCompiledModule;
 use move_ir_compiler::util::do_compile_module;
-use crate::{Instruction, error};
+use anyhow::Error;
+
+use crate::evm::ops::{Instruction, OpCode};
 pub use code::CodeUnit;
 pub use abi::MoveFunction;
 
@@ -13,6 +15,7 @@ mod opcodes;
 
 pub(crate) const ETH_MODULE_PATH: &'static str = "src/move/eth.mvir";
 
+#[allow(dead_code)]
 pub struct Translator {
     // module: NamedCompiledModule,
     module: CompiledModule,
@@ -30,17 +33,15 @@ impl Translator {
         compiled_module
     }  
 
-    pub fn translate<R, W>(self, mut reader: R, mut writer: W) -> Result<(), error::Error> 
-    where
-        R: Read,
-        W: Write,
+    pub fn translate(self, _bytecode: &str) -> Result<NamedCompiledModule, Error> 
     { 
         let eth_module = Self::load_eth_opcodes_module();
         dbg!(&eth_module);
-        Ok(())
+        Err(Error::msg("test"))
     }
 
-    fn add_function(self, module: &mut CompiledModule, code: CodeUnit) -> Result<(), error::Error> {
+    #[allow(dead_code)]
+    fn add_function(self, _module: &mut CompiledModule, _code: CodeUnit) -> Result<(), Error> {
         Ok(()) 
     }
 }
@@ -51,85 +52,85 @@ pub trait Translate {
 
 impl Translate for Instruction {
     fn translate(self) -> CodeUnit {
-        match self {
-            Instruction::Stop => unimplemented!(),
-            Instruction::Add => Bytecode::Add.into(),
-            Instruction::Mul => Bytecode::Mul.into(),
-            Instruction::Sub => Bytecode::Sub.into(),
-            Instruction::Div => Bytecode::Div.into(),
-            Instruction::SDiv => unimplemented!(),
-            Instruction::Mod => Bytecode::Mod.into(),
-            Instruction::SMod => unimplemented!(),
-            Instruction::AddMod => vec![Bytecode::Add, Bytecode::Mod].into(),
-            Instruction::MulMod => vec![Bytecode::Mul, Bytecode::Mod].into(),
-            Instruction::Exp => unimplemented!(),
-            Instruction::SignExtend => unimplemented!(),
-            Instruction::Lt => unimplemented!(),
-            Instruction::Gt => unimplemented!(),
-            Instruction::SLt => unimplemented!(),
-            Instruction::SGt => unimplemented!(),
-            Instruction::EQ => Bytecode::Eq.into(),
-            Instruction::IsZero => unimplemented!(),
-            Instruction::And => Bytecode::And.into(),
-            Instruction::Or => Bytecode::Or.into(),
-            Instruction::Xor => Bytecode::Xor.into(),
-            Instruction::Not => Bytecode::Not.into(),
-            Instruction::Byte => unimplemented!(),
-            Instruction::Shl => unimplemented!(),
-            Instruction::Shr => unimplemented!(),
-            Instruction::Sar => unimplemented!(),
-            Instruction::Sha3 => unimplemented!(),
-            Instruction::Addr => unimplemented!(),
-            Instruction::Balance => unimplemented!(),
-            Instruction::Origin => unimplemented!(),
-            Instruction::Caller => unimplemented!(),
-            Instruction::CallValue => unimplemented!(),
-            Instruction::CallDataLoad => unimplemented!(),
-            Instruction::CallDataSize => unimplemented!(),
-            Instruction::CallDataCopy => unimplemented!(),
-            Instruction::CodeSize => unimplemented!(),
-            Instruction::CodeCopy => unimplemented!(),
-            Instruction::GasPrice => unimplemented!(),
-            Instruction::ExtCodeSize => unimplemented!(),
-            Instruction::ExtCodeCopy => unimplemented!(),
-            Instruction::ReturnDataSize => unimplemented!(),
-            Instruction::ReturnDataCopy => unimplemented!(),
-            Instruction::ExtCodeHash => unimplemented!(),
-            Instruction::Blockhash => unimplemented!(),
-            Instruction::Coinbase => unimplemented!(),
-            Instruction::Timestamp => unimplemented!(),
-            Instruction::Number => unimplemented!(),
-            Instruction::Difficulty => unimplemented!(),
-            Instruction::GasLimit => unimplemented!(),
-            Instruction::Pop => Bytecode::Pop.into(),
-            Instruction::MLoad => unimplemented!(),
-            Instruction::MStore => unimplemented!(),
-            Instruction::MStore8 => unimplemented!(),
-            Instruction::SLoad => unimplemented!(),
-            Instruction::SStore => unimplemented!(),
-            Instruction::Jump => unimplemented!(),
-            Instruction::JumpIf => unimplemented!(), // Bytecode::BrTrue
-            Instruction::JumpDest => unimplemented!(),
-            Instruction::PC => unimplemented!(),
-            Instruction::MSize => unimplemented!(),
-            Instruction::Gas => unimplemented!(),
-            Instruction::Push(_bytes) => unimplemented!(),
-            Instruction::Dup(_value) => unimplemented!(),
-            Instruction::Swap(_pointer) => unimplemented!(),
-            Instruction::Log(_value) => unimplemented!(),
-            Instruction::Create => unimplemented!(),
-            Instruction::Create2 => unimplemented!(),
-            Instruction::Call => unimplemented!(),
-            Instruction::CallCode => unimplemented!(),
-            Instruction::StaticCall => {
+        match self.opcode() {
+            OpCode::Stop => unimplemented!(),
+            OpCode::Add => Bytecode::Add.into(),
+            OpCode::Mul => Bytecode::Mul.into(),
+            OpCode::Sub => Bytecode::Sub.into(),
+            OpCode::Div => Bytecode::Div.into(),
+            OpCode::SDiv => unimplemented!(),
+            OpCode::Mod => Bytecode::Mod.into(),
+            OpCode::SMod => unimplemented!(),
+            OpCode::AddMod => vec![Bytecode::Add, Bytecode::Mod].into(),
+            OpCode::MulMod => vec![Bytecode::Mul, Bytecode::Mod].into(),
+            OpCode::Exp => unimplemented!(),
+            OpCode::SignExtend => unimplemented!(),
+            OpCode::Lt => unimplemented!(),
+            OpCode::Gt => unimplemented!(),
+            OpCode::SLt => unimplemented!(),
+            OpCode::SGt => unimplemented!(),
+            OpCode::EQ => Bytecode::Eq.into(),
+            OpCode::IsZero => unimplemented!(),
+            OpCode::And => Bytecode::And.into(),
+            OpCode::Or => Bytecode::Or.into(),
+            OpCode::Xor => Bytecode::Xor.into(),
+            OpCode::Not => Bytecode::Not.into(),
+            OpCode::Byte => unimplemented!(),
+            OpCode::Shl => unimplemented!(),
+            OpCode::Shr => unimplemented!(),
+            OpCode::Sar => unimplemented!(),
+            OpCode::Sha3 => unimplemented!(),
+            OpCode::Addr => unimplemented!(),
+            OpCode::Balance => unimplemented!(),
+            OpCode::Origin => unimplemented!(),
+            OpCode::Caller => unimplemented!(),
+            OpCode::CallValue => unimplemented!(),
+            OpCode::CallDataLoad => unimplemented!(),
+            OpCode::CallDataSize => unimplemented!(),
+            OpCode::CallDataCopy => unimplemented!(),
+            OpCode::CodeSize => unimplemented!(),
+            OpCode::CodeCopy => unimplemented!(),
+            OpCode::GasPrice => unimplemented!(),
+            OpCode::ExtCodeSize => unimplemented!(),
+            OpCode::ExtCodeCopy => unimplemented!(),
+            OpCode::ReturnDataSize => unimplemented!(),
+            OpCode::ReturnDataCopy => unimplemented!(),
+            OpCode::ExtCodeHash => unimplemented!(),
+            OpCode::Blockhash => unimplemented!(),
+            OpCode::Coinbase => unimplemented!(),
+            OpCode::Timestamp => unimplemented!(),
+            OpCode::Number => unimplemented!(),
+            OpCode::Difficulty => unimplemented!(),
+            OpCode::GasLimit => unimplemented!(),
+            OpCode::Pop => Bytecode::Pop.into(),
+            OpCode::MLoad => unimplemented!(),
+            OpCode::MStore => unimplemented!(),
+            OpCode::MStore8 => unimplemented!(),
+            OpCode::SLoad => unimplemented!(),
+            OpCode::SStore => unimplemented!(),
+            OpCode::Jump => unimplemented!(),
+            OpCode::JumpIf => unimplemented!(), // Bytecode::BrTrue
+            OpCode::JumpDest => unimplemented!(),
+            OpCode::PC => unimplemented!(),
+            OpCode::MSize => unimplemented!(),
+            OpCode::Gas => unimplemented!(),
+            OpCode::Push(_bytes) => unimplemented!(),
+            OpCode::Dup(_value) => unimplemented!(),
+            OpCode::Swap(_pointer) => unimplemented!(),
+            OpCode::Log(_value) => unimplemented!(),
+            OpCode::Create => unimplemented!(),
+            OpCode::Create2 => unimplemented!(),
+            OpCode::Call => unimplemented!(),
+            OpCode::CallCode => unimplemented!(),
+            OpCode::StaticCall => {
                 // Bytecode::Call(resolve_create_function_handle_index(*offset, &op, &ops)).into()
                 Bytecode::Call(resolve_create_function_handle_index(&self)).into()
             }
-            Instruction::DelegateCall => unimplemented!(),
-            Instruction::Return => unimplemented!(),
-            Instruction::Revert => unimplemented!(),
-            Instruction::Invalid => unimplemented!(),
-            Instruction::SelfDestruct => unimplemented!(),
+            OpCode::DelegateCall => unimplemented!(),
+            OpCode::Return => unimplemented!(),
+            OpCode::Revert => unimplemented!(),
+            OpCode::Invalid => unimplemented!(),
+            OpCode::SelfDestruct => unimplemented!(),
         }
     }
 }
@@ -140,9 +141,9 @@ fn resolve_create_function_handle_index(
     op: &Instruction,
     // ops: &BTreeMap<usize, Instruction>,
 ) -> FunctionHandleIndex {
-    match op {
-        Instruction::AddMod => Some(0),
-        Instruction::MulMod => Some(1),
+    match op.opcode() {
+        OpCode::AddMod => Some(0),
+        OpCode::MulMod => Some(1),
         _ => None,
     }
     .map(FunctionHandleIndex::new)
