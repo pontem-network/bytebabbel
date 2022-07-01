@@ -1,4 +1,5 @@
-use eth2move::evm::{parse_bytecode, Instruction, OpCode};
+use eth2move::evm::instruction::Instruction;
+use eth2move::evm::{parse_bytecode, OpCode};
 
 #[test]
 fn test_iter() {

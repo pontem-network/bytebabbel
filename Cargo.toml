@@ -10,16 +10,17 @@ repository = "https://github.com/pontem-network/eth2move.git"
 [dependencies]
 hex = "0.4"
 anyhow = "1.0.58"
-borsh = "*"
+bigint = {version = "4.4.3", features = ["std"]}
+
 # move:
-move-core-types = { git = "https://github.com/move-language/move.git" }
-move-binary-format = { git = "https://github.com/move-language/move.git" }
-move-compiler = { git = "https://github.com/move-language/move.git" }
-# some support libs:
-move-bytecode-source-map = { git = "https://github.com/move-language/move.git" }
-move-ir-types = { git = "https://github.com/move-language/move.git" }
-move-command-line-common = { git = "https://github.com/move-language/move.git" }
-move-symbol-pool = { git = "https://github.com/move-language/move.git" }
+#move-core-types = { git = "https://github.com/move-language/move.git" }
+#move-binary-format = { git = "https://github.com/move-language/move.git" }
+#move-compiler = { git = "https://github.com/move-language/move.git" }
+## some support libs:
+#move-bytecode-source-map = { git = "https://github.com/move-language/move.git" }
+#move-ir-types = { git = "https://github.com/move-language/move.git" }
+#move-command-line-common = { git = "https://github.com/move-language/move.git" }
+#move-symbol-pool = { git = "https://github.com/move-language/move.git" }
 
 [dev-dependencies]
 maplit = "1.0"

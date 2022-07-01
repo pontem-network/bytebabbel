@@ -1,4 +1,4 @@
-use crate::evm::Instruction;
+use crate::evm::instruction::Instruction;
 use std::fmt::Debug;
 
 pub struct InstructionIter {
@@ -159,6 +159,10 @@ impl OpCode {
         )
     }
 
+    pub fn is_jump(&self) -> bool {
+        matches!(self, Self::Jump | Self::JumpIf)
+    }
+
     pub fn ends_basic_block(&self) -> bool {
         matches!(
             self,
@@ -244,8 +248,8 @@ impl OpCode {
             Self::ExtCodeCopy => 4,
             Self::DelegateCall | Self::StaticCall => 6,
             Self::Call | Self::CallCode => 7,
-            Self::Dup(u) => u + 1,
-            Self::Swap(u) | Self::Log(u) => u + 2,
+            Self::Dup(u) | Self::Swap(u) => *u,
+            Self::Log(u) => u + 2,
         }
     }
 
@@ -262,14 +266,14 @@ impl OpCode {
             | Self::Jump
             | Self::JumpIf
             | Self::JumpDest
-            | Self::Push(..)
             | Self::Log(..)
             | Self::Return
             | Self::Invalid(_)
             | Self::SelfDestruct
             | Self::ReturnDataCopy
             | Self::Revert => 0,
-            Self::Dup(u) | Self::Swap(u) => u + 2,
+            Self::Dup(u) => u + 1,
+            Self::Swap(u) => *u,
             _ => 1,
         }
     }
@@ -348,22 +352,22 @@ impl From<&[u8]> for OpCode {
             | 0x7c | 0x7d | 0x7e | 0x7f => {
                 OpCode::Push(read_n_bytes(&buff[1..], (0x11 + (opcode & 0x0f)) as usize))
             }
-            0x80 => OpCode::Dup(0),
-            0x81 => OpCode::Dup(1),
-            0x82 => OpCode::Dup(2),
-            0x83 => OpCode::Dup(3),
-            0x84 => OpCode::Dup(4),
-            0x85 => OpCode::Dup(5),
-            0x86 => OpCode::Dup(6),
-            0x87 => OpCode::Dup(7),
-            0x88 => OpCode::Dup(8),
-            0x89 => OpCode::Dup(9),
-            0x8a => OpCode::Dup(10),
-            0x8b => OpCode::Dup(11),
-            0x8c => OpCode::Dup(12),
-            0x8d => OpCode::Dup(13),
-            0x8e => OpCode::Dup(14),
-            0x8f => OpCode::Dup(15),
+            0x80 => OpCode::Dup(1),
+            0x81 => OpCode::Dup(2),
+            0x82 => OpCode::Dup(3),
+            0x83 => OpCode::Dup(4),
+            0x84 => OpCode::Dup(5),
+            0x85 => OpCode::Dup(6),
+            0x86 => OpCode::Dup(7),
+            0x87 => OpCode::Dup(8),
+            0x88 => OpCode::Dup(9),
+            0x89 => OpCode::Dup(10),
+            0x8a => OpCode::Dup(11),
+            0x8b => OpCode::Dup(12),
+            0x8c => OpCode::Dup(13),
+            0x8d => OpCode::Dup(14),
+            0x8e => OpCode::Dup(15),
+            0x8f => OpCode::Dup(16),
             0x90 => OpCode::Swap(1),
             0x91 => OpCode::Swap(2),
             0x92 => OpCode::Swap(3),

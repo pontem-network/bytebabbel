@@ -1,11 +1,9 @@
-use crate::evm::{Instruction, Loc, OpCode};
+use crate::evm::instruction::Instruction;
+use crate::evm::loc::Loc;
+use crate::evm::OpCode;
 
-pub fn basic_blocks(inst: impl Iterator<Item = Instruction>) -> Vec<InstructionBlock> {
-    BlockIter::new(inst).collect::<Vec<_>>()
-}
-
-pub type InstructionBlock = Loc<Vec<Instruction>>;
-pub type InstructionBlockBlocks = Vec<InstructionBlock>;
+pub type BasicBlock = Loc<Vec<Instruction>>;
+pub type BlockBlocks = Vec<BasicBlock>;
 
 pub struct BlockIter<I: Iterator<Item = Instruction>> {
     inst: I,
@@ -22,7 +20,7 @@ impl<I: Iterator<Item = Instruction>> BlockIter<I> {
 }
 
 impl<I: Iterator<Item = Instruction>> Iterator for BlockIter<I> {
-    type Item = InstructionBlock;
+    type Item = BasicBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut inst = self.next.take().or_else(|| self.inst.next())?;

@@ -1,7 +1,15 @@
-use crate::evm::{Instruction, Loc};
-use move_binary_format::control_flow_graph::BlockId;
+use crate::evm::instruction::Offset;
+use crate::evm::statement::BlockId;
 use std::collections::BTreeMap;
 
 pub struct ControlFlowGraph {
-    blocks: BTreeMap<BlockId, Loc<Vec<Instruction>>>,
+    blocks: BTreeMap<BlockId, Vertex>,
+}
+
+#[derive(Debug)]
+pub struct Vertex {
+    entry: Offset,
+    exit: Offset,
+    parents: Vec<BlockId>,
+    successor: Option<BlockId>,
 }
