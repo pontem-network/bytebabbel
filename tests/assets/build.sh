@@ -1,6 +1,5 @@
 
-
-DIR=test/contracts
+DIR=tests/assets
 SOLC=$DIR/bin/solc
 EXISTING_SOLC=$(which solc)
 if [ $EXISTING_SOLC ]; then SOLC=$EXISTING_SOLC; fi
