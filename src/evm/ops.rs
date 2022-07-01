@@ -1,5 +1,5 @@
-use anyhow::Error;
-use std::ops::{Deref, DerefMut};
+use crate::evm::Instruction;
+use std::fmt::Debug;
 
 pub struct InstructionIter {
     offset: usize,
@@ -13,20 +13,16 @@ impl InstructionIter {
 }
 
 impl Iterator for InstructionIter {
-    type Item = Result<Instruction, Error>;
+    type Item = Instruction;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.buffer.len() <= self.offset {
             None
         } else {
-            Some(match OpCode::try_from(&self.buffer[self.offset..]) {
-                Ok(op_code) => {
-                    let offset = self.offset;
-                    self.offset += op_code.size();
-                    Ok(Instruction(offset, op_code))
-                }
-                Err(err) => Err(err),
-            })
+            let op_code = OpCode::from(&self.buffer[self.offset..]);
+            let offset = self.offset;
+            self.offset += op_code.size();
+            Some(Instruction::new(offset, op_code))
         }
     }
 }
@@ -106,7 +102,7 @@ pub enum OpCode {
     Create2,
     Revert,
     StaticCall,
-    Invalid,
+    Invalid(u8),
     SelfDestruct,
 }
 
@@ -159,7 +155,7 @@ impl OpCode {
     pub fn halts_execution(&self) -> bool {
         matches!(
             self,
-            Self::Return | Self::Stop | Self::Invalid | Self::SelfDestruct | Self::Revert
+            Self::Return | Self::Stop | Self::Invalid(_) | Self::SelfDestruct | Self::Revert
         )
     }
 
@@ -168,7 +164,7 @@ impl OpCode {
             self,
             Self::Return
                 | Self::Stop
-                | Self::Invalid
+                | Self::Invalid(_)
                 | Self::SelfDestruct
                 | Self::Revert
                 | Self::Jump
@@ -196,7 +192,7 @@ impl OpCode {
             | Self::Gas
             | Self::JumpDest
             | Self::Push(..)
-            | Self::Invalid
+            | Self::Invalid(_)
             | Self::ReturnDataSize => 0,
             Self::IsZero
             | Self::Not
@@ -269,7 +265,7 @@ impl OpCode {
             | Self::Push(..)
             | Self::Log(..)
             | Self::Return
-            | Self::Invalid
+            | Self::Invalid(_)
             | Self::SelfDestruct
             | Self::ReturnDataCopy
             | Self::Revert => 0,
@@ -279,12 +275,10 @@ impl OpCode {
     }
 }
 
-impl TryFrom<&[u8]> for OpCode {
-    type Error = Error;
-
-    fn try_from(buff: &[u8]) -> Result<Self, Self::Error> {
+impl From<&[u8]> for OpCode {
+    fn from(buff: &[u8]) -> Self {
         let opcode = buff[0];
-        Ok(match opcode {
+        match opcode {
             0x00 => OpCode::Stop,
             0x01 => OpCode::Add,
             0x02 => OpCode::Mul,
@@ -348,17 +342,11 @@ impl TryFrom<&[u8]> for OpCode {
             0x5b => OpCode::JumpDest,
             0x60 | 0x61 | 0x62 | 0x63 | 0x64 | 0x65 | 0x66 | 0x67 | 0x68 | 0x69 | 0x6a | 0x6b
             | 0x6c | 0x6d | 0x6e | 0x6f => {
-                match read_n_bytes(&buff[1..], 1 + (opcode & 0x0f) as usize) {
-                    Err(..) => return Err(Error::msg("too few bytes for push")),
-                    Ok(v) => OpCode::Push(v),
-                }
+                OpCode::Push(read_n_bytes(&buff[1..], 1 + (opcode & 0x0f) as usize))
             }
             0x70 | 0x71 | 0x72 | 0x73 | 0x74 | 0x75 | 0x76 | 0x77 | 0x78 | 0x79 | 0x7a | 0x7b
             | 0x7c | 0x7d | 0x7e | 0x7f => {
-                match read_n_bytes(&buff[1..], (0x11 + (opcode & 0x0f)) as usize) {
-                    Err(..) => return Err(Error::msg("too few bytes for push")),
-                    Ok(v) => OpCode::Push(v),
-                }
+                OpCode::Push(read_n_bytes(&buff[1..], (0x11 + (opcode & 0x0f)) as usize))
             }
             0x80 => OpCode::Dup(0),
             0x81 => OpCode::Dup(1),
@@ -406,44 +394,15 @@ impl TryFrom<&[u8]> for OpCode {
             0xfd => OpCode::Revert,
             0xfa => OpCode::StaticCall,
             0xff => OpCode::SelfDestruct,
-            _ => OpCode::Invalid,
-        })
+            _ => OpCode::Invalid(opcode),
+        }
     }
 }
 
-fn read_n_bytes(buffer: &[u8], n: usize) -> Result<Vec<u8>, Error> {
+fn read_n_bytes(buffer: &[u8], n: usize) -> Vec<u8> {
     if buffer.len() < n {
-        Err(Error::msg("eof"))
+        buffer.to_vec()
     } else {
-        Ok(buffer[..n].to_vec())
-    }
-}
-
-pub type Offset = usize;
-
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Instruction(Offset, OpCode);
-
-impl Instruction {
-    pub fn new(offset: Offset, code: OpCode) -> Self {
-        Self(offset, code)
-    }
-
-    pub fn offset(&self) -> Offset {
-        self.0
-    }
-}
-
-impl Deref for Instruction {
-    type Target = OpCode;
-
-    fn deref(&self) -> &Self::Target {
-        &self.1
-    }
-}
-
-impl DerefMut for Instruction {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.1
+        buffer[..n].to_vec()
     }
 }
