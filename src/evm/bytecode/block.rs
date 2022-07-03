@@ -1,5 +1,5 @@
-use crate::evm::instruction::Instruction;
-use crate::evm::loc::Loc;
+use crate::evm::bytecode::instruction::Instruction;
+use crate::evm::bytecode::loc::Loc;
 use crate::evm::OpCode;
 
 pub type BasicBlock = Loc<Vec<Instruction>>;
