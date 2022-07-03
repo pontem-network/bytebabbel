@@ -1,3 +1,7 @@
+pub mod input;
+pub mod output;
+pub mod types;
+
 use anyhow::Error;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -8,12 +12,19 @@ use std::hash::Hash;
 
 #[derive(Debug, Default)]
 pub struct Abi {
-    entries: HashMap<FunHash, AbiEntry>,
+    entries: HashMap<FunHash, Entry>,
 }
 
 impl Abi {
     pub fn fun_hashes(&self) -> impl Iterator<Item = FunHash> + '_ {
-        self.entries.iter().map(|(h, _)| *h)
+        self.entries
+            .iter()
+            .filter(|(_, abi)| abi.is_function())
+            .map(|(h, _)| *h)
+    }
+
+    pub fn entry(&self, hash: &FunHash) -> Option<&Entry> {
+        self.entries.get(hash)
     }
 }
 
@@ -21,7 +32,7 @@ impl TryFrom<&str> for Abi {
     type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let entries: Vec<AbiEntry> = serde_json::from_str(value)?;
+        let entries: Vec<Entry> = serde_json::from_str(value)?;
         let entries = entries
             .into_iter()
             .map(|e| (FunHash::from(&e), e))
@@ -31,19 +42,19 @@ impl TryFrom<&str> for Abi {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct AbiEntry {
-    inputs: Vec<AbiInput>,
+pub struct Entry {
+    pub inputs: Vec<Input>,
     #[serde(default = "default_name")]
-    name: String,
+    pub name: String,
     #[serde(default = "default_outputs")]
-    outputs: Vec<AbiOutput>,
+    pub outputs: Vec<Output>,
     #[serde(alias = "stateMutability")]
-    state_mutability: String,
+    pub state_mutability: String,
     #[serde(alias = "type")]
-    tp: String,
+    pub tp: String,
 }
 
-impl AbiEntry {
+impl Entry {
     pub fn signature(&self) -> String {
         format!(
             "{}({})",
@@ -51,9 +62,17 @@ impl AbiEntry {
             self.inputs.iter().map(|i| &i.tp).join(",")
         )
     }
+
+    pub fn is_function(&self) -> bool {
+        self.tp == "function"
+    }
+
+    pub fn outputs(&self) -> &[Output] {
+        &self.outputs
+    }
 }
 
-fn default_outputs() -> Vec<AbiOutput> {
+fn default_outputs() -> Vec<Output> {
     vec![]
 }
 
@@ -62,7 +81,7 @@ fn default_name() -> String {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct AbiInput {
+pub struct Input {
     #[serde(alias = "internalType")]
     internal_type: String,
     name: String,
@@ -71,12 +90,12 @@ pub struct AbiInput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct AbiOutput {
+pub struct Output {
     #[serde(alias = "internalType")]
-    internal_type: String,
+    pub internal_type: String,
     name: String,
     #[serde(alias = "type")]
-    tp: String,
+    pub tp: String,
 }
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
@@ -88,8 +107,8 @@ impl AsRef<[u8; 4]> for FunHash {
     }
 }
 
-impl From<&AbiEntry> for FunHash {
-    fn from(entry: &AbiEntry) -> Self {
+impl From<&Entry> for FunHash {
+    fn from(entry: &Entry) -> Self {
         let mut result = [0u8; 4];
         result.copy_from_slice(&Keccak256::digest(&entry.signature())[..4]);
         FunHash(result)
