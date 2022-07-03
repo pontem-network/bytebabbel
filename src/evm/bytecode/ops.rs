@@ -1,4 +1,4 @@
-use crate::evm::instruction::Instruction;
+use crate::evm::bytecode::instruction::Instruction;
 use std::fmt::Debug;
 
 pub struct InstructionIter {

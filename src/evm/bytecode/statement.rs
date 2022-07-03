@@ -1,6 +1,6 @@
-use crate::evm::block::BasicBlock as InstructionBLock;
-use crate::evm::instruction::{Instruction, Offset};
-use crate::evm::loc::Loc;
+use crate::evm::bytecode::block::BasicBlock as InstructionBLock;
+use crate::evm::bytecode::instruction::{Instruction, Offset};
+use crate::evm::bytecode::loc::{Loc, Move};
 use crate::evm::OpCode;
 use bigint::U256;
 use std::cell::Cell;
@@ -47,6 +47,10 @@ impl BasicBlock {
         }
     }
 
+    pub fn statements(&self) -> &[Statement] {
+        self.statements.as_slice()
+    }
+
     pub fn last_jump(&self) -> Option<(Instruction, Offset)> {
         let last = self.statements.last()?;
         if last.inst.is_jump() {
@@ -56,8 +60,38 @@ impl BasicBlock {
         }
     }
 
+    pub fn next_block_id(&self) -> BlockId {
+        if let Some(last) = self.statements.last() {
+            last.inst.0 + last.inst.1.size()
+        } else {
+            self.id + 1
+        }
+    }
+
+    pub fn is_invalid(&self) -> bool {
+        self.statements
+            .iter()
+            .all(|s| matches!(s.inst.1, OpCode::Invalid(_)))
+    }
+
     pub fn id(&self) -> BlockId {
         self.id
+    }
+}
+
+impl Move for BasicBlock {
+    fn move_forward(&mut self, offset: usize) {
+        self.id += offset;
+        for statement in self.statements.iter_mut() {
+            statement.move_forward(offset);
+        }
+    }
+
+    fn move_back(&mut self, offset: usize) {
+        self.id -= offset;
+        for statement in self.statements.iter_mut() {
+            statement.move_back(offset);
+        }
     }
 }
 
@@ -92,7 +126,6 @@ pub struct StackItem(Rc<Cell<U256>>);
 
 impl StackItem {
     pub fn as_usize(&self) -> usize {
-        // note works only on x64
         self.0.get().as_u64() as usize
     }
 }
@@ -121,6 +154,16 @@ pub struct Statement {
     inst: Instruction,
     in_items: Vec<StackItem>,
     out_items: Vec<StackItem>,
+}
+
+impl Move for Statement {
+    fn move_forward(&mut self, offset: usize) {
+        self.inst.0 += offset;
+    }
+
+    fn move_back(&mut self, offset: usize) {
+        self.inst.0 -= offset;
+    }
 }
 
 impl Display for Statement {
@@ -188,4 +231,31 @@ impl Statement {
         self.out_items = out.clone();
         out
     }
+
+    pub fn as_push(&self) -> Option<&[u8]> {
+        if let OpCode::Push(push) = &self.inst.1 {
+            Some(push.as_slice())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_code_copy(&self) -> Option<CodeCopy> {
+        if let OpCode::CodeCopy = &self.inst.1 {
+            assert_eq!(self.in_items.len(), 3, "CodeCopy must takes 3 stack items.");
+            Some(CodeCopy {
+                new_offset: self.in_items[0].as_usize(),
+                old_offset: self.in_items[1].as_usize(),
+                len: self.in_items[2].as_usize(),
+            })
+        } else {
+            None
+        }
+    }
+}
+
+pub struct CodeCopy {
+    pub new_offset: Offset,
+    pub old_offset: Offset,
+    pub len: Offset,
 }

@@ -1,4 +1,4 @@
-use crate::evm::instruction::Offset;
+use crate::evm::bytecode::instruction::Offset;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -17,12 +17,35 @@ impl<C> Loc<C> {
         Loc::new(self.start, self.end, f(self.inner))
     }
 
+    pub fn contains(&self, offset: Offset) -> bool {
+        self.start <= offset && self.end >= offset
+    }
+
     pub fn wrap<R>(&self, inner: R) -> Loc<R> {
         Loc::new(self.start, self.end, inner)
     }
 
     pub fn inner(self) -> C {
         self.inner
+    }
+}
+
+pub trait Move {
+    fn move_forward(&mut self, offset: usize);
+    fn move_back(&mut self, offset: usize);
+}
+
+impl<C: Move> Move for Loc<C> {
+    fn move_forward(&mut self, offset: usize) {
+        self.start += offset;
+        self.end += offset;
+        self.inner.move_forward(offset);
+    }
+
+    fn move_back(&mut self, offset: usize) {
+        self.start -= offset;
+        self.end -= offset;
+        self.inner.move_back(offset);
     }
 }
 
