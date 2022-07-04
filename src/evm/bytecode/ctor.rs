@@ -1,5 +1,7 @@
+use crate::evm::bytecode::block::InstructionBlock;
 use crate::evm::bytecode::loc::{Loc, Move};
-use crate::evm::bytecode::statement::{BasicBlock, BlockId, Statement};
+use crate::evm::bytecode::statement::{BasicBlock, BlockId, Executor, Statement};
+use crate::evm::OpCode;
 use std::collections::BTreeMap;
 
 type Blocks = BTreeMap<BlockId, Loc<BasicBlock>>;
@@ -39,3 +41,24 @@ fn next_entry_point(statement: &Statement) -> Option<BlockId> {
         None
     }
 }
+
+// pub fn split_1(
+//     blocks: BTreeMap<BlockId, InstructionBlock>,
+// ) -> (
+//     BTreeMap<BlockId, InstructionBlock>,
+//     Option<BTreeMap<BlockId, InstructionBlock>>,
+// ) {
+//     let code_reallocation = blocks
+//         .iter()
+//         .any(|(id, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
+//     if code_reallocation {
+//         let mut executor = Executor::default();
+//         if let Some(block) = blocks.get(&0) {
+//             executor.exec(block)(blocks, None)
+//         } else {
+//             (blocks, None)
+//         }
+//     } else {
+//         (blocks, None)
+//     }
+// }

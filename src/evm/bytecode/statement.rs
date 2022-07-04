@@ -1,14 +1,14 @@
-use crate::evm::bytecode::block::BasicBlock as InstructionBLock;
+use crate::evm::bytecode::block::{InstructionBlock as InstructionBLock, InstructionBlock};
 use crate::evm::bytecode::instruction::{Instruction, Offset};
 use crate::evm::bytecode::loc::{Loc, Move};
 use crate::evm::OpCode;
 use bigint::U256;
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
 
-pub fn mark_stack(block: InstructionBLock) -> Loc<BasicBlock> {
+pub fn mark_stack(block: InstructionBlock) -> Loc<BasicBlock> {
     let mut stack = ExecutionStack::default();
     let mut statement_block = block.wrap(BasicBlock::new(block.start));
 
@@ -95,7 +95,7 @@ impl Move for BasicBlock {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct ExecutionStack {
     negative_stack: VecDeque<StackItem>,
     stack: Vec<StackItem>,
@@ -258,4 +258,145 @@ pub struct CodeCopy {
     pub new_offset: Offset,
     pub old_offset: Offset,
     pub len: Offset,
+}
+
+#[derive(Default, Clone)]
+pub struct Executor {
+    stack: ExecutionStack,
+    parent: Option<BlockId>,
+}
+
+impl Executor {
+    pub fn exec(&mut self, block: &InstructionBlock) -> Loc<ExecutedBlock> {
+        let mut executed_block = block.wrap(ExecutedBlock::new(block.start));
+        let mut execution = Execution::default();
+
+        for inst in block.iter() {
+            let pops = inst.pops();
+            let pushes = inst.pushes();
+            let mut st = Statement1::new(self.stack.pop(pops));
+            let to_push = st.perform(inst);
+            assert_eq!(to_push.len(), pushes);
+            self.stack.push(to_push);
+            executed_block.instructions.push(inst.clone());
+            execution.state.push(st);
+        }
+        execution.in_stack_items = self.stack.negative_stack.iter().cloned().collect();
+        execution.out_stack_items = self.stack.stack.clone();
+
+        executed_block.executions.insert(self.parent, execution);
+        self.parent = Some(block.start);
+        executed_block
+    }
+}
+
+pub struct Statement1 {
+    in_items: Vec<StackItem>,
+    out_items: Vec<StackItem>,
+}
+
+impl Statement1 {
+    pub fn new(in_items: Vec<StackItem>) -> Statement1 {
+        Statement1 {
+            in_items,
+            out_items: vec![],
+        }
+    }
+
+    pub fn perform(&mut self, inst: &Instruction) -> Vec<StackItem> {
+        let out = match &inst.1 {
+            OpCode::Stop
+            | OpCode::CallDataCopy
+            | OpCode::CodeCopy
+            | OpCode::ExtCodeCopy
+            | OpCode::Pop
+            | OpCode::MStore
+            | OpCode::MStore8
+            | OpCode::SStore
+            | OpCode::Jump
+            | OpCode::JumpIf
+            | OpCode::JumpDest
+            | OpCode::Log(..)
+            | OpCode::Return
+            | OpCode::Invalid(_)
+            | OpCode::SelfDestruct
+            | OpCode::ReturnDataCopy
+            | OpCode::Revert => vec![],
+            OpCode::Push(val) => vec![StackItem::from(val.as_slice())],
+            OpCode::Dup(_) => {
+                let mut out = self.in_items.clone();
+                let new_item = out[0].clone();
+                out.push(new_item);
+                out
+            }
+            OpCode::Swap(_) => {
+                let mut out = self.in_items.clone();
+                let last_index = out.len() - 1;
+                out.swap(0, last_index);
+                out
+            }
+            _ => vec![StackItem::default()],
+        };
+        self.out_items = out.clone();
+        out
+    }
+}
+
+pub struct ExecutedBlock {
+    id: BlockId,
+    instructions: Vec<Instruction>,
+    executions: HashMap<Option<BlockId>, Execution>,
+}
+
+#[derive(Default)]
+pub struct Execution {
+    in_stack_items: Vec<StackItem>,
+    out_stack_items: Vec<StackItem>,
+    state: Vec<Statement1>,
+}
+
+impl ExecutedBlock {
+    pub fn new(id: BlockId) -> ExecutedBlock {
+        ExecutedBlock {
+            id,
+            instructions: vec![],
+            executions: Default::default(),
+        }
+    }
+
+    pub fn merge(&mut self, other: ExecutedBlock) -> Option<ExecutedBlock> {
+        if self.id == other.id {
+            self.executions.extend(other.executions);
+            None
+        } else {
+            Some(other)
+        }
+    }
+
+    // pub fn last_jump(&self, parent: Option<BlockId>) -> Option<(Instruction, Offset)> {
+    //     let last = self.statements.last()?;
+    //     if last.inst.is_jump() {
+    //         Some((last.inst.clone(), last.in_items[0].clone().as_usize()))
+    //     } else {
+    //         None
+    //     }
+    // }
+    //
+    // pub fn next_block_id(&self) -> BlockId {
+    //     if let Some(last) = self.statements.last() {
+    //         last.inst.0 + last.inst.1.size()
+    //     } else {
+    //         self.id + 1
+    //     }
+    // }
+
+    pub fn is_invalid(&self) -> bool {
+        self.instructions
+            .iter()
+            .all(|s| matches!(s.1, OpCode::Invalid(_)))
+    }
+
+    pub fn id(&self) -> BlockId {
+        self.id
+    }
 }
