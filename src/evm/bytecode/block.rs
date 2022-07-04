@@ -2,8 +2,7 @@ use crate::evm::bytecode::instruction::Instruction;
 use crate::evm::bytecode::loc::Loc;
 use crate::evm::OpCode;
 
-pub type BasicBlock = Loc<Vec<Instruction>>;
-pub type BlockBlocks = Vec<BasicBlock>;
+pub type InstructionBlock = Loc<Vec<Instruction>>;
 
 pub struct BlockIter<I: Iterator<Item = Instruction>> {
     inst: I,
@@ -20,7 +19,7 @@ impl<I: Iterator<Item = Instruction>> BlockIter<I> {
 }
 
 impl<I: Iterator<Item = Instruction>> Iterator for BlockIter<I> {
-    type Item = BasicBlock;
+    type Item = InstructionBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut inst = self.next.take().or_else(|| self.inst.next())?;
