@@ -1,9 +1,10 @@
 use crate::evm::bytecode::instruction::Offset;
 use crate::evm::bytecode::loc::Loc;
-use crate::evm::bytecode::statement::{BasicBlock, BlockId};
+use crate::evm::bytecode::statement::{block_hex, BasicBlock, BlockId, Executor};
 use crate::evm::OpCode;
 use anyhow::{anyhow, Error};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::fmt::{Debug, Display, Formatter};
 
 pub struct ControlFlowGraph {
     blocks: BTreeMap<BlockId, Vertex>,
@@ -13,13 +14,15 @@ pub struct ControlFlowGraph {
 impl ControlFlowGraph {
     pub fn new(
         basic_blocks: &BTreeMap<BlockId, Loc<BasicBlock>>,
-        entry_points: impl Iterator<Item = BlockId>,
+        entry_points_iter: impl Iterator<Item = (BlockId, usize)>,
     ) -> Result<ControlFlowGraph, Error> {
         let mut blocks = BTreeMap::new();
-        let entry_points: BTreeSet<_> = entry_points.collect();
+        let mut entry_points = BTreeSet::new();
 
-        for ep in &entry_points {
-            Self::push_child(*ep, None, &mut blocks, basic_blocks)?;
+        for (ep, input_size) in entry_points_iter {
+            entry_points.insert(ep);
+            let mut executor = Executor::new(input_size);
+            Self::push_child(ep, None, &mut blocks, basic_blocks, executor)?;
         }
 
         Ok(ControlFlowGraph {
@@ -33,7 +36,8 @@ impl ControlFlowGraph {
         parent: Option<BlockId>,
         blocks: &mut BTreeMap<BlockId, Vertex>,
         basic_blocks: &BTreeMap<BlockId, Loc<BasicBlock>>,
-    ) -> Result<(), Error> {
+        mut executor: Executor,
+    ) -> Result<Executor, Error> {
         let block = basic_blocks
             .get(&id)
             .ok_or_else(|| anyhow!("Failed to make flow graph. Block with id {id} not found"))?;
@@ -52,9 +56,9 @@ impl ControlFlowGraph {
             .collect::<Vec<_>>();
 
         for child in children_to_hndl {
-            Self::push_child(child, Some(id), blocks, basic_blocks)?;
+            Self::push_child(child, Some(id), blocks, basic_blocks, executor.clone())?;
         }
-        Ok(())
+        Ok(executor)
     }
 
     fn block_children(block: &Loc<BasicBlock>) -> Vec<BlockId> {
@@ -76,6 +80,52 @@ impl ControlFlowGraph {
     pub fn blocks(&self) -> &BTreeMap<BlockId, Vertex> {
         &self.blocks
     }
+
+    pub fn vertex(&self, id: BlockId) -> Result<&Vertex, Error> {
+        self.blocks
+            .get(&id)
+            .ok_or_else(|| anyhow!("Vertex {id} not found."))
+    }
+
+    pub fn build_flow(&self, ep: BlockId) -> Result<Flow, Error> {
+        let successor = self.vertex(ep)?.successor();
+        Ok(if successor.is_empty() {
+            Flow::Ln(ep)
+        } else if successor.len() == 1 {
+            let jmp = *successor.iter().next().unwrap();
+            // may be fn call
+            println!("{} -> jmp: {}", block_hex(ep), block_hex(jmp));
+            let flow = self.build_flow(jmp)?;
+            Flow::Call(vec![Flow::Ln(ep), flow])
+        } else {
+            let mut iter = successor.iter();
+            let true_br = *iter.next().unwrap();
+            let false_br = *iter.next().unwrap();
+            // if else
+            // loop
+            println!(
+                "{} -> jmp_if({},{})",
+                block_hex(ep),
+                block_hex(true_br),
+                block_hex(false_br)
+            );
+            Flow::If {
+                true_branch: Box::new(self.build_flow(true_br)?),
+                false_branch: Box::new(self.build_flow(false_br)?),
+            }
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum Flow {
+    If {
+        true_branch: Box<Flow>,
+        false_branch: Box<Flow>,
+    },
+    Loop(Vec<Flow>),
+    Call(Vec<Flow>),
+    Ln(BlockId),
 }
 
 #[derive(Debug)]
@@ -110,5 +160,22 @@ impl Vertex {
 
     pub fn has_no_parents(&self) -> bool {
         self.parents.is_empty()
+    }
+
+    pub fn successor(&self) -> &HashSet<BlockId> {
+        &self.successor
+    }
+}
+
+impl Display for ControlFlowGraph {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for ep in &self.entry_points {
+            writeln!(f, "{}", block_hex(*ep))?;
+            let vp = &self.blocks[ep];
+            // todo
+            writeln!(f, "{:?}", vp.successor)?;
+        }
+
+        Ok(())
     }
 }

@@ -89,6 +89,12 @@ pub struct Input {
     tp: String,
 }
 
+impl Input {
+    pub fn size(&self) -> usize {
+        32
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Output {
     #[serde(alias = "internalType")]

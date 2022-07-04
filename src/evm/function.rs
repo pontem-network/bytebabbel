@@ -51,21 +51,18 @@ impl PublicApi {
         self.public_funcs.iter().map(|(_, id)| *id)
     }
 
-    pub fn function_definition(&self) -> Vec<FunctionDefinition> {
-        self.abi
-            .fun_hashes()
-            .map(|h| FunctionDefinition {
-                abi: self
-                    .abi
-                    .entry(&h)
-                    .expect("Unreachable state. Expected function abi."),
-                hash: h,
-                entry_point: *self
-                    .public_funcs
-                    .get(&h)
-                    .expect("Unreachable state. Expected function entry point."),
-            })
-            .collect()
+    pub fn function_definition(&self) -> impl Iterator<Item = FunctionDefinition> {
+        self.abi.fun_hashes().map(|h| FunctionDefinition {
+            abi: self
+                .abi
+                .entry(&h)
+                .expect("Unreachable state. Expected function abi."),
+            hash: h,
+            entry_point: *self
+                .public_funcs
+                .get(&h)
+                .expect("Unreachable state. Expected function entry point."),
+        })
     }
 }
 
@@ -73,4 +70,16 @@ pub struct FunctionDefinition<'a> {
     pub abi: &'a Entry,
     pub hash: FunHash,
     pub entry_point: BlockId,
+}
+
+impl<'a> FunctionDefinition<'a> {
+    pub fn input_size(&self) -> usize {
+        self.hash.as_ref().len()
+            + self
+                .abi
+                .inputs
+                .iter()
+                .map(|input| input.size())
+                .sum::<usize>()
+    }
 }

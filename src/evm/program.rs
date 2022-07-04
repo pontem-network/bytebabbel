@@ -25,7 +25,13 @@ impl Program {
         abi: Abi,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(&blocks, abi)?;
-        let flow_graph = ControlFlowGraph::new(&blocks, functions.entry_points())?;
+        let entry_points = functions
+            .function_definition()
+            .map(|def| (def.entry_point, def.input_size()));
+        let flow_graph = ControlFlowGraph::new(&blocks, entry_points)?;
+
+        let flow = flow_graph.build_flow(*flow_graph.entry_points().iter().next().unwrap())?;
+        dbg!(flow);
 
         Ok(Program {
             name: name.to_string(),
@@ -42,7 +48,7 @@ impl Program {
     }
 
     pub fn public_functions(&self) -> Vec<FunctionDefinition> {
-        self.functions.function_definition()
+        self.functions.function_definition().collect()
     }
 }
 

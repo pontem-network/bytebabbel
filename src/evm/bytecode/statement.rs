@@ -29,6 +29,10 @@ pub fn mark_stack(block: InstructionBLock) -> Loc<BasicBlock> {
 
 pub type BlockId = usize;
 
+pub fn block_hex(id: BlockId) -> String {
+    hex::encode(&id.to_le_bytes()[6..])
+}
+
 #[derive(Debug)]
 pub struct BasicBlock {
     id: BlockId,
@@ -95,8 +99,8 @@ impl Move for BasicBlock {
     }
 }
 
-#[derive(Default)]
-struct ExecutionStack {
+#[derive(Default, Clone)]
+pub struct ExecutionStack {
     negative_stack: VecDeque<StackItem>,
     stack: Vec<StackItem>,
 }
@@ -258,4 +262,29 @@ pub struct CodeCopy {
     pub new_offset: Offset,
     pub old_offset: Offset,
     pub len: Offset,
+}
+
+#[derive(Clone)]
+pub struct Executor {
+    stack: ExecutionStack,
+    input_size: usize,
+}
+
+impl Executor {
+    pub fn new(input_size: usize) -> Executor {
+        Executor {
+            stack: Default::default(),
+            input_size,
+        }
+    }
+
+    pub fn execute(&mut self, parent: BlockId, block: &BasicBlock) -> ExecutionBlock {
+        todo!()
+    }
+}
+
+pub struct ExecutionBlock {
+    in_stack_items: Vec<StackItem>,
+    out_stack_items: Vec<StackItem>,
+    statements: Vec<Statement>,
 }
