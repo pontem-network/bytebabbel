@@ -1,6 +1,6 @@
 use crate::evm::bytecode::block::InstructionBlock;
+use crate::evm::bytecode::executor::{BasicBlock, BlockId, CodeCopy, Executor, Statement};
 use crate::evm::bytecode::loc::{Loc, Move};
-use crate::evm::bytecode::statement::{BasicBlock, BlockId, Executor, Statement};
 use crate::evm::OpCode;
 use std::collections::BTreeMap;
 
@@ -16,8 +16,8 @@ pub fn split(blocks: Blocks) -> (Blocks, Option<Blocks>) {
             (Blocks::new(), Blocks::new()),
             |(mut main, mut ctor), (block_id, mut block)| {
                 if block_id >= next_entry_point {
-                    block.move_back(next_entry_point);
-                    main.insert(block_id - next_entry_point, block);
+                    block.move_back(next_entry_point.into());
+                    main.insert((block_id.0 - next_entry_point.0).into(), block);
                 } else {
                     ctor.insert(block_id, block);
                 }
@@ -33,7 +33,7 @@ pub fn split(blocks: Blocks) -> (Blocks, Option<Blocks>) {
 fn next_entry_point(statement: &Statement) -> Option<BlockId> {
     if let Some(code_copy) = statement.as_code_copy() {
         if code_copy.new_offset == 0 {
-            Some(code_copy.old_offset)
+            Some(code_copy.old_offset.into())
         } else {
             None
         }
@@ -42,23 +42,55 @@ fn next_entry_point(statement: &Statement) -> Option<BlockId> {
     }
 }
 
-// pub fn split_1(
-//     blocks: BTreeMap<BlockId, InstructionBlock>,
-// ) -> (
-//     BTreeMap<BlockId, InstructionBlock>,
-//     Option<BTreeMap<BlockId, InstructionBlock>>,
-// ) {
-//     let code_reallocation = blocks
-//         .iter()
-//         .any(|(id, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
-//     if code_reallocation {
-//         let mut executor = Executor::default();
-//         if let Some(block) = blocks.get(&0) {
-//             executor.exec(block)(blocks, None)
-//         } else {
-//             (blocks, None)
-//         }
-//     } else {
-//         (blocks, None)
-//     }
-// }
+pub fn split_1(
+    blocks: BTreeMap<BlockId, InstructionBlock>,
+) -> (
+    BTreeMap<BlockId, InstructionBlock>,
+    Option<BTreeMap<BlockId, InstructionBlock>>,
+) {
+    let code_reallocation = blocks
+        .iter()
+        .any(|(id, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
+
+    if !code_reallocation {
+        return (blocks, None);
+    }
+
+    if let Some(code_copy) =
+        find_code_copy(Executor::with_parent(Some(0.into())), 0.into(), &blocks)
+    {
+        let (main, ctor) = blocks.into_iter().fold(
+            (BTreeMap::new(), BTreeMap::new()),
+            |(mut main, mut ctor), (block_id, mut block)| {
+                if block_id >= code_copy.old_offset.into() {
+                    block.move_back(code_copy.old_offset);
+                    main.insert((block_id.0 - code_copy.old_offset).into(), block);
+                } else {
+                    ctor.insert(block_id, block);
+                }
+                (main, ctor)
+            },
+        );
+        (main, Some(ctor))
+    } else {
+        (blocks, None)
+    }
+}
+
+fn find_code_copy(
+    mut executor: Executor,
+    block: BlockId,
+    blocks: &BTreeMap<BlockId, InstructionBlock>,
+) -> Option<CodeCopy> {
+    let block = blocks.get(&block)?;
+    let parent = executor.parent();
+    let execution = executor.exec(block);
+    match execution.code_copy(parent) {
+        None => execution
+            .last_jump(parent)?
+            .jumps()
+            .iter()
+            .find_map(|jmp| find_code_copy(executor.clone(), *jmp, blocks)),
+        Some(code_copy) => Some(code_copy),
+    }
+}

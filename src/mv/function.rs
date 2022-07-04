@@ -1,4 +1,4 @@
-use crate::evm::bytecode::statement::BlockId;
+use crate::evm::bytecode::executor::BlockId;
 use crate::evm::function::FunctionDefinition;
 use crate::evm::program::Program;
 use anyhow::Error;

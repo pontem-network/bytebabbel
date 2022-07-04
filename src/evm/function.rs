@@ -1,6 +1,6 @@
 use crate::evm::abi::{Abi, Entry, FunHash};
+use crate::evm::bytecode::executor::{BasicBlock, BlockId};
 use crate::evm::bytecode::loc::Loc;
-use crate::evm::bytecode::statement::{BasicBlock, BlockId};
 use anyhow::{anyhow, Error};
 use std::collections::{BTreeMap, HashMap};
 
@@ -41,7 +41,7 @@ impl PublicApi {
             .and_then(|function_offset| {
                 blocks
                     .iter()
-                    .find(|(id, _)| function_offset == **id)
+                    .find(|(id, _)| function_offset == id.0)
                     .map(|(id, _)| *id)
             })
             .ok_or_else(|| anyhow!("couldn't find a function with a signature {h}"))

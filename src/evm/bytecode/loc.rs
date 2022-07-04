@@ -1,4 +1,4 @@
-use crate::evm::bytecode::instruction::Offset;
+use crate::evm::bytecode::instruction::{Instruction, Offset};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -46,6 +46,25 @@ impl<C: Move> Move for Loc<C> {
         self.start -= offset;
         self.end -= offset;
         self.inner.move_back(offset);
+    }
+}
+
+impl Move for Loc<Vec<Instruction>> {
+    fn move_forward(&mut self, offset: usize) {
+        self.start += offset;
+        self.end += offset;
+
+        for inst in &mut self.inner {
+            inst.0 += offset;
+        }
+    }
+
+    fn move_back(&mut self, offset: usize) {
+        self.start -= offset;
+        self.end -= offset;
+        for inst in &mut self.inner {
+            inst.0 -= offset;
+        }
     }
 }
 

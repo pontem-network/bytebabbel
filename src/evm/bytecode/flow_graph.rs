@@ -1,6 +1,6 @@
+use crate::evm::bytecode::executor::{BasicBlock, BlockId, Executor};
 use crate::evm::bytecode::instruction::Offset;
 use crate::evm::bytecode::loc::Loc;
-use crate::evm::bytecode::statement::{block_hex, BasicBlock, BlockId, Executor};
 use crate::evm::OpCode;
 use anyhow::{anyhow, Error};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -21,7 +21,7 @@ impl ControlFlowGraph {
 
         for (ep, input_size) in entry_points_iter {
             entry_points.insert(ep);
-            let mut executor = Executor::new(input_size);
+            let mut executor = Executor::default();
             Self::push_child(ep, None, &mut blocks, basic_blocks, executor)?;
         }
 
@@ -64,9 +64,9 @@ impl ControlFlowGraph {
     fn block_children(block: &Loc<BasicBlock>) -> Vec<BlockId> {
         if let Some((jump, offset)) = block.last_jump() {
             if matches!(jump.1, OpCode::JumpIf) {
-                vec![offset, block.next_block_id()]
+                vec![offset.into(), block.next_block_id()]
             } else {
-                vec![offset]
+                vec![offset.into()]
             }
         } else {
             vec![]
@@ -94,7 +94,7 @@ impl ControlFlowGraph {
         } else if successor.len() == 1 {
             let jmp = *successor.iter().next().unwrap();
             // may be fn call
-            println!("{} -> jmp: {}", block_hex(ep), block_hex(jmp));
+            println!("{} -> jmp: {}", ep, jmp);
             let flow = self.build_flow(jmp)?;
             Flow::Call(vec![Flow::Ln(ep), flow])
         } else {
@@ -103,12 +103,7 @@ impl ControlFlowGraph {
             let false_br = *iter.next().unwrap();
             // if else
             // loop
-            println!(
-                "{} -> jmp_if({},{})",
-                block_hex(ep),
-                block_hex(true_br),
-                block_hex(false_br)
-            );
+            println!("{} -> jmp_if({},{})", ep, true_br, false_br);
             Flow::If {
                 true_branch: Box::new(self.build_flow(true_br)?),
                 false_branch: Box::new(self.build_flow(false_br)?),
@@ -170,7 +165,7 @@ impl Vertex {
 impl Display for ControlFlowGraph {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for ep in &self.entry_points {
-            writeln!(f, "{}", block_hex(*ep))?;
+            writeln!(f, "{}", ep)?;
             let vp = &self.blocks[ep];
             // todo
             writeln!(f, "{:?}", vp.successor)?;

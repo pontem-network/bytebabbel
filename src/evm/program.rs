@@ -1,7 +1,7 @@
 use crate::evm::abi::Abi;
+use crate::evm::bytecode::executor::{BasicBlock, BlockId};
 use crate::evm::bytecode::flow_graph::ControlFlowGraph;
 use crate::evm::bytecode::loc::Loc;
-use crate::evm::bytecode::statement::{BasicBlock, BlockId};
 use crate::evm::function::{FunctionDefinition, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
@@ -70,7 +70,7 @@ impl Debug for Program {
         writeln!(f)?;
         writeln!(f, "Private functions:")?;
         for id in &self.private_functions {
-            write!(f, "fun {} ", hex::encode(id.to_le_bytes()))?;
+            write!(f, "fun fun_{} ", id)?;
         }
         Ok(())
     }
