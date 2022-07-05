@@ -5,6 +5,7 @@ use crate::evm::OpCode;
 use bigint::U256;
 use itertools::Itertools;
 use std::cell::Cell;
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
@@ -24,7 +25,16 @@ fn mark(
 ) {
     let parent = executor.parent().clone();
     if let Some(block) = blocks.get(&block_id) {
-        if exec_blocks.contains_key(&block_id) {
+        if let Entry::Vacant(e) = exec_blocks.entry(block_id) {
+            let new_block = executor.exec(block);
+            let jmp = new_block.last_jump(&parent);
+            e.insert(new_block);
+            if let Some(jmp) = jmp {
+                for jmp in jmp.jumps() {
+                    mark(jmp, blocks, exec_blocks, executor.clone());
+                }
+            }
+        } else {
             let exec_block = exec_blocks.get_mut(&block_id).unwrap();
             if !exec_block.has_parent(&parent) {
                 exec_block.merge(executor.exec(block).inner());
@@ -32,15 +42,6 @@ fn mark(
                     for jmp in jmp.jumps() {
                         mark(jmp, blocks, exec_blocks, executor.clone());
                     }
-                }
-            }
-        } else {
-            let new_block = executor.exec(block);
-            let jmp = new_block.last_jump(&parent);
-            exec_blocks.insert(block_id, new_block);
-            if let Some(jmp) = jmp {
-                for jmp in jmp.jumps() {
-                    mark(jmp, blocks, exec_blocks, executor.clone());
                 }
             }
         }

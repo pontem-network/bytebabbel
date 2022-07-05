@@ -14,7 +14,7 @@ pub struct MvFunction {
 }
 
 impl MvFunction {
-    pub fn new_public(def: FunctionDefinition, program: &Program) -> Result<MvFunction, Error> {
+    pub fn new_public(def: FunctionDefinition, _program: &Program) -> Result<MvFunction, Error> {
         Ok(MvFunction {
             name: Identifier::new(&*def.abi.name)?,
             visibility: Visibility::Public,
