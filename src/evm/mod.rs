@@ -26,14 +26,7 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
         .collect::<BTreeMap<_, _>>();
     let (blocks, ctor) = ctor::split_1(blocks);
     let blocks = executor::mark_stack_1(blocks);
-
-    // let blocks = BlockIter::new(InstructionIter::new(bytecode))
-    //     .map(executor::mark_stack)
-    //     .map(|block| (block.id(), block))
-    //     .collect::<BTreeMap<_, _>>();
-    // let (blocks, ctor) = ctor::split(blocks);
-    // Program::new(name, blocks, ctor, abi)
-    todo!()
+    Program::new(name, blocks, ctor, abi)
 }
 
 pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {

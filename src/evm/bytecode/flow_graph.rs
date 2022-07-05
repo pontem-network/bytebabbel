@@ -1,4 +1,4 @@
-use crate::evm::bytecode::executor::{BasicBlock, BlockId, Executor};
+use crate::evm::bytecode::executor::{BasicBlock, BlockId, ExecutedBlock, Executor};
 use crate::evm::bytecode::instruction::Offset;
 use crate::evm::bytecode::loc::Loc;
 use crate::evm::OpCode;
@@ -13,17 +13,17 @@ pub struct ControlFlowGraph {
 
 impl ControlFlowGraph {
     pub fn new(
-        basic_blocks: &BTreeMap<BlockId, Loc<BasicBlock>>,
+        basic_blocks: &BTreeMap<BlockId, Loc<ExecutedBlock>>,
         entry_points_iter: impl Iterator<Item = (BlockId, usize)>,
     ) -> Result<ControlFlowGraph, Error> {
         let mut blocks = BTreeMap::new();
         let mut entry_points = BTreeSet::new();
 
-        for (ep, input_size) in entry_points_iter {
-            entry_points.insert(ep);
-            let mut executor = Executor::default();
-            Self::push_child(ep, None, &mut blocks, basic_blocks, executor)?;
-        }
+        // for (ep, input_size) in entry_points_iter {
+        //     entry_points.insert(ep);
+        //     let executor = Executor::default();
+        //     Self::push_child(ep, None, &mut blocks, basic_blocks, executor)?;
+        // }
 
         Ok(ControlFlowGraph {
             blocks,
@@ -36,7 +36,7 @@ impl ControlFlowGraph {
         parent: Option<BlockId>,
         blocks: &mut BTreeMap<BlockId, Vertex>,
         basic_blocks: &BTreeMap<BlockId, Loc<BasicBlock>>,
-        mut executor: Executor,
+        executor: Executor,
     ) -> Result<Executor, Error> {
         let block = basic_blocks
             .get(&id)

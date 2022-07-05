@@ -3,16 +3,20 @@ use crate::evm::bytecode::instruction::{Instruction, Offset};
 use crate::evm::bytecode::loc::{Loc, Move};
 use crate::evm::OpCode;
 use bigint::U256;
+use itertools::Itertools;
 use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
+use std::thread;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub fn mark_stack_1(
     blocks: BTreeMap<BlockId, InstructionBlock>,
 ) -> BTreeMap<BlockId, Loc<ExecutedBlock>> {
     let mut exec_blocks = BTreeMap::new();
-    let mut executor = Executor::default();
+    let executor = Executor::default();
     mark(0.into(), &blocks, &mut exec_blocks, executor);
     exec_blocks
 }
@@ -23,15 +27,27 @@ fn mark(
     exec_blocks: &mut BTreeMap<BlockId, Loc<ExecutedBlock>>,
     mut executor: Executor,
 ) {
-    let parent = executor.parent();
+    let parent = executor.parent().clone();
     if let Some(block) = blocks.get(&block_id) {
-        let exec_block = exec_blocks
-            .entry(block_id)
-            .or_insert_with(|| executor.exec(block));
-
-        if !exec_block.has_parent(&parent) {
-            exec_block.merge(executor.exec(block).inner());
-            if let Some(jmp) = exec_block.last_jump(parent) {
+        if exec_blocks.contains_key(&block_id) {
+            let exec_block = exec_blocks.get_mut(&block_id).unwrap();
+            if !exec_block.has_parent(&parent) {
+                exec_block.merge(executor.exec(block).inner());
+                if let Some(jmp) = exec_block.last_jump(&parent) {
+                    for jmp in jmp.jumps() {
+                        mark(jmp, blocks, exec_blocks, executor.clone());
+                    }
+                }
+            }
+        } else {
+            let new_block = executor.exec(block);
+            // if block_id == BlockId::hex("007b") {
+            //     println!("{:?}", new_block);
+            //     panic!();
+            // }
+            let jmp = new_block.last_jump(&parent);
+            exec_blocks.insert(block_id, new_block);
+            if let Some(jmp) = jmp {
                 for jmp in jmp.jumps() {
                     mark(jmp, blocks, exec_blocks, executor.clone());
                 }
@@ -40,31 +56,22 @@ fn mark(
     }
 }
 
-pub fn mark_stack(block: InstructionBlock) -> Loc<BasicBlock> {
-    let mut stack = ExecutionStack::default();
-    let mut statement_block = block.wrap(BasicBlock::new(block.start.into()));
-
-    for inst in block.inner().into_iter() {
-        let pops = inst.pops();
-        let pushes = inst.pushes();
-        let mut st = Statement::new(inst, stack.pop(pops));
-        let to_push = st.perform();
-        assert_eq!(to_push.len(), pushes);
-        stack.push(to_push);
-        statement_block.statements.push(st);
-    }
-    statement_block.in_stack_items = stack.negative_stack.into_iter().collect();
-    statement_block.out_stack_items = stack.stack;
-
-    statement_block
-}
-
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct BlockId(pub usize);
 
+impl BlockId {
+    pub fn hex(x: &str) -> BlockId {
+        let mut buf = 0_usize.to_be_bytes();
+        let f = hex::decode(x).unwrap();
+        let start_idx = buf.len() - f.len();
+        buf[start_idx..].copy_from_slice(&f);
+        BlockId(usize::from_be_bytes(buf))
+    }
+}
+
 impl Debug for BlockId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.0.to_le_bytes()[6..]))
+        write!(f, "{}", hex::encode(&self.0.to_be_bytes()[6..]))
     }
 }
 
@@ -86,8 +93,34 @@ impl From<usize> for BlockId {
     }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct BlockChain(Vec<usize>);
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct Chain(Vec<BlockId>);
+
+impl Chain {
+    pub fn new(block_id: BlockId) -> Chain {
+        Chain(vec![block_id])
+    }
+
+    pub fn join(&mut self, block_id: BlockId) {
+        self.0.push(block_id);
+    }
+
+    pub fn last(&self) -> Option<BlockId> {
+        self.0.last().cloned()
+    }
+}
+
+impl Debug for Chain {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.iter().map(|i| i.to_string()).join("->"))
+    }
+}
+
+impl Display for Chain {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 #[derive(Debug)]
 pub struct BasicBlock {
@@ -177,7 +210,7 @@ impl ExecutionStack {
     }
 
     pub fn push(&mut self, to_push: Vec<StackItem>) {
-        self.stack.extend(to_push);
+        self.stack.extend(to_push.into_iter().rev());
     }
 }
 
@@ -328,14 +361,14 @@ pub struct CodeCopy {
 #[derive(Default, Clone)]
 pub struct Executor {
     stack: ExecutionStack,
-    parent: Option<BlockId>,
+    parent: Chain,
 }
 
 impl Executor {
-    pub fn with_parent(parent: Option<BlockId>) -> Executor {
+    pub fn with_parent(parent: BlockId) -> Executor {
         Executor {
             stack: Default::default(),
-            parent,
+            parent: Chain::new(parent),
         }
     }
 
@@ -343,6 +376,7 @@ impl Executor {
         let mut executed_block = block.wrap(ExecutedBlock::new(block.start.into()));
         let mut execution = Execution::default();
 
+        let input_stack = self.stack.stack.clone();
         for inst in block.iter() {
             let pops = inst.pops();
             let pushes = inst.pushes();
@@ -354,15 +388,18 @@ impl Executor {
             execution.state.push(st);
         }
         execution.in_stack_items = self.stack.negative_stack.iter().cloned().collect();
+        execution.in_stack_items.extend(input_stack);
         execution.out_stack_items = self.stack.stack.clone();
 
-        executed_block.executions.insert(self.parent, execution);
-        self.parent = Some(block.start.into());
+        executed_block
+            .executions
+            .insert(self.parent.clone(), execution);
+        self.parent.join(block.start.into());
         executed_block
     }
 
-    pub fn parent(&self) -> Option<BlockId> {
-        self.parent
+    pub fn parent(&self) -> &Chain {
+        &self.parent
     }
 }
 
@@ -402,8 +439,8 @@ impl Statement1 {
             OpCode::Push(val) => vec![StackItem::from(val.as_slice())],
             OpCode::Dup(_) => {
                 let mut out = self.in_items.clone();
-                let new_item = out[0].clone();
-                out.push(new_item);
+                let new_item = out[out.len() - 1].clone();
+                out.insert(0, new_item);
                 out
             }
             OpCode::Swap(_) => {
@@ -419,18 +456,17 @@ impl Statement1 {
     }
 }
 
-#[derive(Debug)]
-pub struct ExecutedBlock {
-    id: BlockId,
-    instructions: Vec<Instruction>,
-    executions: HashMap<Option<BlockId>, Execution>,
-}
-
 #[derive(Default, Debug)]
 pub struct Execution {
     in_stack_items: Vec<StackItem>,
     out_stack_items: Vec<StackItem>,
     state: Vec<Statement1>,
+}
+
+pub struct ExecutedBlock {
+    id: BlockId,
+    instructions: Vec<Instruction>,
+    executions: BTreeMap<Chain, Execution>,
 }
 
 impl ExecutedBlock {
@@ -442,7 +478,15 @@ impl ExecutedBlock {
         }
     }
 
-    pub fn has_parent(&self, parent: &Option<BlockId>) -> bool {
+    pub fn first_execution(&self) -> Option<&Chain> {
+        self.executions.iter().next().map(|(p, _)| p)
+    }
+
+    pub fn instructions(&self) -> &[Instruction] {
+        &self.instructions
+    }
+
+    pub fn has_parent(&self, parent: &Chain) -> bool {
         self.executions.contains_key(parent)
     }
 
@@ -455,9 +499,9 @@ impl ExecutedBlock {
         }
     }
 
-    pub fn last_jump(&self, parent: Option<BlockId>) -> Option<Jump> {
+    pub fn last_jump(&self, parent: &Chain) -> Option<Jump> {
         let inst = self.instructions.last()?;
-        let state = self.executions.get(&parent)?.state.last()?;
+        let state = self.executions.get(parent)?.state.last()?;
 
         if matches!(inst.1, OpCode::Jump) {
             Some(Jump::UnCnd(state.in_items[0].as_block_id()))
@@ -471,14 +515,14 @@ impl ExecutedBlock {
         }
     }
 
-    pub fn code_copy(&self, parent: Option<BlockId>) -> Option<CodeCopy> {
+    pub fn code_copy(&self, parent: &Chain) -> Option<CodeCopy> {
         let code_copy = self
             .instructions
             .iter()
             .enumerate()
             .find(|i| matches!(i.1 .1, OpCode::CodeCopy))
             .map(|(i, _)| i)?;
-        let execution = self.executions.get(&parent)?;
+        let execution = self.executions.get(parent)?;
         let stack = &execution.state[code_copy];
         Some(CodeCopy {
             new_offset: stack.in_items[0].as_usize(),
@@ -506,6 +550,31 @@ impl ExecutedBlock {
     }
 }
 
+impl Debug for ExecutedBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Block id: {}", self.id)?;
+        writeln!(
+            f,
+            "==========================[EXECUTIONS]=========================="
+        )?;
+        for (path, execution) in &self.executions {
+            writeln!(f, "Execution in stack:{:?}", execution.in_stack_items)?;
+            writeln!(f, "Execution start:{}", path)?;
+            for (idx, inst) in self.instructions.iter().enumerate() {
+                write!(f, "{inst}")?;
+                let state = &execution.state[idx];
+                writeln!(f, "({:?}) => ({:?})", state.in_items, state.out_items)?;
+            }
+            writeln!(f, "Execution end")?;
+            writeln!(f, "Execution out stack:{:?}", execution.out_stack_items)?;
+        }
+        writeln!(
+            f,
+            "================================================================"
+        )
+    }
+}
+
 #[derive(Debug)]
 pub enum Jump {
     Cnd { true_br: BlockId, false_br: BlockId },
@@ -517,6 +586,13 @@ impl Jump {
         match self {
             Jump::Cnd { true_br, false_br } => vec![*true_br, *false_br],
             Jump::UnCnd(id) => vec![*id],
+        }
+    }
+
+    pub fn as_cnd(&self) -> Option<(BlockId, BlockId)> {
+        match self {
+            Jump::Cnd { true_br, false_br } => Some((*true_br, *false_br)),
+            Jump::UnCnd(_) => None,
         }
     }
 }

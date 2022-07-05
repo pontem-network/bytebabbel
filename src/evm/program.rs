@@ -1,5 +1,6 @@
 use crate::evm::abi::Abi;
-use crate::evm::bytecode::executor::{BasicBlock, BlockId};
+use crate::evm::bytecode::block::InstructionBlock;
+use crate::evm::bytecode::executor::{BasicBlock, BlockId, ExecutedBlock};
 use crate::evm::bytecode::flow_graph::ControlFlowGraph;
 use crate::evm::bytecode::loc::Loc;
 use crate::evm::function::{FunctionDefinition, PublicApi};
@@ -10,8 +11,8 @@ use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
-    blocks: BTreeMap<BlockId, Loc<BasicBlock>>,
-    ctor: Option<BTreeMap<BlockId, Loc<BasicBlock>>>,
+    blocks: BTreeMap<BlockId, Loc<ExecutedBlock>>,
+    ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
     flow_graph: ControlFlowGraph,
     functions: PublicApi,
     private_functions: HashSet<BlockId>,
@@ -20,8 +21,8 @@ pub struct Program {
 impl Program {
     pub fn new(
         name: &str,
-        blocks: BTreeMap<BlockId, Loc<BasicBlock>>,
-        ctor: Option<BTreeMap<BlockId, Loc<BasicBlock>>>,
+        blocks: BTreeMap<BlockId, Loc<ExecutedBlock>>,
+        ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
         abi: Abi,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(&blocks, abi)?;
@@ -30,8 +31,8 @@ impl Program {
             .map(|def| (def.entry_point, def.input_size()));
         let flow_graph = ControlFlowGraph::new(&blocks, entry_points)?;
 
-        let flow = flow_graph.build_flow(*flow_graph.entry_points().iter().next().unwrap())?;
-        dbg!(flow);
+        //let flow = flow_graph.build_flow(*flow_graph.entry_points().iter().next().unwrap())?;
+        //dbg!(flow);
 
         Ok(Program {
             name: name.to_string(),

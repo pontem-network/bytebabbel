@@ -163,6 +163,13 @@ impl OpCode {
         matches!(self, Self::Jump | Self::JumpIf)
     }
 
+    pub fn as_push(&self) -> Option<&[u8]> {
+        match self {
+            OpCode::Push(push) => Some(push.as_slice()),
+            _ => None,
+        }
+    }
+
     pub fn ends_basic_block(&self) -> bool {
         matches!(
             self,
@@ -248,7 +255,8 @@ impl OpCode {
             Self::ExtCodeCopy => 4,
             Self::DelegateCall | Self::StaticCall => 6,
             Self::Call | Self::CallCode => 7,
-            Self::Dup(u) | Self::Swap(u) => *u,
+            Self::Dup(u) => *u,
+            Self::Swap(u) => *u + 1,
             Self::Log(u) => u + 2,
         }
     }
@@ -273,7 +281,7 @@ impl OpCode {
             | Self::ReturnDataCopy
             | Self::Revert => 0,
             Self::Dup(u) => u + 1,
-            Self::Swap(u) => *u,
+            Self::Swap(u) => *u + 1,
             _ => 1,
         }
     }

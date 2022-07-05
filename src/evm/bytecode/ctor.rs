@@ -50,15 +50,13 @@ pub fn split_1(
 ) {
     let code_reallocation = blocks
         .iter()
-        .any(|(id, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
+        .any(|(_, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
 
     if !code_reallocation {
         return (blocks, None);
     }
 
-    if let Some(code_copy) =
-        find_code_copy(Executor::with_parent(Some(0.into())), 0.into(), &blocks)
-    {
+    if let Some(code_copy) = find_code_copy(Executor::with_parent(0.into()), 0.into(), &blocks) {
         let (main, ctor) = blocks.into_iter().fold(
             (BTreeMap::new(), BTreeMap::new()),
             |(mut main, mut ctor), (block_id, mut block)| {
@@ -83,11 +81,11 @@ fn find_code_copy(
     blocks: &BTreeMap<BlockId, InstructionBlock>,
 ) -> Option<CodeCopy> {
     let block = blocks.get(&block)?;
-    let parent = executor.parent();
+    let parent = executor.parent().clone();
     let execution = executor.exec(block);
-    match execution.code_copy(parent) {
+    match execution.code_copy(&parent) {
         None => execution
-            .last_jump(parent)?
+            .last_jump(&parent)?
             .jumps()
             .iter()
             .find_map(|jmp| find_code_copy(executor.clone(), *jmp, blocks)),
