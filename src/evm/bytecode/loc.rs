@@ -93,3 +93,13 @@ impl<C: Display> Display for Loc<C> {
         write!(f, "\nBlock: [{}; {}]\n{}", self.start, self.end, self.inner)
     }
 }
+
+impl<C: Clone> Clone for Loc<C> {
+    fn clone(&self) -> Self {
+        Self {
+            start: self.start,
+            end: self.end,
+            inner: self.inner.clone(),
+        }
+    }
+}

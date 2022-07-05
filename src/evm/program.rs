@@ -1,21 +1,18 @@
 use crate::evm::abi::Abi;
 use crate::evm::bytecode::block::InstructionBlock;
-use crate::evm::bytecode::executor::{BasicBlock, BlockId, ExecutedBlock};
-use crate::evm::bytecode::flow_graph::ControlFlowGraph;
+use crate::evm::bytecode::executor::{BlockId, ExecutedBlock};
 use crate::evm::bytecode::loc::Loc;
 use crate::evm::function::{FunctionDefinition, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
     blocks: BTreeMap<BlockId, Loc<ExecutedBlock>>,
     ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
-    flow_graph: ControlFlowGraph,
     functions: PublicApi,
-    private_functions: HashSet<BlockId>,
 }
 
 impl Program {
@@ -26,21 +23,11 @@ impl Program {
         abi: Abi,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(&blocks, abi)?;
-        let entry_points = functions
-            .function_definition()
-            .map(|def| (def.entry_point, def.input_size()));
-        let flow_graph = ControlFlowGraph::new(&blocks, entry_points)?;
-
-        //let flow = flow_graph.build_flow(*flow_graph.entry_points().iter().next().unwrap())?;
-        //dbg!(flow);
-
         Ok(Program {
             name: name.to_string(),
             blocks,
             ctor,
-            flow_graph,
             functions,
-            private_functions: Default::default(),
         })
     }
 
@@ -69,10 +56,6 @@ impl Debug for Program {
             writeln!(f, "}}")?;
         }
         writeln!(f)?;
-        writeln!(f, "Private functions:")?;
-        for id in &self.private_functions {
-            write!(f, "fun fun_{} ", id)?;
-        }
         Ok(())
     }
 }

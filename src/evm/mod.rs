@@ -24,8 +24,8 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
     let blocks = BlockIter::new(InstructionIter::new(bytecode))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<BTreeMap<_, _>>();
-    let (blocks, ctor) = ctor::split_1(blocks);
-    let blocks = executor::mark_stack_1(blocks);
+    let (blocks, ctor) = ctor::split(blocks);
+    let blocks = executor::exec(blocks);
     Program::new(name, blocks, ctor, abi)
 }
 

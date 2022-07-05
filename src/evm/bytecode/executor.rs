@@ -1,20 +1,15 @@
 use crate::evm::bytecode::block::InstructionBlock;
 use crate::evm::bytecode::instruction::{Instruction, Offset};
-use crate::evm::bytecode::loc::{Loc, Move};
+use crate::evm::bytecode::loc::Loc;
 use crate::evm::OpCode;
 use bigint::U256;
 use itertools::Itertools;
 use std::cell::Cell;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
-use std::thread;
-use std::thread::sleep;
-use std::time::Duration;
 
-pub fn mark_stack_1(
-    blocks: BTreeMap<BlockId, InstructionBlock>,
-) -> BTreeMap<BlockId, Loc<ExecutedBlock>> {
+pub fn exec(blocks: BTreeMap<BlockId, InstructionBlock>) -> BTreeMap<BlockId, Loc<ExecutedBlock>> {
     let mut exec_blocks = BTreeMap::new();
     let executor = Executor::default();
     mark(0.into(), &blocks, &mut exec_blocks, executor);
@@ -41,10 +36,6 @@ fn mark(
             }
         } else {
             let new_block = executor.exec(block);
-            // if block_id == BlockId::hex("007b") {
-            //     println!("{:?}", new_block);
-            //     panic!();
-            // }
             let jmp = new_block.last_jump(&parent);
             exec_blocks.insert(block_id, new_block);
             if let Some(jmp) = jmp {
@@ -81,9 +72,9 @@ impl Display for BlockId {
     }
 }
 
-impl Into<usize> for BlockId {
-    fn into(self) -> usize {
-        self.0
+impl From<BlockId> for usize {
+    fn from(id: BlockId) -> Self {
+        id.0
     }
 }
 
@@ -119,72 +110,6 @@ impl Debug for Chain {
 impl Display for Chain {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Debug)]
-pub struct BasicBlock {
-    id: BlockId,
-    in_stack_items: Vec<StackItem>,
-    out_stack_items: Vec<StackItem>,
-    statements: Vec<Statement>,
-}
-
-impl BasicBlock {
-    fn new(id: BlockId) -> BasicBlock {
-        BasicBlock {
-            id,
-            statements: vec![],
-            in_stack_items: vec![],
-            out_stack_items: vec![],
-        }
-    }
-
-    pub fn statements(&self) -> &[Statement] {
-        self.statements.as_slice()
-    }
-
-    pub fn last_jump(&self) -> Option<(Instruction, Offset)> {
-        let last = self.statements.last()?;
-        if last.inst.is_jump() {
-            Some((last.inst.clone(), last.in_items[0].clone().as_usize()))
-        } else {
-            None
-        }
-    }
-
-    pub fn next_block_id(&self) -> BlockId {
-        if let Some(last) = self.statements.last() {
-            BlockId(last.inst.0 + last.inst.1.size())
-        } else {
-            BlockId(self.id.0 + 1)
-        }
-    }
-
-    pub fn is_invalid(&self) -> bool {
-        self.statements
-            .iter()
-            .all(|s| matches!(s.inst.1, OpCode::Invalid(_)))
-    }
-
-    pub fn id(&self) -> BlockId {
-        self.id
-    }
-}
-
-impl Move for BasicBlock {
-    fn move_forward(&mut self, offset: usize) {
-        self.id.0 += offset;
-        for statement in self.statements.iter_mut() {
-            statement.move_forward(offset);
-        }
-    }
-
-    fn move_back(&mut self, offset: usize) {
-        self.id.0 -= offset;
-        for statement in self.statements.iter_mut() {
-            statement.move_back(offset);
-        }
     }
 }
 
@@ -247,110 +172,6 @@ impl From<&[u8]> for StackItem {
     }
 }
 
-pub struct Statement {
-    inst: Instruction,
-    in_items: Vec<StackItem>,
-    out_items: Vec<StackItem>,
-}
-
-impl Move for Statement {
-    fn move_forward(&mut self, offset: usize) {
-        self.inst.0 += offset;
-    }
-
-    fn move_back(&mut self, offset: usize) {
-        self.inst.0 -= offset;
-    }
-}
-
-impl Display for Statement {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\n     {}        ", self.inst)?;
-        if !self.in_items.is_empty() {
-            write!(f, "({:?})", self.in_items,)?;
-        }
-        if !self.out_items.is_empty() {
-            write!(f, "->({:?})", self.out_items,)?;
-        }
-        Ok(())
-    }
-}
-
-impl Debug for Statement {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-impl Statement {
-    pub fn new(inst: Instruction, in_items: Vec<StackItem>) -> Statement {
-        Statement {
-            inst,
-            in_items,
-            out_items: vec![],
-        }
-    }
-
-    pub fn perform(&mut self) -> Vec<StackItem> {
-        let out = match &self.inst.1 {
-            OpCode::Stop
-            | OpCode::CallDataCopy
-            | OpCode::CodeCopy
-            | OpCode::ExtCodeCopy
-            | OpCode::Pop
-            | OpCode::MStore
-            | OpCode::MStore8
-            | OpCode::SStore
-            | OpCode::Jump
-            | OpCode::JumpIf
-            | OpCode::JumpDest
-            | OpCode::Log(..)
-            | OpCode::Return
-            | OpCode::Invalid(_)
-            | OpCode::SelfDestruct
-            | OpCode::ReturnDataCopy
-            | OpCode::Revert => vec![],
-            OpCode::Push(val) => vec![StackItem::from(val.as_slice())],
-            OpCode::Dup(_) => {
-                let mut out = self.in_items.clone();
-                let new_item = out[0].clone();
-                out.push(new_item);
-                out
-            }
-            OpCode::Swap(_) => {
-                let mut out = self.in_items.clone();
-                let last_index = out.len() - 1;
-                out.swap(0, last_index);
-                out
-            }
-            _ => vec![StackItem::default()],
-        };
-        self.out_items = out.clone();
-        out
-    }
-
-    pub fn as_push(&self) -> Option<&[u8]> {
-        if let OpCode::Push(push) = &self.inst.1 {
-            Some(push.as_slice())
-        } else {
-            None
-        }
-    }
-
-    pub fn as_code_copy(&self) -> Option<CodeCopy> {
-        if let OpCode::CodeCopy = &self.inst.1 {
-            assert_eq!(self.in_items.len(), 3, "CodeCopy must takes 3 stack items.");
-            Some(CodeCopy {
-                new_offset: self.in_items[0].as_usize(),
-                old_offset: self.in_items[1].as_usize(),
-                len: self.in_items[2].as_usize(),
-            })
-        } else {
-            None
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct CodeCopy {
     pub new_offset: Offset,
@@ -380,7 +201,7 @@ impl Executor {
         for inst in block.iter() {
             let pops = inst.pops();
             let pushes = inst.pushes();
-            let mut st = Statement1::new(self.stack.pop(pops));
+            let mut st = Statement::new(self.stack.pop(pops));
             let to_push = st.perform(inst);
             assert_eq!(to_push.len(), pushes);
             self.stack.push(to_push);
@@ -403,15 +224,15 @@ impl Executor {
     }
 }
 
-#[derive(Debug)]
-pub struct Statement1 {
+#[derive(Debug, Clone)]
+pub struct Statement {
     in_items: Vec<StackItem>,
     out_items: Vec<StackItem>,
 }
 
-impl Statement1 {
-    pub fn new(in_items: Vec<StackItem>) -> Statement1 {
-        Statement1 {
+impl Statement {
+    pub fn new(in_items: Vec<StackItem>) -> Statement {
+        Statement {
             in_items,
             out_items: vec![],
         }
@@ -456,13 +277,14 @@ impl Statement1 {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Execution {
     in_stack_items: Vec<StackItem>,
     out_stack_items: Vec<StackItem>,
-    state: Vec<Statement1>,
+    state: Vec<Statement>,
 }
 
+#[derive(Clone)]
 pub struct ExecutedBlock {
     id: BlockId,
     instructions: Vec<Instruction>,
@@ -547,6 +369,14 @@ impl ExecutedBlock {
 
     pub fn id(&self) -> BlockId {
         self.id
+    }
+
+    pub fn all_jumps(&self) -> Vec<BlockId> {
+        self.executions
+            .iter()
+            .filter_map(|(ch, _)| self.last_jump(ch).map(|jmp| jmp.jumps()))
+            .flatten()
+            .collect()
     }
 }
 

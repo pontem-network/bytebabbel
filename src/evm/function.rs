@@ -1,5 +1,5 @@
 use crate::evm::abi::{Abi, Entry, FunHash};
-use crate::evm::bytecode::executor::{BasicBlock, BlockId, ExecutedBlock};
+use crate::evm::bytecode::executor::{BlockId, ExecutedBlock};
 use crate::evm::bytecode::loc::Loc;
 use anyhow::{anyhow, Error};
 use std::collections::{BTreeMap, HashMap};
