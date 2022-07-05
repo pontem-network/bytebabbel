@@ -1,21 +1,30 @@
-use crate::evm::bytecode::loc::{Loc, Move};
-use crate::evm::bytecode::statement::{BasicBlock, BlockId, Statement};
+use crate::evm::bytecode::block::InstructionBlock;
+use crate::evm::bytecode::executor::{BlockId, CodeCopy, Executor};
+use crate::evm::bytecode::loc::Move;
+use crate::evm::OpCode;
 use std::collections::BTreeMap;
 
-type Blocks = BTreeMap<BlockId, Loc<BasicBlock>>;
-
-pub fn split(blocks: Blocks) -> (Blocks, Option<Blocks>) {
-    let next_entry_point = blocks
+pub fn split(
+    blocks: BTreeMap<BlockId, InstructionBlock>,
+) -> (
+    BTreeMap<BlockId, InstructionBlock>,
+    Option<BTreeMap<BlockId, InstructionBlock>>,
+) {
+    let code_reallocation = blocks
         .iter()
-        .find_map(|(_, block)| block.statements().iter().find_map(next_entry_point));
+        .any(|(_, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
 
-    if let Some(next_entry_point) = next_entry_point {
+    if !code_reallocation {
+        return (blocks, None);
+    }
+
+    if let Some(code_copy) = find_code_copy(Executor::with_parent(0.into()), 0.into(), &blocks) {
         let (main, ctor) = blocks.into_iter().fold(
-            (Blocks::new(), Blocks::new()),
+            (BTreeMap::new(), BTreeMap::new()),
             |(mut main, mut ctor), (block_id, mut block)| {
-                if block_id >= next_entry_point {
-                    block.move_back(next_entry_point);
-                    main.insert(block_id - next_entry_point, block);
+                if block_id >= code_copy.old_offset.into() {
+                    block.move_back(code_copy.old_offset);
+                    main.insert((block_id.0 - code_copy.old_offset).into(), block);
                 } else {
                     ctor.insert(block_id, block);
                 }
@@ -28,14 +37,20 @@ pub fn split(blocks: Blocks) -> (Blocks, Option<Blocks>) {
     }
 }
 
-fn next_entry_point(statement: &Statement) -> Option<BlockId> {
-    if let Some(code_copy) = statement.as_code_copy() {
-        if code_copy.new_offset == 0 {
-            Some(code_copy.old_offset)
-        } else {
-            None
-        }
-    } else {
-        None
+fn find_code_copy(
+    mut executor: Executor,
+    block: BlockId,
+    blocks: &BTreeMap<BlockId, InstructionBlock>,
+) -> Option<CodeCopy> {
+    let block = blocks.get(&block)?;
+    let parent = executor.parent().clone();
+    let execution = executor.exec(block);
+    match execution.code_copy(&parent) {
+        None => execution
+            .last_jump(&parent)?
+            .jumps()
+            .iter()
+            .find_map(|jmp| find_code_copy(executor.clone(), *jmp, blocks)),
+        Some(code_copy) => Some(code_copy),
     }
 }

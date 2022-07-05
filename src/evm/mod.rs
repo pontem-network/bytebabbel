@@ -2,12 +2,13 @@
 
 use crate::evm::abi::Abi;
 use crate::evm::bytecode::ctor;
+use crate::evm::bytecode::executor::BlockId;
 use crate::evm::program::Program;
 use anyhow::Error;
 use bytecode::block::BlockIter;
+use bytecode::executor;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
-use bytecode::statement;
 use bytecode::swarm::remove_swarm_hash;
 use std::collections::BTreeMap;
 
@@ -21,10 +22,10 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
     let bytecode = parse_bytecode(bytecode)?;
 
     let blocks = BlockIter::new(InstructionIter::new(bytecode))
-        .map(statement::mark_stack)
-        .map(|block| (block.id(), block))
+        .map(|block| (BlockId::from(block.start), block))
         .collect::<BTreeMap<_, _>>();
     let (blocks, ctor) = ctor::split(blocks);
+    let blocks = executor::exec(blocks);
     Program::new(name, blocks, ctor, abi)
 }
 
