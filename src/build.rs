@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output_path = source_path.join(BUILD_CONTRACTS_DIR);
 
     let status = Command::new("sh")
-        .args(&script_path)
+        .arg(&script_path)
         .current_dir(&root)
         .envs(env::vars())
         .status()?;
