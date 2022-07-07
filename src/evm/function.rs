@@ -1,6 +1,7 @@
 use crate::evm::abi::{Abi, Entry, FunHash};
-use crate::evm::bytecode::executor::{BlockId, ExecutedBlock};
+use crate::evm::bytecode::executor::block::{BlockId, ExecutedBlock, Jump};
 use crate::evm::bytecode::loc::Loc;
+use crate::evm::flow_graph::FlowGraph;
 use anyhow::{anyhow, Error};
 use std::collections::{BTreeMap, HashMap};
 
@@ -11,12 +12,17 @@ pub struct PublicApi {
 
 impl PublicApi {
     pub fn new(
-        blocks: &BTreeMap<BlockId, Loc<ExecutedBlock>>,
+        functions_graph: &BTreeMap<FunHash, FlowGraph>,
         abi: Abi,
     ) -> Result<PublicApi, Error> {
         let functions = abi
             .fun_hashes()
-            .map(|h| Self::find_function(h, blocks).map(|id| (h, id)))
+            .map(|h| {
+                let graph = functions_graph
+                    .get(&h)
+                    .ok_or_else(|| anyhow!("couldn't find a function with a signature {h}"))?;
+                Self::find_function(h, graph.blocks()).map(|id| (h, id))
+            })
             .collect::<Result<_, _>>()?;
 
         Ok(PublicApi {
@@ -42,9 +48,13 @@ impl PublicApi {
             })
             .find_map(|(_, block)| {
                 let exec = block.first_execution()?;
-                block
-                    .last_jump(exec)
-                    .and_then(|jmp| jmp.as_cnd().map(|(true_br, _)| true_br))
+                block.last_jump(exec).map(|jmp| match jmp {
+                    Jump::Cnd {
+                        true_br,
+                        false_br: _,
+                    } => true_br,
+                    Jump::UnCnd(br) => br,
+                })
             })
             .and_then(|function_offset| {
                 blocks

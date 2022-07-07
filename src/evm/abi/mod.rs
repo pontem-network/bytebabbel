@@ -123,3 +123,9 @@ impl Display for FunHash {
         write!(f, "{:?}", self)
     }
 }
+
+impl Default for FunHash {
+    fn default() -> Self {
+        FunHash([0u8; 4])
+    }
+}
