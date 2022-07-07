@@ -10,7 +10,7 @@ use move_ir_types::location::Spanned;
 #[test]
 pub fn test_move_translator() {
     let program = parse_program(
-        "APlusB",
+        "ConstFn",
         include_str!("../assets/bin/ConstFn.bin"),
         include_str!("../assets/bin/ConstFn.abi"),
     )
@@ -23,6 +23,7 @@ pub fn test_move_translator() {
     println!("==========================================================================================\n\n");
 
     let compiled_module = module.make_move_module().unwrap();
+    println!("actual {:?}", compiled_module);
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode).unwrap();
 
@@ -35,4 +36,10 @@ pub fn test_move_translator() {
     let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
     let dissassemble_string = disassembler.disassemble().unwrap();
     println!("{}", dissassemble_string);
+
+    let expected = CompiledModule::deserialize(include_bytes!(
+        "../assets/move/build/move/bytecode_modules/ConstFn.mv"
+    ))
+    .unwrap();
+    println!("{:?}", expected);
 }

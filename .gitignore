@@ -1,3 +1,4 @@
 .DS_Store
 /target
 tests/assets/bin
+tests/assets/move/build

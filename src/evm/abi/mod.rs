@@ -43,11 +43,11 @@ impl TryFrom<&str> for Abi {
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Entry {
-    pub inputs: Vec<Input>,
+    pub inputs: Vec<EthType>,
     #[serde(default = "default_name")]
     pub name: String,
     #[serde(default = "default_outputs")]
-    pub outputs: Vec<Output>,
+    pub outputs: Vec<EthType>,
     #[serde(alias = "stateMutability")]
     pub state_mutability: String,
     #[serde(alias = "type")]
@@ -67,12 +67,12 @@ impl Entry {
         self.tp == "function"
     }
 
-    pub fn outputs(&self) -> &[Output] {
+    pub fn outputs(&self) -> &[EthType] {
         &self.outputs
     }
 }
 
-fn default_outputs() -> Vec<Output> {
+fn default_outputs() -> Vec<EthType> {
     vec![]
 }
 
@@ -81,27 +81,18 @@ fn default_name() -> String {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub struct Input {
+pub struct EthType {
     #[serde(alias = "internalType")]
-    internal_type: String,
-    name: String,
+    pub internal_type: String,
+    pub name: String,
     #[serde(alias = "type")]
-    tp: String,
+    pub tp: String,
 }
 
-impl Input {
+impl EthType {
     pub fn size(&self) -> usize {
         32
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct Output {
-    #[serde(alias = "internalType")]
-    pub internal_type: String,
-    name: String,
-    #[serde(alias = "type")]
-    pub tp: String,
 }
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
