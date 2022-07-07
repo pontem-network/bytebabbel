@@ -19,7 +19,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         root.join(PathBuf::from(format!("./{TEST_CONTRACTS_DIR}")).join(BUILD_CONTRACTS_SH));
     let output_path = source_path.join(BUILD_CONTRACTS_DIR);
 
-    let status = Command::new(script_path)
+    let status = Command::new("sh")
+        .arg(&script_path)
         .current_dir(&root)
         .envs(env::vars())
         .status()?;
