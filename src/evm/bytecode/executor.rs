@@ -173,7 +173,7 @@ impl From<&[u8]> for StackItem {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct CodeCopy {
     pub new_offset: Offset,
     pub old_offset: Offset,
