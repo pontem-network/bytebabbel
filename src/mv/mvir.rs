@@ -28,12 +28,16 @@ impl MvModule {
             funcs,
         })
     }
-}
 
-impl TryInto<CompiledModule> for MvModule {
-    type Error = Error;
+    pub fn make_move_module(&self) -> Result<CompiledModule, Error> {
+        let mut module = self.empty_module();
+        for func in &self.funcs {
+            func.write_function(&mut module)?;
+        }
+        Ok(module)
+    }
 
-    fn try_into(self) -> Result<CompiledModule, Self::Error> {
+    fn empty_module(&self) -> CompiledModule {
         let mut module = empty_module();
         module
             .address_identifiers
@@ -44,10 +48,10 @@ impl TryInto<CompiledModule> for MvModule {
         module
             .address_identifiers
             .insert(module.self_module_handle_idx.into_index(), self.address);
+        module.identifiers.insert(
+            module.self_module_handle_idx.into_index(),
+            self.name.clone(),
+        );
         module
-            .identifiers
-            .insert(module.self_module_handle_idx.into_index(), self.name);
-
-        Ok(module)
     }
 }

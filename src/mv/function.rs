@@ -3,6 +3,7 @@ use crate::evm::function::FunctionDefinition;
 use crate::evm::program::Program;
 use anyhow::Error;
 use move_binary_format::file_format::Visibility;
+use move_binary_format::CompiledModule;
 use move_core_types::identifier::Identifier;
 
 #[derive(Debug)]
@@ -21,5 +22,9 @@ impl MvFunction {
             is_entry: false,
             entry_point: def.entry_point,
         })
+    }
+
+    pub fn write_function(&self, module: &mut CompiledModule) -> Result<(), Error> {
+        todo!()
     }
 }

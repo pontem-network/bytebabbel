@@ -11,8 +11,8 @@ use move_ir_types::location::Spanned;
 pub fn test_move_translator() {
     let program = parse_program(
         "APlusB",
-        include_str!("../assets/bin/APlusB.bin"),
-        include_str!("../assets/bin/APlusB.abi"),
+        include_str!("../assets/bin/ConstFn.bin"),
+        include_str!("../assets/bin/ConstFn.abi"),
     )
     .unwrap();
     println!("{:?}", program);
@@ -22,7 +22,7 @@ pub fn test_move_translator() {
     println!("{:?}", module);
     println!("==========================================================================================\n\n");
 
-    let compiled_module: CompiledModule = module.try_into().unwrap();
+    let compiled_module = module.make_move_module().unwrap();
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode).unwrap();
 
