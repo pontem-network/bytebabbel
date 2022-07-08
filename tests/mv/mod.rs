@@ -16,11 +16,8 @@ pub fn test_move_translator() {
     )
     .unwrap();
     println!("{:?}", program);
-    println!("==========================================================================================\n\n");
 
     let module = MvModule::from_evm_program(CORE_CODE_ADDRESS, program).unwrap();
-    println!("{:?}", module);
-    println!("==========================================================================================\n\n");
 
     let compiled_module = module.make_move_module().unwrap();
     println!("actual {:?}", compiled_module);
@@ -33,13 +30,14 @@ pub fn test_move_translator() {
     )
     .unwrap();
 
-    //let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-    // let dissassemble_string = disassembler.disassemble().unwrap();
-    // println!("{}", dissassemble_string);
-    //
-    // let expected = CompiledModule::deserialize(include_bytes!(
-    //     "../assets/move/build/move/bytecode_modules/ConstFn.mv"
-    // ))
-    // .unwrap();
-    // println!("{:?}", expected);
+    let expected = CompiledModule::deserialize(include_bytes!(
+        "../assets/move/build/move/bytecode_modules/ConstFn.mv"
+    ))
+    .unwrap();
+    println!();
+    println!("expected {:?}", expected);
+
+    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+    let dissassemble_string = disassembler.disassemble().unwrap();
+    println!("{}", dissassemble_string);
 }

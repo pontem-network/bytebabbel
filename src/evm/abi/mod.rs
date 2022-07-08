@@ -95,7 +95,7 @@ impl EthType {
     }
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Default)]
 pub struct FunHash([u8; 4]);
 
 impl AsRef<[u8; 4]> for FunHash {
@@ -121,11 +121,5 @@ impl Debug for FunHash {
 impl Display for FunHash {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-impl Default for FunHash {
-    fn default() -> Self {
-        FunHash([0u8; 4])
     }
 }

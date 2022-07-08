@@ -1,6 +1,7 @@
 use crate::evm::bytecode::instruction::Instruction;
 use crate::evm::bytecode::loc::Loc;
 use crate::evm::OpCode;
+use std::fmt::{Debug, Display, Formatter};
 
 pub type InstructionBlock = Loc<Vec<Instruction>>;
 
@@ -53,5 +54,42 @@ impl<I: Iterator<Item = Instruction>> Iterator for BlockIter<I> {
                 return Some(Loc::new(start_index, end, block));
             }
         }
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct BlockId(pub usize);
+
+impl BlockId {
+    pub fn hex(x: &str) -> BlockId {
+        let mut buf = 0_usize.to_be_bytes();
+        let f = hex::decode(x).unwrap();
+        let start_idx = buf.len() - f.len();
+        buf[start_idx..].copy_from_slice(&f);
+        BlockId(usize::from_be_bytes(buf))
+    }
+}
+
+impl Debug for BlockId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", hex::encode(&self.0.to_be_bytes()[6..]))
+    }
+}
+
+impl Display for BlockId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<BlockId> for usize {
+    fn from(id: BlockId) -> Self {
+        id.0
+    }
+}
+
+impl From<usize> for BlockId {
+    fn from(val: usize) -> Self {
+        BlockId(val)
     }
 }
