@@ -26,7 +26,7 @@ impl Statement {
             OpCode::Lt => self.lt(),
             OpCode::EQ => self.eq(),
             OpCode::Shr => self.shr(),
-            OpCode::MStore => self.mem_store(),
+            OpCode::MStore => self.mem_store(exec),
             OpCode::Stop
             | OpCode::CallDataCopy
             | OpCode::CodeCopy
@@ -66,8 +66,8 @@ impl Statement {
     }
 
     fn mem_store(&mut self, exec: &mut Executor) -> Vec<StackFrame> {
-       let mut mem = exec.mem.borrow_mut();
-        mem.insert(self.in_items[0].clone(), self)
+        let mut mem = exec.mem.borrow_mut();
+        //mem.insert(self.in_items[0].clone(), self)
         vec![]
     }
 
