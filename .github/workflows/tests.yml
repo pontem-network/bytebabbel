@@ -93,7 +93,7 @@ jobs:
           override: true
 
       - name: Solc latest version
-        uses: pontem-network/get-solc@fix
+        uses: pontem-network/get-solc@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
