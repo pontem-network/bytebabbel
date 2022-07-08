@@ -1,7 +1,7 @@
 pre_commit:
 	cargo fmt
-	cargo build
-	cargo clippy
+	cargo +nightly build
+	cargo +nightly clippy
 
 clean:
 	cargo clean
