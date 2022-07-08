@@ -1,11 +1,13 @@
 use crate::evm::abi::FunHash;
 use crate::evm::bytecode::block::InstructionBlock;
 use crate::evm::bytecode::executor::block::{BlockId, Chain, ExecutedBlock, Execution};
-use crate::evm::bytecode::executor::stack::{ExecutionStack, FRAME_SIZE};
+use crate::evm::bytecode::executor::stack::{ExecutionStack, MemCell, FRAME_SIZE};
 use crate::evm::bytecode::executor::statement::Statement;
 use crate::evm::bytecode::loc::Loc;
+use std::cell::RefCell;
 use std::collections::btree_map::Entry;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
 
 pub mod block;
 pub mod stack;
@@ -59,6 +61,7 @@ pub struct Executor {
     parent: Chain,
     hash: FunHash,
     params: usize,
+    mem: Rc<RefCell<HashMap<MemCell, MemCell>>>,
 }
 
 impl Executor {
@@ -68,6 +71,7 @@ impl Executor {
             parent: Chain::default(),
             hash,
             params,
+            mem: Default::default(),
         }
     }
 
@@ -77,6 +81,7 @@ impl Executor {
             parent: Chain::new(parent),
             hash: FunHash::default(),
             params: 0,
+            mem: Default::default(),
         }
     }
 

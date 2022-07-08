@@ -71,6 +71,7 @@ pub enum MemCell {
     NegativeStack,
     Unknown,
     SelfAddress,
+    Mem(Box<StackFrame>, Box<StackFrame>),
     Calc2(OpCode, StackFrame, StackFrame),
 }
 
@@ -164,6 +165,7 @@ impl Debug for StackFrame {
             MemCell::Unknown => write!(f, "(unknown - {})", self.used),
             MemCell::SelfAddress => write!(f, "(addr - {})", self.used),
             MemCell::Calc2(op, a, b) => write!(f, "(({op:?}({a}, {b}))-{})", self.used),
+            MemCell::Mem(rf, mem) => write!(f, "(mem {:?} => {:?} - {})", rf, mem, self.used),
         }
     }
 }

@@ -1,6 +1,7 @@
 use crate::evm::bytecode::executor::block::{BlockId, Chain, ExecutedBlock};
 use crate::evm::bytecode::loc::Loc;
 use std::collections::BTreeMap;
+use std::fmt::{Debug, Formatter};
 
 pub struct FlowGraph {
     blocks: BTreeMap<BlockId, Loc<ExecutedBlock>>,
@@ -22,5 +23,11 @@ impl FlowGraph {
 
     pub fn blocks(&self) -> &BTreeMap<BlockId, Loc<ExecutedBlock>> {
         &self.blocks
+    }
+}
+
+impl Debug for FlowGraph {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.blocks)
     }
 }
