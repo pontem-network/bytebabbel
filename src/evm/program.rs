@@ -1,7 +1,7 @@
-use crate::evm::abi::Abi;
+use crate::evm::abi::{Abi, FunHash};
 use crate::evm::bytecode::block::InstructionBlock;
-use crate::evm::bytecode::executor::{BlockId, ExecutedBlock};
-use crate::evm::bytecode::loc::Loc;
+use crate::evm::bytecode::executor::block::BlockId;
+use crate::evm::flow_graph::FlowGraph;
 use crate::evm::function::{FunctionDefinition, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
@@ -10,7 +10,7 @@ use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
-    blocks: BTreeMap<BlockId, Loc<ExecutedBlock>>,
+    functions_graph: BTreeMap<FunHash, FlowGraph>,
     ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
     functions: PublicApi,
 }
@@ -18,14 +18,14 @@ pub struct Program {
 impl Program {
     pub fn new(
         name: &str,
-        blocks: BTreeMap<BlockId, Loc<ExecutedBlock>>,
+        functions_graph: BTreeMap<FunHash, FlowGraph>,
         ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
         abi: Abi,
     ) -> Result<Program, Error> {
-        let functions = PublicApi::new(&blocks, abi)?;
+        let functions = PublicApi::new(&functions_graph, abi)?;
         Ok(Program {
             name: name.to_string(),
-            blocks,
+            functions_graph,
             ctor,
             functions,
         })
@@ -37,6 +37,10 @@ impl Program {
 
     pub fn public_functions(&self) -> Vec<FunctionDefinition> {
         self.functions.function_definition().collect()
+    }
+
+    pub fn flow_graph(&self, hash: FunHash) -> Option<&FlowGraph> {
+        self.functions_graph.get(&hash)
     }
 }
 

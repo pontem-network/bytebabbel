@@ -33,13 +33,13 @@ pub fn test_move_translator() {
     )
     .unwrap();
 
-    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-    let dissassemble_string = disassembler.disassemble().unwrap();
-    println!("{}", dissassemble_string);
-
-    let expected = CompiledModule::deserialize(include_bytes!(
-        "../assets/move/build/move/bytecode_modules/ConstFn.mv"
-    ))
-    .unwrap();
-    println!("{:?}", expected);
+    //let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+    // let dissassemble_string = disassembler.disassemble().unwrap();
+    // println!("{}", dissassemble_string);
+    //
+    // let expected = CompiledModule::deserialize(include_bytes!(
+    //     "../assets/move/build/move/bytecode_modules/ConstFn.mv"
+    // ))
+    // .unwrap();
+    // println!("{:?}", expected);
 }

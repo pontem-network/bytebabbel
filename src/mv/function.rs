@@ -1,6 +1,7 @@
-use crate::evm::bytecode::executor::BlockId;
+use crate::evm::bytecode::executor::block::BlockId;
 use crate::evm::function::FunctionDefinition as EthFunDef;
 use crate::evm::program::Program;
+use crate::mv::function::code::MvIr;
 use crate::mv::function::signature::map_signature;
 use anyhow::Error;
 use move_binary_format::access::ModuleAccess;
@@ -11,6 +12,7 @@ use move_binary_format::file_format::{
 use move_binary_format::CompiledModule;
 use move_core_types::identifier::Identifier;
 
+mod code;
 mod signature;
 
 #[derive(Debug)]
@@ -20,16 +22,18 @@ pub struct MvFunction {
     pub entry_point: BlockId,
     pub input: Signature,
     pub output: Signature,
+    pub code: MvIr,
 }
 
 impl MvFunction {
-    pub fn new_public(def: EthFunDef, _program: &Program) -> Result<MvFunction, Error> {
+    pub fn new_public(def: EthFunDef, program: &Program) -> Result<MvFunction, Error> {
         Ok(MvFunction {
             name: Identifier::new(&*def.abi.name)?,
             visibility: Visibility::Public,
             entry_point: def.entry_point,
             input: map_signature(def.abi.inputs.as_slice()),
             output: map_signature(def.abi.outputs.as_slice()),
+            code: MvIr::make_ir(def, program)?,
         })
     }
 
@@ -72,7 +76,7 @@ impl MvFunction {
             visibility: self.visibility,
             is_entry: matches!(self.visibility, Visibility::Public),
             acquires_global_resources: vec![],
-            code: None,
+            code: Some(self.code.move_byte_code()?),
         });
         Ok(())
     }

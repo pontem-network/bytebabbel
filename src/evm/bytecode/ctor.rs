@@ -1,5 +1,6 @@
 use crate::evm::bytecode::block::InstructionBlock;
-use crate::evm::bytecode::executor::{BlockId, CodeCopy, Executor};
+use crate::evm::bytecode::executor::block::{BlockId, CodeCopy};
+use crate::evm::bytecode::executor::Executor;
 use crate::evm::bytecode::loc::Move;
 use crate::evm::OpCode;
 use std::collections::BTreeMap;
