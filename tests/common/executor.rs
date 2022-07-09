@@ -27,11 +27,15 @@ impl MoveExecutor {
         }
     }
 
-    pub fn deploy(&mut self, addr: AccountAddress, module: Vec<u8>) {
+    pub fn deploy(&mut self, addr: &str, module: Vec<u8>) {
         let mut session = self.vm.new_session(&self.resolver);
         let mut gas_status = GasStatus::new_unmetered();
         session
-            .publish_module(module, addr, &mut gas_status)
+            .publish_module(
+                module,
+                AccountAddress::from_hex_literal(addr).unwrap(),
+                &mut gas_status,
+            )
             .unwrap();
         let (ds, _) = session.finish().unwrap();
         self.resolver.apply(ds);
@@ -98,8 +102,8 @@ impl Default for MoveExecutor {
 }
 
 pub struct ExecutionResult {
-    returns: Vec<(Vec<u8>, MoveTypeLayout)>,
-    events: Vec<Event>,
+    pub returns: Vec<(Vec<u8>, MoveTypeLayout)>,
+    pub events: Vec<Event>,
 }
 
 #[derive(Default)]

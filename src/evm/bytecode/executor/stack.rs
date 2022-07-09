@@ -1,28 +1,27 @@
-use crate::evm::bytecode::executor::block::BlockId;
+use crate::evm::bytecode::block::BlockId;
+use crate::evm::bytecode::executor::types::U256;
 use crate::evm::OpCode;
-use bigint::U256;
 use std::cell::Cell;
-use std::collections::VecDeque;
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 pub const FRAME_SIZE: usize = 32;
 
 #[derive(Default, Clone)]
-pub struct ExecutionStack {
-    pub negative_stack: VecDeque<StackFrame>,
+pub struct Stack {
     pub stack: Vec<StackFrame>,
 }
 
-impl ExecutionStack {
+impl Stack {
+    pub fn clean(&mut self) {
+        self.stack.clear();
+    }
+
     pub fn pop(&mut self, count: usize) -> Vec<StackFrame> {
         let mut res = Vec::with_capacity(count);
         for _ in 0..count {
             if let Some(item) = self.stack.pop() {
-                res.push(item);
-            } else {
-                let item = StackFrame::negative();
-                self.negative_stack.push_front(item.clone());
                 res.push(item);
             }
         }
@@ -31,6 +30,100 @@ impl ExecutionStack {
 
     pub fn push(&mut self, to_push: Vec<StackFrame>) {
         self.stack.extend(to_push.into_iter().rev());
+    }
+}
+
+#[derive(Clone)]
+pub struct StackFrame {
+    id: usize,
+    cell: Rc<Frame>,
+    used: Used,
+}
+
+impl StackFrame {
+    pub fn new(id: usize, cell: Frame) -> StackFrame {
+        StackFrame {
+            id,
+            cell: Rc::new(cell),
+            used: Default::default(),
+        }
+    }
+
+    pub fn mark_as_used(&self) {
+        self.used.mark_as_used();
+    }
+
+    pub fn is_used(&self) -> bool {
+        self.used.0.get()
+    }
+
+    pub fn get_used_flag(&self) -> Used {
+        self.used.clone()
+    }
+
+    pub fn set_used_flag(&mut self, used: Used) {
+        self.used = used;
+    }
+
+    pub fn as_usize(&self) -> Option<usize> {
+        self.as_u256().map(|val| val.as_usize())
+    }
+
+    pub fn as_u256(&self) -> Option<U256> {
+        if let Frame::Val(val) = self.cell.as_ref() {
+            Some(*val)
+        } else if let Frame::Bool(val) = self.cell.as_ref() {
+            Some(if *val { U256::from(1) } else { U256::from(0) })
+        } else {
+            None
+        }
+    }
+
+    pub fn as_bool(&self) -> Option<bool> {
+        Some(self.as_u256()? == U256::from(1))
+    }
+
+    pub fn as_block_id(&self) -> Option<BlockId> {
+        self.as_usize().map(|i| i.into())
+    }
+
+    pub fn frame(&self) -> Rc<Frame> {
+        self.cell.clone()
+    }
+}
+
+#[derive(Hash, Eq, PartialEq)]
+pub enum Frame {
+    Val(U256),
+    Param(u16),
+    Bool(bool),
+    SelfAddress,
+    Mem(Box<StackFrame>, Box<StackFrame>),
+    Calc(OpCode, StackFrame),
+    Calc2(OpCode, StackFrame, StackFrame),
+    Abort,
+}
+
+impl Debug for Frame {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Frame::Val(val) => {
+                write!(f, "{:#06x}", val)
+            }
+            Frame::Param(idx) => write!(f, "param: {idx})"),
+            Frame::SelfAddress => write!(f, "addr"),
+            Frame::Calc2(op, a, b) => write!(f, "{op:?}({a:?}, {b:?}))"),
+            Frame::Mem(rf, mem) => write!(f, "mem {:?} => {:?}", rf, mem),
+            Frame::Bool(val) => write!(f, "{val}"),
+            Frame::Abort => write!(f, "abort"),
+            Frame::Calc(op, mem) => write!(f, "{op:?}({mem:?})"),
+        }
+    }
+}
+
+impl Debug for StackFrame {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} | {:?} | {})", self.id, self.cell, self.used)
     }
 }
 
@@ -59,158 +152,16 @@ impl Display for Used {
     }
 }
 
-#[derive(Clone)]
-pub struct StackFrame {
-    pub cell: Rc<MemCell>,
-    used: Used,
-}
-
-pub enum MemCell {
-    Val(U256),
-    Param(u16),
-    NegativeStack,
-    Unknown,
-    SelfAddress,
-    Mem(Box<StackFrame>, Box<StackFrame>),
-    Calc2(OpCode, StackFrame, StackFrame),
-}
-
-impl StackFrame {
-    pub fn calc2(op: OpCode, a: StackFrame, b: StackFrame) -> StackFrame {
-        StackFrame {
-            cell: Rc::new(MemCell::Calc2(op, a, b)),
-            used: Default::default(),
-        }
-    }
-
-    pub fn negative() -> StackFrame {
-        StackFrame {
-            cell: Rc::new(MemCell::NegativeStack),
-            used: Default::default(),
-        }
-    }
-
-    pub fn param(val: u16) -> StackFrame {
-        StackFrame {
-            cell: Rc::new(MemCell::Param(val)),
-            used: Default::default(),
-        }
-    }
-
-    pub fn unknown() -> StackFrame {
-        StackFrame {
-            cell: Rc::new(MemCell::Unknown),
-            used: Default::default(),
-        }
-    }
-
-    pub fn self_address() -> StackFrame {
-        StackFrame {
-            cell: Rc::new(MemCell::SelfAddress),
-            used: Default::default(),
-        }
-    }
-
-    pub fn mark_as_used(&self) {
-        self.used.mark_as_used();
-    }
-
-    pub fn is_used(&self) -> bool {
-        self.used.0.get()
-    }
-
-    pub fn get_used_flag(&self) -> Used {
-        self.used.clone()
-    }
-
-    pub fn set_used_flag(&mut self, used: Used) {
-        self.used = used;
-    }
-
-    pub fn as_usize(&self) -> Option<usize> {
-        if let MemCell::Val(val) = self.cell.as_ref() {
-            Some(val.as_u64() as usize)
-        } else {
-            None
-        }
-    }
-
-    pub fn as_u256(&self) -> Option<U256> {
-        if let MemCell::Val(val) = self.cell.as_ref() {
-            Some(val.clone())
-        } else {
-            None
-        }
-    }
-
-    pub fn as_bool(&self) -> Option<bool> {
-        if let MemCell::Val(val) = self.cell.as_ref() {
-            Some(val.as_u64() == 1)
-        } else {
-            None
-        }
-    }
-
-    pub fn as_block_id(&self) -> Option<BlockId> {
-        self.as_usize().map(|i| i.into())
+impl Hash for StackFrame {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.cell.as_ref().hash(state)
     }
 }
 
-impl Debug for StackFrame {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self.cell.as_ref() {
-            MemCell::Val(val) => write!(f, "({}-{})", val.to_hex(), self.used),
-            MemCell::Param(idx) => write!(f, "(param: {idx} - {})", self.used),
-            MemCell::NegativeStack => write!(f, "(negative stack - {})", self.used),
-            MemCell::Unknown => write!(f, "(unknown - {})", self.used),
-            MemCell::SelfAddress => write!(f, "(addr - {})", self.used),
-            MemCell::Calc2(op, a, b) => write!(f, "(({op:?}({a}, {b}))-{})", self.used),
-            MemCell::Mem(rf, mem) => write!(f, "(mem {:?} => {:?} - {})", rf, mem, self.used),
-        }
+impl PartialEq<Self> for StackFrame {
+    fn eq(&self, other: &Self) -> bool {
+        self.cell.eq(&other.cell)
     }
 }
 
-impl Display for StackFrame {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl From<&[u8]> for StackFrame {
-    fn from(buf: &[u8]) -> Self {
-        let mut val = [0u8; 32];
-        val[(32 - buf.len())..32].copy_from_slice(buf);
-        StackFrame {
-            cell: Rc::new(MemCell::Val(U256::from(val))),
-            used: Default::default(),
-        }
-    }
-}
-
-impl From<usize> for StackFrame {
-    fn from(buf: usize) -> Self {
-        StackFrame {
-            cell: Rc::new(MemCell::Val(U256::from(buf))),
-            used: Default::default(),
-        }
-    }
-}
-
-impl From<U256> for StackFrame {
-    fn from(val: U256) -> Self {
-        StackFrame {
-            cell: Rc::new(MemCell::Val(val)),
-            used: Default::default(),
-        }
-    }
-}
-
-impl From<bool> for StackFrame {
-    fn from(val: bool) -> Self {
-        let val = if val { 1 } else { 0 };
-        StackFrame {
-            cell: Rc::new(MemCell::Val(U256::from(val))),
-            used: Default::default(),
-        }
-    }
-}
+impl Eq for StackFrame {}

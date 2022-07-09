@@ -1,12 +1,12 @@
-use crate::evm::bytecode::executor::block::BlockId;
 use crate::evm::function::FunctionDefinition as EthFunDef;
 use crate::evm::program::Program;
 use crate::mv::function::code::MvIr;
 use crate::mv::function::signature::map_signature;
+use crate::mv::store_signatures;
 use anyhow::Error;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
-    FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex, Signature,
+    CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex, Signature,
     SignatureIndex, Visibility,
 };
 use move_binary_format::CompiledModule;
@@ -19,7 +19,6 @@ mod signature;
 pub struct MvFunction {
     pub name: Identifier,
     pub visibility: Visibility,
-    pub entry_point: BlockId,
     pub input: Signature,
     pub output: Signature,
     pub code: MvIr,
@@ -30,7 +29,6 @@ impl MvFunction {
         Ok(MvFunction {
             name: Identifier::new(&*def.abi.name)?,
             visibility: Visibility::Public,
-            entry_point: def.entry_point,
             input: map_signature(def.abi.inputs.as_slice()),
             output: map_signature(def.abi.outputs.as_slice()),
             code: MvIr::make_ir(def, program)?,
@@ -56,14 +54,9 @@ impl MvFunction {
     }
 
     fn write_signatures(&self, module: &mut CompiledModule) -> (SignatureIndex, SignatureIndex) {
-        let params_id = module.signatures.len();
-        module.signatures.push(self.input.clone());
-        let returns_id = module.signatures.len();
-        module.signatures.push(self.output.clone());
-        (
-            SignatureIndex(params_id as u16),
-            SignatureIndex(returns_id as u16),
-        )
+        let input = store_signatures(module, self.input.clone());
+        let output = store_signatures(module, self.output.clone());
+        (input, output)
     }
 
     fn write_def(
@@ -71,12 +64,17 @@ impl MvFunction {
         module: &mut CompiledModule,
         index: FunctionHandleIndex,
     ) -> Result<(), Error> {
+        let locals_id = store_signatures(module, Signature(self.code.locals()));
+
         module.function_defs.push(FunctionDefinition {
             function: index,
             visibility: self.visibility,
             is_entry: matches!(self.visibility, Visibility::Public),
             acquires_global_resources: vec![],
-            code: Some(self.code.move_byte_code()?),
+            code: Some(CodeUnit {
+                locals: locals_id,
+                code: self.code.bytecode()?,
+            }),
         });
         Ok(())
     }

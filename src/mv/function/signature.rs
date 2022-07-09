@@ -7,6 +7,8 @@ pub fn map_signature(eth_types: &[EthType]) -> Signature {
             .iter()
             .map(|eth| match eth.tp.as_str() {
                 "uint256" => SignatureToken::U128,
+                "uint" => SignatureToken::U128,
+                "bool" => SignatureToken::Bool,
                 _ => todo!(),
             })
             .collect(),

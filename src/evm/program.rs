@@ -1,16 +1,15 @@
 use crate::evm::abi::{Abi, FunHash};
-use crate::evm::bytecode::block::InstructionBlock;
-use crate::evm::bytecode::executor::block::BlockId;
-use crate::evm::flow_graph::FlowGraph;
+use crate::evm::bytecode::block::{BlockId, InstructionBlock};
+use crate::evm::bytecode::executor::execution::FunctionFlow;
 use crate::evm::function::{FunctionDefinition, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
-    functions_graph: BTreeMap<FunHash, FlowGraph>,
+    functions_graph: HashMap<FunHash, FunctionFlow>,
     ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
     functions: PublicApi,
 }
@@ -18,11 +17,11 @@ pub struct Program {
 impl Program {
     pub fn new(
         name: &str,
-        functions_graph: BTreeMap<FunHash, FlowGraph>,
+        functions_graph: HashMap<FunHash, FunctionFlow>,
         ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
         abi: Abi,
     ) -> Result<Program, Error> {
-        let functions = PublicApi::new(&functions_graph, abi)?;
+        let functions = PublicApi::new(abi)?;
         Ok(Program {
             name: name.to_string(),
             functions_graph,
@@ -39,7 +38,7 @@ impl Program {
         self.functions.function_definition().collect()
     }
 
-    pub fn flow_graph(&self, hash: FunHash) -> Option<&FlowGraph> {
+    pub fn function_flow(&self, hash: FunHash) -> Option<&FunctionFlow> {
         self.functions_graph.get(&hash)
     }
 }
@@ -47,6 +46,9 @@ impl Program {
 impl Debug for Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Program:{}", self.name)?;
+        if self.ctor.is_some() {
+            writeln!(f, "Ctor detected")?;
+        }
         writeln!(f, "Public functions:")?;
         for fun in self.functions.function_definition() {
             write!(f, "fun {} ", fun.abi.signature())?;
@@ -55,8 +57,11 @@ impl Debug for Program {
                 write!(f, "=> ({})", outputs.iter().map(|o| &o.tp).join(","))?;
             }
             writeln!(f, " {{")?;
-            // todo function instructions.
-            writeln!(f, "   Block code:{}", fun.entry_point)?;
+            if let Some(flow) = self.functions_graph.get(&fun.hash) {
+                writeln!(f, "{:?}", flow)?;
+            } else {
+                writeln!(f, "undefined")?;
+            }
             writeln!(f, "}}")?;
         }
         writeln!(f)?;

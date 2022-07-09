@@ -10,4 +10,7 @@ contract TwoFunctions {
     }
 
     function do_nothing() public {}
+
+    function boo(bool s) public {
+    }
 }

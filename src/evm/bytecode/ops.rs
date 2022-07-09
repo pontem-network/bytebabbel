@@ -27,7 +27,7 @@ impl Iterator for InstructionIter {
     }
 }
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum OpCode {
     Stop,
     Add,
