@@ -2,7 +2,7 @@ use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::bytecode::executor::types::U256;
 use std::collections::HashMap;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Memory {
     mem: HashMap<StackFrame, StackFrame>,
 }
@@ -16,7 +16,7 @@ impl Memory {
         let val = self
             .mem
             .entry(rf.clone())
-            .or_insert_with(|| StackFrame::new(0, Frame::Val(U256::from(0))));
+            .or_insert_with(|| StackFrame::new(Frame::Val(U256::from(0))));
         rf.clone().set_used_flag(val.get_used_flag());
         val.clone()
     }

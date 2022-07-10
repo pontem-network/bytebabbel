@@ -3,33 +3,26 @@ use crate::common::executor::MoveExecutor;
 use move_core_types::value::MoveValue;
 
 #[test]
-pub fn consts_fn_tests() {
+pub fn plus_fn_tests() {
     let bytecode = make_move_module(
-        "0x1::ConstFn",
-        include_str!("../assets/bin/ConstFn.bin"),
-        include_str!("../assets/bin/ConstFn.abi"),
+        "0x1::Params",
+        include_str!("../assets/bin/Parameters.bin"),
+        include_str!("../assets/bin/Parameters.abi"),
         true,
     );
+
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
 
     let props = [
-        ("0x1::ConstFn::const_fn_10", "", [MoveValue::U128(10)]),
+        ("0x1::Params::plus", "13,90", [MoveValue::U128(13 + 90)]),
+        ("0x1::Params::is_zero", "13", [MoveValue::Bool(false)]),
+        ("0x1::Params::is_zero", "0", [MoveValue::Bool(true)]),
+        ("0x1::Params::a_or_b", "10, 15, true", [MoveValue::U128(10)]),
         (
-            "0x1::ConstFn::const_fn_426574676453456",
-            "",
-            [MoveValue::U128(426574676453456)],
-        ),
-        ("0x1::ConstFn::const_fn_true", "", [MoveValue::Bool(true)]),
-        (
-            "0x1::ConstFn::const_fn_90_plus_54",
-            "",
-            [MoveValue::U128(90 + 54)],
-        ),
-        (
-            "0x1::ConstFn::const_fn_true_1",
-            "",
-            [MoveValue::Bool(false)],
+            "0x1::Params::a_or_b",
+            "10, 15, false",
+            [MoveValue::U128(15)],
         ),
     ];
 

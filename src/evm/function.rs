@@ -10,8 +10,8 @@ impl PublicApi {
         Ok(PublicApi { abi })
     }
 
-    pub fn function_definition(&self) -> impl Iterator<Item = FunctionDefinition> {
-        self.abi.fun_hashes().map(|h| FunctionDefinition {
+    pub fn function_definition(&self) -> impl Iterator<Item = FunDef> {
+        self.abi.fun_hashes().map(|h| FunDef {
             abi: self
                 .abi
                 .entry(&h)
@@ -21,12 +21,12 @@ impl PublicApi {
     }
 }
 
-pub struct FunctionDefinition<'a> {
+pub struct FunDef<'a> {
     pub abi: &'a Entry,
     pub hash: FunHash,
 }
 
-impl<'a> FunctionDefinition<'a> {
+impl<'a> FunDef<'a> {
     pub fn input_size(&self) -> usize {
         self.hash.as_ref().len()
             + self
