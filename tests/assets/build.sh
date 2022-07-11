@@ -5,7 +5,9 @@
 DIR=tests/assets
 SOLC=$DIR/bin/solc
 EXISTING_SOLC=$(which solc)
-if [ $EXISTING_SOLC ]; then SOLC=$EXISTING_SOLC; fi
+if [ $EXISTING_SOLC ]; then
+  SOLC=$EXISTING_SOLC
+fi
 
 if ! $SOLC --version >/dev/null 2>&1; then
   echo 'solc command was not found.
@@ -17,8 +19,10 @@ fi
 
 for path in $(find $DIR/sol/ -name "*.sol"); do
   path=$(realpath ${path})
-  echo $path
+  echo "build: ${path}"
+
   result=$(${SOLC} -o ${DIR}/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --error-recovery --asm ${path} 2>&1)
+  echo $result
 
   if [[ $result == Error* || $result == Warning* ]]; then
     echo $result >&2

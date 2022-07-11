@@ -26,7 +26,7 @@ jobs:
       fail-fast: true
       matrix:
         os:
-          - ubuntu-latest
+#          - ubuntu-latest
           - macos-latest
 
     steps:
@@ -49,6 +49,9 @@ jobs:
           components: rustfmt, clippy
           override: true
 
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v1
+
       - name: Solc latest version
         uses: pontem-network/get-solc@master
         with:
@@ -59,8 +62,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v1
+      - name: Formatting
+        run: ./tests/assets/build.sh
 
       - name: Formatting
         run: cargo fmt -- --check
