@@ -13,50 +13,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  checks:
-    name: Style
-    runs-on: self-hosted # ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci')"
-
-    defaults:
-      run:
-        shell: bash
-
-    strategy:
-      fail-fast: true
-      matrix:
-        os:
-          - ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.solc
-            ~/.aptos
-          key: ${{ runner.os }}-compile
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          components: rustfmt, clippy
-          override: true
-
-      - name: Formatting
-        run: cargo fmt -- --check
-
-      - name: Clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          name: Clippy Report
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   tests:
     name: Test
     runs-on: ${{ matrix.os }}
@@ -90,7 +46,11 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
+          components: rustfmt, clippy
           override: true
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v1
 
       - name: Solc latest version
         uses: pontem-network/get-solc@master
@@ -102,11 +62,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v1
-
       - name: Build
         run: cargo +nightly build
 
       - name: Test
         run: cargo +nightly test
+        shell: bash
+
+      - name: Formatting
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            cargo fmt -- --check
+          fi
+        shell: bash
+
+      - name: Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          name: Clippy Report
+          token: ${{ secrets.GITHUB_TOKEN }}
+
