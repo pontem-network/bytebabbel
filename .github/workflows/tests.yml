@@ -62,11 +62,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build solc
-        run: ./tests/assets/build.sh
+      - name: Build
+        run: cargo +nightly build
 
       - name: Formatting
-        run: cargo fmt -- --check
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            cargo fmt -- --check
+          fi
+        shell: bash
 
       - name: Clippy
         uses: actions-rs/clippy-check@v1
@@ -74,8 +78,9 @@ jobs:
           name: Clippy Report
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: cargo +nightly build
-
       - name: Test
-        run: cargo +nightly test
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            cargo +nightly test
+          fi
+        shell: bash
