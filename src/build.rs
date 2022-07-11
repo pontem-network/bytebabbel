@@ -34,6 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let output = String::from_utf8(result.stdout).unwrap();
+    println!("{output}");
 
     // list all files to watch:
     {
