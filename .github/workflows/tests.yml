@@ -26,7 +26,7 @@ jobs:
       fail-fast: true
       matrix:
         os:
-#          - ubuntu-latest
+          - ubuntu-latest
           - macos-latest
 
     steps:
@@ -41,41 +41,41 @@ jobs:
             ~/.aptos
           key: ${{ runner.os }}-compile
 
-#      - name: Install Rust toolchain
-#        uses: actions-rs/toolchain@v1
-#        with:
-#          profile: minimal
-#          toolchain: nightly
-#          components: rustfmt, clippy
-#          override: true
-#
-#      - name: Restore Rust cache
-#        uses: Swatinem/rust-cache@v1
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt, clippy
+          override: true
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v1
 
       - name: Solc latest version
         uses: pontem-network/get-solc@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-#      - name: Aptos latest version
-#        uses: pontem-network/get-aptos@main
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: build solc
         run: ./tests/assets/build.sh
-#
-#      - name: Formatting
-#        run: cargo fmt -- --check
-#
-#      - name: Clippy
-#        uses: actions-rs/clippy-check@v1
-#        with:
-#          name: Clippy Report
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#
-#      - name: Build
-#        run: cargo +nightly build
-#
-#      - name: Test
-#        run: cargo +nightly test
+
+      - name: Formatting
+        run: cargo fmt -- --check
+
+      - name: Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          name: Clippy Report
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: cargo +nightly build
+
+      - name: Test
+        run: cargo +nightly test
