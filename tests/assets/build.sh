@@ -14,12 +14,14 @@ then
   exit 1;
 fi
 
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/const_fn.sol
+$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite --asm $DIR/const_fn.sol
 $SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/parameters.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/a_plus_b.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/hello_world.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/stateful.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/two_functions.sol
+$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite --asm $DIR/math_fn.sol
+$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite --asm $DIR/mult_fn.sol
+$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/a_plus_b.sol
+$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/hello_world.sol
+$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/stateful.sol
+$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/two_functions.sol
 
 # APTOS
 
