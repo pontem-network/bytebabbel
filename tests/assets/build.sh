@@ -19,6 +19,8 @@ fi
 
 for path in $(find $DIR/sol -name "*.sol"); do
   echo $path
+  path=$(realpath ./${path})
+  echo "build: ${path}"
 
   result=$(${SOLC} -o ${DIR}/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --error-recovery --asm ${path} 2>&1)
   echo $result
