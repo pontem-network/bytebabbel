@@ -1,7 +1,8 @@
 use crate::evm::abi::{Abi, FunHash};
 use crate::evm::bytecode::block::{BlockId, InstructionBlock};
+use crate::evm::bytecode::executor::debug::print_flow;
 use crate::evm::bytecode::executor::execution::FunctionFlow;
-use crate::evm::function::{FunctionDefinition, PublicApi};
+use crate::evm::function::{FunDef, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap};
@@ -12,6 +13,7 @@ pub struct Program {
     functions_graph: HashMap<FunHash, FunctionFlow>,
     ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
     functions: PublicApi,
+    pub trace: bool,
 }
 
 impl Program {
@@ -20,6 +22,7 @@ impl Program {
         functions_graph: HashMap<FunHash, FunctionFlow>,
         ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
         abi: Abi,
+        trace: bool,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(abi)?;
         Ok(Program {
@@ -27,6 +30,7 @@ impl Program {
             functions_graph,
             ctor,
             functions,
+            trace,
         })
     }
 
@@ -34,7 +38,7 @@ impl Program {
         &self.name
     }
 
-    pub fn public_functions(&self) -> Vec<FunctionDefinition> {
+    pub fn public_functions(&self) -> Vec<FunDef> {
         self.functions.function_definition().collect()
     }
 
@@ -58,7 +62,7 @@ impl Debug for Program {
             }
             writeln!(f, " {{")?;
             if let Some(flow) = self.functions_graph.get(&fun.hash) {
-                writeln!(f, "{:?}", flow)?;
+                print_flow(flow, 5);
             } else {
                 writeln!(f, "undefined")?;
             }

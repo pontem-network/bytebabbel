@@ -1,3 +1,4 @@
+use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame, Used, FRAME_SIZE};
 use crate::evm::bytecode::executor::types::U256;
 use crate::evm::bytecode::executor::{Context, Jump};
@@ -8,32 +9,26 @@ use anyhow::Error;
 pub fn execute(inst: &Instruction, ctx: &mut Context) -> Result<Vec<StackFrame>, Error> {
     Ok(match &inst.1 {
         OpCode::Push(val) => {
-            vec![StackFrame::new(
-                ctx.next_id(),
-                Frame::Val(U256::from(val.as_slice())),
-            )]
+            vec![StackFrame::new(Frame::Val(U256::from(val.as_slice())))]
         }
         OpCode::Addr => {
-            vec![StackFrame::new(ctx.next_id(), Frame::SelfAddress)]
+            vec![StackFrame::new(Frame::SelfAddress)]
         }
-        OpCode::EQ => math(OpCode::EQ, ctx, |a, b| Frame::Bool(a == b)),
+        OpCode::EQ => eq(ctx),
         OpCode::MStore => mem_store(ctx, true),
         OpCode::MStore8 => mem_store(ctx, false),
-        OpCode::CallDataSize => vec![StackFrame::new(
-            ctx.next_id(),
-            Frame::Val(ctx.env().call_data_size()),
-        )],
-        OpCode::Lt => math(OpCode::Lt, ctx, |a, b| Frame::Bool(a < b)),
-        OpCode::Gt => math(OpCode::Gt, ctx, |a, b| Frame::Bool(a > b)),
+        OpCode::CallDataSize => vec![StackFrame::new(Frame::Val(ctx.env().call_data_size()))],
+        OpCode::Lt => math(BinaryOp::Lt, ctx, |a, b| Frame::Bool(a < b)),
+        OpCode::Gt => math(BinaryOp::Gt, ctx, |a, b| Frame::Bool(a > b)),
         OpCode::JumpIf => jmp_if(ctx),
         OpCode::Jump => jmp(ctx),
         OpCode::CallDataLoad => call_data_load(ctx),
-        OpCode::Shr => math(OpCode::Shr, ctx, |a, b| Frame::Val(b >> a)),
+        OpCode::Shr => math(BinaryOp::Shr, ctx, |a, b| Frame::Val(b >> a)),
         OpCode::Stop => abort(ctx, 1),
-        OpCode::Add => math(OpCode::Add, ctx, |a, b| Frame::Val(b + a)),
-        OpCode::Mul => math(OpCode::Mul, ctx, |a, b| Frame::Val(b * a)),
-        OpCode::Sub => math(OpCode::Sub, ctx, |a, b| Frame::Val(a - b)),
-        OpCode::Div => math(OpCode::Div, ctx, |a, b| Frame::Val(a / b)),
+        OpCode::Add => math(BinaryOp::Add, ctx, |a, b| Frame::Val(b + a)),
+        OpCode::Mul => math(BinaryOp::Mul, ctx, |a, b| Frame::Val(b * a)),
+        OpCode::Sub => math(BinaryOp::Sub, ctx, |a, b| Frame::Val(a - b)),
+        OpCode::Div => math(BinaryOp::Div, ctx, |a, b| Frame::Val(a / b)),
         OpCode::SDiv => todo!(),
         OpCode::Mod => todo!(),
         OpCode::SMod => todo!(),
@@ -41,14 +36,16 @@ pub fn execute(inst: &Instruction, ctx: &mut Context) -> Result<Vec<StackFrame>,
         OpCode::MulMod => todo!(),
         OpCode::Exp => todo!(),
         OpCode::SignExtend => todo!(),
-        OpCode::SLt => todo!(),
+        OpCode::SLt => math(BinaryOp::SLt, ctx, |a, b| {
+            Frame::Bool((a.as_usize() as isize) < (b.as_usize() as isize))
+        }),
         OpCode::SGt => todo!(),
         OpCode::IsZero => is_zero(ctx),
         OpCode::And => todo!(),
         OpCode::Or => todo!(),
         OpCode::Xor => todo!(),
         OpCode::Not => todo!(),
-        OpCode::Byte => math(OpCode::Byte, ctx, |i, x| {
+        OpCode::Byte => math(BinaryOp::Byte, ctx, |i, x| {
             Frame::Val((x >> (U256::from(248) - i * U256::from(8))) & U256::from(0xFF))
         }),
         OpCode::Shl => todo!(),
@@ -57,7 +54,7 @@ pub fn execute(inst: &Instruction, ctx: &mut Context) -> Result<Vec<StackFrame>,
         OpCode::Balance => todo!(),
         OpCode::Origin => todo!(),
         OpCode::Caller => todo!(),
-        OpCode::CallValue => todo!(),
+        OpCode::CallValue => call_value(ctx),
         OpCode::CallDataCopy => todo!(),
         OpCode::CodeSize => todo!(),
         OpCode::CodeCopy => code_copy(ctx),
@@ -103,19 +100,32 @@ fn is_zero(ctx: &mut Context) -> Vec<StackFrame> {
     a.set_used_flag(used.clone());
     let a = a.as_u256();
     let mut frame = if let Some(a) = a {
-        StackFrame::new(ctx.next_id(), Frame::Bool(a.is_zero()))
+        StackFrame::new(Frame::Bool(a.is_zero()))
     } else {
-        StackFrame::new(
-            ctx.next_id(),
-            Frame::Calc(OpCode::IsZero, ctx.input[0].clone()),
-        )
+        StackFrame::new(Frame::Calc(UnaryOp::IsZero, ctx.input[0].clone()))
     };
 
     frame.set_used_flag(used);
     vec![frame]
 }
 
-fn math<F: Fn(U256, U256) -> Frame>(op: OpCode, ctx: &mut Context, f: F) -> Vec<StackFrame> {
+fn eq(ctx: &mut Context) -> Vec<StackFrame> {
+    let used = Used::default();
+    let mut a = ctx.input[0].clone();
+    a.set_used_flag(used.clone());
+
+    let mut b = ctx.input[1].clone();
+    b.set_used_flag(used.clone());
+    if a == b {
+        let mut new = StackFrame::new(Frame::Bool(true));
+        new.set_used_flag(used);
+        vec![new]
+    } else {
+        math(BinaryOp::EQ, ctx, |a, b| Frame::Bool(a == b))
+    }
+}
+
+fn math<F: Fn(U256, U256) -> Frame>(op: BinaryOp, ctx: &mut Context, f: F) -> Vec<StackFrame> {
     let used = Used::default();
     let a = &mut ctx.input[0];
     a.set_used_flag(used.clone());
@@ -127,16 +137,13 @@ fn math<F: Fn(U256, U256) -> Frame>(op: OpCode, ctx: &mut Context, f: F) -> Vec<
 
     if let Some(a) = a {
         if let Some(b) = b {
-            let mut new = StackFrame::new(ctx.next_id(), f(a, b));
+            let mut new = StackFrame::new(f(a, b));
             new.set_used_flag(used);
             return vec![new];
         }
     }
 
-    let mut new = StackFrame::new(
-        ctx.next_id(),
-        Frame::Calc2(op, ctx.input[0].clone(), ctx.input[1].clone()),
-    );
+    let mut new = StackFrame::new(Frame::Calc2(op, ctx.input[0].clone(), ctx.input[1].clone()));
     new.set_used_flag(used);
     vec![new]
 }
@@ -173,6 +180,7 @@ fn jmp_if(ctx: &mut Context) -> Vec<StackFrame> {
         });
     } else {
         ctx.set_jump(Jump::Cnd {
+            cnd: cnd.clone(),
             true_br: dest,
             false_br: ctx.next_block,
         })
@@ -190,15 +198,15 @@ fn jmp(ctx: &mut Context) -> Vec<StackFrame> {
 
 fn call_data_load(ctx: &mut Context) -> Vec<StackFrame> {
     if let Some(offset) = ctx.input[0].as_u256() {
-        let index = offset.as_usize() / FRAME_SIZE;
-        if index == 0 {
+        if offset.is_zero() {
             let mut buf = [0u8; 32];
             buf[0..4].copy_from_slice(ctx.env.hash().as_ref().as_slice());
-            let new_frame = StackFrame::new(ctx.next_id(), Frame::Val(U256::from(buf)));
+            let new_frame = StackFrame::new(Frame::Val(U256::from(buf)));
             ctx.input[0].set_used_flag(new_frame.get_used_flag());
             vec![new_frame]
         } else {
-            let new_frame = StackFrame::new(ctx.next_id(), Frame::Param(index as u16));
+            let index = (offset.as_usize() - 4) / FRAME_SIZE;
+            let new_frame = StackFrame::new(Frame::Param(index as u16));
             ctx.input[0].set_used_flag(new_frame.get_used_flag());
             vec![new_frame]
         }
@@ -241,4 +249,9 @@ fn code_copy(ctx: &mut Context) -> Vec<StackFrame> {
         .expect("Unsupported code copy dynamic offset.");
     ctx.set_code_offset(*offset);
     vec![]
+}
+
+fn call_value(_ctx: &mut Context) -> Vec<StackFrame> {
+    // todo call value.
+    vec![StackFrame::new(Frame::Val(U256::from(0)))]
 }

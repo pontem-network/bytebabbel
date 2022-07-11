@@ -1,4 +1,5 @@
 use crate::evm::bytecode::executor::stack::StackFrame;
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Default, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Var(u8);
@@ -9,9 +10,15 @@ impl Var {
     }
 }
 
-#[derive(Debug, Default)]
+impl Display for Var {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.0)
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct FunctionFlow {
-    var_seq: Var,
+    pub var_seq: Var,
     flow: Vec<Execution>,
     result: Vec<Var>,
 }
@@ -22,6 +29,14 @@ impl FunctionFlow {
         self.var_seq.0 += 1;
         self.flow.push(Execution::SetVar(idx, frame));
         idx
+    }
+
+    pub fn calc_stack(&mut self, frame: StackFrame) {
+        self.flow.push(Execution::Calc(frame));
+    }
+
+    pub fn brunch(&mut self, true_br: FunctionFlow, false_br: FunctionFlow) {
+        self.flow.push(Execution::Branch { true_br, false_br })
     }
 
     pub fn set_result(&mut self, var: Var) {
@@ -35,9 +50,19 @@ impl FunctionFlow {
     pub fn result(&self) -> &[Var] {
         &self.result
     }
+
+    pub fn abort(&mut self, code: u8) {
+        self.flow.push(Execution::Abort(code));
+    }
 }
 
 #[derive(Debug)]
 pub enum Execution {
     SetVar(Var, StackFrame),
+    Calc(StackFrame),
+    Branch {
+        true_br: FunctionFlow,
+        false_br: FunctionFlow,
+    },
+    Abort(u8),
 }

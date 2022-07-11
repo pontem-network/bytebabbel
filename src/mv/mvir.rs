@@ -1,9 +1,11 @@
 use crate::evm::program::Program;
+use crate::mv::function::code::MvTranslator;
 use crate::mv::function::MvFunction;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use move_binary_format::file_format::empty_module;
 use move_binary_format::internals::ModuleIndex;
 use move_binary_format::CompiledModule;
+use move_bytecode_verifier::CodeUnitVerifier;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 
@@ -16,24 +18,34 @@ pub struct MvModule {
 
 impl MvModule {
     pub fn from_evm_program(address: AccountAddress, program: Program) -> Result<MvModule, Error> {
+        let name = Identifier::new(program.name())?;
+        let mut translator = MvTranslator::new(&program);
         let funcs = program
             .public_functions()
             .into_iter()
-            .map(|def| MvFunction::new_public(def, &program))
+            .map(|def| MvFunction::new_public(def, &mut translator))
             .collect::<Result<_, _>>()?;
 
         Ok(MvModule {
             address,
-            name: Identifier::new(program.name())?,
+            name,
             funcs,
         })
     }
 
-    pub fn make_move_module(&self) -> Result<CompiledModule, Error> {
+    pub fn make_move_module(self) -> Result<CompiledModule, Error> {
         let mut module = self.empty_module();
-        for func in &self.funcs {
+        for func in self.funcs {
             func.write_function(&mut module)?;
         }
+        CodeUnitVerifier::verify_module(&module).map_err(|err| {
+            anyhow!(
+                "Verification error:{:?}-{:?}. Message:{:?}",
+                err.major_status(),
+                err.sub_status(),
+                err.message()
+            )
+        })?;
         Ok(module)
     }
 

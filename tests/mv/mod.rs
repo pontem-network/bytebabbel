@@ -13,6 +13,7 @@ pub fn test_move_translator() {
         "ConstFn",
         include_str!("../assets/bin/ConstFn.bin"),
         include_str!("../assets/bin/ConstFn.abi"),
+        true,
     )
     .unwrap();
     println!("{:?}", program);

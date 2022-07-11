@@ -1,6 +1,6 @@
 use crate::evm::bytecode::block::BlockId;
+use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
 use crate::evm::bytecode::executor::types::U256;
-use crate::evm::OpCode;
 use std::cell::Cell;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -35,15 +35,13 @@ impl Stack {
 
 #[derive(Clone)]
 pub struct StackFrame {
-    id: usize,
     cell: Rc<Frame>,
     used: Used,
 }
 
 impl StackFrame {
-    pub fn new(id: usize, cell: Frame) -> StackFrame {
+    pub fn new(cell: Frame) -> StackFrame {
         StackFrame {
-            id,
             cell: Rc::new(cell),
             used: Default::default(),
         }
@@ -99,9 +97,9 @@ pub enum Frame {
     Bool(bool),
     SelfAddress,
     Mem(Box<StackFrame>, Box<StackFrame>),
-    Calc(OpCode, StackFrame),
-    Calc2(OpCode, StackFrame, StackFrame),
-    Abort,
+    Calc(UnaryOp, StackFrame),
+    Calc2(BinaryOp, StackFrame, StackFrame),
+    Abort(u64),
 }
 
 impl Debug for Frame {
@@ -115,7 +113,7 @@ impl Debug for Frame {
             Frame::Calc2(op, a, b) => write!(f, "{op:?}({a:?}, {b:?}))"),
             Frame::Mem(rf, mem) => write!(f, "mem {:?} => {:?}", rf, mem),
             Frame::Bool(val) => write!(f, "{val}"),
-            Frame::Abort => write!(f, "abort"),
+            Frame::Abort(code) => write!(f, "abort {code}"),
             Frame::Calc(op, mem) => write!(f, "{op:?}({mem:?})"),
         }
     }
@@ -123,7 +121,7 @@ impl Debug for Frame {
 
 impl Debug for StackFrame {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} | {:?} | {})", self.id, self.cell, self.used)
+        write!(f, "({:?} | {})", self.cell, self.used)
     }
 }
 

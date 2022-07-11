@@ -1,19 +1,19 @@
-use crate::evm::function::FunctionDefinition as EthFunDef;
-use crate::evm::program::Program;
-use crate::mv::function::code::MvIr;
+use crate::evm::function::FunDef as EthFunDef;
+use crate::mv::function::code::MvTranslator;
 use crate::mv::function::signature::map_signature;
 use crate::mv::store_signatures;
 use anyhow::Error;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
-    CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex, Signature,
-    SignatureIndex, Visibility,
+    Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
+    Signature, SignatureIndex, SignatureToken, Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_core_types::identifier::Identifier;
+use std::mem;
 
-mod code;
-mod signature;
+pub mod code;
+pub mod signature;
 
 #[derive(Debug)]
 pub struct MvFunction {
@@ -21,21 +21,26 @@ pub struct MvFunction {
     pub visibility: Visibility,
     pub input: Signature,
     pub output: Signature,
-    pub code: MvIr,
+    pub locals: Vec<SignatureToken>,
+    pub code: Vec<Bytecode>,
 }
 
 impl MvFunction {
-    pub fn new_public(def: EthFunDef, program: &Program) -> Result<MvFunction, Error> {
+    pub fn new_public(def: EthFunDef, translator: &mut MvTranslator) -> Result<MvFunction, Error> {
+        let input = map_signature(def.abi.inputs.as_slice());
+        let output = map_signature(def.abi.outputs.as_slice());
+        let (locals, code) = translator.translate_fun(&def)?;
         Ok(MvFunction {
             name: Identifier::new(&*def.abi.name)?,
             visibility: Visibility::Public,
-            input: map_signature(def.abi.inputs.as_slice()),
-            output: map_signature(def.abi.outputs.as_slice()),
-            code: MvIr::make_ir(def, program)?,
+            input,
+            output,
+            locals,
+            code,
         })
     }
 
-    pub fn write_function(&self, module: &mut CompiledModule) -> Result<(), Error> {
+    pub fn write_function(mut self, module: &mut CompiledModule) -> Result<(), Error> {
         let name_id = IdentifierIndex(module.identifiers.len() as u16);
         module.identifiers.push(self.name.clone());
         let module_id = module.self_handle_idx();
@@ -53,18 +58,21 @@ impl MvFunction {
         Ok(())
     }
 
-    fn write_signatures(&self, module: &mut CompiledModule) -> (SignatureIndex, SignatureIndex) {
-        let input = store_signatures(module, self.input.clone());
-        let output = store_signatures(module, self.output.clone());
+    fn write_signatures(
+        &mut self,
+        module: &mut CompiledModule,
+    ) -> (SignatureIndex, SignatureIndex) {
+        let input = store_signatures(module, mem::take(&mut self.input));
+        let output = store_signatures(module, mem::take(&mut self.output));
         (input, output)
     }
 
     fn write_def(
-        &self,
+        &mut self,
         module: &mut CompiledModule,
         index: FunctionHandleIndex,
     ) -> Result<(), Error> {
-        let locals_id = store_signatures(module, Signature(self.code.locals()));
+        let locals_id = store_signatures(module, Signature(mem::take(&mut self.locals)));
 
         module.function_defs.push(FunctionDefinition {
             function: index,
@@ -73,7 +81,7 @@ impl MvFunction {
             acquires_global_resources: vec![],
             code: Some(CodeUnit {
                 locals: locals_id,
-                code: self.code.bytecode()?,
+                code: mem::take(&mut self.code),
             }),
         });
         Ok(())

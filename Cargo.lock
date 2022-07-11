@@ -439,6 +439,7 @@ dependencies = [
  "maplit",
  "move-binary-format",
  "move-bytecode-source-map",
+ "move-bytecode-verifier",
  "move-compiler",
  "move-core-types",
  "move-disassembler",

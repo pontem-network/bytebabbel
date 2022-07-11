@@ -9,10 +9,12 @@ use crate::evm::bytecode::instruction::Instruction;
 use anyhow::{anyhow, ensure, Error};
 use std::collections::BTreeMap;
 
+pub mod debug;
 pub mod env;
 pub mod execution;
 pub mod instructions;
 pub mod mem;
+pub mod ops;
 pub mod stack;
 pub mod types;
 
@@ -20,7 +22,6 @@ pub struct StaticExecutor<'a> {
     mem: Memory,
     stack: Stack,
     contract: &'a BTreeMap<BlockId, InstructionBlock>,
-    frame_seq: usize,
     trace: bool,
     new_code_offset: Option<BlockId>,
 }
@@ -31,8 +32,17 @@ impl<'a> StaticExecutor<'a> {
             mem: Memory::default(),
             stack: Stack::default(),
             contract,
-            frame_seq: 0,
             trace,
+            new_code_offset: None,
+        }
+    }
+
+    fn inherit(&self) -> StaticExecutor {
+        StaticExecutor {
+            mem: self.mem.clone(),
+            stack: self.stack.clone(),
+            contract: self.contract,
+            trace: self.trace,
             new_code_offset: None,
         }
     }
@@ -60,16 +70,19 @@ impl<'a> StaticExecutor<'a> {
             }
 
             match res {
-                ExecResult::Jmp(Jump::UnCnd(block)) => {
+                Some(ExecResult::Jmp(Jump::UnCnd(block))) => {
                     block_id = block;
                 }
-                ExecResult::Jmp(Jump::Cnd {
-                    true_br: _,
-                    false_br: _,
-                }) => {
+                Some(ExecResult::Jmp(Jump::Cnd { .. })) => {
                     todo!()
                 }
-                ExecResult::Abort(_) | ExecResult::Return { .. } => {
+                Some(ExecResult::Abort(_)) => {
+                    return Ok(None);
+                }
+                Some(ExecResult::Return { .. }) => {
+                    return Ok(None);
+                }
+                None => {
                     return Ok(None);
                 }
             }
@@ -87,18 +100,46 @@ impl<'a> StaticExecutor<'a> {
             .get(&block)
             .ok_or_else(|| anyhow!("Block not found: {block}"))?;
         match self.exec_block(block, env)? {
-            ExecResult::Jmp(Jump::Cnd {
-                true_br: _,
-                false_br: _,
-            }) => {
-                todo!()
+            Some(ExecResult::Jmp(Jump::Cnd {
+                cnd,
+                true_br,
+                false_br,
+            })) => self.handle_cnd_jmp(cnd, true_br, false_br, env, flow),
+            Some(ExecResult::Abort(code)) => {
+                flow.abort(code);
+                Ok(())
             }
-            ExecResult::Abort(_code) => {
-                todo!()
+            Some(ExecResult::Return { offset, len }) => self.handle_result(env, offset, len, flow),
+            Some(ExecResult::Jmp(Jump::UnCnd(block))) => self._exec_block(block, env, flow),
+            None => {
+                let next_block = BlockId::from(block.end + 1);
+                self._exec_block(next_block, env, flow)
             }
-            ExecResult::Return { offset, len } => self.handle_result(env, offset, len, flow),
-            ExecResult::Jmp(Jump::UnCnd(block)) => self._exec_block(block, env, flow),
         }
+    }
+
+    fn handle_cnd_jmp(
+        &mut self,
+        cnd: StackFrame,
+        true_br: BlockId,
+        false_br: BlockId,
+        env: &Env,
+        flow: &mut FunctionFlow,
+    ) -> Result<(), Error> {
+        flow.calc_stack(cnd);
+
+        let mut true_br_executor = self.inherit();
+        let mut true_br_flow = FunctionFlow::default();
+        true_br_flow.var_seq = flow.var_seq;
+        true_br_executor._exec_block(true_br, env, &mut true_br_flow)?;
+
+        let mut false_br_executor = self.inherit();
+        let mut false_br_flow = FunctionFlow::default();
+        false_br_flow.var_seq = true_br_flow.var_seq;
+        false_br_executor._exec_block(false_br, env, &mut false_br_flow)?;
+        flow.var_seq = false_br_flow.var_seq;
+        flow.brunch(true_br_flow, false_br_flow);
+        Ok(())
     }
 
     fn handle_result(
@@ -117,10 +158,9 @@ impl<'a> StaticExecutor<'a> {
 
         let outputs = len.as_usize() / FRAME_SIZE;
         for i in 0..outputs {
-            let calculation = self.mem.load(&StackFrame::new(
-                0,
-                Frame::Val(offset + U256::from(i * FRAME_SIZE)),
-            ));
+            let calculation = self.mem.load(&StackFrame::new(Frame::Val(
+                offset + U256::from(i * FRAME_SIZE),
+            )));
             calculation.mark_as_used();
 
             let var = flow.calc_var(calculation);
@@ -130,15 +170,19 @@ impl<'a> StaticExecutor<'a> {
         Ok(())
     }
 
-    fn exec_block(&mut self, block: &InstructionBlock, env: &Env) -> Result<ExecResult, Error> {
+    fn exec_block(
+        &mut self,
+        block: &InstructionBlock,
+        env: &Env,
+    ) -> Result<Option<ExecResult>, Error> {
         let next_block = BlockId::from(block.end + 1);
         for inst in block.iter() {
             let res = self.exec_instruction(inst, env, next_block)?;
             if let Some(res) = res {
-                return Ok(res);
+                return Ok(Some(res));
             }
         }
-        unreachable!()
+        Ok(None)
     }
 
     fn exec_instruction(
@@ -184,11 +228,6 @@ pub struct Context<'a, 'b> {
 }
 
 impl<'a, 'b> Context<'a, 'b> {
-    pub fn next_id(&mut self) -> usize {
-        self.executor.frame_seq += 1;
-        self.executor.frame_seq
-    }
-
     pub fn mem_store(&mut self, rf: StackFrame, val: StackFrame) {
         if self.executor.trace {
             println!("      var {:?} = {:?}", rf, val);
@@ -227,7 +266,11 @@ impl<'a, 'b> Context<'a, 'b> {
 
 #[derive(Debug)]
 pub enum Jump {
-    Cnd { true_br: BlockId, false_br: BlockId },
+    Cnd {
+        cnd: StackFrame,
+        true_br: BlockId,
+        false_br: BlockId,
+    },
     UnCnd(BlockId),
 }
 
