@@ -7,6 +7,7 @@ pub enum BinaryOp {
     Gt,
     Shr,
     Add,
+    And,
     Mul,
     Sub,
     Div,

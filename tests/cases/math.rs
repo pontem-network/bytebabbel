@@ -34,7 +34,6 @@ pub fn math_fn_tests() {
 }
 
 #[test]
-#[ignore]
 pub fn mult_fn_tests() {
     let bytecode = make_move_module(
         "0x1::MultFn",
