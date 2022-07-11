@@ -18,6 +18,7 @@ if ! $SOLC --version >/dev/null 2>&1; then
 fi
 
 for path in $(find $DIR/sol/ -name "*.sol"); do
+  echo $path
   path=$(realpath ${path})
   echo "build: ${path}"
 
