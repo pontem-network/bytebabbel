@@ -8,6 +8,7 @@ pub fn math_fn_tests() {
         "0x1::MathFn",
         include_str!("../assets/bin/MathFn.bin"),
         include_str!("../assets/bin/MathFn.abi"),
+        true,
     );
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
@@ -39,6 +40,7 @@ pub fn mult_fn_tests() {
         "0x1::MultFn",
         include_str!("../assets/bin/MultFn.bin"),
         include_str!("../assets/bin/MultFn.abi"),
+        true,
     );
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
