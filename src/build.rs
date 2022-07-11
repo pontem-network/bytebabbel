@@ -33,6 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         exit(1);
     }
 
+    let output = String::from_utf8(result.stdout).unwrap();
+
     // list all files to watch:
     {
         use wax::{Glob, LinkBehavior};

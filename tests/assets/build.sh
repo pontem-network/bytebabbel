@@ -26,7 +26,6 @@ for path in $(find $DIR/sol/ -name "*.sol"); do
    echo $result >&2;
    exit 3
  fi
-# echo $result;
 done
 
 # APTOS
