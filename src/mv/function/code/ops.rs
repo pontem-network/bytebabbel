@@ -20,6 +20,7 @@ impl IntoCode for BinaryOp {
             BinaryOp::Div => Bytecode::Div,
             BinaryOp::SLt => Bytecode::Shl,
             BinaryOp::Byte => todo!(),
+            BinaryOp::And => Bytecode::BitAnd,
         }]
     }
 
@@ -33,6 +34,7 @@ impl IntoCode for BinaryOp {
             BinaryOp::Div => SignatureToken::U128,
             BinaryOp::SLt => SignatureToken::U128,
             BinaryOp::Byte => SignatureToken::U128,
+            BinaryOp::And => SignatureToken::U128,
         }
     }
 
@@ -48,6 +50,7 @@ impl IntoCode for BinaryOp {
             BinaryOp::Div => vec![SignatureToken::U128],
             BinaryOp::SLt => vec![SignatureToken::U128],
             BinaryOp::Byte => vec![SignatureToken::U128],
+            BinaryOp::And => vec![SignatureToken::U128],
         }
     }
 }
