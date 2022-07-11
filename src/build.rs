@@ -4,7 +4,7 @@ extern crate wax;
 use std::env;
 use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR_STR;
-use std::process::Command;
+use std::process::{exit, Command};
 
 const TEST_CONTRACTS_DIR: &str = "tests/assets";
 const BUILD_CONTRACTS_SH: &str = "build.sh";
@@ -19,13 +19,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         root.join(PathBuf::from(format!("./{TEST_CONTRACTS_DIR}")).join(BUILD_CONTRACTS_SH));
     let output_path = source_path.join(BUILD_CONTRACTS_DIR);
 
-    let status = Command::new("sh")
+    let result = Command::new("bash")
         .arg(&script_path)
         .current_dir(&root)
         .envs(env::vars())
-        .status()?;
-    if !status.success() {
+        .output()?;
+
+    if !result.status.success() {
+        let error = String::from_utf8(result.stderr).unwrap();
+        let status = result.status.code().unwrap_or_default();
         println!("cargo:warning=test resources build faild with: {status}");
+        println!("{error}");
+        exit(1);
     }
 
     // list all files to watch:

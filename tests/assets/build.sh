@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # SOLC
 
 DIR=tests/assets
@@ -14,14 +16,18 @@ then
   exit 1;
 fi
 
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite --asm $DIR/const_fn.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite $DIR/parameters.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite --asm $DIR/math_fn.sol
-$SOLC -o $DIR/bin --bin --abi --ast-compact-json --overwrite --asm $DIR/mult_fn.sol
-$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/a_plus_b.sol
-$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/hello_world.sol
-$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/stateful.sol
-$SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --asm $DIR/two_functions.sol
+
+for path in $(find $DIR/sol/ -name "*.sol"); do
+ path=`realpath ${path}`;
+ result=$($SOLC -o $DIR/bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --error-recovery --asm ${path} 2>&1);
+
+ if [[ $result == Error* || $result == Warning* ]]
+ then
+   echo $result >&2;
+   exit 3
+ fi
+# echo $result;
+done
 
 # APTOS
 
