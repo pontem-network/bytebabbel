@@ -83,6 +83,7 @@ pub fn test_u256_math_cast() {
     fn test(exec: &mut MoveExecutor, expected: u128) {
         let res = exec
             .run("0x1::TestModule::u256_cast", &expected.to_string())
+            .unwrap()
             .returns;
         let (val, tp) = &res[0];
         if let MoveValue::U128(val) = MoveValue::simple_deserialize(val, tp).unwrap() {
