@@ -33,7 +33,7 @@ impl CodeWriter {
     }
 
     pub fn release_local(&mut self, idx: LocalIndex) {
-        for (_, locals) in self.locals.values_mut() {
+        for locals in self.locals.values_mut() {
             locals.release(idx);
         }
     }
