@@ -27,7 +27,7 @@ pub fn plus_fn_tests() {
     ];
 
     for (fn_name, params, exp_res) in props {
-        let res = vm.run(fn_name, params);
+        let res = vm.run(fn_name, params).unwrap();
         for ((actual_val, actual_tp), res) in res.returns.iter().zip(exp_res) {
             let actual_res = MoveValue::simple_deserialize(&actual_val, &actual_tp).unwrap();
             println!("{}({}) => {}|{:?}", fn_name, params, actual_res, res);

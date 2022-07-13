@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::{ChangeSet, Event};
 use move_core_types::identifier::Identifier;
@@ -41,18 +41,17 @@ impl MoveExecutor {
         self.resolver.apply(ds);
     }
 
-    pub fn run(&mut self, ident: &str, params: &str) -> ExecutionResult {
+    pub fn run(&mut self, ident: &str, params: &str) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
         let mut session = self.vm.new_session(&self.resolver);
         let mut gas_status = GasStatus::new_unmetered();
-        let args = Self::prepare_args(params, &module_id, &ident, &session);
+        let args = Self::prepare_args(params, &module_id, &ident, &session)?;
         let returns = session
-            .execute_entry_function(&module_id, &ident, vec![], args, &mut gas_status)
-            .unwrap()
+            .execute_entry_function(&module_id, &ident, vec![], args, &mut gas_status)?
             .return_values;
         let (ds, events) = session.finish().unwrap();
         self.resolver.apply(ds);
-        ExecutionResult { returns, events }
+        Ok(ExecutionResult { returns, events })
     }
 
     fn prepare_ident(ident: &str) -> (ModuleId, Identifier) {
@@ -70,28 +69,28 @@ impl MoveExecutor {
         module_id: &ModuleId,
         ident: &Identifier,
         session: &Session<Resolver>,
-    ) -> Vec<Vec<u8>> {
-        let fun = session.load_function(module_id, ident, &[]).unwrap();
+    ) -> Result<Vec<Vec<u8>>> {
+        let fun = session.load_function(module_id, ident, &[])?;
         args.split(",")
             .zip(fun.parameters)
             .map(|(val, tp)| {
                 let val = val.trim_matches(char::is_whitespace);
-                match tp {
-                    Type::Bool => bcs::to_bytes(&val.parse::<bool>().unwrap()),
-                    Type::U8 => bcs::to_bytes(&val.parse::<u8>().unwrap()),
-                    Type::U64 => bcs::to_bytes(&val.parse::<u64>().unwrap()),
-                    Type::U128 => bcs::to_bytes(&val.parse::<u128>().unwrap()),
-                    Type::Address => bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap()),
-                    Type::Signer => bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap()),
+                let bval = match tp {
+                    Type::Bool => bcs::to_bytes(&val.parse::<bool>()?),
+                    Type::U8 => bcs::to_bytes(&val.parse::<u8>()?),
+                    Type::U64 => bcs::to_bytes(&val.parse::<u64>()?),
+                    Type::U128 => bcs::to_bytes(&val.parse::<u128>()?),
+                    Type::Address => bcs::to_bytes(&AccountAddress::from_hex_literal(val)?),
+                    Type::Signer => bcs::to_bytes(&AccountAddress::from_hex_literal(val)?),
                     Type::Vector(tp) => match tp.as_ref() {
-                        Type::U8 => bcs::to_bytes(&hex::decode(val).unwrap()),
+                        Type::U8 => bcs::to_bytes(&hex::decode(val)?),
                         _ => unreachable!(),
                     },
                     _ => unreachable!(),
-                }
-                .unwrap()
+                }?;
+                Ok(bval)
             })
-            .collect()
+            .collect::<Result<Vec<Vec<u8>>>>()
     }
 }
 
@@ -101,6 +100,7 @@ impl Default for MoveExecutor {
     }
 }
 
+#[derive(Debug)]
 pub struct ExecutionResult {
     pub returns: Vec<(Vec<u8>, MoveTypeLayout)>,
     pub events: Vec<Event>,

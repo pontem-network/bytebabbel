@@ -7,8 +7,8 @@ use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
 use move_ir_types::location::Spanned;
 
 mod consts;
-mod math;
 mod params;
+mod tests_sol;
 
 pub fn make_move_module(name: &str, eth: &str, abi: &str, trace: bool) -> Vec<u8> {
     let mut split = name.split("::");
