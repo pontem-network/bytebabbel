@@ -1,6 +1,7 @@
 use crate::common::executor::MoveExecutor;
 use eth2move::mv::function::code::intrinsic::math::u256_math::U256Math;
-use eth2move::mv::function::code::intrinsic::math::Math;
+use eth2move::mv::function::code::intrinsic::math::Cast;
+use eth2move::mv::function::code::writer::CodeWriter;
 use eth2move::mv::function::MvFunction;
 use eth2move::mv::mvir::MvModule;
 use move_binary_format::binary_views::BinaryIndexedView;
@@ -19,17 +20,17 @@ pub fn make_module(
     name: &str,
     input: Vec<SignatureToken>,
     output: Vec<SignatureToken>,
-    locals: Vec<SignatureToken>,
     signature: Vec<SignatureToken>,
-    code: Vec<Bytecode>,
+    code: CodeWriter,
 ) -> Vec<u8> {
+    let code = code.freeze();
     let function = MvFunction {
         name: Identifier::new(name).unwrap(),
         visibility: Visibility::Public,
         input: Signature(input),
         output: Signature(output),
-        locals,
-        code,
+        locals: code.locals,
+        code: code.code,
     };
     let mut module: CompiledModule = MvModule {
         address: CORE_CODE_ADDRESS,
@@ -59,13 +60,13 @@ pub fn make_module(
 #[test]
 pub fn test_u256_math_cast() {
     let math = U256Math {
-        tmp_u64: 1,
-        tmp_u128: 2,
         vec_sig_index: SignatureIndex(3),
     };
-    let mut code = vec![];
+
+    let mut code = CodeWriter::new(1, true);
+
     code.push(Bytecode::CopyLoc(0));
-    math.cast_from_u128(&mut code, None);
+    math.cast_from_u128(&mut code);
     math.cast_to_u128(&mut code);
     code.push(Bytecode::Ret);
 
@@ -73,7 +74,6 @@ pub fn test_u256_math_cast() {
         "u256_cast",
         vec![SignatureToken::U128],
         vec![SignatureToken::U128],
-        vec![SignatureToken::U64, SignatureToken::U128],
         vec![SignatureToken::U64],
         code,
     );
