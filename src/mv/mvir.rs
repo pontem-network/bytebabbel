@@ -18,11 +18,14 @@ pub struct MvModule {
 impl MvModule {
     pub fn from_evm_program(address: AccountAddress, program: Program) -> Result<MvModule, Error> {
         let name = Identifier::new(program.name())?;
-        let mut translator = MvTranslator::new(&program);
         let funcs = program
             .public_functions()
             .into_iter()
-            .map(|def| MvFunction::new_public(def, &mut translator))
+            .map(|def| {
+                MvTranslator::new(&program, &def)
+                    .translate()
+                    .and_then(|code| MvFunction::new_public(def, code))
+            })
             .collect::<Result<_, _>>()?;
 
         Ok(MvModule {

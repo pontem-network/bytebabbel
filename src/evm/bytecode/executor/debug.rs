@@ -8,7 +8,7 @@ pub fn print_flow(flow: &FunctionFlow, width: usize) {
     }
     let results = flow.result();
     if !results.is_empty() {
-        write("return (", width, false);
+        write("return (", 4, false);
         for (i, var) in results.iter().enumerate() {
             print!("var_{}", var.index());
             if i != results.len() - 1 {
