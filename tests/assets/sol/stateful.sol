@@ -11,7 +11,7 @@ contract TwoFunctionsStateful {
         counter = counter + 1;
     }
 
-    function get() public view returns(uint) {
+    function get() public view returns (uint) {
         return counter;
     }
 }
