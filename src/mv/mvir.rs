@@ -1,10 +1,13 @@
 use crate::evm::program::Program;
+use crate::mv::function::code::intrinsic::math::MathModel;
 use crate::mv::function::code::MvTranslator;
+use crate::mv::function::signature::SignatureWriter;
 use crate::mv::function::MvFunction;
-use anyhow::Error;
-use move_binary_format::file_format::empty_module;
+use anyhow::{anyhow, Error};
+use move_binary_format::file_format::{empty_module, Signature};
 use move_binary_format::internals::ModuleIndex;
 use move_binary_format::CompiledModule;
+use move_bytecode_verifier::CodeUnitVerifier;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 
@@ -13,18 +16,25 @@ pub struct MvModule {
     pub address: AccountAddress,
     pub name: Identifier,
     pub funcs: Vec<MvFunction>,
+    pub signatures: Vec<Signature>,
 }
 
 impl MvModule {
-    pub fn from_evm_program(address: AccountAddress, program: Program) -> Result<MvModule, Error> {
+    pub fn from_evm_program<M: MathModel>(
+        address: AccountAddress,
+        mut math: M,
+        program: Program,
+    ) -> Result<MvModule, Error> {
         let name = Identifier::new(program.name())?;
+        let mut signatures = SignatureWriter::default();
+        math.make_signature(&mut signatures);
         let funcs = program
             .public_functions()
             .into_iter()
             .map(|def| {
-                MvTranslator::new(&program, &def)
+                MvTranslator::new(&program, &def, &mut math)
                     .translate()
-                    .and_then(|code| MvFunction::new_public(def, code))
+                    .and_then(|code| MvFunction::new_public(def, code, &mut signatures))
             })
             .collect::<Result<_, _>>()?;
 
@@ -32,6 +42,7 @@ impl MvModule {
             address,
             name,
             funcs,
+            signatures: signatures.freeze(),
         })
     }
 
@@ -41,14 +52,15 @@ impl MvModule {
             func.write_function(&mut module)?;
         }
 
-        // CodeUnitVerifier::verify_module(&module).map_err(|err| {
-        //     anyhow!(
-        //         "Verification error:{:?}-{:?}. Message:{:?}",
-        //         err.major_status(),
-        //         err.sub_status(),
-        //         err.message()
-        //     )
-        // })?;
+        module.signatures = self.signatures;
+        CodeUnitVerifier::verify_module(&module).map_err(|err| {
+            anyhow!(
+                "Verification error:{:?}-{:?}. Message:{:?}",
+                err.major_status(),
+                err.sub_status(),
+                err.message()
+            )
+        })?;
         Ok(module)
     }
 

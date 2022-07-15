@@ -1,4 +1,5 @@
 use eth2move::evm::parse_program;
+use eth2move::mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use eth2move::mv::mvir::MvModule;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_bytecode_source_map::mapping::SourceMapping;
@@ -16,7 +17,8 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str, trace: bool) -> Vec<u8
     let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
     let name = split.next().unwrap();
     let program = parse_program(name, eth, abi, trace).unwrap();
-    let module = MvModule::from_evm_program(addr, program).unwrap();
+    // todo test with all maths modules.
+    let module = MvModule::from_evm_program(addr, U128MathModel::default(), program).unwrap();
     let compiled_module = module.make_move_module().unwrap();
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode).unwrap();

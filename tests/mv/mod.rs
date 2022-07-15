@@ -1,4 +1,5 @@
 use eth2move::evm::parse_program;
+use eth2move::mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use eth2move::mv::mvir::MvModule;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::CompiledModule;
@@ -20,7 +21,8 @@ pub fn test_move_translator() {
     .unwrap();
     println!("{:?}", program);
 
-    let module = MvModule::from_evm_program(CORE_CODE_ADDRESS, program).unwrap();
+    let module =
+        MvModule::from_evm_program(CORE_CODE_ADDRESS, U128MathModel::default(), program).unwrap();
 
     let compiled_module = module.make_move_module().unwrap();
     println!("actual {:?}", compiled_module);
