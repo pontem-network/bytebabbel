@@ -22,7 +22,7 @@ pub struct MvTranslator<'a, M: MathModel> {
     def: &'a FunDef<'a>,
     code: CodeWriter,
     local_mapping: HashMap<Var, LocalIndex>,
-    math: &'a mut M,
+    _math: &'a mut M,
 }
 
 impl<'a, M: MathModel> MvTranslator<'a, M> {
@@ -32,7 +32,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             def,
             code: CodeWriter::new(def.abi.inputs.len(), program.trace),
             local_mapping: Default::default(),
-            math,
+            _math: math,
         }
     }
 

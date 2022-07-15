@@ -81,4 +81,4 @@ jobs:
         with:
           name: Clippy Report
           token: ${{ secrets.GITHUB_TOKEN }}
-
+          failure-mode: warnings
