@@ -13,8 +13,9 @@ pub fn translate(
     name: &str,
     bytecode: &str,
     abi: &str,
+    trace: bool,
 ) -> Result<Vec<u8>, Error> {
-    let program = parse_program(name, bytecode, abi, false)?;
+    let program = parse_program(name, bytecode, abi, trace)?;
     let module = MvModule::from_evm_program(addr, program)?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
