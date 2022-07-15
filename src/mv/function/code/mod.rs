@@ -7,128 +7,100 @@ use crate::evm::function::FunDef;
 use crate::evm::program::Program;
 use crate::mv::function::code::intrinsic::{is_zero_bool, is_zero_uint};
 use crate::mv::function::code::ops::IntoCode;
+use crate::mv::function::code::writer::{CodeWriter, FunctionCode};
 use anyhow::{anyhow, Error};
-use move_binary_format::file_format::{Bytecode, SignatureToken};
-use std::collections::BTreeMap;
-use std::mem;
+use move_binary_format::file_format::{Bytecode, LocalIndex, SignatureToken};
+use std::collections::HashMap;
 
 pub mod intrinsic;
 pub mod ops;
-
-const DEFAULT_WIDTH: usize = 4;
+pub mod writer;
 
 pub struct MvTranslator<'a> {
     program: &'a Program,
-    locals: BTreeMap<Var, SignatureToken>,
-    bytecode: Vec<Bytecode>,
-    trace: bool,
-    width: usize,
+    def: &'a FunDef<'a>,
+    code: CodeWriter,
+    local_mapping: HashMap<Var, LocalIndex>,
 }
 
 impl<'a> MvTranslator<'a> {
-    pub fn new(program: &'a Program) -> MvTranslator<'a> {
+    pub fn new(program: &'a Program, def: &'a FunDef) -> MvTranslator<'a> {
         MvTranslator {
             program,
-            locals: Default::default(),
-            bytecode: vec![],
-            trace: program.trace,
-            width: DEFAULT_WIDTH,
+            def,
+            code: CodeWriter::new(def.abi.inputs.len(), program.trace),
+            local_mapping: Default::default(),
         }
     }
 
-    pub fn translate_fun(
-        &mut self,
-        def: &FunDef,
-    ) -> Result<(Vec<SignatureToken>, Vec<Bytecode>), Error> {
+    pub fn translate(mut self) -> Result<FunctionCode, Error> {
         let flow = self
             .program
-            .function_flow(def.hash)
-            .ok_or_else(|| anyhow!("Root path for {} function not found.", def.abi.name))?;
-        if self.trace {
+            .function_flow(self.def.hash)
+            .ok_or_else(|| anyhow!("Root path for {} function not found.", self.def.abi.name))?;
+        if self.program.trace {
             println!("flow:");
-            print_flow(flow, self.width);
+            print_flow(flow, 4);
             println!();
         }
-        self.translate_flow(flow, def)?;
-        Ok((
-            self.locals.iter().map(|(_, v)| v.clone()).collect(),
-            mem::take(&mut self.bytecode),
-        ))
+        self.translate_flow(flow)?;
+        Ok(self.code.freeze())
     }
 
-    fn pc(&self) -> usize {
-        self.bytecode.len()
-    }
-
-    fn push(&mut self, bytecode: Bytecode) {
-        if self.trace {
-            print!("{}:", self.bytecode.len());
-            println!("{:.<width$}{bytecode:?}", ".", width = self.width);
-        }
-        self.bytecode.push(bytecode);
-    }
-
-    fn extend<I: IntoIterator<Item = Bytecode>>(&mut self, bytecode: I) {
-        for op in bytecode.into_iter() {
-            self.push(op);
-        }
-    }
-
-    fn translate_flow(&mut self, flow: &FunctionFlow, def: &FunDef) -> Result<(), Error> {
+    fn translate_flow(&mut self, flow: &FunctionFlow) -> Result<(), Error> {
         for exec in flow.execution_tree() {
             match exec {
                 Execution::SetVar(id, calc) => {
-                    let token = self.map_calculation(calc, def)?;
-                    self.locals.insert(*id, token);
-                    self.move_to_var(*id, def);
+                    let token = self.map_calculation(calc)?;
+                    let idx = self.code.set_var(token);
+                    self.local_mapping.insert(*id, idx);
                 }
                 Execution::Abort(code) => {
-                    self.push(Bytecode::LdU64(*code as u64));
-                    self.push(Bytecode::Abort);
+                    self.code.push(Bytecode::LdU64(*code as u64));
+                    self.code.push(Bytecode::Abort);
                 }
                 Execution::Calc(frame) => {
-                    self.map_calculation(frame, def)?;
+                    self.map_calculation(frame)?;
                 }
                 Execution::Branch { true_br, false_br } => {
-                    let start_false_br = self.pc();
-                    self.push(Bytecode::BrTrue(0));
-                    self.width += DEFAULT_WIDTH;
-                    self.translate_flow(false_br, def)?;
-                    let start_true_br = self.pc();
-                    self.translate_flow(true_br, def)?;
-                    self.width -= DEFAULT_WIDTH;
-                    self.bytecode[start_false_br] = Bytecode::BrTrue(start_true_br as u16);
+                    let start_false_br = self.code.pc();
+                    self.code.push(Bytecode::BrTrue(0));
+                    self.translate_flow(false_br)?;
+                    let start_true_br = self.code.pc();
+                    self.translate_flow(true_br)?;
+                    self.code
+                        .set_op(start_false_br, Bytecode::BrTrue(start_true_br as u16));
                 }
             }
         }
 
         if !flow.result().is_empty() {
             for res in flow.result() {
-                self.move_result(res, def);
+                let local = self
+                    .local_mapping
+                    .get(res)
+                    .ok_or_else(|| anyhow!("Unknown result variable:{}", res))?;
+                self.code.move_local(*local);
             }
-            self.push(Bytecode::Ret);
+            self.code.push(Bytecode::Ret);
         }
         Ok(())
     }
 
-    fn map_calculation(
-        &mut self,
-        calc: &StackFrame,
-        def: &FunDef,
-    ) -> Result<SignatureToken, Error> {
+    fn map_calculation(&mut self, calc: &StackFrame) -> Result<SignatureToken, Error> {
         match calc.frame().as_ref() {
             Frame::Val(val) => {
                 if val > &U256::from(u128::MAX) {
                     // ¯\_(ツ)_/¯ todo replace u128 with u256
-                    self.push(Bytecode::LdU128(u128::MAX));
+                    self.code.push(Bytecode::LdU128(u128::MAX));
                 } else {
-                    self.push(Bytecode::LdU128(val.as_u128()));
+                    self.code.push(Bytecode::LdU128(val.as_u128()));
                 }
                 Ok(SignatureToken::U128)
             }
             Frame::Param(idx) => {
-                self.push(Bytecode::CopyLoc(*idx as u8));
-                if def.abi.inputs[*idx as usize].tp.as_str() == "bool" {
+                self.code.push(Bytecode::CopyLoc(*idx as u8));
+                if self.def.abi.inputs[*idx as usize].tp.as_str() == "bool" {
                     Ok(SignatureToken::Bool)
                 } else {
                     Ok(SignatureToken::U128)
@@ -136,9 +108,9 @@ impl<'a> MvTranslator<'a> {
             }
             Frame::Bool(val) => {
                 if *val {
-                    self.push(Bytecode::LdTrue);
+                    self.code.push(Bytecode::LdTrue);
                 } else {
-                    self.push(Bytecode::LdFalse);
+                    self.code.push(Bytecode::LdFalse);
                 }
                 Ok(SignatureToken::Bool)
             }
@@ -149,44 +121,36 @@ impl<'a> MvTranslator<'a> {
                 todo!()
             }
             Frame::Calc2(code, first, second) => {
-                self.map_calculation(first, def)?;
-                self.map_calculation(second, def)?;
-                self.extend(code.bytecode());
+                self.map_calculation(first)?;
+                self.map_calculation(second)?;
+                self.code.extend(code.bytecode());
                 Ok(code.signature_type())
             }
             Frame::Abort(code) => {
-                self.push(Bytecode::LdU64(*code));
-                self.push(Bytecode::Abort);
+                self.code.push(Bytecode::LdU64(*code));
+                self.code.push(Bytecode::Abort);
                 Ok(SignatureToken::U128)
             }
             Frame::Calc(op, calc) => {
-                let tp = self.map_calculation(calc, def)?;
+                let tp = self.map_calculation(calc)?;
                 match op {
                     UnaryOp::IsZero => {
                         if tp.is_integer() {
-                            self.extend(is_zero_uint());
+                            self.code.extend(is_zero_uint());
                         } else {
-                            self.extend(is_zero_bool());
+                            self.code.extend(is_zero_bool());
                         }
                     }
                     UnaryOp::Not => {
                         if tp.is_integer() {
                             todo!("may by unsupported")
                         } else {
-                            self.push(Bytecode::Neq);
+                            self.code.push(Bytecode::Neq);
                         }
                     }
                 }
                 Ok(SignatureToken::Bool)
             }
         }
-    }
-
-    fn move_to_var(&mut self, id: Var, def: &FunDef) {
-        self.push(Bytecode::StLoc(id.index() + def.abi.inputs.len() as u8));
-    }
-
-    fn move_result(&mut self, var: &Var, def: &FunDef) {
-        self.push(Bytecode::MoveLoc(var.index() + def.abi.inputs.len() as u8));
     }
 }

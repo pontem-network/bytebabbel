@@ -1,5 +1,5 @@
 use crate::evm::function::FunDef as EthFunDef;
-use crate::mv::function::code::MvTranslator;
+use crate::mv::function::code::writer::FunctionCode;
 use crate::mv::function::signature::map_signature;
 use crate::mv::store_signatures;
 use anyhow::Error;
@@ -26,17 +26,16 @@ pub struct MvFunction {
 }
 
 impl MvFunction {
-    pub fn new_public(def: EthFunDef, translator: &mut MvTranslator) -> Result<MvFunction, Error> {
+    pub fn new_public(def: EthFunDef, fn_code: FunctionCode) -> Result<MvFunction, Error> {
         let input = map_signature(def.abi.inputs.as_slice());
         let output = map_signature(def.abi.outputs.as_slice());
-        let (locals, code) = translator.translate_fun(&def)?;
         Ok(MvFunction {
             name: Identifier::new(&*def.abi.name)?,
             visibility: Visibility::Public,
             input,
             output,
-            locals,
-            code,
+            locals: fn_code.locals,
+            code: fn_code.code,
         })
     }
 

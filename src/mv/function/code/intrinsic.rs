@@ -1,5 +1,7 @@
 use move_binary_format::file_format::Bytecode;
 
+pub mod math;
+
 pub fn int_as_bool() -> Vec<Bytecode> {
     vec![Bytecode::LdU128(0), Bytecode::Neq]
 }

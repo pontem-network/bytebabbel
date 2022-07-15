@@ -1,29 +1,31 @@
 use crate::evm::program::Program;
 use crate::mv::function::code::MvTranslator;
 use crate::mv::function::MvFunction;
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use move_binary_format::file_format::empty_module;
 use move_binary_format::internals::ModuleIndex;
 use move_binary_format::CompiledModule;
-use move_bytecode_verifier::CodeUnitVerifier;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 
 #[derive(Debug)]
 pub struct MvModule {
-    address: AccountAddress,
-    name: Identifier,
-    funcs: Vec<MvFunction>,
+    pub address: AccountAddress,
+    pub name: Identifier,
+    pub funcs: Vec<MvFunction>,
 }
 
 impl MvModule {
     pub fn from_evm_program(address: AccountAddress, program: Program) -> Result<MvModule, Error> {
         let name = Identifier::new(program.name())?;
-        let mut translator = MvTranslator::new(&program);
         let funcs = program
             .public_functions()
             .into_iter()
-            .map(|def| MvFunction::new_public(def, &mut translator))
+            .map(|def| {
+                MvTranslator::new(&program, &def)
+                    .translate()
+                    .and_then(|code| MvFunction::new_public(def, code))
+            })
             .collect::<Result<_, _>>()?;
 
         Ok(MvModule {
@@ -38,14 +40,15 @@ impl MvModule {
         for func in self.funcs {
             func.write_function(&mut module)?;
         }
-        CodeUnitVerifier::verify_module(&module).map_err(|err| {
-            anyhow!(
-                "Verification error:{:?}-{:?}. Message:{:?}",
-                err.major_status(),
-                err.sub_status(),
-                err.message()
-            )
-        })?;
+
+        // CodeUnitVerifier::verify_module(&module).map_err(|err| {
+        //     anyhow!(
+        //         "Verification error:{:?}-{:?}. Message:{:?}",
+        //         err.major_status(),
+        //         err.sub_status(),
+        //         err.message()
+        //     )
+        // })?;
         Ok(module)
     }
 

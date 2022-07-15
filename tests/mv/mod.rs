@@ -7,6 +7,8 @@ use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
 use move_ir_types::location::Spanned;
 
+mod function;
+
 #[test]
 pub fn test_move_translator() {
     let program = parse_program(
