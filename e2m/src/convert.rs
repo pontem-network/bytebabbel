@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Error, Result};
 
+use eth2move::Math;
 use move_core_types::account_address::AccountAddress;
 
 use crate::Args;
@@ -13,6 +14,7 @@ pub struct Convert {
     bin: PathBuf,
     mv: PathBuf,
     trace: bool,
+    math: Math,
     address: AccountAddress,
     module_name: String,
 }
@@ -22,8 +24,14 @@ impl Convert {
         let abi = fs::read_to_string(&self.abi)?;
         let eth = fs::read_to_string(&self.bin)?;
 
-        let move_bytecode: Vec<u8> =
-            eth2move::translate(self.address, &self.module_name, &eth, &abi, self.trace)?;
+        let move_bytecode: Vec<u8> = eth2move::translate(
+            self.address,
+            &self.module_name,
+            &eth,
+            &abi,
+            self.trace,
+            self.math,
+        )?;
         fs::write(&self.mv, move_bytecode)?;
         Ok(&self.mv)
     }
@@ -44,6 +52,7 @@ impl TryFrom<Args> for Convert {
             abi,
             bin,
             trace: args.trace,
+            math: args.math_backend.parse()?,
             address,
             module_name,
         })

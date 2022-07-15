@@ -29,7 +29,11 @@ pub struct Args {
     #[clap(long = "address", display_order = 5, default_value = "0x1")]
     module_address: String,
 
-    #[clap(short, long, display_order = 6, value_parser, default_value = "false")]
+    /// Math backend.
+    #[clap(long = "math", short = 'm', display_order = 6, default_value = "u128")]
+    math_backend: String,
+
+    #[clap(short, long, display_order = 7, value_parser, default_value = "false")]
     trace: bool,
 }
 
