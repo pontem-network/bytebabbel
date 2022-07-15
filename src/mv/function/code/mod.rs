@@ -5,6 +5,7 @@ use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::bytecode::executor::types::U256;
 use crate::evm::function::FunDef;
 use crate::evm::program::Program;
+use crate::mv::function::code::intrinsic::math::MathModel;
 use crate::mv::function::code::intrinsic::{is_zero_bool, is_zero_uint};
 use crate::mv::function::code::ops::IntoCode;
 use crate::mv::function::code::writer::{CodeWriter, FunctionCode};
@@ -16,20 +17,22 @@ pub mod intrinsic;
 pub mod ops;
 pub mod writer;
 
-pub struct MvTranslator<'a> {
+pub struct MvTranslator<'a, M: MathModel> {
     program: &'a Program,
     def: &'a FunDef<'a>,
     code: CodeWriter,
     local_mapping: HashMap<Var, LocalIndex>,
+    math: &'a mut M,
 }
 
-impl<'a> MvTranslator<'a> {
-    pub fn new(program: &'a Program, def: &'a FunDef) -> MvTranslator<'a> {
+impl<'a, M: MathModel> MvTranslator<'a, M> {
+    pub fn new(program: &'a Program, def: &'a FunDef, math: &'a mut M) -> MvTranslator<'a, M> {
         MvTranslator {
             program,
             def,
             code: CodeWriter::new(def.abi.inputs.len(), program.trace),
             local_mapping: Default::default(),
+            math,
         }
     }
 

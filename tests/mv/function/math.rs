@@ -1,88 +1,74 @@
 use crate::common::executor::MoveExecutor;
-use eth2move::mv::function::code::intrinsic::math::u256_math::U256Math;
-use eth2move::mv::function::code::intrinsic::math::Cast;
-use eth2move::mv::function::code::writer::CodeWriter;
-use eth2move::mv::function::MvFunction;
+use eth2move::evm::abi::Abi;
+use eth2move::evm::bytecode::executor::execution::FunctionFlow;
+use eth2move::evm::bytecode::executor::stack::{Frame, StackFrame};
+use eth2move::evm::program::Program;
+use eth2move::mv::function::code::intrinsic::math::u256_model::U256MathModel;
 use eth2move::mv::mvir::MvModule;
-use move_binary_format::binary_views::BinaryIndexedView;
-use move_binary_format::file_format::{
-    Bytecode, Signature, SignatureIndex, SignatureToken, Visibility,
-};
-use move_binary_format::CompiledModule;
-use move_bytecode_source_map::mapping::SourceMapping;
-use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_core_types::value::MoveValue;
-use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
-use move_ir_types::location::Spanned;
+use std::collections::HashMap;
 
-pub fn make_module(
-    name: &str,
-    input: Vec<SignatureToken>,
-    output: Vec<SignatureToken>,
-    signature: Vec<SignatureToken>,
-    code: CodeWriter,
-) -> Vec<u8> {
-    let code = code.freeze();
-    let function = MvFunction {
-        name: Identifier::new(name).unwrap(),
-        visibility: Visibility::Public,
-        input: Signature(input),
-        output: Signature(output),
-        locals: code.locals,
-        code: code.code,
-    };
-    let mut module: CompiledModule = MvModule {
-        address: CORE_CODE_ADDRESS,
-        name: Identifier::new("TestModule").unwrap(),
-        funcs: vec![function],
-    }
-    .make_move_module()
-    .unwrap();
-    module.signatures.push(Signature(signature));
-
-    let mut buff = Vec::new();
-    module.serialize(&mut buff).unwrap();
-    println!("{:?}", module);
-    let source_mapping = SourceMapping::new_from_view(
-        BinaryIndexedView::Module(&module),
-        Spanned::unsafe_no_loc(()).loc,
+pub fn make_module(flow: FunctionFlow) -> Vec<u8> {
+    let mut graph = HashMap::default();
+    let abi = Abi::try_from(
+        "[
+        {
+            \"inputs\": [
+            {
+                \"internalType\": \"uint256\",
+                \"name\": \"a\",
+                \"type\": \"uint256\"
+            },
+            {
+                \"internalType\": \"uint256\",
+                \"name\": \"b\",
+                \"type\": \"uint256\"
+            }
+            ],
+            \"name\": \"fun_1\",
+            \"outputs\": [
+            {
+                \"internalType\": \"uint256\",
+                \"name\": \"\",
+                \"type\": \"uint256\"
+            }
+            ],
+            \"stateMutability\": \"pure\",
+            \"type\": \"function\"
+        }
+    ]",
     )
     .unwrap();
+    let hash = abi.fun_hashes().next().unwrap();
 
-    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-    let dissassemble_string = disassembler.disassemble().unwrap();
-    println!("{}", dissassemble_string);
+    graph.insert(hash, flow);
+    let program = Program::new("TestMod", graph, None, abi, true).unwrap();
+    let module =
+        MvModule::from_evm_program(CORE_CODE_ADDRESS, U256MathModel::default(), program).unwrap();
 
-    buff
+    let compiled_module = module.make_move_module().unwrap();
+    let mut bytecode = Vec::new();
+    compiled_module.serialize(&mut bytecode).unwrap();
+    bytecode
 }
 
 #[test]
 pub fn test_u256_math_cast() {
-    let math = U256Math {
-        vec_sig_index: SignatureIndex(3),
-    };
+    let mut flow = FunctionFlow::default();
+    let var = flow.calc_var(StackFrame::new(Frame::Param(0)));
+    flow.set_result(var);
+    let module = make_module(flow);
 
-    let mut code = CodeWriter::new(1, true);
-
-    code.push(Bytecode::CopyLoc(0));
-    math.cast_from_u128(&mut code);
-    math.cast_to_u128(&mut code);
-    code.push(Bytecode::Ret);
-
-    let module = make_module(
-        "u256_cast",
-        vec![SignatureToken::U128],
-        vec![SignatureToken::U128],
-        vec![SignatureToken::U64],
-        code,
-    );
     let mut executor = MoveExecutor::new();
     executor.deploy("0x1", module);
 
     fn test(exec: &mut MoveExecutor, expected: u128) {
         let res = exec
-            .run("0x1::TestModule::u256_cast", &expected.to_string())
+            .run(
+                "0x1::TestMod::fun_1",
+                &format!("{}, 0", expected.to_string()),
+            )
             .unwrap()
             .returns;
         let (val, tp) = &res[0];

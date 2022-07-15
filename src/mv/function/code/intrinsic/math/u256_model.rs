@@ -1,16 +1,21 @@
-use crate::mv::function::code::intrinsic::math::Cast;
+use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
+use crate::mv::function::code::intrinsic::math::{
+    BinaryOpCode, CastBool, CastU128, MathModel, PrepareSignatures, Type, UnaryOpCode,
+};
 use crate::mv::function::code::writer::CodeWriter;
+use crate::mv::function::signature::SignatureWriter;
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken};
 
 const EU128_OVERFLOW: u64 = 1;
 
-pub struct U256Math {
-    pub vec_sig_index: SignatureIndex,
+#[derive(Default)]
+pub struct U256MathModel {
+    vec_sig_index: SignatureIndex,
 }
 
-impl Cast for U256Math {
+impl CastU128 for U256MathModel {
     /// u128 -> u256 ([u64; 4])
-    fn cast_from_u128(&self, code: &mut CodeWriter) {
+    fn write_from_u128(&self, code: &mut CodeWriter) {
         let input = code.set_var(SignatureToken::U128);
         code.extend([
             Bytecode::LdU64(0),
@@ -29,7 +34,7 @@ impl Cast for U256Math {
     }
 
     /// u256([u64; 4]) -> u128   
-    fn cast_to_u128(&self, code: &mut CodeWriter) {
+    fn write_to_u128(&self, code: &mut CodeWriter) {
         let tmp_u128 = code.borrow_local(SignatureToken::U128);
         let tmp_u64 = code.borrow_local(SignatureToken::U64);
         code.extend([
@@ -60,3 +65,39 @@ impl Cast for U256Math {
         code.release_local(tmp_u128);
     }
 }
+
+impl CastBool for U256MathModel {
+    fn write_from_bool(&self, _bytecode: &mut CodeWriter) {
+        todo!()
+    }
+
+    fn write_to_bool(&self, _bytecode: &mut CodeWriter) {
+        todo!()
+    }
+}
+
+impl BinaryOpCode for U256MathModel {
+    fn code(
+        &self,
+        _writer: &mut CodeWriter,
+        _op: BinaryOp,
+        _a: SignatureToken,
+        _b: SignatureToken,
+    ) -> Type {
+        todo!()
+    }
+}
+
+impl UnaryOpCode for U256MathModel {
+    fn code(&self, _writer: &mut CodeWriter, _op: UnaryOp, _a: SignatureToken) -> Type {
+        todo!()
+    }
+}
+
+impl PrepareSignatures for U256MathModel {
+    fn make_signature(&mut self, sw: &mut SignatureWriter) {
+        sw.make_signature(vec![SignatureToken::U64]);
+    }
+}
+
+impl MathModel for U256MathModel {}

@@ -93,11 +93,6 @@ impl CodeWriter {
     }
 }
 
-// impl Drop for CodeWriter {
-//     fn drop(&mut self) {
-//     }
-// }
-
 #[derive(Default)]
 pub struct Locals {
     free: Vec<LocalIndex>,
