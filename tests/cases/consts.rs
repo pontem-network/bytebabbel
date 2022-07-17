@@ -8,7 +8,7 @@ pub fn consts_fn_tests() {
         "0x1::ConstFn",
         include_str!("../assets/bin/ConstFn.bin"),
         include_str!("../assets/bin/ConstFn.abi"),
-        true,
+        false,
     );
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);

@@ -2,11 +2,19 @@ use crate::evm::bytecode::executor::stack::StackFrame;
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Default, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Var(u8);
+pub struct Var(u16);
 
 impl Var {
     pub fn index(self) -> u8 {
-        self.0
+        self.0 as u8
+    }
+
+    pub fn unit() -> Var {
+        Var(u16::MAX)
+    }
+
+    pub fn is_unit(&self) -> bool {
+        self.0 == u16::MAX
     }
 }
 
@@ -31,12 +39,12 @@ impl FunctionFlow {
         idx
     }
 
-    pub fn calc_stack(&mut self, frame: StackFrame) {
-        self.flow.push(Execution::Calc(frame));
-    }
-
-    pub fn brunch(&mut self, true_br: FunctionFlow, false_br: FunctionFlow) {
-        self.flow.push(Execution::Branch { true_br, false_br })
+    pub fn brunch(&mut self, cnd: StackFrame, true_br: FunctionFlow, false_br: FunctionFlow) {
+        self.flow.push(Execution::Branch {
+            cnd,
+            true_br,
+            false_br,
+        })
     }
 
     pub fn set_result(&mut self, var: Var) {
@@ -61,6 +69,7 @@ pub enum Execution {
     SetVar(Var, StackFrame),
     Calc(StackFrame),
     Branch {
+        cnd: StackFrame,
         true_br: FunctionFlow,
         false_br: FunctionFlow,
     },

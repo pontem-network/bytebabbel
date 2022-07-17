@@ -49,4 +49,22 @@ library MathMinusFn {
     function minusdivide_params_with_const(uint a) public pure returns (uint) {
         return a - 4 / 2;
     }
+
+    // # minusdivide_params_with_const_2(6) 1
+    function minusdivide_params_with_const_2(uint a) public pure returns (uint) {
+        return (a - 4) / 2;
+    }
+
+
+    // # minusdivide_params_with_const_3(4, 4, 2) 2
+    function minusdivide_params_with_const_3(uint a, uint b, uint c) public pure returns (uint) {
+        return a - b / c;
+    }
+
+    // # minusdivide_params_with_const_4(4) 2
+    function minusdivide_params_with_const_4(uint a) public pure returns (uint) {
+        uint b = 4;
+        uint c = 2;
+        return a - b / c;
+    }
 }

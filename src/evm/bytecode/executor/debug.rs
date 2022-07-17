@@ -24,13 +24,19 @@ pub fn print_execution(exec: &Execution, width: usize) {
         Execution::SetVar(val, calc) => {
             write(format!("let var_{} = {{", val.index()), width, true);
             write_frame(calc, width + 5, true);
-            write("}}", width, true);
+            write("}", width, true);
         }
         Execution::Calc(calc) => {
             write_frame(calc, width, true);
         }
-        Execution::Branch { true_br, false_br } => {
-            write("IF", width, true);
+        Execution::Branch {
+            cnd,
+            true_br,
+            false_br,
+        } => {
+            write("IF (", width, false);
+            write_frame(cnd, 0, false);
+            write(")", 0, true);
             write("True:", width, true);
             print_flow(true_br, width + 5);
             write("False:", width, true);

@@ -1,0 +1,199 @@
+use crate::evm::bytecode::executor::ops::BinaryOp;
+use crate::mv::function::code::intrinsic::math::{BinaryOpCode, CastBool, MathModel};
+use crate::mv::function::code::writer::CodeWriter;
+use crate::U128MathModel;
+use move_binary_format::file_format::{Bytecode, LocalIndex, SignatureToken};
+
+impl BinaryOpCode for U128MathModel {
+    fn code(
+        &self,
+        code: &mut CodeWriter,
+        op: BinaryOp,
+        a: SignatureToken,
+        b: SignatureToken,
+    ) -> SignatureToken {
+        match op {
+            BinaryOp::EQ => {
+                self.cast_to_cmp(code, a, b);
+                code.push(Bytecode::Eq);
+                SignatureToken::Bool
+            }
+            BinaryOp::Lt => {
+                self.cast_to_cmp(code, a, b);
+                code.push(Bytecode::Lt);
+                SignatureToken::Bool
+            }
+            BinaryOp::Gt => {
+                self.cast_to_cmp(code, a, b);
+                code.push(Bytecode::Gt);
+                SignatureToken::Bool
+            }
+            BinaryOp::Shr => {
+                self.cast(code, a, b);
+                code.push(Bytecode::Shr);
+                SignatureToken::U128
+            }
+            BinaryOp::Add => {
+                self.cast(code, a, b);
+                code.push(Bytecode::Add);
+                SignatureToken::U128
+            }
+            BinaryOp::And => {
+                self.cast(code, a, b);
+                code.push(Bytecode::BitAnd);
+                SignatureToken::U128
+            }
+            BinaryOp::Mul => {
+                self.cast(code, a, b);
+                code.push(Bytecode::Mul);
+                SignatureToken::U128
+            }
+            BinaryOp::Sub => {
+                self.cast(code, a, b);
+                code.push(Bytecode::Sub);
+                SignatureToken::U128
+            }
+            BinaryOp::Div => {
+                self.cast(code, a, b);
+                code.push(Bytecode::Div);
+                SignatureToken::U128
+            }
+            BinaryOp::SLt => {
+                todo!()
+            }
+            BinaryOp::Byte => {
+                todo!()
+            }
+        }
+    }
+}
+
+impl U128MathModel {
+    fn cast_to_cmp(&self, code: &mut CodeWriter, a: SignatureToken, b: SignatureToken) {
+        if a == SignatureToken::Bool || b == SignatureToken::Bool {
+            if b != SignatureToken::Bool {
+                self.write_to_bool(code);
+            }
+            let b_var = code.set_var(SignatureToken::Bool);
+            if b != SignatureToken::Bool {
+                self.write_to_bool(code);
+            }
+            code.move_local(b_var);
+        }
+    }
+
+    fn cast(&self, code: &mut CodeWriter, a: SignatureToken, b: SignatureToken) {
+        if a != SignatureToken::U128 || b != SignatureToken::U128 {
+            if b == SignatureToken::Bool {
+                self.write_from_bool(code);
+            };
+            let b_var = code.set_var(U128MathModel::math_type());
+
+            if a == SignatureToken::Bool {
+                self.write_from_bool(code);
+            }
+            code.move_local(b_var);
+        }
+    }
+
+    fn cast_and_store_local(
+        &self,
+        code: &mut CodeWriter,
+        a: SignatureToken,
+        b: SignatureToken,
+    ) -> (LocalIndex, LocalIndex) {
+        if a != SignatureToken::U128 || b != SignatureToken::U128 {
+            if b == SignatureToken::Bool {
+                self.write_from_bool(code);
+            };
+            let var_b = code.set_var(U128MathModel::math_type());
+
+            if a == SignatureToken::Bool {
+                self.write_from_bool(code);
+            }
+            let var_a = code.set_var(U128MathModel::math_type());
+            (var_b, var_a)
+        } else {
+            let var_b = code.set_var(U128MathModel::math_type());
+            let var_a = code.set_var(U128MathModel::math_type());
+            (var_b, var_a)
+        }
+    }
+}
+
+///
+/// let revert_b = u128::max - b;
+/// if revert_b < a {
+///     /// overflow
+///     a - revert_b - 1
+/// } else {
+///     a + b
+/// }
+///
+fn overflowing_add(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
+    code.extend([
+        Bytecode::LdU128(u128::MAX),
+        Bytecode::CopyLoc(b),
+        Bytecode::Sub,
+    ]);
+    let revert_b = code.set_var(SignatureToken::U128);
+    code.extend([
+        Bytecode::CopyLoc(revert_b),
+        Bytecode::CopyLoc(a),
+        Bytecode::Lt,
+    ]);
+    let res = code.borrow_local(SignatureToken::U128);
+    let pc = code.pc();
+    code.extend([
+        Bytecode::BrTrue(pc + 6),
+        Bytecode::MoveLoc(a),
+        Bytecode::MoveLoc(b),
+        Bytecode::Add,
+        Bytecode::StLoc(res),
+    ]);
+    let pc = code.pc();
+    code.push(Bytecode::Branch(pc + 7));
+    code.extend([
+        Bytecode::MoveLoc(a),
+        Bytecode::MoveLoc(revert_b),
+        Bytecode::Sub,
+        Bytecode::LdU128(1),
+        Bytecode::Sub,
+        Bytecode::StLoc(res),
+    ]);
+    code.move_local(res);
+    code.release_local(revert_b);
+}
+
+///
+/// if b > a {
+/// // overflow
+///  u128::MAX - (b - a) + 1
+/// } else {
+///  a - b
+/// }
+fn overflowing_sub(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
+    code.extend([Bytecode::CopyLoc(a), Bytecode::CopyLoc(b), Bytecode::Gt]);
+    let pc = code.pc();
+    let res = code.borrow_local(SignatureToken::U128);
+    code.extend([
+        Bytecode::BrTrue(pc + 6),
+        Bytecode::MoveLoc(b),
+        Bytecode::MoveLoc(a),
+        Bytecode::Sub,
+        Bytecode::StLoc(res),
+    ]);
+    let pc = code.pc();
+    code.extend([
+        Bytecode::Branch(pc + 9),
+        Bytecode::LdU128(u128::MAX),
+        Bytecode::MoveLoc(b),
+        Bytecode::MoveLoc(a),
+        Bytecode::Sub,
+        Bytecode::Sub,
+        Bytecode::LdU128(1),
+        Bytecode::Add,
+        Bytecode::StLoc(res),
+    ]);
+    code.move_local(res)
+}

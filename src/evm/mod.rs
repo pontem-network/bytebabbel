@@ -28,7 +28,7 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str, trace: bool) -> Resu
         .collect::<BTreeMap<_, _>>();
     let (blocks, ctor) = ctor::split(blocks)?;
 
-    let mut executor = StaticExecutor::new(&blocks, true);
+    let mut executor = StaticExecutor::new(&blocks, trace);
     let functions = abi
         .fun_hashes()
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))

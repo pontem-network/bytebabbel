@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
 pub enum BinaryOp {
     EQ,
     Lt,
@@ -15,7 +15,7 @@ pub enum BinaryOp {
     Byte,
 }
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum UnaryOp {
     IsZero,
     Not,

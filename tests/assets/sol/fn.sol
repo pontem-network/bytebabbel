@@ -35,4 +35,27 @@ library Fn {
             return two();
         }
     }
+
+    // # fn_const()
+    function fn_const() public pure{ }
+
+    // # test_3 (0, 1, 2) 1
+    function test_3(uint a, uint b, uint c) public pure returns (uint){
+        bool stop = a < 1;
+        if (stop) {
+            return b;
+        }
+
+        return b + c;
+    }
+
+    // # test_1 (0, 1, 2) 1
+    // # test_1 (323232323, 1, 2) 2
+    function test_1(uint a, uint b, uint c) public pure returns (uint){
+        if (a == 0) {
+            return b;
+        } else {
+            return c;
+        }
+    }
 }

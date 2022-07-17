@@ -23,7 +23,7 @@ pub fn test_solc() {
         let module_address = format!("0x1::{}", &sol.module_name);
         let eth = fs::read_to_string(&sol.bin_path).unwrap();
         let abi = fs::read_to_string(&sol.abi_path).unwrap();
-        let bytecode = make_move_module(&module_address, &eth, &abi, true);
+        let bytecode = make_move_module(&module_address, &eth, &abi, false);
 
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);

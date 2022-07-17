@@ -1,6 +1,7 @@
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::bytecode::executor::types::U256;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 #[derive(Default, Debug, Clone)]
 pub struct Memory {
@@ -23,5 +24,14 @@ impl Memory {
 
     pub fn clean(&mut self) {
         self.mem.clear();
+    }
+}
+
+impl Display for Memory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for (rf, val) in &self.mem {
+            writeln!(f, "{:?} = {:?}", rf, val)?;
+        }
+        Ok(())
     }
 }

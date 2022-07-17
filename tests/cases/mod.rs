@@ -28,8 +28,10 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str, trace: bool) -> Vec<u8
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-    let dissassemble_string = disassembler.disassemble().unwrap();
-    println!("{}", dissassemble_string);
+    if trace {
+        let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+        let dissassemble_string = disassembler.disassemble().unwrap();
+        println!("{}", dissassemble_string);
+    }
     bytecode
 }

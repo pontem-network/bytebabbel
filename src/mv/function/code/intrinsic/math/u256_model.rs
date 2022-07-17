@@ -1,6 +1,7 @@
 use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
+use crate::evm::bytecode::executor::types::U256;
 use crate::mv::function::code::intrinsic::math::{
-    BinaryOpCode, CastBool, CastU128, MathModel, PrepareSignatures, Type, UnaryOpCode,
+    BinaryOpCode, CastBool, CastU128, Literal, MathModel, PrepareSignatures, UnaryOpCode,
 };
 use crate::mv::function::code::writer::CodeWriter;
 use crate::mv::function::signature::SignatureWriter;
@@ -15,7 +16,7 @@ pub struct U256MathModel {
 
 impl CastU128 for U256MathModel {
     /// u128 -> u256 ([u64; 4])
-    fn write_from_u128(&self, code: &mut CodeWriter) {
+    fn write_from_u128(&self, code: &mut CodeWriter) -> SignatureToken {
         let input = code.set_var(SignatureToken::U128);
         code.extend([
             Bytecode::LdU64(0),
@@ -31,6 +32,7 @@ impl CastU128 for U256MathModel {
             Bytecode::VecPack(self.vec_sig_index, 4),
         ]);
         code.release_local(input);
+        U256MathModel::math_type()
     }
 
     /// u256([u64; 4]) -> u128   
@@ -67,8 +69,8 @@ impl CastU128 for U256MathModel {
 }
 
 impl CastBool for U256MathModel {
-    fn write_from_bool(&self, _bytecode: &mut CodeWriter) {
-        todo!()
+    fn write_from_bool(&self, _bytecode: &mut CodeWriter) -> SignatureToken {
+        U256MathModel::math_type()
     }
 
     fn write_to_bool(&self, _bytecode: &mut CodeWriter) {
@@ -83,13 +85,13 @@ impl BinaryOpCode for U256MathModel {
         _op: BinaryOp,
         _a: SignatureToken,
         _b: SignatureToken,
-    ) -> Type {
+    ) -> SignatureToken {
         todo!()
     }
 }
 
 impl UnaryOpCode for U256MathModel {
-    fn code(&self, _writer: &mut CodeWriter, _op: UnaryOp, _a: SignatureToken) -> Type {
+    fn code(&self, _writer: &mut CodeWriter, _op: UnaryOp, _a: SignatureToken) -> SignatureToken {
         todo!()
     }
 }
@@ -100,4 +102,14 @@ impl PrepareSignatures for U256MathModel {
     }
 }
 
-impl MathModel for U256MathModel {}
+impl Literal for U256MathModel {
+    fn set_literal(&self, _bytecode: &mut CodeWriter, _val: &U256) -> SignatureToken {
+        todo!()
+    }
+}
+
+impl MathModel for U256MathModel {
+    fn math_type() -> SignatureToken {
+        SignatureToken::Vector(Box::new(SignatureToken::U64))
+    }
+}

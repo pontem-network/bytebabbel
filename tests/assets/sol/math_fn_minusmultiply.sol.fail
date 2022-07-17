@@ -9,10 +9,5 @@ library MathMinusMultiplyFnFail {
         return a - b * c;
     }
 
-    // # minusmultiply_params_with_const(6) 12
-    function minusmultiply_params_with_const_2(uint a) public pure returns (uint) {
-        uint b = 2;
-        uint c = 3;
-        return (a - b) * c;
-    }
+
 }
