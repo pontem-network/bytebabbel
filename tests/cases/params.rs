@@ -1,14 +1,16 @@
 use crate::cases::make_move_module;
 use crate::common::executor::MoveExecutor;
+use crate::log_init;
 use move_core_types::value::MoveValue;
 
 #[test]
 pub fn plus_fn_tests() {
+    log_init();
+
     let bytecode = make_move_module(
         "0x1::Params",
         include_str!("../assets/bin/Parameters.bin"),
         include_str!("../assets/bin/Parameters.abi"),
-        true,
     );
 
     let mut vm = MoveExecutor::new();

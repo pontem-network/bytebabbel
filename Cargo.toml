@@ -33,6 +33,7 @@ move-vm-types = { git = "https://github.com/move-language/move.git" }
 move-compiler = { git = "https://github.com/move-language/move.git" }
 bcs = "0.1.3"
 rand = "0.8.5"
+env_logger = "0.9.0"
 
 [build-dependencies]
 wax = "0.5"

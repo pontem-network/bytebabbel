@@ -459,6 +459,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "env_logger",
  "hex",
  "itertools",
  "log",

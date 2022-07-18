@@ -1,5 +1,6 @@
 use crate::cases::make_move_module;
 use crate::common::executor::MoveExecutor;
+use crate::log_init;
 use anyhow::{anyhow, bail, Result};
 use move_core_types::value::MoveValue;
 use serde_json::Value;
@@ -13,6 +14,8 @@ const BIN_DIRECTORY: &str = "tests/assets/bin";
 
 #[test]
 pub fn test_solc() {
+    log_init();
+
     let sol_files =
         SolFile::from_sol_dir(&PathBuf::from(SOL_DIRECTORY).canonicalize().unwrap()).unwrap();
     let mut success = true;
@@ -23,7 +26,7 @@ pub fn test_solc() {
         let module_address = format!("0x1::{}", &sol.module_name);
         let eth = fs::read_to_string(&sol.bin_path).unwrap();
         let abi = fs::read_to_string(&sol.abi_path).unwrap();
-        let bytecode = make_move_module(&module_address, &eth, &abi, true);
+        let bytecode = make_move_module(&module_address, &eth, &abi);
 
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
