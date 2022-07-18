@@ -429,6 +429,7 @@ dependencies = [
  "anyhow",
  "clap",
  "eth2move",
+ "logs",
  "move-core-types",
 ]
 
@@ -446,6 +447,7 @@ dependencies = [
  "bcs",
  "hex",
  "itertools",
+ "logs",
  "maplit",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -835,6 +837,15 @@ checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
  "serde",
+]
+
+[[package]]
+name = "logs"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0300a352762d77cf7321824c24a98de6e1118cd5b03cb8becfec2b4a7b53c46b"
+dependencies = [
+ "time",
 ]
 
 [[package]]

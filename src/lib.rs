@@ -16,10 +16,9 @@ pub fn translate(
     name: &str,
     bytecode: &str,
     abi: &str,
-    trace: bool,
     model: Math,
 ) -> Result<Vec<u8>, Error> {
-    let program = parse_program(name, bytecode, abi, trace)?;
+    let program = parse_program(name, bytecode, abi)?;
     let module = match model {
         Math::U128 => MvModule::from_evm_program(addr, U128MathModel::default(), program)?,
         Math::U256 => MvModule::from_evm_program(addr, U256MathModel::default(), program)?,

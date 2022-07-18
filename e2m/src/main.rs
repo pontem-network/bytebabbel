@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+use std::iter::Map;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Parser;
+use logs::LogConfig;
 
 mod convert;
 use crate::convert::Convert;
@@ -33,8 +36,8 @@ pub struct Args {
     #[clap(long = "math", short = 'm', display_order = 6, default_value = "u128")]
     math_backend: String,
 
-    #[clap(short, long, display_order = 7, value_parser, default_value = "false")]
-    trace: bool,
+    #[clap(short, long, display_order = 6, value_parser)]
+    trace: Option<bool>,
 }
 
 fn main() {
@@ -49,7 +52,41 @@ fn main() {
 }
 
 fn run() -> Result<String> {
-    Convert::try_from(Args::parse())?
+    let args: Args = Args::parse();
+    inic_of_log_configs(&args)?;
+
+    Convert::try_from(args)?
         .create_mv()
         .map(|path| path.to_string_lossy().to_string())
+}
+
+fn inic_of_log_configs(args: &Args) -> Result<()> {
+    let mut conf = if let Some(is_trace) = args.trace {
+        if is_trace {
+            LogConfig::enable_all()
+        } else {
+            LogConfig::disable_all()
+        }
+    } else {
+        inic_of_log_configs_by_env()?
+    };
+
+    conf.date_format("%T")?.apply();
+    Ok(())
+}
+
+// Unitialize based on data from "env"
+// ENV Examples
+//  LOG=info
+//  LOG=!all
+//  LOG=all,!debug,info,!error
+fn inic_of_log_configs_by_env() -> Result<LogConfig> {
+    for name in ["RUST_LOG", "LOGS", "LOG"] {
+        if !std::env::var(name).is_ok() {
+            continue;
+        }
+        let conf = LogConfig::from_env_name(name).map_err(|err| anyhow!("{err:?}"))?;
+        return Ok(conf);
+    }
+    Ok(LogConfig::disable_all())
 }
