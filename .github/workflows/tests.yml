@@ -62,12 +62,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: cargo +nightly build
-
-      - name: Test
-        run: cargo +nightly test
-        shell: bash
+      - name: Test ./tests/assets/build.sh
+        run: ./tests/assets/build.sh
 
       - name: Formatting
         run: |

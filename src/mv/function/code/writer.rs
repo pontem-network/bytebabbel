@@ -6,17 +6,15 @@ pub struct CodeWriter {
     locals: HashMap<SignatureToken, Locals>,
     local_seq: LocalIndex,
     params_count: LocalIndex,
-    trace: bool,
 }
 
 impl CodeWriter {
-    pub fn new(params_count: usize, trace: bool) -> CodeWriter {
+    pub fn new(params_count: usize) -> CodeWriter {
         CodeWriter {
             code: vec![],
             locals: Default::default(),
             local_seq: params_count as LocalIndex,
             params_count: params_count as LocalIndex,
-            trace,
         }
     }
 
@@ -76,14 +74,12 @@ impl CodeWriter {
             })
             .collect::<Vec<_>>();
 
-        if self.trace {
-            for (local, tkn) in locals.iter().enumerate() {
-                println!("loc_{:?} = {:?}", local, tkn);
-            }
+        for (local, tkn) in locals.iter().enumerate() {
+            log::trace!("loc_{:?} = {:?}", local, tkn);
+        }
 
-            for (idx, code) in self.code.iter().enumerate() {
-                println!("{idx}: {code:?}");
-            }
+        for (idx, code) in self.code.iter().enumerate() {
+            log::trace!("{idx}: {code:?}");
         }
 
         FunctionCode {

@@ -1,7 +1,12 @@
+use std::collections::HashMap;
+use std::io::Write;
+use std::iter::Map;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Parser;
+use env_logger::Builder;
+use log::LevelFilter;
 
 mod convert;
 use crate::convert::Convert;
@@ -33,8 +38,8 @@ pub struct Args {
     #[clap(long = "math", short = 'm', display_order = 6, default_value = "u128")]
     math_backend: String,
 
-    #[clap(short, long, display_order = 7, value_parser, default_value = "false")]
-    trace: bool,
+    #[clap(short, long, display_order = 6, value_parser)]
+    trace: Option<bool>,
 }
 
 fn main() {
@@ -49,7 +54,53 @@ fn main() {
 }
 
 fn run() -> Result<String> {
-    Convert::try_from(Args::parse())?
+    let args: Args = Args::parse();
+    inic_of_log_configs(&args)?;
+
+    Convert::try_from(args)?
         .create_mv()
         .map(|path| path.to_string_lossy().to_string())
+}
+
+fn inic_of_log_configs(args: &Args) -> Result<()> {
+    let mut conf = if let Some(is_trace) = args.trace {
+        let mut builder = Builder::new();
+        if is_trace {
+            builder.filter_level(LevelFilter::Trace);
+        } else {
+            builder.filter_level(LevelFilter::Off);
+        }
+        builder
+    } else {
+        inic_of_log_configs_by_env()?
+    };
+
+    conf.format(|buf, record| {
+        if record.level() == log::Level::Trace {
+            writeln!(buf, "{}", record.args())
+        } else {
+            writeln!(buf, "[{}]: {}", record.level(), record.args())
+        }
+    });
+    conf.init();
+    Ok(())
+}
+
+// Unitialize based on data from "env"
+// ENV Examples
+//  LOG=info
+//  LOG=!all
+//  LOG=all,!debug,info,!error
+fn inic_of_log_configs_by_env() -> Result<env_logger::Builder> {
+    let mut builder = Builder::new();
+    builder.filter_level(LevelFilter::Off);
+
+    for name in ["RUST_LOG", "LOGS", "LOG"] {
+        if !std::env::var(name).is_ok() {
+            continue;
+        }
+        builder.parse_env(name);
+        return Ok(builder);
+    }
+    Ok(builder)
 }

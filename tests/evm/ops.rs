@@ -1,9 +1,12 @@
+use crate::log_init;
 use eth2move::evm::bytecode::instruction::Instruction;
 use eth2move::evm::bytecode::ops::InstructionIter;
 use eth2move::evm::{parse_bytecode, OpCode};
 
 #[test]
 fn test_iter() {
+    log_init();
+
     let program = "0x608040526002610100";
     let bytecode =
         InstructionIter::new(parse_bytecode(program).unwrap()).collect::<Vec<Instruction>>();

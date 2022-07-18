@@ -13,7 +13,6 @@ pub struct Convert {
     abi: PathBuf,
     bin: PathBuf,
     mv: PathBuf,
-    trace: bool,
     math: Math,
     address: AccountAddress,
     module_name: String,
@@ -24,14 +23,8 @@ impl Convert {
         let abi = fs::read_to_string(&self.abi)?;
         let eth = fs::read_to_string(&self.bin)?;
 
-        let move_bytecode: Vec<u8> = eth2move::translate(
-            self.address,
-            &self.module_name,
-            &eth,
-            &abi,
-            self.trace,
-            self.math,
-        )?;
+        let move_bytecode: Vec<u8> =
+            eth2move::translate(self.address, &self.module_name, &eth, &abi, self.math)?;
         fs::write(&self.mv, move_bytecode)?;
         Ok(&self.mv)
     }
@@ -51,7 +44,6 @@ impl TryFrom<Args> for Convert {
             mv: args.output_path.unwrap_or(abi.with_extension("mv")),
             abi,
             bin,
-            trace: args.trace,
             math: args.math_backend.parse()?,
             address,
             module_name,
