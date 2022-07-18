@@ -13,7 +13,6 @@ pub struct Program {
     functions_graph: HashMap<FunHash, FunctionFlow>,
     ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
     functions: PublicApi,
-    pub trace: bool,
 }
 
 impl Program {
@@ -22,7 +21,6 @@ impl Program {
         functions_graph: HashMap<FunHash, FunctionFlow>,
         ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
         abi: Abi,
-        trace: bool,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(abi)?;
         Ok(Program {
@@ -30,7 +28,6 @@ impl Program {
             functions_graph,
             ctor,
             functions,
-            trace,
         })
     }
 

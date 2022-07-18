@@ -8,78 +8,75 @@ pub fn print_flow(flow: &FunctionFlow, width: usize) {
     }
     let results = flow.result();
     if !results.is_empty() {
-        write("return (", 4, false);
+        let mut log = format!("{:4} return (", " ");
         for (i, var) in results.iter().enumerate() {
-            print!("var_{}", var.index());
+            log += format!("var_{}", var.index()).as_str();
             if i != results.len() - 1 {
-                print!(", ");
+                log += format!(", ").as_str();
             }
         }
-        println!(")");
+        log += ")";
+        logs::trace!("{log}");
     }
 }
 
 pub fn print_execution(exec: &Execution, width: usize) {
     match exec {
         Execution::SetVar(val, calc) => {
-            write(format!("let var_{} = {{", val.index()), width, true);
-            write_frame(calc, width + 5, true);
-            write("}}", width, true);
+            write(format!("let var_{} = {{", val.index()), width);
+            write_frame(calc, width + 5);
+            write("}}", width);
         }
         Execution::Calc(calc) => {
-            write_frame(calc, width, true);
+            write_frame(calc, width);
         }
         Execution::Branch { true_br, false_br } => {
-            write("IF", width, true);
-            write("True:", width, true);
+            write("IF", width);
+            write("True:", width);
             print_flow(true_br, width + 5);
-            write("False:", width, true);
+            write("False:", width);
             print_flow(false_br, width + 5);
-            println!()
         }
         Execution::Abort(code) => {
-            write(format!("abort({code})"), width, true);
+            write(format!("abort({code})"), width);
         }
     }
 }
 
-fn write_frame(calc: &StackFrame, width: usize, new_line: bool) {
+fn write_frame(calc: &StackFrame, width: usize) {
     match calc.frame().as_ref() {
         Frame::Val(val) => {
-            write(val, width, new_line);
+            write(val, width);
         }
         Frame::Param(param) => {
-            write(format!("param_{param}"), width, new_line);
+            write(format!("param_{param}"), width);
         }
         Frame::Bool(val) => {
-            write(val, width, new_line);
+            write(val, width);
         }
         Frame::SelfAddress => {
-            write("address", width, new_line);
+            write("address", width);
         }
         Frame::Mem(rf, val) => {
-            write_frame(rf.as_ref(), width, false);
-            print!(" = ");
-            write_frame(val.as_ref(), width, new_line);
+            write_frame(rf.as_ref(), width);
+            logs::trace!(" = ");
+            write_frame(val.as_ref(), width);
         }
         Frame::Calc(op, val) => {
-            write_frame(val, width, new_line);
-            write(op, width, new_line);
+            write_frame(val, width);
+            write(op, width);
         }
         Frame::Calc2(op, a, b) => {
-            write_frame(a, width, new_line);
-            write_frame(b, width, new_line);
-            write(op, width, new_line);
+            write_frame(a, width);
+            write_frame(b, width);
+            write(op, width);
         }
         Frame::Abort(code) => {
-            write(*code, width, new_line);
+            write(*code, width);
         }
     }
 }
 
-fn write<D: Display>(line: D, width: usize, new_line: bool) {
-    print!("{:width$} {line}", " ");
-    if new_line {
-        println!();
-    }
+fn write<D: Display>(line: D, width: usize) {
+    logs::trace!("{:width$} {line}", " ");
 }

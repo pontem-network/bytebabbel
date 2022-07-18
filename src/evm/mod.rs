@@ -28,7 +28,7 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
         .collect::<BTreeMap<_, _>>();
     let (blocks, ctor) = ctor::split(blocks)?;
 
-    let mut executor = StaticExecutor::new(&blocks, true);
+    let mut executor = StaticExecutor::new(&blocks);
     let functions = abi
         .fun_hashes()
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
@@ -38,7 +38,7 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
                 .map(|res| (h, res))
         })
         .collect::<Result<HashMap<FunHash, FunctionFlow>, _>>()?;
-    Program::new(name, functions, ctor, abi, true)
+    Program::new(name, functions, ctor, abi)
 }
 
 pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {

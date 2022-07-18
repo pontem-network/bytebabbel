@@ -82,7 +82,12 @@ fn inic_of_log_configs(args: &Args) -> Result<()> {
 //  LOG=all,!debug,info,!error
 fn inic_of_log_configs_by_env() -> Result<LogConfig> {
     for name in ["RUST_LOG", "LOGS", "LOG"] {
-        if !std::env::var(name).is_ok() {
+        if let Ok(value) = std::env::var(name) {
+            match value.to_lowercase().as_str() {
+                "off" => std::env::set_var(name, "!all"),
+                _ => (),
+            }
+        } else {
             continue;
         }
         let conf = LogConfig::from_env_name(name).map_err(|err| anyhow!("{err:?}"))?;

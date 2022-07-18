@@ -22,17 +22,15 @@ pub struct StaticExecutor<'a> {
     mem: Memory,
     stack: Stack,
     contract: &'a BTreeMap<BlockId, InstructionBlock>,
-    trace: bool,
     new_code_offset: Option<BlockId>,
 }
 
 impl<'a> StaticExecutor<'a> {
-    pub fn new(contract: &'a BTreeMap<BlockId, InstructionBlock>, trace: bool) -> StaticExecutor {
+    pub fn new(contract: &'a BTreeMap<BlockId, InstructionBlock>) -> StaticExecutor {
         StaticExecutor {
             mem: Memory::default(),
             stack: Stack::default(),
             contract,
-            trace,
             new_code_offset: None,
         }
     }
@@ -42,7 +40,6 @@ impl<'a> StaticExecutor<'a> {
             mem: self.mem.clone(),
             stack: self.stack.clone(),
             contract: self.contract,
-            trace: self.trace,
             new_code_offset: None,
         }
     }
@@ -191,9 +188,7 @@ impl<'a> StaticExecutor<'a> {
         env: &Env,
         next_block: BlockId,
     ) -> Result<Option<ExecResult>, Error> {
-        if self.trace {
-            println!("{}", inst);
-        }
+        logs::trace!("{}", inst);
         let pops = inst.pops();
         let mut input = self.stack.pop(pops);
         ensure!(pops == input.len(), "Invalid stake state.");
@@ -213,9 +208,7 @@ impl<'a> StaticExecutor<'a> {
     }
 
     fn print_stack(&self, input: &[StackFrame], output: &[StackFrame]) {
-        if self.trace {
-            println!("      stack diff: {input:?} => {output:?}");
-        }
+        logs::trace!("      stack diff: {input:?} => {output:?}");
     }
 }
 
@@ -229,17 +222,13 @@ pub struct Context<'a, 'b> {
 
 impl<'a, 'b> Context<'a, 'b> {
     pub fn mem_store(&mut self, rf: StackFrame, val: StackFrame) {
-        if self.executor.trace {
-            println!("      var {:?} = {:?}", rf, val);
-        }
+        logs::trace!("      var {:?} = {:?}", rf, val);
         self.executor.mem.store(rf, val);
     }
 
     pub fn mem_load(&mut self, rf: &StackFrame) -> StackFrame {
         let val = self.executor.mem.load(rf);
-        if self.executor.trace {
-            println!("      var {:?} = {:?}", rf, val);
-        }
+        logs::trace!("      var {:?} = {:?}", rf, val);
         val
     }
 

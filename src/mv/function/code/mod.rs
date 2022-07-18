@@ -30,7 +30,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
         MvTranslator {
             program,
             def,
-            code: CodeWriter::new(def.abi.inputs.len(), program.trace),
+            code: CodeWriter::new(def.abi.inputs.len()),
             local_mapping: Default::default(),
             _math: math,
         }
@@ -41,11 +41,8 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             .program
             .function_flow(self.def.hash)
             .ok_or_else(|| anyhow!("Root path for {} function not found.", self.def.abi.name))?;
-        if self.program.trace {
-            println!("flow:");
-            print_flow(flow, 4);
-            println!();
-        }
+        logs::trace!("flow:");
+        print_flow(flow, 4);
         self.translate_flow(flow)?;
         Ok(self.code.freeze())
     }
