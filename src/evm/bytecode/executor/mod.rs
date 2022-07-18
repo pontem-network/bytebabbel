@@ -188,7 +188,7 @@ impl<'a> StaticExecutor<'a> {
         env: &Env,
         next_block: BlockId,
     ) -> Result<Option<ExecResult>, Error> {
-        logs::trace!("{}", inst);
+        log::trace!("{}", inst);
         let pops = inst.pops();
         let mut input = self.stack.pop(pops);
         ensure!(pops == input.len(), "Invalid stake state.");
@@ -208,7 +208,7 @@ impl<'a> StaticExecutor<'a> {
     }
 
     fn print_stack(&self, input: &[StackFrame], output: &[StackFrame]) {
-        logs::trace!("      stack diff: {input:?} => {output:?}");
+        log::trace!("      stack diff: {input:?} => {output:?}");
     }
 }
 
@@ -222,13 +222,13 @@ pub struct Context<'a, 'b> {
 
 impl<'a, 'b> Context<'a, 'b> {
     pub fn mem_store(&mut self, rf: StackFrame, val: StackFrame) {
-        logs::trace!("      var {:?} = {:?}", rf, val);
+        log::trace!("      var {:?} = {:?}", rf, val);
         self.executor.mem.store(rf, val);
     }
 
     pub fn mem_load(&mut self, rf: &StackFrame) -> StackFrame {
         let val = self.executor.mem.load(rf);
-        logs::trace!("      var {:?} = {:?}", rf, val);
+        log::trace!("      var {:?} = {:?}", rf, val);
         val
     }
 

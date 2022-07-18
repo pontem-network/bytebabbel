@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::io::Write;
 use std::iter::Map;
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use logs::LogConfig;
+use env_logger::Builder;
+use log::LevelFilter;
 
 mod convert;
 use crate::convert::Convert;
@@ -62,16 +64,25 @@ fn run() -> Result<String> {
 
 fn inic_of_log_configs(args: &Args) -> Result<()> {
     let mut conf = if let Some(is_trace) = args.trace {
+        let mut builder = Builder::new();
         if is_trace {
-            LogConfig::enable_all()
+            builder.filter_level(LevelFilter::Trace);
         } else {
-            LogConfig::disable_all()
+            builder.filter_level(LevelFilter::Off);
         }
+        builder
     } else {
         inic_of_log_configs_by_env()?
     };
 
-    conf.date_format("%T")?.apply();
+    conf.format(|buf, record| {
+        if record.level() == log::Level::Trace {
+            writeln!(buf, "{}", record.args())
+        } else {
+            writeln!(buf, "[{}]: {}", record.level(), record.args())
+        }
+    });
+    conf.init();
     Ok(())
 }
 
@@ -80,18 +91,16 @@ fn inic_of_log_configs(args: &Args) -> Result<()> {
 //  LOG=info
 //  LOG=!all
 //  LOG=all,!debug,info,!error
-fn inic_of_log_configs_by_env() -> Result<LogConfig> {
+fn inic_of_log_configs_by_env() -> Result<env_logger::Builder> {
+    let mut builder = Builder::new();
+    builder.filter_level(LevelFilter::Off);
+
     for name in ["RUST_LOG", "LOGS", "LOG"] {
-        if let Ok(value) = std::env::var(name) {
-            match value.to_lowercase().as_str() {
-                "off" => std::env::set_var(name, "!all"),
-                _ => (),
-            }
-        } else {
+        if !std::env::var(name).is_ok() {
             continue;
         }
-        let conf = LogConfig::from_env_name(name).map_err(|err| anyhow!("{err:?}"))?;
-        return Ok(conf);
+        builder.parse_env(name);
+        return Ok(builder);
     }
-    Ok(LogConfig::disable_all())
+    Ok(builder)
 }

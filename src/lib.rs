@@ -9,6 +9,7 @@ use move_core_types::account_address::AccountAddress;
 use std::str::FromStr;
 
 pub mod evm;
+pub mod flog;
 pub mod mv;
 
 pub fn translate(

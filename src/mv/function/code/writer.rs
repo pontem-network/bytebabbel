@@ -75,11 +75,11 @@ impl CodeWriter {
             .collect::<Vec<_>>();
 
         for (local, tkn) in locals.iter().enumerate() {
-            logs::trace!("loc_{:?} = {:?}", local, tkn);
+            log::trace!("loc_{:?} = {:?}", local, tkn);
         }
 
         for (idx, code) in self.code.iter().enumerate() {
-            logs::trace!("{idx}: {code:?}");
+            log::trace!("{idx}: {code:?}");
         }
 
         FunctionCode {

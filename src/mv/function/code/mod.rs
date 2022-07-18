@@ -1,10 +1,11 @@
-use crate::evm::bytecode::executor::debug::print_flow;
+use crate::evm::bytecode::executor::debug::output_flow;
 use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow, Var};
 use crate::evm::bytecode::executor::ops::UnaryOp;
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::bytecode::executor::types::U256;
 use crate::evm::function::FunDef;
 use crate::evm::program::Program;
+use crate::flog::is_trace;
 use crate::mv::function::code::intrinsic::math::MathModel;
 use crate::mv::function::code::intrinsic::{is_zero_bool, is_zero_uint};
 use crate::mv::function::code::ops::IntoCode;
@@ -41,8 +42,11 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             .program
             .function_flow(self.def.hash)
             .ok_or_else(|| anyhow!("Root path for {} function not found.", self.def.abi.name))?;
-        logs::trace!("flow:");
-        print_flow(flow, 4);
+
+        if is_trace() {
+            log::trace!("\n{}", &self.program.debug_fn_by_hash(self.def.hash));
+            log::trace!("{:?}\n", flow);
+        }
         self.translate_flow(flow)?;
         Ok(self.code.freeze())
     }

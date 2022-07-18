@@ -1,6 +1,6 @@
 use crate::evm::abi::{Abi, FunHash};
 use crate::evm::bytecode::block::{BlockId, InstructionBlock};
-use crate::evm::bytecode::executor::debug::print_flow;
+use crate::evm::bytecode::executor::debug::output_flow;
 use crate::evm::bytecode::executor::execution::FunctionFlow;
 use crate::evm::function::{FunDef, PublicApi};
 use anyhow::Error;
@@ -50,22 +50,40 @@ impl Debug for Program {
         if self.ctor.is_some() {
             writeln!(f, "Ctor detected")?;
         }
-        writeln!(f, "Public functions:")?;
+        writeln!(f);
         for fun in self.functions.function_definition() {
-            write!(f, "fun {} ", fun.abi.signature())?;
-            let outputs = fun.abi.outputs();
-            if !outputs.is_empty() {
-                write!(f, "=> ({})", outputs.iter().map(|o| &o.tp).join(","))?;
-            }
-            writeln!(f, " {{")?;
-            if let Some(flow) = self.functions_graph.get(&fun.hash) {
-                print_flow(flow, 5);
-            } else {
-                writeln!(f, "undefined")?;
-            }
-            writeln!(f, "}}")?;
+            let output = self.debug_fundef(&fun);
+            write!(f, "{output}")?;
         }
         writeln!(f)?;
         Ok(())
+    }
+}
+
+impl Program {
+    pub fn debug_fundef(&self, fundef: &FunDef) -> String {
+        let mut output = String::new();
+        output += format!("public fun {} ", fundef.abi.signature()).as_str();
+        let outputs = fundef.abi.outputs();
+        if !outputs.is_empty() {
+            output += format!("=> ({})", outputs.iter().map(|o| &o.tp).join(",")).as_str();
+        }
+        output += " {";
+        if let Some(flow) = self.functions_graph.get(&fundef.hash) {
+            output += format!("\n{}\n", output_flow(flow, 5)).as_str();
+        } else {
+            output += "\nundefined\n";
+        }
+        output += "}";
+
+        output
+    }
+    pub fn debug_fn_by_hash(&self, hash: FunHash) -> String {
+        self.functions
+            .function_definition()
+            .find(|item| item.hash == hash)
+            .as_ref()
+            .map(|fun| self.debug_fundef(&fun))
+            .unwrap_or_default()
     }
 }

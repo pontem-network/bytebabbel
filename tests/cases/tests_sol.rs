@@ -74,7 +74,6 @@ pub fn test_solc() {
                 continue;
             }
         }
-        // @todo
         assert!(success)
     }
     assert!(success)
