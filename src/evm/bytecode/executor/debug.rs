@@ -13,7 +13,7 @@ pub fn output_flow(flow: &FunctionFlow, width: usize) -> String {
         for (i, var) in results.iter().enumerate() {
             output += format!("var_{}", var.index()).as_str();
             if i != results.len() - 1 {
-                output += format!(", ").as_str();
+                output += ", ";
             }
         }
         output += ")";
@@ -47,7 +47,7 @@ pub fn output_execution(exec: &Execution, width: usize) -> String {
 }
 
 fn write_frame(calc: &StackFrame, width: usize) -> String {
-    let mut output = String::new();
+    let mut output;
     match calc.frame().as_ref() {
         Frame::Val(val) => {
             output = spaces_with_ln(val, width);

@@ -1,4 +1,3 @@
-use crate::evm::bytecode::executor::debug::output_flow;
 use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow, Var};
 use crate::evm::bytecode::executor::ops::UnaryOp;
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};

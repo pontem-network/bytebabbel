@@ -50,7 +50,7 @@ impl Debug for Program {
         if self.ctor.is_some() {
             writeln!(f, "Ctor detected")?;
         }
-        writeln!(f);
+        writeln!(f)?;
         for fun in self.functions.function_definition() {
             let output = self.debug_fundef(&fun);
             write!(f, "{output}")?;
@@ -83,7 +83,7 @@ impl Program {
             .function_definition()
             .find(|item| item.hash == hash)
             .as_ref()
-            .map(|fun| self.debug_fundef(&fun))
+            .map(|fun| self.debug_fundef(fun))
             .unwrap_or_default()
     }
 }
