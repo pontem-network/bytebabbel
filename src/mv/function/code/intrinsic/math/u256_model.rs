@@ -9,7 +9,7 @@ use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken};
 
 const EU128_OVERFLOW: u64 = 1;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct U256MathModel {
     vec_sig_index: SignatureIndex,
 }

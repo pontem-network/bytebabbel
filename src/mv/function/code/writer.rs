@@ -9,7 +9,6 @@ pub struct CodeWriter {
     local_seq: LocalIndex,
     params_count: LocalIndex,
     trace: bool,
-    stack: Vec<SignatureToken>,
 }
 
 impl CodeWriter {
@@ -20,7 +19,6 @@ impl CodeWriter {
             local_seq: params_count as LocalIndex,
             params_count: params_count as LocalIndex,
             trace,
-            stack: Default::default(),
         }
     }
 
@@ -60,7 +58,7 @@ impl CodeWriter {
     }
 
     pub fn push(&mut self, code: Bytecode) {
-        code.self.code.push(code);
+        self.code.push(code);
     }
 
     pub fn set_op(&mut self, idx: CodeOffset, op_code: Bytecode) {
@@ -150,137 +148,4 @@ impl Locals {
 pub struct FunctionCode {
     pub code: Vec<Bytecode>,
     pub locals: Vec<SignatureToken>,
-}
-
-/// The effect of an instruction is a tuple where the first element
-/// is the number of pops it does, and the second element is the number
-/// of pushes it does
-fn instruction_effect(&self, instruction: &Bytecode) -> (u64, u64) {
-    match instruction {
-        Bytecode::Pop
-        | Bytecode::BrTrue(_)
-        | Bytecode::BrFalse(_)
-        | Bytecode::StLoc(_)
-        | Bytecode::Abort => (1, 0),
-
-        Bytecode::LdU8(_)
-        | Bytecode::LdU64(_)
-        | Bytecode::LdU128(_)
-        | Bytecode::LdTrue
-        | Bytecode::LdFalse
-        | Bytecode::LdConst(_)
-        | Bytecode::CopyLoc(_)
-        | Bytecode::MoveLoc(_)
-        | Bytecode::MutBorrowLoc(_)
-        | Bytecode::ImmBorrowLoc(_) => (0, 1),
-
-        Bytecode::Not
-        | Bytecode::FreezeRef
-        | Bytecode::ReadRef
-        | Bytecode::Exists(_)
-        | Bytecode::ExistsGeneric(_)
-        | Bytecode::MutBorrowGlobal(_)
-        | Bytecode::MutBorrowGlobalGeneric(_)
-        | Bytecode::ImmBorrowGlobal(_)
-        | Bytecode::ImmBorrowGlobalGeneric(_)
-        | Bytecode::MutBorrowField(_)
-        | Bytecode::MutBorrowFieldGeneric(_)
-        | Bytecode::ImmBorrowField(_)
-        | Bytecode::ImmBorrowFieldGeneric(_)
-        | Bytecode::MoveFrom(_)
-        | Bytecode::MoveFromGeneric(_)
-        | Bytecode::CastU8
-        | Bytecode::CastU64
-        | Bytecode::CastU128
-        | Bytecode::VecLen(_)
-        | Bytecode::VecPopBack(_) => (1, 1),
-
-        Bytecode::Add
-        | Bytecode::Sub
-        | Bytecode::Mul
-        | Bytecode::Mod
-        | Bytecode::Div
-        | Bytecode::BitOr
-        | Bytecode::BitAnd
-        | Bytecode::Xor
-        | Bytecode::Shl
-        | Bytecode::Shr
-        | Bytecode::Or
-        | Bytecode::And
-        | Bytecode::Eq
-        | Bytecode::Neq
-        | Bytecode::Lt
-        | Bytecode::Gt
-        | Bytecode::Le
-        | Bytecode::Ge => (2, 1),
-
-        Bytecode::VecPack(_, num) => (*num, 1),
-        Bytecode::VecUnpack(_, num) => (1, *num),
-
-        Bytecode::VecImmBorrow(_) | Bytecode::VecMutBorrow(_) => (2, 1),
-
-        Bytecode::MoveTo(_)
-        | Bytecode::MoveToGeneric(_)
-        | Bytecode::WriteRef
-        | Bytecode::VecPushBack(_) => (2, 0),
-
-        Bytecode::VecSwap(_) => (3, 0),
-
-        Bytecode::Branch(_) | Bytecode::Nop => (0, 0),
-
-        Bytecode::Ret => {
-            let return_count = self.return_.len();
-            (return_count as u64, 0)
-        }
-
-        Bytecode::Call(idx) => {
-            let function_handle = self.resolver.function_handle_at(*idx);
-            let arg_count = self.resolver.signature_at(function_handle.parameters).len() as u64;
-            let return_count = self.resolver.signature_at(function_handle.return_).len() as u64;
-            (arg_count, return_count)
-        }
-        Bytecode::CallGeneric(idx) => {
-            let func_inst = self.resolver.function_instantiation_at(*idx);
-            let function_handle = self.resolver.function_handle_at(func_inst.handle);
-            let arg_count = self.resolver.signature_at(function_handle.parameters).len() as u64;
-            let return_count = self.resolver.signature_at(function_handle.return_).len() as u64;
-            (arg_count, return_count)
-        }
-
-        Bytecode::Pack(idx) => {
-            let struct_definition = self.resolver.struct_def_at(*idx)?;
-            let field_count = match &struct_definition.field_information {
-                StructFieldInformation::Native => 0,
-                StructFieldInformation::Declared(fields) => fields.len(),
-            };
-            (field_count as u64, 1)
-        }
-        Bytecode::PackGeneric(idx) => {
-            let struct_inst = self.resolver.struct_instantiation_at(*idx)?;
-            let struct_definition = self.resolver.struct_def_at(struct_inst.def)?;
-            let field_count = match &struct_definition.field_information {
-                StructFieldInformation::Native => 0,
-                StructFieldInformation::Declared(fields) => fields.len(),
-            };
-            (field_count as u64, 1)
-        }
-
-        Bytecode::Unpack(idx) => {
-            let struct_definition = self.resolver.struct_def_at(*idx)?;
-            let field_count = match &struct_definition.field_information {
-                StructFieldInformation::Native => 0,
-                StructFieldInformation::Declared(fields) => fields.len(),
-            };
-            (1, field_count as u64)
-        }
-        Bytecode::UnpackGeneric(idx) => {
-            let struct_inst = self.resolver.struct_instantiation_at(*idx)?;
-            let struct_definition = self.resolver.struct_def_at(struct_inst.def)?;
-            let field_count = match &struct_definition.field_information {
-                StructFieldInformation::Native => 0,
-                StructFieldInformation::Declared(fields) => fields.len(),
-            };
-            (1, field_count as u64)
-        }
-    }
 }

@@ -8,7 +8,7 @@ pub mod u128_model;
 pub mod u256_model;
 
 pub trait MathModel:
-    CastU128 + CastBool + BinaryOpCode + UnaryOpCode + PrepareSignatures + Literal
+    CastU128 + CastBool + BinaryOpCode + UnaryOpCode + PrepareSignatures + Literal + Clone
 {
     fn math_type() -> SignatureToken;
 }

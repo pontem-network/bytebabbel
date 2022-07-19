@@ -8,7 +8,7 @@ mod binary_ops;
 mod cast;
 mod unary_ops;
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct U128MathModel;
 
 impl MathModel for U128MathModel {

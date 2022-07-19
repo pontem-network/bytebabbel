@@ -3,21 +3,24 @@ use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow, Var};
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::function::FunDef;
 use crate::evm::program::Program;
+use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{BinaryOpCode, MathModel, UnaryOpCode};
+use crate::mv::function::code::stack::Stack;
 use crate::mv::function::code::writer::{CodeWriter, FunctionCode};
 use anyhow::{anyhow, Error};
 use move_binary_format::file_format::{Bytecode, LocalIndex, SignatureToken};
 use std::collections::HashMap;
 
+pub mod context;
 pub mod intrinsic;
 pub mod ops;
+pub mod stack;
 pub mod writer;
 
 pub struct MvTranslator<'a, M: MathModel> {
     program: &'a Program,
     def: &'a FunDef<'a>,
-    code: CodeWriter,
-    local_mapping: HashMap<Var, LocalIndex>,
+    ctx: Context,
     math: &'a mut M,
 }
 
@@ -26,8 +29,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
         MvTranslator {
             program,
             def,
-            code: CodeWriter::new(def.abi.inputs.len(), program.trace),
-            local_mapping: Default::default(),
+            ctx: Context::new(CodeWriter::new(def.abi.inputs.len(), program.trace)),
             math,
         }
     }
@@ -51,12 +53,11 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             match exec {
                 Execution::SetVar(id, calc) => {
                     let token = self.map_calculation(calc)?;
-                    let idx = self.code.set_var(token);
-                    self.local_mapping.insert(*id, idx);
+                    self.ctx.set_global_var(*id, token);
                 }
                 Execution::Abort(code) => {
-                    self.code.push(Bytecode::LdU64(*code as u64));
-                    self.code.push(Bytecode::Abort);
+                    self.ctx.write_code(Bytecode::LdU64(*code as u64));
+                    self.ctx.write_code(Bytecode::Abort);
                 }
                 Execution::Calc(frame) => {
                     self.map_calculation(frame)?;
@@ -73,7 +74,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                     }
 
                     let start_false_br = self.code.pc();
-                    self.code.push(Bytecode::BrTrue(0));
+                    self.ctx.write_code(Bytecode::BrTrue(0));
                     self.translate_flow(false_br)?;
                     let start_true_br = self.code.pc();
                     self.translate_flow(true_br)?;
@@ -93,28 +94,35 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                     self.code.move_local(*local);
                 }
             }
-            self.code.push(Bytecode::Ret);
+            self.ctx.write_code(Bytecode::Ret);
         }
         Ok(())
     }
 
-    fn map_calculation(&mut self, calc: &StackFrame) -> Result<SignatureToken, Error> {
-        Ok(match calc.frame().as_ref() {
-            Frame::Val(val) => self.math.set_literal(&mut self.code, val),
+    fn map_calculation(&mut self, calc: &StackFrame) -> SignatureToken {
+        match calc.frame().as_ref() {
+            Frame::Val(val) => {
+                let tp = self.math.set_literal(&mut self.code, val);
+                self.stack.push(tp.clone());
+                tp
+            }
             Frame::Param(idx) => {
-                self.code.push(Bytecode::CopyLoc(*idx as u8));
+                self.ctx.write_code(Bytecode::CopyLoc(*idx as u8));
                 if self.def.abi.inputs[*idx as usize].tp.as_str() == "bool" {
+                    self.stack.push(SignatureToken::Bool);
                     SignatureToken::Bool
                 } else {
-                    self.math.write_from_u128(&mut self.code)
+                    let tp = self.math.write_from_u128(&mut self.code);
+                    self.stack.push(tp);
                 }
             }
             Frame::Bool(val) => {
                 if *val {
-                    self.code.push(Bytecode::LdTrue);
+                    self.ctx.write_code(Bytecode::LdTrue);
                 } else {
-                    self.code.push(Bytecode::LdFalse);
+                    self.ctx.write_code(Bytecode::LdFalse);
                 }
+                self.stack.push(SignatureToken::Bool);
                 SignatureToken::Bool
             }
             Frame::SelfAddress => {
@@ -124,19 +132,25 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                 todo!()
             }
             Frame::Calc2(code, first, second) => {
-                let a = self.map_calculation(first)?;
-                let b = self.map_calculation(second)?;
-                BinaryOpCode::code(self.math, &mut self.code, *code, a, b)
+                let a = self.map_calculation(first);
+                let b = self.map_calculation(second);
+                let tp = BinaryOpCode::code(self.math, &mut self.code, *code, a, b);
+                self.stack.pop2();
+                self.stack.push(tp.clone());
+                tp
             }
             Frame::Abort(code) => {
-                self.code.push(Bytecode::LdU64(*code));
-                self.code.push(Bytecode::Abort);
+                self.ctx.write_code(Bytecode::LdU64(*code));
+                self.ctx.write_code(Bytecode::Abort);
                 SignatureToken::U128
             }
             Frame::Calc(op, calc) => {
-                let tp = self.map_calculation(calc)?;
-                UnaryOpCode::code(self.math, &mut self.code, *op, tp)
+                let tp = self.map_calculation(calc);
+                let tp = UnaryOpCode::code(self.math, &mut self.code, *op, tp);
+                self.stack.pop();
+                self.stack.push(tp.clone());
+                tp
             }
-        })
+        }
     }
 }
