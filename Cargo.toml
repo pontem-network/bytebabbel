@@ -40,5 +40,5 @@ wax = "0.5"
 
 [workspace]
 members = [
-    "e2m"
+    "crates/e2m"
 ]
