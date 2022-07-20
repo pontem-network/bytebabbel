@@ -1,14 +1,16 @@
 use crate::cases::make_move_module;
 use crate::common::executor::MoveExecutor;
+use crate::log_init;
 use move_core_types::value::MoveValue;
 
 #[test]
 pub fn consts_fn_tests() {
+    log_init();
+
     let bytecode = make_move_module(
         "0x1::ConstFn",
         include_str!("../assets/bin/ConstFn.bin"),
         include_str!("../assets/bin/ConstFn.abi"),
-        false,
     );
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);

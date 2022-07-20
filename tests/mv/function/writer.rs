@@ -1,11 +1,14 @@
 use crate::common::generator::rand_opcode;
+use crate::log_init;
 use eth2move::mv::function::code::writer::CodeWriter;
 use move_binary_format::file_format::{Bytecode, SignatureToken};
 use rand::random;
 
 #[test]
 pub fn test_write_code() {
-    let mut writer = CodeWriter::new(10, false);
+    log_init();
+
+    let mut writer = CodeWriter::new(10);
     let mut code = Vec::new();
     for i in 0..1000 {
         if i % 2 == 0 {
@@ -26,7 +29,9 @@ pub fn test_write_code() {
 
 #[test]
 pub fn test_locals() {
-    let mut writer = CodeWriter::new(10, true);
+    log_init();
+
+    let mut writer = CodeWriter::new(10);
     writer.push(Bytecode::Pop);
     writer.push(Bytecode::Nop);
     assert_eq!(writer.borrow_local(SignatureToken::Address), 10);

@@ -1,4 +1,3 @@
-use crate::evm::bytecode::executor::debug::print_flow;
 use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow, Var};
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::function::FunDef;
@@ -29,7 +28,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
         MvTranslator {
             program,
             def,
-            ctx: Context::new(CodeWriter::new(def.abi.inputs.len(), program.trace)),
+            ctx: Context::new(CodeWriter::new(def.abi.inputs.len())),
             math,
         }
     }
@@ -39,10 +38,10 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             .program
             .function_flow(self.def.hash)
             .ok_or_else(|| anyhow!("Root path for {} function not found.", self.def.abi.name))?;
-        if self.program.trace {
-            println!("flow {}:", self.def.abi.name);
-            print_flow(flow, 4);
-            println!();
+
+        if is_trace() {
+            log::trace!("\n{}", &self.program.debug_fn_by_hash(self.def.hash));
+            log::trace!("{:?}\n", flow);
         }
         self.translate_flow(flow)?;
         Ok(self.code.freeze())

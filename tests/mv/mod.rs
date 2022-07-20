@@ -1,3 +1,4 @@
+use crate::log_init;
 use eth2move::evm::parse_program;
 use eth2move::mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use eth2move::mv::mvir::MvModule;
@@ -12,11 +13,12 @@ mod function;
 
 #[test]
 pub fn test_move_translator() {
+    log_init();
+
     let program = parse_program(
         "ConstFn",
         include_str!("../assets/bin/ConstFn.bin"),
         include_str!("../assets/bin/ConstFn.abi"),
-        true,
     )
     .unwrap();
     println!("{:?}", program);

@@ -1,4 +1,5 @@
 use crate::common::executor::MoveExecutor;
+use crate::log_init;
 use eth2move::evm::abi::Abi;
 use eth2move::evm::bytecode::executor::execution::FunctionFlow;
 use eth2move::evm::bytecode::executor::stack::{Frame, StackFrame};
@@ -43,7 +44,7 @@ pub fn make_module(flow: FunctionFlow) -> Vec<u8> {
     let hash = abi.fun_hashes().next().unwrap();
 
     graph.insert(hash, flow);
-    let program = Program::new("TestMod", graph, None, abi, true).unwrap();
+    let program = Program::new("TestMod", graph, None, abi).unwrap();
     let module =
         MvModule::from_evm_program(CORE_CODE_ADDRESS, U128MathModel::default(), program).unwrap();
 
@@ -55,6 +56,8 @@ pub fn make_module(flow: FunctionFlow) -> Vec<u8> {
 
 #[test]
 pub fn test_u256_math_cast() {
+    log_init();
+
     let mut flow = FunctionFlow::default();
     let var = flow.calc_var(StackFrame::new(Frame::Param(0)));
     flow.set_result(var);
