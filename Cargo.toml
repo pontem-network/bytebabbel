@@ -40,5 +40,7 @@ wax = "0.5"
 
 [workspace]
 members = [
-    "crates/e2m"
+    "crates/e2m",
+    "crates/s2m",
+    "crates/inic_log",
 ]

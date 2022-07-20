@@ -41,7 +41,7 @@ impl TryFrom<Args> for Convert {
         let module_name = args.module_name.unwrap_or(path_to_filename(&abi)?);
 
         Ok(Convert {
-            mv: args.output_path.unwrap_or(abi.with_extension("mv")),
+            mv: args.output_path.unwrap_or_else(|| abi.with_extension("mv")),
             abi,
             bin,
             math: args.math_backend.parse()?,
@@ -69,7 +69,7 @@ fn path_to_filename(path: &Path) -> Result<String> {
     let name = path
         .with_extension("")
         .file_name()
-        .ok_or(anyhow!("incorrect file path: {path:?}"))?
+        .ok_or_else(|| anyhow!("incorrect file path: {path:?}"))?
         .to_string_lossy()
         .to_string();
     Ok(name)

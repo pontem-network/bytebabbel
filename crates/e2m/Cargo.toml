@@ -5,13 +5,13 @@ edition = "2021"
 authors = ["Maxim Vladimirov <maxim@pontem.network>"]
 license = "MIT"
 keywords = ["solidity", "sol", "move", "translator"]
-description = "Converting project solidity to move"
+description = "Converting files solidity abi and bin to move"
 
 [dependencies]
 clap = { version = ">=3.2.11", features = ["derive"] }
 anyhow = "1.0.58"
-log = "0.4.17"
-env_logger = "0.9.0"
 
 move-core-types = { git = "https://github.com/move-language/move.git" }
+# local
 eth2move = { path = "../../" }
+inic_log = { path = "../inic_log" }

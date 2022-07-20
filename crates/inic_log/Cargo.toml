@@ -1,0 +1,13 @@
+[package]
+name = "inic_log"
+version = "0.1.0"
+edition = "2021"
+authors = ["Maxim Vladimirov <maxim@pontem.network>"]
+license = "MIT"
+keywords = ["log","logs","initialization"]
+description = "Initializing settings for dep:log"
+
+[dependencies]
+anyhow = "1.0.58"
+log = "0.4.17"
+env_logger = "0.9.0"
