@@ -1,23 +1,26 @@
+use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{CastBool, CastU128, MathModel};
 use crate::U128MathModel;
 use move_binary_format::file_format::{Bytecode, SignatureToken};
-use crate::mv::function::code::context::Context;
 
 impl CastBool for U128MathModel {
     fn write_from_bool(&self, ctx: &mut Context) -> SignatureToken {
-        println!("write_from_bool");
-        let pc = ctx.pc();
+        let cmd = ctx.set_var(SignatureToken::Bool);
+        let stack = ctx.store_stack();
         let tmp_var = ctx.borrow_local(SignatureToken::U128);
+        ctx.move_local(cmd);
+
+        let pc = ctx.pc();
         ctx.extend_code([
             Bytecode::BrTrue(pc + 4),
             Bytecode::LdU128(0),
             Bytecode::StLoc(tmp_var),
-            Bytecode::Branch(pc + 5),
+            Bytecode::Branch(pc + 6),
             Bytecode::LdU128(1),
             Bytecode::StLoc(tmp_var),
-            Bytecode::MoveLoc(tmp_var),
         ]);
-        ctx.release_local(tmp_var);
+        ctx.restore_stack(stack);
+        ctx.move_local(tmp_var);
         U128MathModel::math_type()
     }
 

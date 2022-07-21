@@ -1,9 +1,8 @@
 use crate::evm::bytecode::executor::ops::BinaryOp;
+use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{BinaryOpCode, CastBool, MathModel};
-use crate::mv::function::code::writer::CodeWriter;
 use crate::U128MathModel;
 use move_binary_format::file_format::{Bytecode, LocalIndex, SignatureToken};
-use crate::mv::function::code::context::Context;
 
 impl BinaryOpCode for U128MathModel {
     fn code(
@@ -131,30 +130,30 @@ impl U128MathModel {
 ///     a + b
 /// }
 ///
-fn overflowing_add(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
-    code.extend([
+fn overflowing_add(ctx: &mut Context, a: LocalIndex, b: LocalIndex) {
+    ctx.extend_code([
         Bytecode::LdU128(u128::MAX),
         Bytecode::CopyLoc(b),
         Bytecode::Sub,
     ]);
-    let revert_b = code.set_var(SignatureToken::U128);
-    code.extend([
+    let revert_b = ctx.set_var(SignatureToken::U128);
+    ctx.extend_code([
         Bytecode::CopyLoc(revert_b),
         Bytecode::CopyLoc(a),
         Bytecode::Lt,
     ]);
-    let res = code.borrow_local(SignatureToken::U128);
-    let pc = code.pc();
-    code.extend([
+    let res = ctx.borrow_local(SignatureToken::U128);
+    let pc = ctx.pc();
+    ctx.extend_code([
         Bytecode::BrTrue(pc + 6),
         Bytecode::MoveLoc(a),
         Bytecode::MoveLoc(b),
         Bytecode::Add,
         Bytecode::StLoc(res),
     ]);
-    let pc = code.pc();
-    code.push(Bytecode::Branch(pc + 7));
-    code.extend([
+    let pc = ctx.pc();
+    ctx.write_code(Bytecode::Branch(pc + 7));
+    ctx.extend_code([
         Bytecode::MoveLoc(a),
         Bytecode::MoveLoc(revert_b),
         Bytecode::Sub,
@@ -162,8 +161,8 @@ fn overflowing_add(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
         Bytecode::Sub,
         Bytecode::StLoc(res),
     ]);
-    code.move_local(res);
-    code.release_local(revert_b);
+    ctx.move_local(res);
+    ctx.release_local(revert_b);
 }
 
 ///

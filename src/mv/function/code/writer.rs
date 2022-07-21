@@ -1,7 +1,5 @@
-use move_binary_format::file_format::{
-    Bytecode, CodeOffset, LocalIndex, SignatureToken,
-};
-use std::collections::{HashMap};
+use move_binary_format::file_format::{Bytecode, CodeOffset, LocalIndex, SignatureToken};
+use std::collections::HashMap;
 
 pub struct CodeWriter {
     code: Vec<Bytecode>,
@@ -41,29 +39,28 @@ impl CodeWriter {
         None
     }
 
-    pub fn set_var(&mut self, tp: SignatureToken) -> LocalIndex {
-        let idx = self.borrow_local(tp);
-        self.push(Bytecode::StLoc(idx));
-        idx
-    }
-
-    pub fn move_local(&mut self, idx: LocalIndex) {
-        if let Some(tp) = self.release_local(idx) {
-            self.push(Bytecode::MoveLoc(idx));
+    pub fn local_type(&self, idx: LocalIndex) -> Option<SignatureToken> {
+        for (tp, locals) in self.locals.iter() {
+            if locals.contains(idx) {
+                return Some(tp.clone());
+            }
         }
+        None
     }
 
     pub fn push(&mut self, code: Bytecode) {
         self.code.push(code);
     }
 
-    pub fn set_op(&mut self, idx: CodeOffset, op_code: Bytecode) {
-        self.code[idx as usize] = op_code;
-    }
-
-    pub fn extend<I: IntoIterator<Item = Bytecode>>(&mut self, code: I) {
-        for bytecode in code {
-            self.push(bytecode);
+    pub fn update_jmp_pc(&mut self, idx: CodeOffset, new_pc: CodeOffset) {
+        let code = &mut self.code[idx as usize];
+        match code {
+            Bytecode::Branch(new_offset)
+            | Bytecode::BrFalse(new_offset)
+            | Bytecode::BrTrue(new_offset) => {
+                *new_offset = new_pc;
+            }
+            _ => panic!("Expected Jmp"),
         }
     }
 
@@ -83,7 +80,7 @@ impl CodeWriter {
             .collect::<Vec<_>>();
 
         for (local, tkn) in locals.iter().enumerate() {
-            log::trace!("loc_{:?} = {:?}", local, tkn);
+            log::trace!("loc_{:?} = {:?}", local + self.params_count as usize, tkn);
         }
 
         for (idx, code) in self.code.iter().enumerate() {
@@ -125,7 +122,7 @@ impl Locals {
             .find(|(_, b)| **b == id)
             .map(|(i, _)| i);
 
-        return if let Some(borrowed_idx) = borrowed_idx {
+        if let Some(borrowed_idx) = borrowed_idx {
             self.borrowed.remove(borrowed_idx);
             self.free.push(id);
             true

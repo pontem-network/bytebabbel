@@ -19,8 +19,10 @@ pub fn test_write_code() {
             let ext = (0..random::<usize>() % 50)
                 .map(|_| rand_opcode())
                 .collect::<Vec<_>>();
-            writer.extend(ext.clone());
-            code.extend(ext);
+            for opcode in ext {
+                writer.push(opcode.clone());
+                code.push(opcode);
+            }
         }
     }
 

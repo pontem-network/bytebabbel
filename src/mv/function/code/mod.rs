@@ -2,12 +2,13 @@ use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow};
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::function::FunDef;
 use crate::evm::program::Program;
+use crate::flog::is_trace;
 use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{BinaryOpCode, MathModel, UnaryOpCode};
-use crate::mv::function::code::writer::{CodeWriter, FunctionCode};
+use crate::mv::function::code::writer::FunctionCode;
+use crate::mv::function::signature::map_signature;
 use anyhow::{anyhow, Error};
 use move_binary_format::file_format::{Bytecode, SignatureToken};
-use crate::flog::is_trace;
 
 pub mod context;
 pub mod intrinsic;
@@ -24,10 +25,12 @@ pub struct MvTranslator<'a, M: MathModel> {
 
 impl<'a, M: MathModel> MvTranslator<'a, M> {
     pub fn new(program: &'a Program, def: &'a FunDef, math: &'a mut M) -> MvTranslator<'a, M> {
+        let input_types = map_signature(&def.abi.inputs);
+        let output_types = map_signature(&def.abi.outputs);
         MvTranslator {
             program,
             def,
-            ctx: Context::new(CodeWriter::new(def.abi.inputs.len())),
+            ctx: Context::new(input_types, output_types),
             math,
         }
     }
@@ -75,8 +78,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                     self.translate_flow(false_br)?;
                     let start_true_br = self.ctx.pc();
                     self.translate_flow(true_br)?;
-                    self.ctx
-                        .overwrite(start_false_br, Bytecode::BrTrue(start_true_br as u16));
+                    self.ctx.update_jmp_pc(start_false_br, start_true_br as u16);
                 }
             }
         }
@@ -95,18 +97,13 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
 
     fn map_calculation(&mut self, calc: &StackFrame) -> SignatureToken {
         match calc.frame().as_ref() {
-            Frame::Val(val) => {
-                let tp = self.math.set_literal(&mut self.ctx, val);
-                self.ctx.push_stack(tp.clone());
-                tp
-            }
+            Frame::Val(val) => self.math.set_literal(&mut self.ctx, val),
             Frame::Param(idx) => {
                 self.ctx.write_code(Bytecode::CopyLoc(*idx as u8));
                 if self.def.abi.inputs[*idx as usize].tp.as_str() == "bool" {
-                    self.ctx.push_stack(SignatureToken::Bool)
+                    SignatureToken::Bool
                 } else {
-                    let tp = self.math.write_from_u128(&mut self.ctx);
-                    self.ctx.push_stack(tp)
+                    self.math.write_from_u128(&mut self.ctx)
                 }
             }
             Frame::Bool(val) => {
@@ -115,7 +112,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                 } else {
                     self.ctx.write_code(Bytecode::LdFalse);
                 }
-                self.ctx.push_stack(SignatureToken::Bool)
+                SignatureToken::Bool
             }
             Frame::SelfAddress => {
                 todo!()
@@ -126,9 +123,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             Frame::Calc2(code, first, second) => {
                 let a = self.map_calculation(first);
                 let b = self.map_calculation(second);
-                let tp = BinaryOpCode::code(self.math, &mut self.ctx, *code, a, b);
-                self.ctx.pop2_stack();
-                self.ctx.push_stack(tp)
+                BinaryOpCode::code(self.math, &mut self.ctx, *code, a, b)
             }
             Frame::Abort(code) => {
                 self.ctx.write_code(Bytecode::LdU64(*code));
@@ -137,9 +132,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             }
             Frame::Calc(op, calc) => {
                 let tp = self.map_calculation(calc);
-                let tp = UnaryOpCode::code(self.math, &mut self.ctx, *op, tp);
-                self.ctx.pop_stack();
-                self.ctx.push_stack(tp)
+                UnaryOpCode::code(self.math, &mut self.ctx, *op, tp)
             }
         }
     }
