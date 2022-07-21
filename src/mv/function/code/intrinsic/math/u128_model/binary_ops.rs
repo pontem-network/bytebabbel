@@ -3,59 +3,60 @@ use crate::mv::function::code::intrinsic::math::{BinaryOpCode, CastBool, MathMod
 use crate::mv::function::code::writer::CodeWriter;
 use crate::U128MathModel;
 use move_binary_format::file_format::{Bytecode, LocalIndex, SignatureToken};
+use crate::mv::function::code::context::Context;
 
 impl BinaryOpCode for U128MathModel {
     fn code(
         &self,
-        code: &mut CodeWriter,
+        ctx: &mut Context,
         op: BinaryOp,
         a: SignatureToken,
         b: SignatureToken,
     ) -> SignatureToken {
         match op {
             BinaryOp::EQ => {
-                self.cast_to_cmp(code, a, b);
-                code.push(Bytecode::Eq);
+                self.cast_to_cmp(ctx, a, b);
+                ctx.write_code(Bytecode::Eq);
                 SignatureToken::Bool
             }
             BinaryOp::Lt => {
-                self.cast_to_cmp(code, a, b);
-                code.push(Bytecode::Lt);
+                self.cast_to_cmp(ctx, a, b);
+                ctx.write_code(Bytecode::Lt);
                 SignatureToken::Bool
             }
             BinaryOp::Gt => {
-                self.cast_to_cmp(code, a, b);
-                code.push(Bytecode::Gt);
+                self.cast_to_cmp(ctx, a, b);
+                ctx.write_code(Bytecode::Gt);
                 SignatureToken::Bool
             }
             BinaryOp::Shr => {
-                self.cast(code, a, b);
-                code.push(Bytecode::Shr);
+                self.cast(ctx, a, b);
+                ctx.write_code(Bytecode::Shr);
                 SignatureToken::U128
             }
             BinaryOp::Add => {
-                self.cast(code, a, b);
-                code.push(Bytecode::Add);
+                self.cast(ctx, a, b);
+                ctx.write_code(Bytecode::Add);
                 SignatureToken::U128
             }
             BinaryOp::And => {
-                self.cast(code, a, b);
-                code.push(Bytecode::BitAnd);
+                self.cast(ctx, a, b);
+                ctx.write_code(Bytecode::BitAnd);
                 SignatureToken::U128
             }
             BinaryOp::Mul => {
-                self.cast(code, a, b);
-                code.push(Bytecode::Mul);
+                self.cast(ctx, a, b);
+                ctx.write_code(Bytecode::Mul);
                 SignatureToken::U128
             }
             BinaryOp::Sub => {
-                self.cast(code, a, b);
-                code.push(Bytecode::Sub);
+                self.cast(ctx, a, b);
+                ctx.write_code(Bytecode::Sub);
                 SignatureToken::U128
             }
             BinaryOp::Div => {
-                self.cast(code, a, b);
-                code.push(Bytecode::Div);
+                self.cast(ctx, a, b);
+                ctx.write_code(Bytecode::Div);
                 SignatureToken::U128
             }
             BinaryOp::SLt => {
@@ -69,7 +70,7 @@ impl BinaryOpCode for U128MathModel {
 }
 
 impl U128MathModel {
-    fn cast_to_cmp(&self, code: &mut CodeWriter, a: SignatureToken, b: SignatureToken) {
+    fn cast_to_cmp(&self, code: &mut Context, a: SignatureToken, b: SignatureToken) {
         if a == SignatureToken::Bool || b == SignatureToken::Bool {
             if b != SignatureToken::Bool {
                 self.write_to_bool(code);
@@ -82,7 +83,7 @@ impl U128MathModel {
         }
     }
 
-    fn cast(&self, code: &mut CodeWriter, a: SignatureToken, b: SignatureToken) {
+    fn cast(&self, code: &mut Context, a: SignatureToken, b: SignatureToken) {
         if a != SignatureToken::U128 || b != SignatureToken::U128 {
             if b == SignatureToken::Bool {
                 self.write_from_bool(code);
@@ -98,7 +99,7 @@ impl U128MathModel {
 
     fn cast_and_store_local(
         &self,
-        code: &mut CodeWriter,
+        code: &mut Context,
         a: SignatureToken,
         b: SignatureToken,
     ) -> (LocalIndex, LocalIndex) {
@@ -172,19 +173,19 @@ fn overflowing_add(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
 /// } else {
 ///  a - b
 /// }
-fn overflowing_sub(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
-    code.extend([Bytecode::CopyLoc(a), Bytecode::CopyLoc(b), Bytecode::Gt]);
-    let pc = code.pc();
-    let res = code.borrow_local(SignatureToken::U128);
-    code.extend([
+fn overflowing_sub(ctx: &mut Context, a: LocalIndex, b: LocalIndex) {
+    ctx.extend_code([Bytecode::CopyLoc(a), Bytecode::CopyLoc(b), Bytecode::Gt]);
+    let pc = ctx.pc();
+    let res = ctx.borrow_local(SignatureToken::U128);
+    ctx.extend_code([
         Bytecode::BrTrue(pc + 6),
         Bytecode::MoveLoc(b),
         Bytecode::MoveLoc(a),
         Bytecode::Sub,
         Bytecode::StLoc(res),
     ]);
-    let pc = code.pc();
-    code.extend([
+    let pc = ctx.pc();
+    ctx.extend_code([
         Bytecode::Branch(pc + 9),
         Bytecode::LdU128(u128::MAX),
         Bytecode::MoveLoc(b),
@@ -195,5 +196,5 @@ fn overflowing_sub(code: &mut CodeWriter, a: LocalIndex, b: LocalIndex) {
         Bytecode::Add,
         Bytecode::StLoc(res),
     ]);
-    code.move_local(res)
+    ctx.move_local(res)
 }

@@ -1,14 +1,13 @@
-use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow, Var};
+use crate::evm::bytecode::executor::execution::{Execution, FunctionFlow};
 use crate::evm::bytecode::executor::stack::{Frame, StackFrame};
 use crate::evm::function::FunDef;
 use crate::evm::program::Program;
 use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{BinaryOpCode, MathModel, UnaryOpCode};
-use crate::mv::function::code::stack::Stack;
 use crate::mv::function::code::writer::{CodeWriter, FunctionCode};
 use anyhow::{anyhow, Error};
-use move_binary_format::file_format::{Bytecode, LocalIndex, SignatureToken};
-use std::collections::HashMap;
+use move_binary_format::file_format::{Bytecode, SignatureToken};
+use crate::flog::is_trace;
 
 pub mod context;
 pub mod intrinsic;
@@ -38,20 +37,19 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             .program
             .function_flow(self.def.hash)
             .ok_or_else(|| anyhow!("Root path for {} function not found.", self.def.abi.name))?;
-
         if is_trace() {
             log::trace!("\n{}", &self.program.debug_fn_by_hash(self.def.hash));
             log::trace!("{:?}\n", flow);
         }
         self.translate_flow(flow)?;
-        Ok(self.code.freeze())
+        Ok(self.ctx.freeze())
     }
 
     fn translate_flow(&mut self, flow: &FunctionFlow) -> Result<(), Error> {
         for exec in flow.execution_tree() {
             match exec {
                 Execution::SetVar(id, calc) => {
-                    let token = self.map_calculation(calc)?;
+                    let token = self.map_calculation(calc);
                     self.ctx.set_global_var(*id, token);
                 }
                 Execution::Abort(code) => {
@@ -59,26 +57,26 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                     self.ctx.write_code(Bytecode::Abort);
                 }
                 Execution::Calc(frame) => {
-                    self.map_calculation(frame)?;
+                    self.map_calculation(frame);
                 }
                 Execution::Branch {
                     cnd,
                     true_br,
                     false_br,
                 } => {
-                    let tp = self.map_calculation(cnd)?;
+                    let tp = self.map_calculation(cnd);
 
                     if tp != SignatureToken::Bool {
-                        self.math.write_to_bool(&mut self.code);
+                        self.math.write_to_bool(&mut self.ctx);
                     }
 
-                    let start_false_br = self.code.pc();
+                    let start_false_br = self.ctx.pc();
                     self.ctx.write_code(Bytecode::BrTrue(0));
                     self.translate_flow(false_br)?;
-                    let start_true_br = self.code.pc();
+                    let start_true_br = self.ctx.pc();
                     self.translate_flow(true_br)?;
-                    self.code
-                        .set_op(start_false_br, Bytecode::BrTrue(start_true_br as u16));
+                    self.ctx
+                        .overwrite(start_false_br, Bytecode::BrTrue(start_true_br as u16));
                 }
             }
         }
@@ -86,13 +84,10 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
         if !flow.result().is_empty() {
             for res in flow.result() {
                 if !res.is_unit() {
-                    let local = self
-                        .local_mapping
-                        .get(res)
-                        .ok_or_else(|| anyhow!("Unknown result variable:{}", res))?;
-                    self.code.move_local(*local);
+                    self.ctx.st_var(res)?;
                 }
             }
+
             self.ctx.write_code(Bytecode::Ret);
         }
         Ok(())
@@ -101,18 +96,17 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
     fn map_calculation(&mut self, calc: &StackFrame) -> SignatureToken {
         match calc.frame().as_ref() {
             Frame::Val(val) => {
-                let tp = self.math.set_literal(&mut self.code, val);
-                self.stack.push(tp.clone());
+                let tp = self.math.set_literal(&mut self.ctx, val);
+                self.ctx.push_stack(tp.clone());
                 tp
             }
             Frame::Param(idx) => {
                 self.ctx.write_code(Bytecode::CopyLoc(*idx as u8));
                 if self.def.abi.inputs[*idx as usize].tp.as_str() == "bool" {
-                    self.stack.push(SignatureToken::Bool);
-                    SignatureToken::Bool
+                    self.ctx.push_stack(SignatureToken::Bool)
                 } else {
-                    let tp = self.math.write_from_u128(&mut self.code);
-                    self.stack.push(tp);
+                    let tp = self.math.write_from_u128(&mut self.ctx);
+                    self.ctx.push_stack(tp)
                 }
             }
             Frame::Bool(val) => {
@@ -121,8 +115,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                 } else {
                     self.ctx.write_code(Bytecode::LdFalse);
                 }
-                self.stack.push(SignatureToken::Bool);
-                SignatureToken::Bool
+                self.ctx.push_stack(SignatureToken::Bool)
             }
             Frame::SelfAddress => {
                 todo!()
@@ -133,10 +126,9 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             Frame::Calc2(code, first, second) => {
                 let a = self.map_calculation(first);
                 let b = self.map_calculation(second);
-                let tp = BinaryOpCode::code(self.math, &mut self.code, *code, a, b);
-                self.stack.pop2();
-                self.stack.push(tp.clone());
-                tp
+                let tp = BinaryOpCode::code(self.math, &mut self.ctx, *code, a, b);
+                self.ctx.pop2_stack();
+                self.ctx.push_stack(tp)
             }
             Frame::Abort(code) => {
                 self.ctx.write_code(Bytecode::LdU64(*code));
@@ -145,10 +137,9 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             }
             Frame::Calc(op, calc) => {
                 let tp = self.map_calculation(calc);
-                let tp = UnaryOpCode::code(self.math, &mut self.code, *op, tp);
-                self.stack.pop();
-                self.stack.push(tp.clone());
-                tp
+                let tp = UnaryOpCode::code(self.math, &mut self.ctx, *op, tp);
+                self.ctx.pop_stack();
+                self.ctx.push_stack(tp)
             }
         }
     }

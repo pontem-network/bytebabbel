@@ -1,11 +1,11 @@
 use crate::evm::bytecode::executor::ops::UnaryOp;
 use crate::mv::function::code::intrinsic::math::{CastBool, UnaryOpCode};
-use crate::mv::function::code::writer::CodeWriter;
 use crate::U128MathModel;
 use move_binary_format::file_format::{Bytecode, SignatureToken};
+use crate::mv::function::code::context::Context;
 
 impl UnaryOpCode for U128MathModel {
-    fn code(&self, code: &mut CodeWriter, op: UnaryOp, a: SignatureToken) -> SignatureToken {
+    fn code(&self, ctx: &mut Context, op: UnaryOp, a: SignatureToken) -> SignatureToken {
         match op {
             UnaryOp::IsZero => {
                 if a == SignatureToken::U128 {
@@ -16,7 +16,7 @@ impl UnaryOpCode for U128MathModel {
                         false
                     }
                      */
-                    code.extend([Bytecode::LdU128(0), Bytecode::Eq]);
+                    ctx.extend_code([Bytecode::LdU128(0), Bytecode::Eq]);
                 } else {
                     /*
                        if val {
@@ -25,14 +25,14 @@ impl UnaryOpCode for U128MathModel {
                            true
                        }
                     */
-                    code.push(Bytecode::Not);
+                    ctx.write_code(Bytecode::Not);
                 }
             }
             UnaryOp::Not => {
                 if a == SignatureToken::U128 {
-                    self.write_to_bool(code);
+                    self.write_to_bool(ctx);
                 }
-                code.push(Bytecode::Not);
+                ctx.write_code(Bytecode::Not);
             }
         }
         SignatureToken::Bool

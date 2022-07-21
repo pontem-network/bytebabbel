@@ -8,6 +8,7 @@ use crate::evm::bytecode::executor::types::U256;
 use crate::evm::bytecode::instruction::Instruction;
 use anyhow::{anyhow, ensure, Error};
 use std::collections::BTreeMap;
+use crate::flog::is_trace;
 
 pub mod debug;
 pub mod env;
@@ -156,7 +157,7 @@ impl<'a> StaticExecutor<'a> {
         len: StackFrame,
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
-        if self.trace {
+        if is_trace() {
             println!("mem:\n{}", self.mem);
         }
 
@@ -183,32 +184,13 @@ impl<'a> StaticExecutor<'a> {
     fn handle_revert(
         &mut self,
         _env: &Env,
-        offset: StackFrame,
-        len: StackFrame,
+        _offset: StackFrame,
+        _len: StackFrame,
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
-        if self.trace {
+        if is_trace() {
             println!("mem:\n{}", self.mem);
         }
-
-        let len = len
-            .as_u256()
-            .ok_or_else(|| anyhow!("unsupported dynamic result len"))?;
-        // let offset = offset
-        //     .as_u256()
-        //     .ok_or_else(|| anyhow!("unsupported dynamic result len"))?;
-        let outputs = len.as_usize() / FRAME_SIZE;
-
-        // self.mem.load(&offset);
-        // for i in 0..outputs {
-        //     let calculation = self.mem.load(&StackFrame::new(Frame::Val(
-        //         offset + U256::from(i * FRAME_SIZE),
-        //     )));
-        //     calculation.mark_as_used();
-        //
-        //     let var = flow.calc_var(calculation);
-        //     flow.set_result(var);
-        // }
         flow.abort(0);
         Ok(())
     }

@@ -6,6 +6,7 @@ use move_bytecode_source_map::mapping::SourceMapping;
 use move_core_types::account_address::AccountAddress;
 use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
 use move_ir_types::location::Spanned;
+use eth2move::flog::is_trace;
 
 mod consts;
 mod params;
@@ -28,7 +29,7 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    if trace {
+    if is_trace() {
         let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
         let dissassemble_string = disassembler.disassemble().unwrap();
         println!("{}", dissassemble_string);

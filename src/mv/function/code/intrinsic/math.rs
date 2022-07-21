@@ -1,8 +1,8 @@
 use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
 use crate::evm::bytecode::executor::types::U256;
-use crate::mv::function::code::writer::CodeWriter;
 use crate::mv::function::signature::SignatureWriter;
 use move_binary_format::file_format::SignatureToken;
+use crate::mv::function::code::context::Context;
 
 pub mod u128_model;
 pub mod u256_model;
@@ -14,13 +14,13 @@ pub trait MathModel:
 }
 
 pub trait CastU128 {
-    fn write_from_u128(&self, bytecode: &mut CodeWriter) -> SignatureToken;
-    fn write_to_u128(&self, bytecode: &mut CodeWriter);
+    fn write_from_u128(&self, bytecode: &mut Context) -> SignatureToken;
+    fn write_to_u128(&self, bytecode: &mut Context);
 }
 
 pub trait CastBool {
-    fn write_from_bool(&self, bytecode: &mut CodeWriter) -> SignatureToken;
-    fn write_to_bool(&self, bytecode: &mut CodeWriter);
+    fn write_from_bool(&self, bytecode: &mut Context) -> SignatureToken;
+    fn write_to_bool(&self, bytecode: &mut Context);
 }
 
 pub trait PrepareSignatures {
@@ -28,13 +28,13 @@ pub trait PrepareSignatures {
 }
 
 pub trait Literal {
-    fn set_literal(&self, bytecode: &mut CodeWriter, val: &U256) -> SignatureToken;
+    fn set_literal(&self, bytecode: &mut Context, val: &U256) -> SignatureToken;
 }
 
 pub trait BinaryOpCode {
     fn code(
         &self,
-        writer: &mut CodeWriter,
+        writer: &mut Context,
         op: BinaryOp,
         a: SignatureToken,
         b: SignatureToken,
@@ -42,5 +42,5 @@ pub trait BinaryOpCode {
 }
 
 pub trait UnaryOpCode {
-    fn code(&self, writer: &mut CodeWriter, op: UnaryOp, a: SignatureToken) -> SignatureToken;
+    fn code(&self, writer: &mut Context, op: UnaryOp, a: SignatureToken) -> SignatureToken;
 }

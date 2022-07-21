@@ -1,7 +1,7 @@
 use move_binary_format::file_format::{
-    Bytecode, CodeOffset, LocalIndex, SignatureToken, StructFieldInformation,
+    Bytecode, CodeOffset, LocalIndex, SignatureToken,
 };
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap};
 
 pub struct CodeWriter {
     code: Vec<Bytecode>,
@@ -43,14 +43,12 @@ impl CodeWriter {
 
     pub fn set_var(&mut self, tp: SignatureToken) -> LocalIndex {
         let idx = self.borrow_local(tp);
-        self.stack.pop();
         self.push(Bytecode::StLoc(idx));
         idx
     }
 
     pub fn move_local(&mut self, idx: LocalIndex) {
         if let Some(tp) = self.release_local(idx) {
-            self.stack.push(tp);
             self.push(Bytecode::MoveLoc(idx));
         }
     }
@@ -127,12 +125,12 @@ impl Locals {
             .find(|(_, b)| **b == id)
             .map(|(i, _)| i);
 
-        if let Some(borrowed_idx) = borrowed_idx {
+        return if let Some(borrowed_idx) = borrowed_idx {
             self.borrowed.remove(borrowed_idx);
             self.free.push(id);
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     }
 

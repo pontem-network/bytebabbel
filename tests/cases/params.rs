@@ -1,7 +1,6 @@
 use crate::cases::make_move_module;
 use crate::common::executor::MoveExecutor;
 use crate::log_init;
-use move_core_types::value::MoveValue;
 
 #[test]
 pub fn plus_fn_tests() {

@@ -1,8 +1,8 @@
 use crate::evm::bytecode::executor::types::U256;
 use crate::mv::function::code::intrinsic::math::{Literal, MathModel, PrepareSignatures};
-use crate::mv::function::code::writer::CodeWriter;
 use crate::mv::function::signature::SignatureWriter;
 use move_binary_format::file_format::{Bytecode, SignatureToken};
+use crate::mv::function::code::context::Context;
 
 mod binary_ops;
 mod cast;
@@ -18,11 +18,11 @@ impl MathModel for U128MathModel {
 }
 
 impl Literal for U128MathModel {
-    fn set_literal(&self, bytecode: &mut CodeWriter, val: &U256) -> SignatureToken {
+    fn set_literal(&self, ctx: &mut Context, val: &U256) -> SignatureToken {
         if val > &U256::from(u128::MAX) {
-            bytecode.push(Bytecode::LdU128(u128::MAX));
+            ctx.write_code(Bytecode::LdU128(u128::MAX));
         } else {
-            bytecode.push(Bytecode::LdU128(val.as_u128()));
+            ctx.write_code(Bytecode::LdU128(val.as_u128()));
         }
         SignatureToken::U128
     }

@@ -33,13 +33,14 @@ pub fn output_execution(exec: &Execution, width: usize) -> String {
             write_frame(calc, width);
         }
         Execution::Branch { cnd, true_br, false_br } => {
-            spaces_with("IF(", width);
-            spaces_with(write_frame(cnd, 0).as_str(), 0);
-            spaces_with_ln("True:", 0);
-            spaces_with_ln("True:", width);
-            output_flow(true_br, width + 5);
-            spaces_with_ln("False:", width);
-            output_flow(false_br, width + 5);
+            output += spaces_with("IF(", width).as_str();
+            output += write_frame(cnd, 0).as_str();
+            output += ")";
+            output += spaces_with_ln("True:", 0).as_str();
+            output += spaces_with_ln("True:", width).as_str();
+            output += output_flow(true_br, width + 5).as_str();
+            output += spaces_with_ln("False:", width).as_str();
+            output += output_flow(false_br, width + 5).as_str();
         }
         Execution::Abort(code) => {
             spaces_with_ln(format!("abort({code})"), width);
@@ -85,5 +86,9 @@ fn write_frame(calc: &StackFrame, width: usize) -> String {
 }
 
 fn spaces_with_ln<D: Display>(line: D, width: usize) -> String {
+    format!("{:width$} {line}\n", " ")
+}
+
+fn spaces_with<D: Display>(line: D, width: usize) -> String {
     format!("{:width$} {line}\n", " ")
 }
