@@ -6,6 +6,7 @@ authors = ["Maxim Vladimirov <maxim@pontem.network>"]
 license = "MIT"
 keywords = ["log","logs","initialization"]
 description = "Initializing settings for dep:log"
+publish = false
 
 [dependencies]
 anyhow = "1.0.58"

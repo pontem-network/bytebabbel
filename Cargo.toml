@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 build = "src/build.rs"
 description = "EVM-bytecode to Move static translator"
+authors = [
+    "Dm. Yakushev <dmitryyakushev@dfinance.co>",
+    "Maxim Vladimirov <maxim@pontem.network>"
+]
 repository = "https://github.com/pontem-network/eth2move.git"
 
 
