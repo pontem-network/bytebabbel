@@ -1,17 +1,20 @@
 [package]
-name = "e2m"
+name = "s2m"
 version = "0.1.0"
 edition = "2021"
 authors = ["Maxim Vladimirov <maxim@pontem.network>"]
 license = "MIT"
 keywords = ["solidity", "sol", "move", "translator"]
-description = "Converting project solidity to move"
+description = "Converting a sol file to move bin"
 
 [dependencies]
 clap = { version = ">=3.2.11", features = ["derive"] }
 anyhow = "1.0.58"
-log = "0.4.17"
-env_logger = "0.9.0"
+log = "0.4"
+sha2 = { version = "0.10", default-features = false }
+base32 = "0.4"
 
 move-core-types = { git = "https://github.com/move-language/move.git" }
-eth2move = { path = "../" }
+# local
+eth2move = { path = "../../" }
+inic_log = { path = "../inic_log" }
