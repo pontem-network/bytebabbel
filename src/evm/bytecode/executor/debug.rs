@@ -32,7 +32,11 @@ pub fn output_execution(exec: &Execution, width: usize) -> String {
         Execution::Calc(calc) => {
             write_frame(calc, width);
         }
-        Execution::Branch { cnd, true_br, false_br } => {
+        Execution::Branch {
+            cnd,
+            true_br,
+            false_br,
+        } => {
             output += spaces_with("IF(", width).as_str();
             output += write_frame(cnd, 0).as_str();
             output += ")";

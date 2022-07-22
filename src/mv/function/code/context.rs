@@ -317,17 +317,18 @@ impl Context {
         };
     }
 
-    pub fn store_stack(&mut self) -> StoredStack {
+    pub fn store_stack(&mut self) -> StackState {
         let mut stack_store = Vec::new();
         let stack = self.stack.clone();
-        log::trace!("Stored stack: {:?}", stack);
-        for tp in stack.into_inner() {
+        log::trace!("Store stack: {:?}", self.stack);
+
+        for tp in stack.into_inner().into_iter().rev() {
             stack_store.push(self.set_var(tp));
         }
-        StoredStack { stack: stack_store }
+        StackState { stack: stack_store }
     }
 
-    pub fn restore_stack(&mut self, stack: StoredStack) {
+    pub fn restore_stack(&mut self, stack: StackState) {
         for idx in stack.stack.into_iter().rev() {
             self.move_local(idx);
         }
@@ -336,7 +337,16 @@ impl Context {
 }
 
 #[derive(Debug, Clone)]
-pub struct StoredStack {
+pub struct StackState {
     stack: Vec<LocalIndex>,
 }
 
+impl StackState {
+    pub fn take(&mut self, idx: usize) -> LocalIndex {
+        self.stack.remove(idx)
+    }
+
+    pub fn take_last(&mut self) -> LocalIndex {
+        self.stack.remove(0)
+    }
+}

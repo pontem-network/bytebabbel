@@ -25,10 +25,18 @@ pub fn execute(inst: &Instruction, ctx: &mut Context) -> Result<Vec<StackFrame>,
         OpCode::CallDataLoad => call_data_load(ctx),
         OpCode::Shr => math(BinaryOp::Shr, ctx, |a, b| Frame::Val(b >> a)),
         OpCode::Stop => stop(ctx),
-        OpCode::Add => math(BinaryOp::Add, ctx, |a, b| Frame::Val(b + a)),
-        OpCode::Mul => math(BinaryOp::Mul, ctx, |a, b| Frame::Val(b * a)),
-        OpCode::Sub => math(BinaryOp::Sub, ctx, |a, b| Frame::Val(a - b)),
-        OpCode::Div => math(BinaryOp::Div, ctx, |a, b| Frame::Val(a / b)),
+        OpCode::Add => math(BinaryOp::Add, ctx, |a, b| {
+            Frame::Val(b.overflowing_add(a).0)
+        }),
+        OpCode::Mul => math(BinaryOp::Mul, ctx, |a, b| {
+            Frame::Val(b.overflowing_mul(a).0)
+        }),
+        OpCode::Sub => math(BinaryOp::Sub, ctx, |a, b| {
+            Frame::Val(a.overflowing_sub(b).0)
+        }),
+        OpCode::Div => math(BinaryOp::Div, ctx, |a, b| {
+            Frame::Val(a.checked_div(b).unwrap_or_else(U256::zero))
+        }),
         OpCode::SDiv => todo!(),
         OpCode::Mod => todo!(),
         OpCode::SMod => todo!(),

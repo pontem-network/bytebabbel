@@ -1,4 +1,5 @@
 use eth2move::evm::parse_program;
+use eth2move::flog::is_trace;
 use eth2move::mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use eth2move::mv::mvir::MvModule;
 use move_binary_format::binary_views::BinaryIndexedView;
@@ -6,7 +7,6 @@ use move_bytecode_source_map::mapping::SourceMapping;
 use move_core_types::account_address::AccountAddress;
 use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
 use move_ir_types::location::Spanned;
-use eth2move::flog::is_trace;
 
 mod consts;
 mod params;

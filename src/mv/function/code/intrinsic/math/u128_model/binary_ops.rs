@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::evm::bytecode::executor::ops::BinaryOp;
 use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{BinaryOpCode, CastBool, MathModel};
@@ -55,7 +57,7 @@ impl BinaryOpCode for U128MathModel {
             }
             BinaryOp::Div => {
                 self.cast(ctx, a, b);
-                ctx.write_code(Bytecode::Div);
+                safe_div(ctx);
                 SignatureToken::U128
             }
             BinaryOp::SLt => {
@@ -197,3 +199,41 @@ fn overflowing_sub(ctx: &mut Context, a: LocalIndex, b: LocalIndex) {
     ]);
     ctx.move_local(res)
 }
+
+///
+/// if b == 0 {
+///   0
+/// } else {
+///   a / b
+/// }
+fn safe_div(ctx: &mut Context) {
+    let mut state = ctx.store_stack();
+    let b = state.take_last();
+    let a = state.take_last();
+
+    ctx.extend_code([Bytecode::CopyLoc(b), Bytecode::LdU128(0), Bytecode::Eq]);
+    let pc = ctx.pc();
+    ctx.extend_code([
+        Bytecode::BrTrue(pc + 5),
+        Bytecode::MoveLoc(a),
+        Bytecode::MoveLoc(b),
+        Bytecode::Div,
+        Bytecode::StLoc(b),
+    ]);
+
+    ctx.release_local(a);
+    ctx.restore_stack(state);
+    ctx.move_local(b);
+}
+
+/*
+loc_0 = 8
+loc_1 = 2
+loc_2 = 3
+
+loc_3 = 2
+loc_4 = 170282366920938463463374607431768211455
+loc_5 = 0
+loc_6 = true
+loc_7 = true
+ */

@@ -1,8 +1,8 @@
 use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
 use crate::evm::bytecode::executor::types::U256;
+use crate::mv::function::code::context::Context;
 use crate::mv::function::signature::SignatureWriter;
 use move_binary_format::file_format::SignatureToken;
-use crate::mv::function::code::context::Context;
 
 pub mod u128_model;
 pub mod u256_model;

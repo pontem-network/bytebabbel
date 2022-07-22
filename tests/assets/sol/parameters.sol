@@ -35,10 +35,9 @@ contract Parameters {
 //        return a == 0;
 //    }
 
-    // # minusmultiply_params_with_const(6) 12
-    function minusmultiply_params_with_const_2(uint a) public pure returns (uint) {
-        uint b = 2;
-        uint c = 3;
-        return (a - b) * c;
+    function minusmultiply_params(uint a, uint b, uint c) public pure returns (uint) {
+        return a - b * c;
     }
 }
+
+

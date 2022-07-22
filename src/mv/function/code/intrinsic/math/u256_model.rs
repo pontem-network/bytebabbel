@@ -1,11 +1,11 @@
 use crate::evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
 use crate::evm::bytecode::executor::types::U256;
+use crate::mv::function::code::context::Context;
 use crate::mv::function::code::intrinsic::math::{
     BinaryOpCode, CastBool, CastU128, Literal, MathModel, PrepareSignatures, UnaryOpCode,
 };
 use crate::mv::function::signature::SignatureWriter;
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken};
-use crate::mv::function::code::context::Context;
 
 const EU128_OVERFLOW: u64 = 1;
 
@@ -91,7 +91,7 @@ impl BinaryOpCode for U256MathModel {
 }
 
 impl UnaryOpCode for U256MathModel {
-    fn code(&self,_ctx: &mut Context, _op: UnaryOp, _a: SignatureToken) -> SignatureToken {
+    fn code(&self, _ctx: &mut Context, _op: UnaryOp, _a: SignatureToken) -> SignatureToken {
         todo!()
     }
 }

@@ -6,9 +6,9 @@ use crate::evm::bytecode::executor::mem::Memory;
 use crate::evm::bytecode::executor::stack::{Frame, Stack, StackFrame, FRAME_SIZE};
 use crate::evm::bytecode::executor::types::U256;
 use crate::evm::bytecode::instruction::Instruction;
+use crate::flog::is_trace;
 use anyhow::{anyhow, ensure, Error};
 use std::collections::BTreeMap;
-use crate::flog::is_trace;
 
 pub mod debug;
 pub mod env;
