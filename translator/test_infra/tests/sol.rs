@@ -1,14 +1,6 @@
 use anyhow::{anyhow, Result};
 use libtest_mimic::{Arguments, Outcome, Test};
 
-#[allow(unused)]
-pub mod cases;
-#[allow(unused)]
-pub mod common;
-
-use cases::make_move_module;
-use common::executor::MoveExecutor;
-
 mod testssol;
 
 use crate::testssol::clog::{log_init, CustLogger};
