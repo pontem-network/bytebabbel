@@ -33,7 +33,7 @@ pub fn test_solc() {
 
         for test in sol.tests {
             let func_address = format!("{module_address}::{}", &test.func);
-            // dbg!(&test.params);
+
             let result = vm.run(&func_address, &test.params);
 
             print!("\r{:<15}{func_address}", "[tested]");

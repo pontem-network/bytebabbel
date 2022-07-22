@@ -225,15 +225,3 @@ fn safe_div(ctx: &mut Context) {
     ctx.restore_stack(state);
     ctx.move_local(b);
 }
-
-/*
-loc_0 = 8
-loc_1 = 2
-loc_2 = 3
-
-loc_3 = 2
-loc_4 = 170282366920938463463374607431768211455
-loc_5 = 0
-loc_6 = true
-loc_7 = true
- */
