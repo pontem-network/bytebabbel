@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::{ChangeSet, Event};
 use move_core_types::identifier::Identifier;
@@ -71,7 +71,15 @@ impl MoveExecutor {
         session: &Session<Resolver>,
     ) -> Result<Vec<Vec<u8>>> {
         let fun = session.load_function(module_id, ident, &[])?;
-        args.split(",")
+        let arguments = args.split(",").collect::<Vec<_>>();
+
+        ensure!(
+            (arguments.len() == fun.parameters.len())
+                || (args.is_empty() && fun.parameters.is_empty())
+        );
+
+        arguments
+            .into_iter()
             .zip(fun.parameters)
             .map(|(val, tp)| {
                 let val = val.trim_matches(char::is_whitespace);

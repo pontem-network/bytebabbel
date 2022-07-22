@@ -44,4 +44,9 @@ library MathMultiplyFn {
         uint d = 10;
         return d * c;
     }
+
+    // # multiply_params(1,2,3) 6
+    function multiply_params(uint a, uint b, uint c) public pure returns (uint) {
+        return a * b * c;
+    }
 }

@@ -30,4 +30,13 @@ library MathMinusDevideFn {
     function minusdevide_params(uint a) public pure returns (uint) {
         return a - 6 / 2;
     }
+
+    // # minusdevide_params_2(6) 3
+    // # minusdevide_params_2(3) 0
+    // # minusdevide_params_2(2) !panic
+    function minusdevide_params_2(uint a) public pure returns (uint) {
+        uint b = 6;
+        uint c = 2;
+        return a - b / c;
+    }
 }

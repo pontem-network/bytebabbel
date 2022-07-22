@@ -1,11 +1,12 @@
 use crate::evm::bytecode::block::{BlockId, InstructionBlock};
 use crate::evm::bytecode::executor::env::{Env, Function};
-use crate::evm::bytecode::executor::execution::FunctionFlow;
+use crate::evm::bytecode::executor::execution::{FunctionFlow, Var};
 use crate::evm::bytecode::executor::instructions::execute;
 use crate::evm::bytecode::executor::mem::Memory;
 use crate::evm::bytecode::executor::stack::{Frame, Stack, StackFrame, FRAME_SIZE};
 use crate::evm::bytecode::executor::types::U256;
 use crate::evm::bytecode::instruction::Instruction;
+use crate::flog::is_trace;
 use anyhow::{anyhow, ensure, Error};
 use std::collections::BTreeMap;
 
@@ -82,6 +83,12 @@ impl<'a> StaticExecutor<'a> {
                 None => {
                     return Ok(None);
                 }
+                Some(ExecResult::Stop) => {
+                    return Ok(None);
+                }
+                Some(ExecResult::Revert { .. }) => {
+                    return Ok(None);
+                }
             }
         }
     }
@@ -112,6 +119,12 @@ impl<'a> StaticExecutor<'a> {
                 let next_block = BlockId::from(block.end + 1);
                 self._exec_block(next_block, env, flow)
             }
+            Some(ExecResult::Stop) => {
+                flow.set_result(Var::unit());
+                // no-op
+                Ok(())
+            }
+            Some(ExecResult::Revert { offset, len }) => self.handle_revert(env, offset, len, flow),
         }
     }
 
@@ -123,8 +136,6 @@ impl<'a> StaticExecutor<'a> {
         env: &Env,
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
-        flow.calc_stack(cnd);
-
         let mut true_br_executor = self.inherit();
         let mut true_br_flow = FunctionFlow::default();
         true_br_flow.var_seq = flow.var_seq;
@@ -135,7 +146,7 @@ impl<'a> StaticExecutor<'a> {
         false_br_flow.var_seq = true_br_flow.var_seq;
         false_br_executor._exec_block(false_br, env, &mut false_br_flow)?;
         flow.var_seq = false_br_flow.var_seq;
-        flow.brunch(true_br_flow, false_br_flow);
+        flow.brunch(cnd, true_br_flow, false_br_flow);
         Ok(())
     }
 
@@ -146,13 +157,16 @@ impl<'a> StaticExecutor<'a> {
         len: StackFrame,
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
+        if is_trace() {
+            println!("mem:\n{}", self.mem);
+        }
+
         let len = len
             .as_u256()
             .ok_or_else(|| anyhow!("unsupported dynamic result len"))?;
         let offset = offset
             .as_u256()
             .ok_or_else(|| anyhow!("unsupported dynamic result len"))?;
-
         let outputs = len.as_usize() / FRAME_SIZE;
         for i in 0..outputs {
             let calculation = self.mem.load(&StackFrame::new(Frame::Val(
@@ -164,6 +178,20 @@ impl<'a> StaticExecutor<'a> {
             flow.set_result(var);
         }
 
+        Ok(())
+    }
+
+    fn handle_revert(
+        &mut self,
+        _env: &Env,
+        _offset: StackFrame,
+        _len: StackFrame,
+        flow: &mut FunctionFlow,
+    ) -> Result<(), Error> {
+        if is_trace() {
+            println!("mem:\n{}", self.mem);
+        }
+        flow.abort(0);
         Ok(())
     }
 
@@ -248,6 +276,14 @@ impl<'a, 'b> Context<'a, 'b> {
         self.result = Some(ExecResult::Return { offset, len })
     }
 
+    pub fn set_revert(&mut self, offset: StackFrame, len: StackFrame) {
+        self.result = Some(ExecResult::Revert { offset, len })
+    }
+
+    pub fn set_stop(&mut self) {
+        self.result = Some(ExecResult::Stop)
+    }
+
     pub fn set_code_offset(&mut self, offset: BlockId) {
         self.executor.new_code_offset = Some(offset);
     }
@@ -268,4 +304,6 @@ pub enum ExecResult {
     Jmp(Jump),
     Abort(u8),
     Return { offset: StackFrame, len: StackFrame },
+    Revert { offset: StackFrame, len: StackFrame },
+    Stop,
 }

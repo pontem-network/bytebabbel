@@ -30,33 +30,38 @@ impl CodeWriter {
         }
     }
 
-    pub fn release_local(&mut self, idx: LocalIndex) {
-        for locals in self.locals.values_mut() {
-            locals.release(idx);
+    pub fn release_local(&mut self, idx: LocalIndex) -> Option<SignatureToken> {
+        for (tp, locals) in self.locals.iter_mut() {
+            if locals.release(idx) {
+                return Some(tp.clone());
+            }
         }
+        None
     }
 
-    pub fn set_var(&mut self, tp: SignatureToken) -> LocalIndex {
-        let idx = self.borrow_local(tp);
-        self.code.push(Bytecode::StLoc(idx));
-        idx
-    }
-
-    pub fn move_local(&mut self, idx: LocalIndex) {
-        self.release_local(idx);
-        self.code.push(Bytecode::MoveLoc(idx));
+    pub fn local_type(&self, idx: LocalIndex) -> Option<SignatureToken> {
+        for (tp, locals) in self.locals.iter() {
+            if locals.contains(idx) {
+                return Some(tp.clone());
+            }
+        }
+        None
     }
 
     pub fn push(&mut self, code: Bytecode) {
         self.code.push(code);
     }
 
-    pub fn set_op(&mut self, idx: CodeOffset, op_code: Bytecode) {
-        self.code[idx as usize] = op_code;
-    }
-
-    pub fn extend<I: IntoIterator<Item = Bytecode>>(&mut self, code: I) {
-        self.code.extend(code);
+    pub fn update_jmp_pc(&mut self, idx: CodeOffset, new_pc: CodeOffset) {
+        let code = &mut self.code[idx as usize];
+        match code {
+            Bytecode::Branch(new_offset)
+            | Bytecode::BrFalse(new_offset)
+            | Bytecode::BrTrue(new_offset) => {
+                *new_offset = new_pc;
+            }
+            _ => panic!("Expected Jmp"),
+        }
     }
 
     pub fn pc(&self) -> CodeOffset {
@@ -75,7 +80,7 @@ impl CodeWriter {
             .collect::<Vec<_>>();
 
         for (local, tkn) in locals.iter().enumerate() {
-            log::trace!("loc_{:?} = {:?}", local, tkn);
+            log::trace!("loc_{:?} = {:?}", local + self.params_count as usize, tkn);
         }
 
         for (idx, code) in self.code.iter().enumerate() {
@@ -109,7 +114,7 @@ impl Locals {
         self.borrowed.push(id);
     }
 
-    pub fn release(&mut self, id: LocalIndex) {
+    pub fn release(&mut self, id: LocalIndex) -> bool {
         let borrowed_idx = self
             .borrowed
             .iter()
@@ -120,6 +125,9 @@ impl Locals {
         if let Some(borrowed_idx) = borrowed_idx {
             self.borrowed.remove(borrowed_idx);
             self.free.push(id);
+            true
+        } else {
+            false
         }
     }
 

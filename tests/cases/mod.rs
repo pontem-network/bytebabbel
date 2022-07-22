@@ -1,4 +1,5 @@
 use eth2move::evm::parse_program;
+use eth2move::flog::is_trace;
 use eth2move::mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use eth2move::mv::mvir::MvModule;
 use move_binary_format::binary_views::BinaryIndexedView;
@@ -28,8 +29,10 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-    let dissassemble_string = disassembler.disassemble().unwrap();
-    println!("{}", dissassemble_string);
+    if is_trace() {
+        let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+        let dissassemble_string = disassembler.disassemble().unwrap();
+        println!("{}", dissassemble_string);
+    }
     bytecode
 }

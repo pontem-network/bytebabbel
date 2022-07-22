@@ -4,7 +4,7 @@ use eth2move::evm::abi::Abi;
 use eth2move::evm::bytecode::executor::execution::FunctionFlow;
 use eth2move::evm::bytecode::executor::stack::{Frame, StackFrame};
 use eth2move::evm::program::Program;
-use eth2move::mv::function::code::intrinsic::math::u256_model::U256MathModel;
+use eth2move::mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use eth2move::mv::mvir::MvModule;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use move_core_types::value::MoveValue;
@@ -46,7 +46,7 @@ pub fn make_module(flow: FunctionFlow) -> Vec<u8> {
     graph.insert(hash, flow);
     let program = Program::new("TestMod", graph, None, abi).unwrap();
     let module =
-        MvModule::from_evm_program(CORE_CODE_ADDRESS, U256MathModel::default(), program).unwrap();
+        MvModule::from_evm_program(CORE_CODE_ADDRESS, U128MathModel::default(), program).unwrap();
 
     let compiled_module = module.make_move_module().unwrap();
     let mut bytecode = Vec::new();

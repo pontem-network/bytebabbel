@@ -55,10 +55,11 @@ impl MvModule {
         module.signatures = self.signatures;
         CodeUnitVerifier::verify_module(&module).map_err(|err| {
             anyhow!(
-                "Verification error:{:?}-{:?}. Message:{:?}",
+                "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?}",
                 err.major_status(),
                 err.sub_status(),
-                err.message()
+                err.message(),
+                err.location()
             )
         })?;
         Ok(module)

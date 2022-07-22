@@ -24,11 +24,19 @@ pub fn execute(inst: &Instruction, ctx: &mut Context) -> Result<Vec<StackFrame>,
         OpCode::Jump => jmp(ctx),
         OpCode::CallDataLoad => call_data_load(ctx),
         OpCode::Shr => math(BinaryOp::Shr, ctx, |a, b| Frame::Val(b >> a)),
-        OpCode::Stop => abort(ctx, 1),
-        OpCode::Add => math(BinaryOp::Add, ctx, |a, b| Frame::Val(b + a)),
-        OpCode::Mul => math(BinaryOp::Mul, ctx, |a, b| Frame::Val(b * a)),
-        OpCode::Sub => math(BinaryOp::Sub, ctx, |a, b| Frame::Val(a - b)),
-        OpCode::Div => math(BinaryOp::Div, ctx, |a, b| Frame::Val(a / b)),
+        OpCode::Stop => stop(ctx),
+        OpCode::Add => math(BinaryOp::Add, ctx, |a, b| {
+            Frame::Val(b.overflowing_add(a).0)
+        }),
+        OpCode::Mul => math(BinaryOp::Mul, ctx, |a, b| {
+            Frame::Val(b.overflowing_mul(a).0)
+        }),
+        OpCode::Sub => math(BinaryOp::Sub, ctx, |a, b| {
+            Frame::Val(a.overflowing_sub(b).0)
+        }),
+        OpCode::Div => math(BinaryOp::Div, ctx, |a, b| {
+            Frame::Val(a.checked_div(b).unwrap_or_else(U256::zero))
+        }),
         OpCode::SDiv => todo!(),
         OpCode::Mod => todo!(),
         OpCode::SMod => todo!(),
@@ -87,7 +95,7 @@ pub fn execute(inst: &Instruction, ctx: &mut Context) -> Result<Vec<StackFrame>,
         OpCode::Return => res(ctx),
         OpCode::DelegateCall => todo!(),
         OpCode::Create2 => todo!(),
-        OpCode::Revert => abort(ctx, 2),
+        OpCode::Revert => revert(ctx),
         OpCode::StaticCall => todo!(),
         OpCode::Invalid(code) => abort(ctx, *code),
         OpCode::SelfDestruct => abort(ctx, 1),
@@ -231,6 +239,20 @@ fn swap(ctx: &mut Context) -> Vec<StackFrame> {
 
 fn abort(ctx: &mut Context, code: u8) -> Vec<StackFrame> {
     ctx.set_abort(code);
+    vec![]
+}
+
+fn stop(ctx: &mut Context) -> Vec<StackFrame> {
+    ctx.set_stop();
+    vec![]
+}
+
+fn revert(ctx: &mut Context) -> Vec<StackFrame> {
+    let offset = &ctx.input[0];
+    offset.mark_as_used();
+    let len = &ctx.input[1];
+    len.mark_as_used();
+    ctx.set_revert(offset.clone(), len.clone());
     vec![]
 }
 

@@ -32,4 +32,17 @@ library MathMinusMultiplyFn {
         uint c = 3;
         return a - b * c;
     }
+
+    // # minusmultiply_params_with_const_2(6) 12
+    function minusmultiply_params_with_const_2(uint a) public pure returns (uint) {
+        uint b = 2;
+        uint c = 3;
+        return (a - b) * c;
+    }
+
+    // # minusmultiply_params(0,0,0) 0
+    // # minusmultiply_params(8,2,3) 2
+    function minusmultiply_params(uint a, uint b, uint c) public pure returns (uint) {
+        return a - b * c;
+    }
 }

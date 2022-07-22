@@ -31,4 +31,9 @@ library MathPlusMultiplyFn {
         uint c = 3;
         return (a + b) * c;
     }
+
+    // # plusmultiply_params_with_const(1) 9
+    function plusmultiply_params_with_const(uint a) public pure returns (uint) {
+        return (a + 2) * 3;
+    }
 }

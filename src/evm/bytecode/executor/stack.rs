@@ -78,7 +78,7 @@ impl StackFrame {
     }
 
     pub fn as_bool(&self) -> Option<bool> {
-        Some(self.as_u256()? == U256::from(1))
+        Some(self.as_u256()? != U256::from(0))
     }
 
     pub fn as_block_id(&self) -> Option<BlockId> {
@@ -121,7 +121,7 @@ impl Debug for Frame {
 
 impl Debug for StackFrame {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:?} | {})", self.cell, self.used)
+        write!(f, "{:?}", self.cell)
     }
 }
 
