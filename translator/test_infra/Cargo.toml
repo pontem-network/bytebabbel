@@ -25,5 +25,16 @@ move-disassembler = { git = "https://github.com/move-language/move.git" }
 move-bytecode-source-map = { git = "https://github.com/move-language/move.git" }
 move-ir-types = { git = "https://github.com/move-language/move.git" }
 
+# for test *.sol
+libtest-mimic = "0.4"
+regex = "1.6"
+log = "0.4"
+lazy_static = "1.4"
+termion = "1.5.6"
+
 [build-dependencies]
 wax = "0.5"
+
+[[test]]
+name = "sol"
+harness = false

@@ -69,6 +69,10 @@ jobs:
           fi
         shell: bash
 
+      - name: Test
+        run: cargo +nightly test
+        shell: bash
+
       - name: Clippy
         uses: actions-rs/clippy-check@v1
         with:

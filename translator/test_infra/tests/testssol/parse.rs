@@ -1,129 +1,31 @@
-use anyhow::{anyhow, bail, Result};
-use evm::{is_trace, parse_program};
-use move_binary_format::binary_views::BinaryIndexedView;
-use move_bytecode_source_map::mapping::SourceMapping;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::value::MoveValue;
-use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
-use move_ir_types::location::Spanned;
-use mv::function::code::intrinsic::math::u128_model::U128MathModel;
-use mv::mvir::MvModule;
-use serde_json::Value;
 use std::ffi::OsStr;
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs};
-use test_infra::executor::MoveExecutor;
-use test_infra::log_init;
 
-const SOL_DIRECTORY: &str = "sol";
-const BIN_DIRECTORY: &str = "bin";
+use anyhow::{anyhow, bail, Result};
+use serde_json::Value;
 
-pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
-    let mut split = name.split("::");
+use move_core_types::value::MoveValue;
 
-    let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
-    let name = split.next().unwrap();
-    let program = parse_program(name, eth, abi).unwrap();
-    let module = MvModule::from_evm_program(addr, U128MathModel::default(), program).unwrap();
-    let compiled_module = module.make_move_module().unwrap();
-    let mut bytecode = Vec::new();
-    compiled_module.serialize(&mut bytecode).unwrap();
-
-    let source_mapping = SourceMapping::new_from_view(
-        BinaryIndexedView::Module(&compiled_module),
-        Spanned::unsafe_no_loc(()).loc,
-    )
-    .unwrap();
-    if is_trace() {
-        let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-        let dissassemble_string = disassembler.disassemble().unwrap();
-        println!("{}", dissassemble_string);
-    }
-    bytecode
-}
-
-#[test]
-pub fn test_solc() {
-    log_init();
-
-    let sol_files =
-        SolFile::from_sol_dir(&PathBuf::from(SOL_DIRECTORY).canonicalize().unwrap()).unwrap();
-    let mut success = true;
-    for sol in sol_files {
-        if sol.tests.is_empty() {
-            continue;
-        }
-        let module_address = format!("0x1::{}", &sol.module_name);
-        let eth = fs::read_to_string(&sol.bin_path).unwrap();
-        let abi = fs::read_to_string(&sol.abi_path).unwrap();
-        let bytecode = make_move_module(&module_address, &eth, &abi);
-
-        let mut vm = MoveExecutor::new();
-        vm.deploy("0x1", bytecode);
-
-        for test in sol.tests {
-            let func_address = format!("{module_address}::{}", &test.func);
-
-            let result = vm.run(&func_address, &test.params);
-
-            print!("\r{:<15}{func_address}", "[tested]");
-            let result = match result {
-                Ok(result) => result,
-                Err(err) => {
-                    if test.result.is_panic() {
-                        println!("\r{:<15}{module_address}::{test:?}", "[success]");
-                        continue;
-                    } else {
-                        println!("\r{:<15}{module_address}::{test:?}", "[error]");
-                        println!("{err:?}");
-                        success = false;
-                        continue;
-                    }
-                }
-            };
-            let result: Vec<MoveValue> = result
-                .returns
-                .iter()
-                .map(|(actual_val, actual_tp)| {
-                    MoveValue::simple_deserialize(&actual_val, &actual_tp).unwrap()
-                })
-                .collect();
-
-            // result.returns
-            if test.result.is_panic() {
-                println!("\r{:<15}{module_address}::{test:?}", "[error]");
-                println!("returned: {result:?}");
-                success = false;
-                continue;
-            }
-
-            let expected = test.result.value().unwrap();
-            if expected == &result {
-                println!("\r{:<15}{module_address}::{test:?}", "[success]");
-            } else {
-                println!("\r{:<15}{module_address}::{test:?}", "[error]");
-                println!("returned: {result:?}");
-                success = false;
-                continue;
-            }
-        }
-        assert!(success)
-    }
-    assert!(success)
-}
+const SOL_DIRECTORY: &str = "./sol";
+const BIN_DIRECTORY: &str = "./bin";
 
 #[derive(Debug)]
-struct SolFile {
+pub struct SolFile {
     sol_path: PathBuf,
-    bin_path: PathBuf,
-    abi_path: PathBuf,
-    module_name: String,
-    tests: Vec<SolFileTest>,
+    pub bin_path: PathBuf,
+    pub abi_path: PathBuf,
+    pub module_name: String,
+    pub tests: Vec<SolTest>,
 }
 
 impl SolFile {
-    pub fn from_sol_dir(sol_dir: &Path) -> Result<Vec<SolFile>> {
+    pub fn from_sol_dir() -> Result<Vec<SolFile>> {
+        SolFile::from_dir(&PathBuf::from(SOL_DIRECTORY).canonicalize()?)
+    }
+
+    fn from_dir(sol_dir: &Path) -> Result<Vec<SolFile>> {
         let mut list: Vec<SolFile> = sol_dir
             .read_dir()?
             .filter_map(|dir| dir.ok())
@@ -176,8 +78,8 @@ impl SolFile {
             .map(|line| line.trim_start_matches("//").trim())
             .filter(|line| line.starts_with("#"))
             .map(|line| line.trim_start_matches("#").trim())
-            .filter_map(|line| SolFileTest::try_from(line).ok())
-            .collect::<Vec<SolFileTest>>();
+            .filter_map(|line| SolTest::try_from(line).ok())
+            .collect::<Vec<SolTest>>();
         Ok(())
     }
 }
@@ -219,13 +121,14 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
     })
 }
 
-struct SolFileTest {
-    func: String,
-    params: String,
-    result: SolFileTestResult,
+#[derive(Clone)]
+pub struct SolTest {
+    pub func: String,
+    pub params: String,
+    pub result: SolTestResult,
 }
 
-impl TryFrom<&str> for SolFileTest {
+impl TryFrom<&str> for SolTest {
     type Error = anyhow::Error;
     fn try_from(instruction: &str) -> std::result::Result<Self, Self::Error> {
         let (name, part) = instruction.split_once('(').ok_or(anyhow!(
@@ -238,14 +141,14 @@ impl TryFrom<&str> for SolFileTest {
         let pre_result: Vec<&str> = part.trim().split_whitespace().collect();
 
         let result = if pre_result.contains(&"!panic") {
-            SolFileTestResult::Panic
+            SolTestResult::Panic
         } else if pre_result.is_empty() {
-            SolFileTestResult::Value(Vec::default())
+            SolTestResult::Value(Vec::default())
         } else {
-            SolFileTestResult::try_from(pre_result)?
+            SolTestResult::try_from(pre_result)?
         };
 
-        Ok(SolFileTest {
+        Ok(SolTest {
             func: name.trim().to_string(),
             params: params.trim().to_string(),
             result,
@@ -253,7 +156,7 @@ impl TryFrom<&str> for SolFileTest {
     }
 }
 
-impl fmt::Debug for SolFileTest {
+impl fmt::Debug for SolTest {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -265,42 +168,43 @@ impl fmt::Debug for SolFileTest {
     }
 }
 
-enum SolFileTestResult {
+#[derive(Clone)]
+pub enum SolTestResult {
     Panic,
     Value(Vec<MoveValue>),
 }
 
-impl fmt::Debug for SolFileTestResult {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let output = match self {
-            SolFileTestResult::Panic => "!panic".to_string(),
-            SolFileTestResult::Value(v) => format!("{v:?}"),
-        };
-        write!(f, "{output}")
-    }
-}
-
-impl SolFileTestResult {
+impl SolTestResult {
     pub fn is_panic(&self) -> bool {
-        matches!(self, SolFileTestResult::Panic)
+        matches!(self, SolTestResult::Panic)
     }
 
     pub fn value(&self) -> Result<&Vec<MoveValue>> {
         match self {
-            SolFileTestResult::Value(v) => Ok(v),
+            SolTestResult::Value(v) => Ok(v),
             _ => bail!("need the type SolFileTestResult::Value"),
         }
     }
 }
 
-impl TryFrom<Vec<&str>> for SolFileTestResult {
+impl fmt::Debug for SolTestResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let output = match self {
+            SolTestResult::Panic => "!panic".to_string(),
+            SolTestResult::Value(v) => format!("{v:?}"),
+        };
+        write!(f, "{output}")
+    }
+}
+
+impl TryFrom<Vec<&str>> for SolTestResult {
     type Error = anyhow::Error;
     fn try_from(value: Vec<&str>) -> std::result::Result<Self, Self::Error> {
         let result = value
             .into_iter()
             .map(str_to_movevalue)
             .collect::<Result<Vec<MoveValue>>>()?;
-        Ok(SolFileTestResult::Value(result))
+        Ok(SolTestResult::Value(result))
     }
 }
 
