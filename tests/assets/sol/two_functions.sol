@@ -10,13 +10,13 @@ contract TwoFunctions {
         assert(false);
     }
 
-    // @todo # do_nothing()
-    // @todo # do_nothing(123) void !panic
+    // # do_nothing()
+    // # do_nothing(123) void !panic
     function do_nothing() public {}
 
-    // @todo # boo(true)
-    // @todo # boo(false)
-    // @todo # boo(123) !panic
+    // # boo(true)
+    // # boo(false)
+    // # boo(123) !panic
     function boo(bool s) public {
     }
 }
