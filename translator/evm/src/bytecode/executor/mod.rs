@@ -158,7 +158,7 @@ impl<'a> StaticExecutor<'a> {
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
         if is_trace() {
-            println!("mem:\n{}", self.mem);
+            log::trace!("mem:\n{}", self.mem);
         }
 
         let len = len
@@ -189,7 +189,7 @@ impl<'a> StaticExecutor<'a> {
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
         if is_trace() {
-            println!("mem:\n{}", self.mem);
+            log::trace!("mem:\n{}", self.mem);
         }
         flow.abort(0);
         Ok(())
