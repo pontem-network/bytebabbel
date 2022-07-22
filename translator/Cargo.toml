@@ -1,0 +1,13 @@
+[package]
+name = "translator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+evm = {path = "evm"}
+mv = {path = "mv"}
+
+anyhow = "1.0.58"
+
+# move:
+move-core-types = { git = "https://github.com/move-language/move.git" }

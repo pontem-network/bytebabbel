@@ -62,9 +62,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Test ./tests/assets/build.sh
-        run: ./tests/assets/build.sh
-
       - name: Formatting
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
