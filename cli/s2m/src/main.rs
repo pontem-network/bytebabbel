@@ -29,6 +29,7 @@ pub struct Args {
     #[clap(long = "math", short = 'm', display_order = 5, default_value = "u128")]
     math_backend: String,
 
+    /// Output of debugging information
     #[clap(short, long, display_order = 6, value_parser)]
     trace: Option<bool>,
 }
