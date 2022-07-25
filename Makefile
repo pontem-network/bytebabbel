@@ -5,8 +5,7 @@ pre_commit:
 
 clean:
 	cargo clean
-	rm -rf ./tests/assets/bin
-	rm -rf ./tests/assets/move/build
+	rm -rf ./translator/test_infra/bin
 
 rebuild: clean
 	cargo +nightly build
