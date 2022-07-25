@@ -142,7 +142,7 @@ Move module name: **DemoName**
 For familiarization and testing of the **e2m** utility, you can use examples from the tests.\ 
 To collect them, go to the [translator/test_info](https://github.com/pontem-network/eth2move/tree/master/translator/test_infra) folder 
 and run [build.sh](https://github.com/pontem-network/eth2move/blob/master/translator/test_infra/build.sh)\
-[build.sh](https://github.com/pontem-network/eth2move/blob/master/translator/test_infra/build.sh) creates a bin folder in [translator/test_info](https://github.com/pontem-network/eth2move/tree/master/translator/test_infra) and compiles all scripts from the [sol folder](https://github.com/pontem-network/eth2move/tree/master/translator/test_infra/sol) into it
+[build.sh](https://github.com/pontem-network/eth2move/blob/master/translator/test_infra/build.sh) creates a **bin** folder in [translator/test_info](https://github.com/pontem-network/eth2move/tree/master/translator/test_infra) and compiles all scripts from the [sol folder](https://github.com/pontem-network/eth2move/tree/master/translator/test_infra/sol) into it.
 
 
 ### s2m
