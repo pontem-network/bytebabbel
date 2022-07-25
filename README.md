@@ -41,7 +41,7 @@ e2m -a path/to/file/NameFile.abi -b path/to/file/NameFile.bin
 
 The file is created by the path "path/to/file/NameFile.mv".
 If the save path was not specified, then the file is saved in the same directory and with the same name as the abi file, 
-but with the extension "mv".
+but with the extension **mv**.
 The module name will be taken from the file name.
 Module address: **0x1**\
 Module name: **NameFile**
@@ -66,11 +66,11 @@ Module name: **DemoName**
 ## s2m
 For the converter to work, **solc** must be installed on the computer and accessible from the terminal by a short command **solc**
 During the conversion, the solc utility compiles the sol code. The compiled sol code is stored in a temporary directory with a random name.
-The received abi and bin files are translated into "move binary code"
+The received abi and bin files are translated into **move binary code**
 
 ### Install solc
 
-How to install **solc** [see the documentation](http://localhost//)
+How to install **solc** [see the documentation](https://docs.soliditylang.org/en/develop/installing-solidity.html)
 
 ### Checking solc
 
