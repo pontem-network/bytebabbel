@@ -10,7 +10,7 @@ Cloning the repository and installing e2m:
 
 ```bash
 git clone https://github.com/pontem-network/eth2move
-cargo +nightly install --path crates/e2m
+cargo +nightly install --path cli/e2m
 ```
 
 ### See help:
@@ -87,7 +87,7 @@ Cloning the repository and installing s2m:
 
 ```bash
 git clone https://github.com/pontem-network/eth2move
-cargo +nightly install --path crates/s2m
+cargo +nightly install --path cli/s2m
 ```
 
 ### See help:
