@@ -10,7 +10,7 @@ description = "Converting files solidity abi and bin to move"
 [dependencies]
 clap = { version = "3.1.8", features = ["derive"] }
 anyhow = "1.0.58"
-move-core-types = { git = "https://github.com/move-language/move.git", features = ["address32"] }
+move-core-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" , features = ["address32"] }
 # local
 translator = { path = "../../translator" }
 inic_log = { path = "../inic_log" }
