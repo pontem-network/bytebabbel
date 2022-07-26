@@ -67,7 +67,6 @@ impl MvFunction {
         module.function_defs.push(FunctionDefinition {
             function: index,
             visibility: self.visibility,
-            is_entry: matches!(self.visibility, Visibility::Public),
             acquires_global_resources: vec![],
             code: Some(CodeUnit {
                 locals: self.locals,
