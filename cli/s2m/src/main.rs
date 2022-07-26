@@ -10,23 +10,35 @@ use crate::convert::Convert;
 #[clap(version, about)]
 pub struct Args {
     /// Path to the sol file
-    #[clap(short, long, display_order = 1)]
+    #[clap(short, long, display_order = 1, value_parser)]
     path: PathBuf,
 
     /// Where to save the converted binary move file
-    #[clap(short, long = "output", display_order = 2)]
+    #[clap(short, long = "output", display_order = 2, value_parser)]
     output_path: Option<PathBuf>,
 
     /// The name of the Move module. If not specified, the name will be taken from the abi path
-    #[clap(long = "module", display_order = 3)]
+    #[clap(long = "module", display_order = 3, value_parser)]
     module_name: Option<String>,
 
     /// The address of the Move module.
-    #[clap(long = "address", display_order = 4, default_value = "0x1")]
+    #[clap(
+        long = "address",
+        display_order = 4,
+        default_value = "0x1",
+        short = 'a',
+        value_parser
+    )]
     module_address: String,
 
     /// Math backend.
-    #[clap(long = "math", short = 'm', display_order = 5, default_value = "u128")]
+    #[clap(
+        long = "math",
+        short = 'm',
+        display_order = 5,
+        default_value = "u128",
+        value_parser
+    )]
     math_backend: String,
 
     /// Output of debugging information

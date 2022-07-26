@@ -10,31 +10,36 @@ use crate::convert::Convert;
 #[clap(version, about)]
 pub struct Args {
     /// Path to the solidity abi file
-    #[clap(short, long = "abi", display_order = 1)]
+    #[clap(short, long = "abi", display_order = 1, value_parser)]
     abi_path: PathBuf,
 
     /// Path to the solidity bin file
-    #[clap(short, long = "bin", display_order = 2)]
+    #[clap(short, long = "bin", display_order = 2, value_parser)]
     bin_path: PathBuf,
 
     /// Where to save the converted binary move file
-    #[clap(short, long = "output", display_order = 3)]
+    #[clap(short, long = "output", display_order = 3, value_parser)]
     output_path: Option<PathBuf>,
 
     /// The name of the Move module. If not specified, the name will be taken from the abi path
-    #[clap(long = "module", display_order = 4)]
+    #[clap(long = "module", display_order = 4, value_parser)]
     module_name: Option<String>,
 
     /// The address of the Move module.
-    #[clap(long = "address", display_order = 5, default_value = "0x1")]
+    #[clap(
+        long = "address",
+        display_order = 5,
+        default_value = "0x1",
+        value_parser
+    )]
     module_address: String,
 
     /// Math backend.
-    #[clap(long = "math", short = 'm', display_order = 6, default_value = "u128")]
+    #[clap(long = "math", short = 'm', default_value = "u128", value_parser)]
     math_backend: String,
 
     /// Output of debugging information
-    #[clap(short, long, display_order = 7, value_parser)]
+    #[clap(short, long, value_parser)]
     trace: Option<bool>,
 }
 

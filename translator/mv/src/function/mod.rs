@@ -34,7 +34,7 @@ impl MvFunction {
         let output = sign_writer.make_signature(map_signature(def.abi.outputs.as_slice()));
         Ok(MvFunction {
             name: Identifier::new(&*def.abi.name)?,
-            visibility: Visibility::Public,
+            visibility: Visibility::Script,
             input,
             output,
             locals: sign_writer.make_signature(fn_code.locals),
@@ -67,7 +67,6 @@ impl MvFunction {
         module.function_defs.push(FunctionDefinition {
             function: index,
             visibility: self.visibility,
-            is_entry: matches!(self.visibility, Visibility::Public),
             acquires_global_resources: vec![],
             code: Some(CodeUnit {
                 locals: self.locals,
