@@ -3,7 +3,7 @@
 EVM to Move static bytecode translator.
 
 ## s2m
-Converts solidity file to **binary move** code.\
+Converts **solidity file** to **binary move** code.\
 For the converter to work, **solc** must be installed on the computer and accessible from the terminal by a short command **solc**.
 
 ### Install solc
