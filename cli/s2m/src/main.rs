@@ -30,7 +30,7 @@ pub struct Args {
     math_backend: String,
 
     /// Output of debugging information
-    #[clap(short, long, display_order = 6, value_parser)]
+    #[clap(short, long, display_order = 6)]
     trace: Option<bool>,
 }
 
