@@ -56,7 +56,7 @@ s2m -p examples/a_plus_b.sol
 ##### Result
 > Saved in "/tmp/PZH107KZQ7JWT47CNFZM2NZJ3C/APlusB.mv
 
-After completing the command, you will see the path to the created file (Example: "tmp/RANDOM_NAME/NameSolModule.mv").
+After completing the command, you will see the path to the created file (Example: "tmp/RANDOM_NAME/NameSolModule.mv").\
 Move module address: **0x1**\
 Move module name: **APlusB**
 
