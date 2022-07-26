@@ -10,4 +10,4 @@ mv = {path = "mv"}
 anyhow = "1.0.58"
 
 # move:
-move-core-types = { git = "https://github.com/aptos-labs/move.git" }
+move-core-types = { git = "https://github.com/aptos-labs/move.git", features = ["address32"] }
