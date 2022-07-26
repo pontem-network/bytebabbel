@@ -26,7 +26,12 @@ pub struct Args {
     module_name: Option<String>,
 
     /// The address of the Move module.
-    #[clap(long = "address", short = 'a', display_order = 5, default_value = "0x1")]
+    #[clap(
+        long = "address",
+        short = 'a',
+        display_order = 5,
+        default_value = "0x1"
+    )]
     module_address: String,
 
     /// Math backend.
