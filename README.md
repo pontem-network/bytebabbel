@@ -53,7 +53,7 @@ Required parameters are the paths to sol file (``--path``, ``-p``)
 s2m -p examples/a_plus_b.sol 
 ```
 
-#### Result
+##### Result
 > Saved in "/tmp/PZH107KZQ7JWT47CNFZM2NZJ3C/APlusB.mv
 
 After completing the command, you will see the path to the created file (Example: "tmp/RANDOM_NAME/NameSolModule.mv").
@@ -66,7 +66,7 @@ Move module name: **APlusB**
 s2m -p examples/a_plus_b.sol -o ./Test.mv
 ```
 
-#### Result
+##### Result
 > Saved in "./Test.mv"
 
 The move binary file will be created in the current directory named **Test.vm**\
@@ -79,7 +79,7 @@ Move module name: **APlusB**
  s2m -p examples/const_fn.sol -o ./MyMove.mv --module DemoName --address 0x3 
 ```
 
-#### Result
+##### Result
 > Saved in "./MyMove.mv"
 
 Move module address: **0x3** \
