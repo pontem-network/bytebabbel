@@ -44,8 +44,7 @@ s2m --help
 * `-V`, `--version`     Print version information
 
 ### Example
-// @todo
-You can find the files from the examples in the examples folder
+You can find the files from the examples in the [eth2move/examples](https://github.com/pontem-network/eth2move/tree/master/examples) folder
 
 #### Required parameters
 Required parameters are the paths to sol file (``--path``, ``-p``)
