@@ -1775,6 +1775,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha3 0.10.1",
+ "test_infra",
  "uint",
 ]
 

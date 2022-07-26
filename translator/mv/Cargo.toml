@@ -25,3 +25,4 @@ move-bytecode-verifier = { git = "https://github.com/aptos-labs/move.git" }
 
 [dev-dependencies]
 rand = "0.8.5"
+test_infra = {path = "../test_infra"}
