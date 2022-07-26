@@ -71,7 +71,7 @@ The received solidity abi and bin files are translated into **move binary code**
 
 ### Install solc
 
-How to install **solc** [see the documentation](https://docs.soliditylang.org/en/develop/installing-solidity.html)
+How to install **solc**, [see the documentation](https://docs.soliditylang.org/en/develop/installing-solidity.html)
 
 ### Checking solc
 
