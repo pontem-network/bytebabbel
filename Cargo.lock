@@ -96,12 +96,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
-name = "base32"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23ce669cd6c8588f79e15cf450314f9638f967fc5770ff1c7c1deb0925ea7cfa"
-
-[[package]]
 name = "bcs"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -251,7 +245,7 @@ dependencies = [
  "anyhow",
  "curve25519-dalek-fiat",
  "ed25519-dalek-fiat",
- "sha2 0.9.9",
+ "sha2",
  "sha3 0.9.1",
  "workspace-hack",
 ]
@@ -326,16 +320,16 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.1.8"
+version = "3.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71c47df61d9e16dc010b55dba1952a57d8c215dbb533fd13cdd13369aac73b1c"
+checksum = "8e538f9ee5aa3b3963f09a997035f883677966ed50fce0292611927ce6f6d8c6"
 dependencies = [
  "atty",
  "bitflags",
  "clap_derive",
+ "clap_lex",
  "indexmap",
  "lazy_static",
- "os_str_bytes",
  "strsim 0.10.0",
  "termcolor",
  "textwrap 0.15.0",
@@ -343,15 +337,24 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.2.15"
+version = "3.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ba52acd3b0a5c33aeada5cdaa3267cdc7c594a98731d4268cdc1532f4264cb4"
+checksum = "a7f98063cac4652f23ccda556b8d04347a7fc4b2cff1f7577cc8c6546e0d8078"
 dependencies = [
  "heck 0.4.0",
  "proc-macro-error",
  "proc-macro2 1.0.42",
  "quote 1.0.20",
  "syn 1.0.98",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
+dependencies = [
+ "os_str_bytes",
 ]
 
 [[package]]
@@ -554,17 +557,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "e2m"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap 3.1.8",
- "inic_log",
- "move-core-types",
- "translator",
-]
-
-[[package]]
 name = "ed25519"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -585,7 +577,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_bytes",
- "sha2 0.9.9",
+ "sha2",
  "zeroize",
 ]
 
@@ -1100,15 +1092,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "inic_log"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger",
- "log",
-]
-
-[[package]]
 name = "instant"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1184,7 +1167,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc195aab5b803465bf614a5a4765741abce6c8d64e7d8ca57acd2923661fba9f"
 dependencies = [
- "clap 3.1.8",
+ "clap 3.2.2",
  "crossbeam-channel",
  "rayon",
  "termcolor",
@@ -1358,7 +1341,7 @@ dependencies = [
  "difference",
  "hex",
  "serde",
- "sha2 0.9.9",
+ "sha2",
  "walkdir",
  "workspace-hack",
 ]
@@ -1370,7 +1353,7 @@ source = "git+https://github.com/aptos-labs/move.git#5c0d76898cce4acf6a67c531146
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.1.8",
+ "clap 3.2.2",
  "codespan-reporting",
  "difference",
  "hex",
@@ -1417,7 +1400,7 @@ source = "git+https://github.com/aptos-labs/move.git#5c0d76898cce4acf6a67c531146
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.1.8",
+ "clap 3.2.2",
  "codespan",
  "colored",
  "move-binary-format",
@@ -1438,7 +1421,7 @@ version = "0.1.0"
 source = "git+https://github.com/aptos-labs/move.git#5c0d76898cce4acf6a67c5311464c15ed44a47f6"
 dependencies = [
  "anyhow",
- "clap 3.1.8",
+ "clap 3.2.2",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -1570,7 +1553,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 3.1.8",
+ "clap 3.2.2",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -1677,7 +1660,7 @@ source = "git+https://github.com/aptos-labs/move.git#5c0d76898cce4acf6a67c531146
 dependencies = [
  "anyhow",
  "bytecode-interpreter-crypto",
- "clap 3.1.8",
+ "clap 3.2.2",
  "codespan-reporting",
  "itertools",
  "move-binary-format",
@@ -1705,7 +1688,7 @@ dependencies = [
  "move-prover",
  "move-vm-runtime",
  "move-vm-types",
- "sha2 0.9.9",
+ "sha2",
  "sha3 0.9.1",
  "smallvec",
  "walkdir",
@@ -1752,7 +1735,7 @@ dependencies = [
  "move-core-types",
  "once_cell",
  "serde",
- "sha2 0.9.9",
+ "sha2",
  "smallvec",
  "workspace-hack",
 ]
@@ -1926,9 +1909,6 @@ name = "os_str_bytes"
 version = "6.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "648001efe5d5c0102d8cea768e348da85d90af8ba91f0bea908f157951493cd4"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "ouroboros"
@@ -2505,20 +2485,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695"
 
 [[package]]
-name = "s2m"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base32",
- "clap 3.1.8",
- "inic_log",
- "log",
- "move-core-types",
- "sha2 0.10.2",
- "translator",
-]
-
-[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2621,17 +2587,6 @@ dependencies = [
  "cpufeatures",
  "digest 0.9.0",
  "opaque-debug 0.3.0",
-]
-
-[[package]]
-name = "sha2"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55deaec60f81eefe3cce0dc50bda92d6d8e88f2a27df7c5033b42afeb1ed2676"
-dependencies = [
- "cfg-if",
- "cpufeatures",
- "digest 0.10.3",
 ]
 
 [[package]]
@@ -3402,7 +3357,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "clap 2.34.0",
- "clap 3.1.8",
+ "clap 3.2.2",
  "codespan-reporting",
  "crossbeam-utils",
  "crunchy",
