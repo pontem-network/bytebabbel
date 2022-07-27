@@ -19,7 +19,7 @@ The **solc** version must be at least **0.8.15**
 ```bash
 solc --version
 ```
-> ! IMPORTANT\
+> **! IMPORTANT**\
 > If this command is not available for execution from the terminal, e2m will not work.
 
 ### Installation e2m
@@ -104,7 +104,7 @@ e2m examples/BinNotFound.abi
 > Error: Couldn't find bin.
 Path:"examples/BinNotFound.bin"
 
-> ! IMPORTANT\
+> **! IMPORTANT**\
 > A successful broadcast always requires a **bin** and an **abi** **solidity library**
 
 #### Path to save
