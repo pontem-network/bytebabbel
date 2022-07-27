@@ -2,9 +2,11 @@
 
 EVM to Move static bytecode translator.
 
-## s2m
-Converts **solidity file** to **binary move** code.\
-For the converter to work, **solc** must be installed on the computer and accessible from the terminal by a short command **solc**.
+## e2m
+Converts **solidity file** to **binary move** code. You can convert from abi + bin files or a "sol" file
+
+> **IMPORTANT!**\
+> To convert from a **sol** file, **solc** must be installed on the computer and accessible from the terminal using the short command **solc**.
 
 ### Install solc
 
@@ -18,23 +20,23 @@ The **solc** version must be at least **0.8.15**
 solc --version
 ```
 > IMPORTANT!\
-> If this command is not available for execution from the terminal, s2m will not work.
+> If this command is not available for execution from the terminal, e2m will not work.
 
-### Installation s2m
-Cloning the repository and installing s2m:
+### Installation e2m
+Cloning the repository and installing e2m:
 
 ```bash
 git clone https://github.com/pontem-network/eth2move
-cargo +nightly install --path cli/s2m
+cargo +nightly install --path cli/e2m
 ```
 
 ### See help:
 ```bash
-s2m --help
+e2m --help
 ```
 
 ### Input parameters
-* `-p`, `--path`        Path to the sol file
+* `<PATH>`              Path to the file. Specify the path to sol file or abi|bin
 * `-o`, `--output`      Where to save the converted Move binary file
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
 * `--address`           The address of the move module [default: 0x1]
@@ -47,40 +49,71 @@ s2m --help
 You can find the files from the examples in the [eth2move/examples](https://github.com/pontem-network/eth2move/tree/master/examples) folder
 
 #### Required parameters
-Required parameters are the paths to sol file (``--path``, ``-p``).\
+Required parameters are the paths to sol file (`<PATH>`).\
+The file can be extensions:
+* `sol` - The file will be compiled using the solc utility. The resulting **abi** and **bin** will be translated into **move binarycode**
+* `bin` - It is expected that there is an `abi` file with the same name in the same folder. These **abi** and **bin** will be translated into **move binarycode**
+* `abi` - It is expected that there is an `bin` file with the same name in the same folder. These **abi** and **bin** will be translated into **move binarycode**
+
 The name from the passed **solidity library** will be used as the filename and the name of the **move module**.\
-After completing the command, you will see the path to the created file (Example: "tmp/RANDOM_NAME/NameSolModule.mv").
+After completing the command, you will see the path to the created file (Example: "./NameSolModule.mv"). 
+By default, the file is saved to the current directory.
+
 
 ##### examples/a_plus_b.sol
 ```bash
-s2m -p examples/a_plus_b.sol 
+e2m examples/a_plus_b.sol 
 ```
 
 ###### Result
-> Saved in "/tmp/PZH107KZQ7JWT47CNFZM2NZJ3C/APlusB.mv
+> Saved in "./APlusB.mv
 
 Move module address: **0x1**\
 Move module name: **APlusB**
 
-##### examples/const_fn.sol
+##### examples/APlusB.abi
 ```bash
-s2m -p examples/const_fn.sol 
+e2m examples/APlusB.abi
 ```
 
 ###### Result
-> Saved in "/tmp/9CG89C4R7J40P1KJ4TPDKFNPZG/ConstFn.mv"
+> Saved in "./APlusB.mv"
 
 Move module address: **0x1**\
-Move module name: **ConstFn**
+Move module name: **APlusB**
 
+
+##### examples/APlusB.bin
+```bash
+e2m examples/APlusB.bin
+```
+
+###### Result
+> Saved in "./APlusB.mv"
+
+Move module address: **0x1**\
+Move module name: **APlusB**
+
+
+##### ! Fail: examples/BinNotFound.abi
+```bash
+e2m examples/BinNotFound.abi
+```
+
+###### Result
+> Error: Couldn't find bin.
+Path:"examples/BinNotFound.bin"
+
+> ! IMPORTANT\
+> A successful broadcast always requires a **bin** and an **abi** **solidity library**
 
 #### Path to save
 The `-o`, `--output` parameter is responsible for specifying the location where the converted file will be saved.
 
-##### examples/a_plus_b.sol
+##### examples/const_fn.sol
 
 ```bash
-s2m -p examples/a_plus_b.sol -o ./Test.mv
+e2m examples/const_fn.sol -o ./Test.mv
 ```
 
 ##### Result
@@ -88,43 +121,43 @@ s2m -p examples/a_plus_b.sol -o ./Test.mv
 
 The move binary file will be created in the current directory named **Test.vm**\
 Move module address: **0x1** \
-Move module name: **APlusB**
+Move module name: **Cons**
 
-##### examples/const_fn.sol
+##### examples/APlusB.bin
 
 ```bash
-s2m -p examples/const_fn.sol -o ./Cons.mv
+e2m examples/APlusB.bin -o ./AB.mv
 ```
 
 ##### Result
-> Saved in "./Cons.mv"
+> Saved in "./AB.mv"
 
 Move module address: **0x1** \
-Move module name: **ConstFn**
+Move module name: **APlusB**
 
 #### Explicit indication of the module name in the received move bytecode
 The `--module` argument is responsible for explicitly specifying the move module name.
 
-##### examples/const_fn.sol
+##### examples/APlusB.abi
 
 ```bash
-s2m -p examples/const_fn.sol --module CnFn
+e2m examples/APlusB.abi --module ApB
 ```
 
 ##### Result
-> Saved in "/tmp/9CG89C4R7J40P1KJ4TPDKFNPZG/ConstFn.mv"
+> Saved in "./APlusB.mv"
 
 Move module address: **0x1** \
-Move module name: **CnFn**
+Move module name: **ApB**
 
 ##### examples/two_functions.sol
 
 ```bash
-s2m -p examples/two_functions.sol --module TF
+e2m examples/two_functions.sol --module TF
 ```
 
 ##### Result
-> Saved in "/tmp/YEVS62B4FPDA8K4VV7VPQ3KFAG/TwoFunctions.mv"
+> Saved in "./TwoFunctions.mv"
 
 Move module address: **0x1** \
 Move module name: **TF**
@@ -135,11 +168,11 @@ The `--address` argument is responsible for explicitly specifying the move modul
 ##### examples/const_fn.sol
 
 ```bash
-s2m -p examples/const_fn.sol --address 0x3
+e2m examples/const_fn.sol --address 0x3
 ```
 
 ##### Result
-> Saved in "/tmp/9CG89C4R7J40P1KJ4TPDKFNPZG/ConstFn.mv"
+> Saved in "./ConstFn.mv"
 
 Move module address: **0x3** \
 Move module name: **ConstFn**
@@ -147,11 +180,11 @@ Move module name: **ConstFn**
 ##### examples/two_functions.sol
 
 ```bash
-s2m -p examples/two_functions.sol --address 0x0123
+e2m examples/two_functions.sol --address 0x0123
 ```
 
 ##### Result
-> Saved in "/tmp/YEVS62B4FPDA8K4VV7VPQ3KFAG/TwoFunctions.mv"
+> Saved in "./TwoFunctions.mv"
 
 Move module address: **0x0123** \
 Move module name: **TwoFunctions**
@@ -159,7 +192,7 @@ Move module name: **TwoFunctions**
 #### Combined arguments
 
 ```bash
- s2m -p examples/const_fn.sol -o ./MyMove.mv --module DemoName --address 0x3 
+ e2m examples/const_fn.sol -o ./MyMove.mv --module DemoName --address 0x3 
 ```
 
 ##### Result
