@@ -75,8 +75,8 @@ fn path_to_abibin(path: &Path) -> Result<(PathBuf, PathBuf)> {
         .ok_or_else(|| anyhow!("solidity file was expected {path:?}\nPath: "))?;
 
     match ext {
-        "sol" => compile_sol(&path),
-        "bin" | "abi" => find_abibin(&path),
+        "sol" => compile_sol(path),
+        "bin" | "abi" => find_abibin(path),
         _ => bail!("A file with the extension bin, abi or sol was expected.\nPath: {path:?}"),
     }
 }
