@@ -5,7 +5,7 @@ EVM to Move static bytecode translator.
 ## e2m
 Converts **solidity file** to **binary move** code. You can convert from abi + bin files or a "sol" file
 
-> **IMPORTANT!**\
+> **! IMPORTANT**\
 > To convert from a **sol** file, **solc** must be installed on the computer and accessible from the terminal using the short command **solc**.
 
 ### Install solc
@@ -19,7 +19,7 @@ The **solc** version must be at least **0.8.15**
 ```bash
 solc --version
 ```
-> IMPORTANT!\
+> ! IMPORTANT\
 > If this command is not available for execution from the terminal, e2m will not work.
 
 ### Installation e2m
@@ -36,7 +36,7 @@ e2m --help
 ```
 
 ### Input parameters
-* `<PATH>`              Path to the file. Specify the path to sol file or abi|bin
+* `<PATH>`              Path to the file. Specify the path to sol file or abi | bin
 * `-o`, `--output`      Where to save the converted Move binary file
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
 * `--address`           The address of the move module [default: 0x1]
