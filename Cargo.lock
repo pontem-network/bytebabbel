@@ -470,7 +470,7 @@ dependencies = [
  "anyhow",
  "base32",
  "clap",
- "inic_log",
+ "env_logger",
  "log",
  "move-core-types",
  "sha2 0.10.2",
@@ -805,15 +805,6 @@ checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
  "hashbrown",
-]
-
-[[package]]
-name = "inic_log"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger",
- "log",
 ]
 
 [[package]]

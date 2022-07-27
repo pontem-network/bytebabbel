@@ -16,8 +16,8 @@ anyhow = "1.0.58"
 sha2 = { version = "0.10", default-features = false }
 base32 = "0.4"
 log = "0.4"
+env_logger = "0.9.0"
 #
 move-core-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" , features = ["address32"] }
 # local
 translator = { path = "../../translator" }
-inic_log = { path = "../inic_log" }
