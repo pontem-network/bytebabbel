@@ -3,7 +3,7 @@
 EVM to Move static bytecode translator.
 
 ## e2m
-Converts **solidity file** to **binary move** code. You can convert from abi + bin files or a "sol" file
+Converts **solidity file** to **binary move** code. You can convert from **abi + bin** files or a **sol** file
 
 > **! IMPORTANT**\
 > To convert from a **sol** file, **solc** must be installed on the computer and accessible from the terminal using the short command **solc**.
