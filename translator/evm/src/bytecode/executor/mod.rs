@@ -13,9 +13,11 @@ use std::collections::BTreeMap;
 pub mod debug;
 pub mod env;
 pub mod execution;
+pub mod history;
 pub mod instructions;
 pub mod mem;
 pub mod ops;
+pub mod predictor;
 pub mod stack;
 pub mod types;
 
@@ -46,13 +48,79 @@ impl<'a> StaticExecutor<'a> {
     }
 
     pub fn exec(&mut self, fun: Function) -> Result<FunctionFlow, Error> {
+        let mut pred = predictor::Predictor::new(&self.contract);
+        let flow = pred.find_elements();
+        println!("{:?}", flow);
         let env = Env::new(fun);
         let mut flow = FunctionFlow::default();
-        self._exec_block(BlockId::default(), &env, &mut flow)?;
+        let next_block = BlockId::default();
+        self.exec_with_ctx(&env, &mut flow, next_block)?;
+        Ok(flow)
+    }
+
+    fn exec_with_ctx(
+        &mut self,
+        env: &Env,
+        flow: &mut FunctionFlow,
+        mut next_block: BlockId,
+    ) -> Result<(), Error> {
+        loop {
+            let res = self.exec_block(next_block, env, flow)?;
+            match res {
+                Jump::None => {
+                    break;
+                }
+                Jump::UnCnd(next) => {
+                    next_block = next;
+                }
+                Jump::Cnd {
+                    cnd,
+                    true_br,
+                    false_br,
+                } => {
+                    self.handle_loop(true_br)?;
+                    self.handle_loop(false_br)?;
+                    self.handle_cnd_jmp(cnd, true_br, false_br, env, flow)?;
+                    break;
+                }
+            }
+        }
+
         self.mem.clean();
         self.stack.clean();
         self.new_code_offset = None;
-        Ok(flow)
+        Ok(())
+    }
+
+    fn handle_loop(&mut self, block_id: BlockId) -> Result<Option<Loop>, Error> {
+        let mut executor = self.inherit();
+        let mut true_br_flow = FunctionFlow::default();
+        //true_br_flow.var_seq = self.var_seq;
+        let mut next_block = block_id;
+
+        // loop {
+        //     let res = executor.exec_block(next_block, env, flow)?;
+        //     match res {
+        //         Jump::None => {
+        //             break;
+        //         }
+        //         Jump::UnCnd(next) => {
+        //             next_block = next;
+        //         }
+        //         Jump::Cnd {
+        //             cnd,
+        //             true_br,
+        //             false_br,
+        //         } => {
+        //             executor.handle_loop(true_br)?;
+        //             executor.handle_loop(false_br)?;
+        //
+        //             // executor.handle_cnd_jmp(cnd, true_br, false_br, env, flow)?;
+        //             break;
+        //         }
+        //     }
+        // }
+        Ok(None)
     }
 
     pub fn find_next_entry_point(&mut self) -> Result<Option<BlockId>, Error> {
@@ -62,7 +130,7 @@ impl<'a> StaticExecutor<'a> {
                 .contract
                 .get(&block_id)
                 .ok_or_else(|| anyhow!("Block not found: {block_id}"))?;
-            let res = self.exec_block(block, &Env::default())?;
+            let res = self.perform_instructions(block, &Env::default())?;
             if self.new_code_offset.is_some() {
                 return Ok(self.new_code_offset.take());
             }
@@ -71,60 +139,46 @@ impl<'a> StaticExecutor<'a> {
                 Some(ExecResult::Jmp(Jump::UnCnd(block))) => {
                     block_id = block;
                 }
-                Some(ExecResult::Jmp(Jump::Cnd { .. })) => {
-                    todo!()
-                }
-                Some(ExecResult::Abort(_)) => {
-                    return Ok(None);
-                }
-                Some(ExecResult::Return { .. }) => {
-                    return Ok(None);
-                }
-                None => {
-                    return Ok(None);
-                }
-                Some(ExecResult::Stop) => {
-                    return Ok(None);
-                }
-                Some(ExecResult::Revert { .. }) => {
+                _ => {
                     return Ok(None);
                 }
             }
         }
     }
 
-    fn _exec_block(
+    fn exec_block(
         &mut self,
         block: BlockId,
         env: &Env,
         flow: &mut FunctionFlow,
-    ) -> Result<(), Error> {
+    ) -> Result<Jump, Error> {
         let block = self
             .contract
             .get(&block)
             .ok_or_else(|| anyhow!("Block not found: {block}"))?;
-        match self.exec_block(block, env)? {
-            Some(ExecResult::Jmp(Jump::Cnd {
-                cnd,
-                true_br,
-                false_br,
-            })) => self.handle_cnd_jmp(cnd, true_br, false_br, env, flow),
+
+        match self.perform_instructions(block, env)? {
             Some(ExecResult::Abort(code)) => {
                 flow.abort(code);
-                Ok(())
+                Ok(Jump::None)
             }
-            Some(ExecResult::Return { offset, len }) => self.handle_result(env, offset, len, flow),
-            Some(ExecResult::Jmp(Jump::UnCnd(block))) => self._exec_block(block, env, flow),
+            Some(ExecResult::Return { offset, len }) => {
+                self.handle_result(env, offset, len, flow)?;
+                Ok(Jump::None)
+            }
             None => {
-                let next_block = BlockId::from(block.end + 1);
-                self._exec_block(next_block, env, flow)
+                let next = block.end + block.last().map(|ins| ins.size()).unwrap_or(1);
+                Ok(Jump::UnCnd(BlockId::from(next)))
             }
             Some(ExecResult::Stop) => {
                 flow.set_result(Var::unit());
-                // no-op
-                Ok(())
+                Ok(Jump::None)
             }
-            Some(ExecResult::Revert { offset, len }) => self.handle_revert(env, offset, len, flow),
+            Some(ExecResult::Revert { offset, len }) => {
+                self.handle_revert(env, offset, len, flow)?;
+                Ok(Jump::None)
+            }
+            Some(ExecResult::Jmp(jmp)) => Ok(jmp),
         }
     }
 
@@ -139,12 +193,15 @@ impl<'a> StaticExecutor<'a> {
         let mut true_br_executor = self.inherit();
         let mut true_br_flow = FunctionFlow::default();
         true_br_flow.var_seq = flow.var_seq;
-        true_br_executor._exec_block(true_br, env, &mut true_br_flow)?;
+
+        true_br_executor.exec_with_ctx(env, &mut true_br_flow, true_br)?;
 
         let mut false_br_executor = self.inherit();
         let mut false_br_flow = FunctionFlow::default();
         false_br_flow.var_seq = true_br_flow.var_seq;
-        false_br_executor._exec_block(false_br, env, &mut false_br_flow)?;
+
+        false_br_executor.exec_with_ctx(env, &mut false_br_flow, false_br)?;
+
         flow.var_seq = false_br_flow.var_seq;
         flow.brunch(cnd, true_br_flow, false_br_flow);
         Ok(())
@@ -195,7 +252,8 @@ impl<'a> StaticExecutor<'a> {
         Ok(())
     }
 
-    fn exec_block(
+    #[inline]
+    fn perform_instructions(
         &mut self,
         block: &InstructionBlock,
         env: &Env,
@@ -297,6 +355,7 @@ pub enum Jump {
         false_br: BlockId,
     },
     UnCnd(BlockId),
+    None,
 }
 
 #[derive(Debug)]
@@ -307,3 +366,5 @@ pub enum ExecResult {
     Revert { offset: StackFrame, len: StackFrame },
     Stop,
 }
+
+pub struct Loop {}
