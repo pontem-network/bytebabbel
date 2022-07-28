@@ -39,7 +39,7 @@ e2m --help
 * `<PATH>`              Path to the file. Specify the path to sol file or abi | bin
 * `-o`, `--output`      Where to save the converted Move binary file
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
-* `--address`           The address of the move module [default: 0x1]
+* `-a`, `--address`     The address of the move module [default: 0x1]
 * `-m`, `--math`        Math backend u128 or u256 [default: u128]
 * `-t`, `--trace`       Output of debugging information [possible values: true, false][defualt: false]
 * `-h`, `--help`        Print help information
@@ -163,12 +163,12 @@ Move module address: **0x1** \
 Move module name: **TF**
 
 #### Explicit indication of the module address in the received move bytecode
-The `--address` argument is responsible for explicitly specifying the move module address.
+The `-a`,`--address` argument is responsible for explicitly specifying the move module address.
 
 ##### examples/const_fn.sol
 
 ```bash
-e2m examples/const_fn.sol --address 0x3
+e2m examples/const_fn.sol -a 0x3
 ```
 
 ##### Result

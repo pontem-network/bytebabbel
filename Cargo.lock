@@ -474,6 +474,7 @@ dependencies = [
  "log",
  "move-core-types",
  "sha2 0.10.2",
+ "tempfile",
  "translator",
 ]
 

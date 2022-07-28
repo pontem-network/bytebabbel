@@ -12,8 +12,7 @@ use crate::Args;
 
 #[derive(Debug)]
 pub struct Convert {
-    abi: PathBuf,
-    bin: PathBuf,
+    paths: Paths,
     mv: PathBuf,
     math: Math,
     address: AccountAddress,
@@ -22,12 +21,15 @@ pub struct Convert {
 
 impl Convert {
     pub fn create_mv(&self) -> Result<&Path> {
-        let abi = fs::read_to_string(&self.abi)?;
-        let eth = fs::read_to_string(&self.bin)?;
+        let abi = fs::read_to_string(&self.paths.abi)?;
+        let eth = fs::read_to_string(&self.paths.bin)?;
 
         let move_bytecode: Vec<u8> =
             translate(self.address, &self.module_name, &eth, &abi, self.math)?;
         fs::write(&self.mv, move_bytecode)?;
+
+        self.paths.delete_tmp_dir();
+
         Ok(&self.mv)
     }
 }
@@ -35,18 +37,19 @@ impl Convert {
 impl TryFrom<Args> for Convert {
     type Error = Error;
     fn try_from(args: Args) -> std::result::Result<Self, Self::Error> {
-        let (abi, bin) = path_to_abibin(&args.path)?;
+        let paths = path_to_abibin(&args.path)?;
 
         let address = AccountAddress::from_hex_literal(&args.move_module_address)?;
-        let module_name = args.move_module_name.unwrap_or(path_to_filename(&abi)?);
+        let module_name = args
+            .move_module_name
+            .unwrap_or(path_to_filename(&paths.abi)?);
 
         Ok(Convert {
             mv: args.output_path.unwrap_or_else(|| {
-                let filename = path_to_filename(&abi).unwrap();
+                let filename = path_to_filename(&paths.abi).unwrap();
                 PathBuf::from("./").join(filename).with_extension("mv")
             }),
-            abi,
-            bin,
+            paths,
             math: args.math_backend.parse()?,
             address,
             module_name,
@@ -68,7 +71,7 @@ fn path_to_filename(path: &Path) -> Result<String> {
 ///     sol - compiled into "bin" and "abi" and stored in a temporary directory
 ///     bin - searches next to "abi" with the same name and returns paths to them
 ///     abi - searches next to "bin" with the same name and returns paths to them
-fn path_to_abibin(path: &Path) -> Result<(PathBuf, PathBuf)> {
+fn path_to_abibin(path: &Path) -> Result<Paths> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
@@ -83,7 +86,7 @@ fn path_to_abibin(path: &Path) -> Result<(PathBuf, PathBuf)> {
 
 /// Compile the sol file and return the paths
 ///     return: (abi path, bin path)
-fn compile_sol(path: &Path) -> Result<(PathBuf, PathBuf)> {
+fn compile_sol(path: &Path) -> Result<Paths> {
     let path = path.canonicalize()?;
 
     if !check_solc() {
@@ -91,19 +94,17 @@ fn compile_sol(path: &Path) -> Result<(PathBuf, PathBuf)> {
         Please install solc on your computer. See: https://docs.soliditylang.org/en/develop/installing-solidity.html")
     }
 
-    let tmp_folder = temp_dir(&path)?;
+    let tmp_folder = tempfile::TempDir::new()?.into_path();
     log::debug!("tmp_dir: {tmp_folder:?}");
 
     let result = cli::new("solc")
         .args(&[
             "-o",
             tmp_folder.to_string_lossy().to_string().as_ref(),
-            "--bin",
             "--optimize-runs=0",
             "--abi",
+            "--bin",
             "--ast-compact-json",
-            "--overwrite",
-            "--error-recovery",
             "--asm",
             path.to_string_lossy().to_string().as_str(),
         ])
@@ -125,29 +126,11 @@ fn compile_sol(path: &Path) -> Result<(PathBuf, PathBuf)> {
         .collect();
     log::debug!("finded: {files:?}");
 
-    Ok((files["abi"].to_owned(), files["bin"].to_owned()))
-}
-
-/// Creating a temporary directory
-fn temp_dir(path: &Path) -> Result<PathBuf> {
-    use sha2::{Digest, Sha256};
-
-    let path_string = path.to_string_lossy().to_string();
-
-    let mut hasher = Sha256::new();
-    hasher.update(path_string.as_bytes());
-    let hash = hasher.finalize();
-    log::debug!("{hash:?}");
-
-    let name_folder = base32::encode(base32::Alphabet::Crockford, &hash[0..16]);
-    log::debug!("{name_folder}");
-
-    let tmp = std::env::temp_dir().join(name_folder);
-    if !tmp.exists() {
-        fs::create_dir(&tmp)?;
-    }
-
-    Ok(tmp)
+    Ok(Paths {
+        abi: files["abi"].to_owned(),
+        bin: files["bin"].to_owned(),
+        tmp_dir: Some(tmp_folder),
+    })
 }
 
 /// Checking whether "solc" is installed on this computer
@@ -183,7 +166,7 @@ fn output_to_result(output: std::process::Output) -> Result<String> {
     Ok(String::from_utf8(output.stdout).unwrap_or_default())
 }
 
-fn find_abibin(path: &Path) -> Result<(PathBuf, PathBuf)> {
+fn find_abibin(path: &Path) -> Result<Paths> {
     let filename = path_to_filename(path)?;
     let dir = path
         .parent()
@@ -199,5 +182,36 @@ fn find_abibin(path: &Path) -> Result<(PathBuf, PathBuf)> {
         bail!("Couldn't find bin.\nPath:{bin_path:?}");
     }
 
-    Ok((abi_path, bin_path))
+    Ok(Paths {
+        abi: abi_path,
+        bin: bin_path,
+        tmp_dir: None,
+    })
+}
+
+#[derive(Debug)]
+struct Paths {
+    abi: PathBuf,
+    bin: PathBuf,
+    tmp_dir: Option<PathBuf>,
+}
+
+impl Paths {
+    pub fn delete_tmp_dir(&self) {
+        if let Some(path) = &self.tmp_dir {
+            log::debug!("Deleting a temporary directory {path:?}");
+            if !path.exists() {
+                log::error!("The path does not exist {path:?}");
+                return;
+            }
+            if !path.is_dir() {
+                log::error!("The path is not a directory {path:?}");
+                return;
+            }
+            if let Err(err) = fs::remove_dir_all(path) {
+                log::error!("{err:?}");
+            }
+            log::debug!("Temporary directory deleted");
+        }
+    }
 }

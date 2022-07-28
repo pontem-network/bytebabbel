@@ -25,6 +25,7 @@ pub struct Args {
     #[clap(
         long = "address",
         display_order = 5,
+        short = 'a',
         default_value = "0x1",
         value_parser
     )]
