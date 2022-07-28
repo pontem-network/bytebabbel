@@ -1,4 +1,4 @@
-use evm::abi::EthType;
+use evm::abi::Param as EthType;
 use move_binary_format::file_format::{Signature, SignatureIndex, SignatureToken};
 
 pub fn map_signature(eth_types: &[EthType]) -> Vec<SignatureToken> {

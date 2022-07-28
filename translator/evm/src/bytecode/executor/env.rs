@@ -1,4 +1,4 @@
-use crate::abi::EthType as AbiType;
+use crate::abi::Param as AbiType;
 use crate::abi::{Entry, FunHash};
 use crate::bytecode::executor::stack::FRAME_SIZE;
 use crate::bytecode::executor::types::U256;
@@ -54,14 +54,15 @@ impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
     fn try_from((hash, entry): (FunHash, &'a Entry)) -> Result<Self, Self::Error> {
         Ok(Function {
             hash,
-            name: entry.name.clone(),
+            name: entry.name(),
             input_size: entry
-                .inputs
+                .inputs()
                 .iter()
                 .map(EthType::try_from)
                 .collect::<Result<Vec<_>, _>>()?,
             output_size: entry
-                .outputs
+                .outputs()
+                .unwrap()
                 .iter()
                 .map(EthType::try_from)
                 .collect::<Result<Vec<_>, _>>()?,
