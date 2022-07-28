@@ -5,6 +5,4 @@ members = [
     "translator",
     "translator/test_infra",
     "cli/e2m",
-    "cli/s2m",
-    "cli/inic_log",
 ]

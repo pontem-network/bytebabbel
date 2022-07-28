@@ -9,38 +9,31 @@ use crate::convert::Convert;
 #[derive(Parser, Debug)]
 #[clap(version, about)]
 pub struct Args {
-    /// Path to the solidity abi file
-    #[clap(short, long = "abi", display_order = 1, value_parser)]
-    abi_path: PathBuf,
+    /// Path to the file. Specify the path to sol file or abi|bin.
+    #[clap(value_parser)]
+    path: PathBuf,
 
-    /// Path to the solidity bin file
-    #[clap(short, long = "bin", display_order = 2, value_parser)]
-    bin_path: PathBuf,
-
-    /// Where to save the converted binary move file
+    /// Where to save the converted move binary code
     #[clap(short, long = "output", display_order = 3, value_parser)]
     output_path: Option<PathBuf>,
 
     /// The name of the Move module. If not specified, the name will be taken from the abi path
     #[clap(long = "module", display_order = 4, value_parser)]
-    module_name: Option<String>,
+    move_module_name: Option<String>,
 
     /// The address of the Move module.
     #[clap(
         long = "address",
         display_order = 5,
+        short = 'a',
         default_value = "0x1",
         value_parser
     )]
-    module_address: String,
+    move_module_address: String,
 
     /// Math backend.
     #[clap(long = "math", short = 'm', default_value = "u128", value_parser)]
     math_backend: String,
-
-    /// Output of debugging information
-    #[clap(short, long, value_parser)]
-    trace: Option<bool>,
 }
 
 fn main() {
@@ -56,7 +49,7 @@ fn main() {
 
 fn run() -> Result<String> {
     let args: Args = Args::parse();
-    inic_log::inic_of_log_configs(args.trace)?;
+    env_logger::init();
 
     Convert::try_from(args)?
         .create_mv()
