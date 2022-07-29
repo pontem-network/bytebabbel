@@ -66,7 +66,11 @@ impl Program {
         output += format!("public fun {} ", fundef.abi.signature()).as_str();
         if let Some(outputs) = fundef.abi.function_data().map(|data| data.outputs()) {
             if !outputs.is_empty() {
-                output += format!("=> ({})", outputs.iter().map(|o| &o.tp).join(",")).as_str();
+                output += format!(
+                    "=> ({})",
+                    outputs.iter().map(|o| o.tp.to_string()).join(",")
+                )
+                .as_str();
             }
         }
         output += " {";

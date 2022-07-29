@@ -1,12 +1,16 @@
-pub mod types;
+use std::collections::HashMap;
+use std::fmt::{Debug, Display, Formatter};
+use std::hash::Hash;
 
 use anyhow::Error;
 use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
-use std::collections::HashMap;
-use std::fmt::{Debug, Display, Formatter};
-use std::hash::Hash;
+
+pub mod inc_ret_param;
+pub mod types;
+
+use inc_ret_param::Param;
 
 #[derive(Debug, Default)]
 pub struct Abi {
@@ -109,7 +113,7 @@ impl Entry {
     }
 
     pub fn signature(&self) -> String {
-        let types = self.inputs().iter().map(|d| &d.tp).join(",");
+        let types = self.inputs().iter().map(|d| d.tp.to_string()).join(",");
         let name = self.name();
         format!("{name}({types})")
     }
@@ -142,27 +146,6 @@ impl Entry {
             | Entry::Fallback(data) => Some(&data.outputs),
             Entry::Error { .. } | Entry::Event { .. } => None,
         }
-    }
-}
-
-#[derive(Debug, Deserialize, Eq, PartialEq)]
-pub struct Param {
-    // uint, uint256, int256, bytes2 ... or custom
-    #[serde(rename = "type")]
-    pub tp: String,
-
-    name: String,
-
-    // used for tuple types (more below).
-    components: Option<String>,
-
-    // if the field is part of the log’s topics, false if it one of the log’s data segment.
-    indexed: Option<bool>,
-}
-
-impl Param {
-    pub fn size(&self) -> usize {
-        32
     }
 }
 
@@ -219,6 +202,7 @@ impl Display for FunHash {
 
 #[cfg(test)]
 mod tests {
+    use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::types::StateMutability;
     use crate::abi::{Abi, Entry, FunctionData, Param};
 
@@ -226,7 +210,7 @@ mod tests {
     fn test_deserialize_type_error() {
         let content = r#"{
             "type":"error",
-            "inputs": [{"name":"available","type":"uint256"},{"name":"required","type":"uint256"}],
+            "inputs": [{"name":"available","type":"uint256"},{"name":"required","type":"bool"}],
             "name":"InsufficientBalance"
         }"#;
 
@@ -238,13 +222,13 @@ mod tests {
                 inputs: vec![
                     Param {
                         name: "available".to_string(),
-                        tp: "uint256".to_string(),
+                        tp: ParamType::Uint(256),
                         components: None,
                         indexed: None
                     },
                     Param {
                         name: "required".to_string(),
-                        tp: "uint256".to_string(),
+                        tp: ParamType::Bool,
                         components: None,
                         indexed: None
                     },
@@ -270,7 +254,7 @@ mod tests {
                 name: "foo".to_string(),
                 inputs: vec![Param {
                     name: "a".to_string(),
-                    tp: "uint256".to_string(),
+                    tp: ParamType::Uint(256),
                     components: None,
                     indexed: None
                 }],
@@ -297,13 +281,13 @@ mod tests {
                 inputs: vec![
                     Param {
                         name: "a".to_string(),
-                        tp: "uint256".to_string(),
+                        tp: ParamType::Uint(256),
                         components: None,
                         indexed: Some(true)
                     },
                     Param {
                         name: "b".to_string(),
-                        tp: "bytes32".to_string(),
+                        tp: ParamType::Byte(32),
                         components: None,
                         indexed: Some(false)
                     }

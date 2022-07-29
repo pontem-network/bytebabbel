@@ -3,6 +3,7 @@ use crate::function::code::intrinsic::math::{BinaryOpCode, MathModel, UnaryOpCod
 use crate::function::code::writer::FunctionCode;
 use crate::function::signature::map_signature;
 use anyhow::{anyhow, Error};
+use evm::abi::inc_ret_param::types::ParamType;
 use evm::bytecode::executor::execution::{Execution, FunctionFlow};
 use evm::bytecode::executor::stack::{Frame, StackFrame};
 use evm::function::FunDef;
@@ -100,7 +101,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             Frame::Val(val) => self.math.set_literal(&mut self.ctx, val),
             Frame::Param(idx) => {
                 self.ctx.write_code(Bytecode::CopyLoc(*idx as u8));
-                if self.def.abi.inputs()[*idx as usize].tp.as_str() == "bool" {
+                if self.def.abi.inputs()[*idx as usize].tp == ParamType::Bool {
                     SignatureToken::Bool
                 } else {
                     self.math.write_from_u128(&mut self.ctx)
