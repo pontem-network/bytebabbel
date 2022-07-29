@@ -201,6 +201,11 @@ mod test {
             ("string", ParamType::String),
             ("CusType", ParamType::Custom("CusType".to_string())),
             ("MyType", ParamType::Custom("MyType".to_string())),
+            ("Int", ParamType::Custom("Int".to_string())),
+            ("intfix64", ParamType::Custom("intfix64".to_string())),
+            ("int64fix", ParamType::Custom("int64fix".to_string())),
+            ("_int64", ParamType::Custom("_int64".to_string())),
+            ("bytes1fix", ParamType::Custom("bytes1fix".to_string())),
             (
                 "bool[]",
                 ParamType::Array {
