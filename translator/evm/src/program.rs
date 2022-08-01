@@ -64,7 +64,7 @@ impl Program {
     pub fn debug_fundef(&self, fundef: &FunDef) -> String {
         let mut output = String::new();
         output += format!("public fun {} ", fundef.abi.signature()).as_str();
-        if let Some(outputs) = fundef.abi.function_data().map(|data| data.outputs()) {
+        if let Some(outputs) = fundef.abi.function_data().and_then(|data| data.outputs()) {
             if !outputs.is_empty() {
                 output += format!(
                     "=> ({})",

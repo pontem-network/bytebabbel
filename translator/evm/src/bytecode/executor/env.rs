@@ -55,7 +55,7 @@ impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
     fn try_from((hash, entry): (FunHash, &'a Entry)) -> Result<Self, Self::Error> {
         Ok(Function {
             hash,
-            name: entry.name(),
+            name: entry.name().unwrap_or_default(),
             input_size: entry
                 .inputs()
                 .iter()

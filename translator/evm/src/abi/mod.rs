@@ -56,9 +56,11 @@ impl TryFrom<&str> for Abi {
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 #[serde(tag = "type")]
 pub enum Entry {
+    // error InsufficientBalance(uint256 available, uint256 required);
     #[serde(rename = "error")]
     Error { name: String, inputs: Vec<Param> },
 
+    // event Received(address, uint);
     #[serde(rename = "event")]
     Event {
         name: String,
@@ -114,17 +116,17 @@ impl Entry {
 
     pub fn signature(&self) -> String {
         let types = self.inputs().iter().map(|d| d.tp.to_string()).join(",");
-        let name = self.name();
+        let name = self.name().unwrap_or("none".to_string());
         format!("{name}({types})")
     }
 
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Option<String> {
         match self {
             Entry::Function(data)
             | Entry::Constructor(data)
             | Entry::Receive(data)
             | Entry::Fallback(data) => data.name.clone(),
-            Entry::Error { name, .. } | Entry::Event { name, .. } => name.clone(),
+            Entry::Error { name, .. } | Entry::Event { name, .. } => Some(name.clone()),
         }
     }
 
@@ -143,7 +145,7 @@ impl Entry {
             Entry::Function(data)
             | Entry::Constructor(data)
             | Entry::Receive(data)
-            | Entry::Fallback(data) => Some(&data.outputs),
+            | Entry::Fallback(data) => data.outputs.as_ref(),
             Entry::Error { .. } | Entry::Event { .. } => None,
         }
     }
@@ -152,13 +154,13 @@ impl Entry {
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct FunctionData {
     // The name of the function
-    pub name: String,
+    pub name: Option<String>,
 
     // An array of objects
     pub inputs: Vec<Param>,
 
     // an array of objects similar to inputs
-    pub outputs: Vec<Param>,
+    pub outputs: Option<Vec<Param>>,
 
     // State Mutability: "pure", "view", "nonpayable" or "payable"
     #[serde(alias = "stateMutability", default = "types::StateMutability::default")]
@@ -166,8 +168,8 @@ pub struct FunctionData {
 }
 
 impl FunctionData {
-    pub fn outputs(&self) -> &[Param] {
-        &self.outputs
+    pub fn outputs(&self) -> Option<&Vec<Param>> {
+        self.outputs.as_ref()
     }
 }
 
@@ -207,14 +209,25 @@ mod tests {
     use crate::abi::{Abi, Entry, FunctionData, Param};
 
     #[test]
-    fn test_deserialize_type_error() {
+    fn test_entry_deserialize_error() {
+        // error InsufficientBalance(uint256 available, uint256 required);
         let content = r#"{
-            "type":"error",
-            "inputs": [{"name":"available","type":"uint256"},{"name":"required","type":"bool"}],
-            "name":"InsufficientBalance"
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "available",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "required",
+                    "type": "uint256"
+                }
+            ],
+            "name": "InsufficientBalance",
+            "type": "error"
         }"#;
-
-        let error: Entry = serde_json::from_str(content).unwrap();
+        let result: Entry = serde_json::from_str(content).unwrap();
 
         assert_eq!(
             Entry::Error {
@@ -223,23 +236,58 @@ mod tests {
                     Param {
                         name: "available".to_string(),
                         tp: ParamType::Uint(256),
+                        internal_type: Some(ParamType::Uint(256)),
                         components: None,
                         indexed: None
                     },
                     Param {
                         name: "required".to_string(),
-                        tp: ParamType::Bool,
+                        tp: ParamType::Uint(256),
+                        internal_type: Some(ParamType::Uint(256)),
                         components: None,
                         indexed: None
                     },
                 ]
             },
-            error
+            result
         );
     }
 
     #[test]
-    fn test_deserialize_type_function() {
+    fn test_entry_deserialize_constructor() {
+        // constructor(bytes32 name_) { }
+        let content = r#"{
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "name_",
+                    "type": "bytes32"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        }"#;
+        let result: Entry = serde_json::from_str(content).unwrap();
+
+        assert_eq!(
+            Entry::Constructor(FunctionData {
+                name: None,
+                inputs: vec![Param {
+                    name: "name_".to_string(),
+                    tp: ParamType::Byte(32),
+                    internal_type: Some(ParamType::Byte(32)),
+                    components: None,
+                    indexed: None
+                }],
+                state_mutability: StateMutability::Nonpayable,
+                outputs: None
+            }),
+            result
+        );
+    }
+
+    #[test]
+    fn test_entry_deserialize_type_function() {
         let content = r#"{
             "type":"function",
             "inputs": [{"name":"a","type":"uint256"}],
@@ -251,14 +299,15 @@ mod tests {
 
         assert_eq!(
             Entry::Function(FunctionData {
-                name: "foo".to_string(),
+                name: Some("foo".to_string()),
                 inputs: vec![Param {
                     name: "a".to_string(),
                     tp: ParamType::Uint(256),
+                    internal_type: None,
                     components: None,
                     indexed: None
                 }],
-                outputs: vec![],
+                outputs: Some(Vec::new()),
                 state_mutability: StateMutability::Nonpayable
             }),
             fun
@@ -282,12 +331,14 @@ mod tests {
                     Param {
                         name: "a".to_string(),
                         tp: ParamType::Uint(256),
+                        internal_type: None,
                         components: None,
                         indexed: Some(true)
                     },
                     Param {
                         name: "b".to_string(),
                         tp: ParamType::Byte(32),
+                        internal_type: None,
                         components: None,
                         indexed: Some(false)
                     }
