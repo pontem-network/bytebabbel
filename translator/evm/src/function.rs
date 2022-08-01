@@ -32,7 +32,12 @@ impl<'a> FunDef<'a> {
             + self
                 .abi
                 .function_data()
-                .map(|data| data.inputs.iter().map(|input| input.size()).sum::<usize>())
+                .map(|data| {
+                    data.inputs
+                        .as_ref()
+                        .map(|inp| inp.iter().map(|input| input.size()).sum::<usize>())
+                        .unwrap_or_default()
+                })
                 .unwrap_or_default()
     }
 }

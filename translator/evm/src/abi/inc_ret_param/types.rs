@@ -90,7 +90,7 @@ impl TryFrom<&str> for ParamType {
                     .map_err(|err| anyhow!("incorrect format: {value}\n{err:?}"))?;
                 ParamType::Array {
                     tp: Box::new(next),
-                    size: size,
+                    size,
                 }
             }
             "bool" => ParamType::Bool,
@@ -112,7 +112,7 @@ impl TryFrom<&str> for ParamType {
                     })
                     .unwrap_or(Ok(256))?;
 
-                if size < 8 || size > 256 {
+                if !(8..=256).contains(&size) {
                     bail!("Unknown type {value}");
                 }
                 // 8,16,32..256
@@ -135,7 +135,7 @@ impl TryFrom<&str> for ParamType {
                 let size: u8 = size_str
                     .parse()
                     .map_err(|err| anyhow!("Expected number {value}. {err:?}"))?;
-                if size < 1 || size > 32 {
+                if !(1..=32).contains(&size) {
                     bail!("A number from 1 to 32 was expected. Value: {value}")
                 }
                 ParamType::Byte(size)

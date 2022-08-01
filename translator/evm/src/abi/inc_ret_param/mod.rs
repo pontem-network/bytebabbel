@@ -125,6 +125,43 @@ mod test {
     }
 
     #[test]
+    fn test_deserialize_error() {
+        // error InsufficientBalance(uint256 available, uint256 required);
+        let cont = r#"[
+            {
+                "internalType": "uint256",
+                "name": "available",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "required",
+                "type": "uint256"
+            }
+        ]"#;
+        let result: Vec<Param> = serde_json::from_str(cont).unwrap();
+        assert_eq!(
+            result,
+            vec![
+                Param {
+                    name: "available".to_string(),
+                    tp: ParamType::Uint(256),
+                    internal_type: Some(ParamType::Uint(256)),
+                    indexed: None,
+                    components: None
+                },
+                Param {
+                    name: "required".to_string(),
+                    tp: ParamType::Uint(256),
+                    internal_type: Some(ParamType::Uint(256)),
+                    indexed: None,
+                    components: None
+                }
+            ]
+        );
+    }
+
+    #[test]
     fn test_deserialize_function() {
         // function transfer(address newOwner) public { }
         let mut cont = r#"{
@@ -188,43 +225,6 @@ mod test {
                     indexed: None,
                     components: None
                 },
-            ]
-        );
-    }
-
-    #[test]
-    fn test_deserialize_error() {
-        // error InsufficientBalance(uint256 available, uint256 required);
-        let cont = r#"[
-            {
-                "internalType": "uint256",
-                "name": "available",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "required",
-                "type": "uint256"
-            }
-        ]"#;
-        let result: Vec<Param> = serde_json::from_str(cont).unwrap();
-        assert_eq!(
-            result,
-            vec![
-                Param {
-                    name: "available".to_string(),
-                    tp: ParamType::Uint(256),
-                    internal_type: Some(ParamType::Uint(256)),
-                    indexed: None,
-                    components: None
-                },
-                Param {
-                    name: "required".to_string(),
-                    tp: ParamType::Uint(256),
-                    internal_type: Some(ParamType::Uint(256)),
-                    indexed: None,
-                    components: None
-                }
             ]
         );
     }

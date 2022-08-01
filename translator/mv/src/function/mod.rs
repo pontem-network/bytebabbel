@@ -30,11 +30,11 @@ impl MvFunction {
         fn_code: FunctionCode,
         sign_writer: &mut SignatureWriter,
     ) -> Result<MvFunction, Error> {
-        let input = sign_writer.make_signature(map_signature(def.abi.inputs().as_slice()));
+        let input = sign_writer.make_signature(map_signature(def.abi.inputs().unwrap().as_slice()));
         let output =
             sign_writer.make_signature(map_signature(def.abi.outputs().unwrap().as_slice()));
         Ok(MvFunction {
-            name: Identifier::new(&*def.abi.name())?,
+            name: Identifier::new(def.abi.name().as_deref().unwrap_or("anonymous"))?,
             visibility: Visibility::Public,
             input,
             output,

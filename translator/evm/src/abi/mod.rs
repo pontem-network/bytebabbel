@@ -75,8 +75,6 @@ pub enum Entry {
     #[serde(rename = "function")]
     Function(FunctionData),
 
-    // @todo tests
-
     // A constructor is an optional function declared with the constructor keyword which is executed
     // upon contract creation, and where you can run contract initialisation code.
     // "constructor() {}"
@@ -115,9 +113,14 @@ impl Entry {
     }
 
     pub fn signature(&self) -> String {
-        let types = self.inputs().iter().map(|d| d.tp.to_string()).join(",");
-        let name = self.name().unwrap_or("none".to_string());
-        format!("{name}({types})")
+        let types = self
+            .inputs()
+            .map(|inp| inp.iter().map(|d| d.tp.to_string()).join(","))
+            .unwrap_or_default();
+        format!(
+            "{name}({types})",
+            name = self.name().as_deref().unwrap_or("anonymous")
+        )
     }
 
     pub fn name(&self) -> Option<String> {
@@ -130,13 +133,13 @@ impl Entry {
         }
     }
 
-    pub fn inputs(&self) -> &Vec<Param> {
+    pub fn inputs(&self) -> Option<&Vec<Param>> {
         match self {
             Entry::Function(data)
             | Entry::Constructor(data)
             | Entry::Receive(data)
-            | Entry::Fallback(data) => &data.inputs,
-            Entry::Error { inputs, .. } | Entry::Event { inputs, .. } => inputs,
+            | Entry::Fallback(data) => data.inputs.as_ref(),
+            Entry::Error { inputs, .. } | Entry::Event { inputs, .. } => Some(inputs),
         }
     }
 
@@ -157,7 +160,7 @@ pub struct FunctionData {
     pub name: Option<String>,
 
     // An array of objects
-    pub inputs: Vec<Param>,
+    pub inputs: Option<Vec<Param>>,
 
     // an array of objects similar to inputs
     pub outputs: Option<Vec<Param>>,
@@ -254,6 +257,116 @@ mod tests {
     }
 
     #[test]
+    fn test_entry_deserialize_event() {
+        // event Received(address, uint);
+        let mut content = r#" {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Received",
+            "type": "event"
+        }"#;
+        let mut result: Entry = serde_json::from_str(content).unwrap();
+        assert_eq!(
+            Entry::Event {
+                name: "Received".to_string(),
+                inputs: vec![
+                    Param {
+                        name: "".to_string(),
+                        tp: ParamType::Address,
+                        internal_type: Some(ParamType::Address),
+                        components: None,
+                        indexed: Some(false)
+                    },
+                    Param {
+                        name: "".to_string(),
+                        tp: ParamType::Uint(256),
+                        internal_type: Some(ParamType::Uint(256)),
+                        components: None,
+                        indexed: Some(false)
+                    }
+                ],
+                anonymous: Some(false)
+            },
+            result
+        );
+
+        // event Deposit(
+        //     address indexed from,
+        //     bytes32 indexed id,
+        //     uint value
+        // );
+        content = r#"{
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "from",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "bytes32",
+                    "name": "id",
+                    "type": "bytes32"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Deposit",
+            "type": "event"
+        }"#;
+        result = serde_json::from_str(content).unwrap();
+        assert_eq!(
+            Entry::Event {
+                name: "Deposit".to_string(),
+                inputs: vec![
+                    Param {
+                        name: "from".to_string(),
+                        tp: ParamType::Address,
+                        internal_type: Some(ParamType::Address),
+                        components: None,
+                        indexed: Some(true)
+                    },
+                    Param {
+                        name: "id".to_string(),
+                        tp: ParamType::Byte(32),
+                        internal_type: Some(ParamType::Byte(32)),
+                        components: None,
+                        indexed: Some(true)
+                    },
+                    Param {
+                        name: "value".to_string(),
+                        tp: ParamType::Uint(256),
+                        internal_type: Some(ParamType::Uint(256)),
+                        components: None,
+                        indexed: Some(false)
+                    }
+                ],
+                anonymous: Some(false)
+            },
+            result
+        );
+    }
+
+    #[test]
     fn test_entry_deserialize_constructor() {
         // constructor(bytes32 name_) { }
         let content = r#"{
@@ -272,13 +385,13 @@ mod tests {
         assert_eq!(
             Entry::Constructor(FunctionData {
                 name: None,
-                inputs: vec![Param {
+                inputs: Some(vec![Param {
                     name: "name_".to_string(),
                     tp: ParamType::Byte(32),
                     internal_type: Some(ParamType::Byte(32)),
                     components: None,
-                    indexed: None
-                }],
+                    indexed: None,
+                }]),
                 state_mutability: StateMutability::Nonpayable,
                 outputs: None
             }),
@@ -287,27 +400,87 @@ mod tests {
     }
 
     #[test]
-    fn test_entry_deserialize_type_function() {
-        let content = r#"{
-            "type":"function",
-            "inputs": [{"name":"a","type":"uint256"}],
-            "name":"foo",
-            "outputs": []
+    fn test_entry_deserialize_function() {
+        // pure
+        // function transfer(address newOwner) public { }
+        let mut content = r#"{
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "newOwner",
+                    "type": "address"
+                }
+            ],
+            "name": "transfer",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
         }"#;
-
-        let fun: Entry = serde_json::from_str(content).unwrap();
+        let mut fun: Entry = serde_json::from_str(content).unwrap();
 
         assert_eq!(
             Entry::Function(FunctionData {
-                name: Some("foo".to_string()),
-                inputs: vec![Param {
-                    name: "a".to_string(),
+                name: Some("transfer".to_string()),
+                inputs: Some(vec![Param {
+                    name: "newOwner".to_string(),
+                    tp: ParamType::Address,
+                    internal_type: Some(ParamType::Address),
+                    components: None,
+                    indexed: None,
+                }]),
+                outputs: Some(Vec::new()),
+                state_mutability: StateMutability::Nonpayable
+            }),
+            fun
+        );
+
+        // view
+        // function f3() public view returns (uint) { return 2; }
+        content = r#"{
+            "inputs": [],
+            "name": "f3",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }"#;
+        fun = serde_json::from_str(content).unwrap();
+        assert_eq!(
+            Entry::Function(FunctionData {
+                name: Some("f3".to_string()),
+                inputs: Some(vec![]),
+                outputs: Some(vec![Param {
+                    name: "".to_string(),
                     tp: ParamType::Uint(256),
-                    internal_type: None,
+                    internal_type: Some(ParamType::Uint(256)),
                     components: None,
                     indexed: None
-                }],
-                outputs: Some(Vec::new()),
+                }]),
+                state_mutability: StateMutability::View
+            }),
+            fun
+        );
+
+        // nonpayable
+        // function readData() public { }
+        content = r#" {
+            "inputs": [],
+            "name": "readData",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }"#;
+        fun = serde_json::from_str(content).unwrap();
+        assert_eq!(
+            Entry::Function(FunctionData {
+                name: Some("readData".to_string()),
+                inputs: Some(vec![]),
+                outputs: Some(vec![]),
                 state_mutability: StateMutability::Nonpayable
             }),
             fun
@@ -315,37 +488,42 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_type_event() {
+    fn test_entry_deserialize_fallback() {
+        // fallback() external { x = 1; }
         let content = r#"{
-            "type":"event",
-            "inputs": [{"name":"a","type":"uint256","indexed":true},{"name":"b","type":"bytes32","indexed":false}],
-            "name":"Event2"
+            "stateMutability": "nonpayable",
+            "type": "fallback"
         }"#;
-
-        let event: Entry = serde_json::from_str(content).unwrap();
+        let fun: Entry = serde_json::from_str(content).unwrap();
 
         assert_eq!(
-            Entry::Event {
-                name: "Event2".to_string(),
-                inputs: vec![
-                    Param {
-                        name: "a".to_string(),
-                        tp: ParamType::Uint(256),
-                        internal_type: None,
-                        components: None,
-                        indexed: Some(true)
-                    },
-                    Param {
-                        name: "b".to_string(),
-                        tp: ParamType::Byte(32),
-                        internal_type: None,
-                        components: None,
-                        indexed: Some(false)
-                    }
-                ],
-                anonymous: None
-            },
-            event
+            Entry::Fallback(FunctionData {
+                name: None,
+                inputs: None,
+                outputs: None,
+                state_mutability: StateMutability::Nonpayable
+            }),
+            fun
+        );
+    }
+
+    #[test]
+    fn test_entry_deserialize_receive() {
+        // receive() external payable { emit Received(msg.sender, msg.value); }
+        let content = r#"{
+            "stateMutability": "payable",
+            "type": "receive"
+        }"#;
+        let fun: Entry = serde_json::from_str(content).unwrap();
+
+        assert_eq!(
+            Entry::Receive(FunctionData {
+                name: None,
+                inputs: None,
+                outputs: None,
+                state_mutability: StateMutability::Payable
+            }),
+            fun
         );
     }
 

@@ -26,8 +26,8 @@ pub struct MvTranslator<'a, M: MathModel> {
 
 impl<'a, M: MathModel> MvTranslator<'a, M> {
     pub fn new(program: &'a Program, def: &'a FunDef, math: &'a mut M) -> MvTranslator<'a, M> {
-        let input_types = map_signature(&def.abi.inputs());
-        let output_types = map_signature(&def.abi.outputs().unwrap());
+        let input_types = map_signature(def.abi.inputs().unwrap());
+        let output_types = map_signature(def.abi.outputs().unwrap());
         MvTranslator {
             program,
             def,
@@ -37,10 +37,12 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
     }
 
     pub fn translate(mut self) -> Result<FunctionCode, Error> {
-        let flow = self
-            .program
-            .function_flow(self.def.hash)
-            .ok_or_else(|| anyhow!("Root path for {} function not found.", self.def.abi.name()))?;
+        let flow = self.program.function_flow(self.def.hash).ok_or_else(|| {
+            anyhow!(
+                "Root path for {} function not found.",
+                self.def.abi.name().as_deref().unwrap_or("anonymous")
+            )
+        })?;
         if is_trace() {
             log::trace!("\n{}", &self.program.debug_fn_by_hash(self.def.hash));
             log::trace!("{:?}\n", flow);
@@ -101,7 +103,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
             Frame::Val(val) => self.math.set_literal(&mut self.ctx, val),
             Frame::Param(idx) => {
                 self.ctx.write_code(Bytecode::CopyLoc(*idx as u8));
-                if self.def.abi.inputs()[*idx as usize].tp == ParamType::Bool {
+                if self.def.abi.inputs().as_ref().unwrap()[*idx as usize].tp == ParamType::Bool {
                     SignatureToken::Bool
                 } else {
                     self.math.write_from_u128(&mut self.ctx)

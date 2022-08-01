@@ -56,11 +56,11 @@ impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
         Ok(Function {
             hash,
             name: entry.name().unwrap_or_default(),
-            input_size: entry
-                .inputs()
-                .iter()
-                .map(EthType::try_from)
-                .collect::<Result<Vec<_>, _>>()?,
+            input_size: entry.inputs().map_or(Ok(Vec::new()), |inp| {
+                inp.iter()
+                    .map(EthType::try_from)
+                    .collect::<Result<Vec<_>, _>>()
+            })?,
             output_size: entry
                 .outputs()
                 .unwrap()
