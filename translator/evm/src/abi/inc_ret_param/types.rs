@@ -1,12 +1,9 @@
 use std::fmt::{Debug, Formatter};
-use std::os::raw::c_char;
-use std::str::FromStr;
 
 use anyhow::{anyhow, bail, Error};
-use itertools::chain;
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::{Deserialize, Deserializer};
+use serde::Deserializer;
 
 lazy_static! {
     static ref REG_UINT: Regex = Regex::new(r#"^(?P<tp>(u)?int)(?P<size>\d+)?$"#).unwrap();
@@ -143,7 +140,7 @@ impl TryFrom<&str> for ParamType {
                 }
                 ParamType::Byte(size)
             }
-            s => ParamType::Custom(value.to_string()),
+            _ => ParamType::Custom(value.to_string()),
         };
         Ok(result)
     }
