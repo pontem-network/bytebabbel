@@ -1,4 +1,5 @@
-use crate::abi::EthType as AbiType;
+use crate::abi::inc_ret_param::types::ParamType;
+use crate::abi::inc_ret_param::Param as AbiType;
 use crate::abi::{Entry, FunHash};
 use crate::bytecode::executor::stack::FRAME_SIZE;
 use crate::bytecode::executor::types::U256;
@@ -40,10 +41,10 @@ impl<'a> TryFrom<&'a AbiType> for EthType {
     type Error = Error;
 
     fn try_from(value: &'a AbiType) -> Result<Self, Self::Error> {
-        Ok(match value.tp.as_str() {
-            "bool" => EthType::Bool,
-            "uint" | "uint256" => EthType::U256,
-            _ => bail!("Unknown type: {}", value.tp),
+        Ok(match value.tp {
+            ParamType::Bool => EthType::Bool,
+            ParamType::Uint(_) | ParamType::Int(_) => EthType::U256,
+            _ => bail!("Unknown type: {}", value.tp.to_string()),
         })
     }
 }
@@ -54,14 +55,15 @@ impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
     fn try_from((hash, entry): (FunHash, &'a Entry)) -> Result<Self, Self::Error> {
         Ok(Function {
             hash,
-            name: entry.name.clone(),
-            input_size: entry
-                .inputs
-                .iter()
-                .map(EthType::try_from)
-                .collect::<Result<Vec<_>, _>>()?,
+            name: entry.name().unwrap_or_default(),
+            input_size: entry.inputs().map_or(Ok(Vec::new()), |inp| {
+                inp.iter()
+                    .map(EthType::try_from)
+                    .collect::<Result<Vec<_>, _>>()
+            })?,
             output_size: entry
-                .outputs
+                .outputs()
+                .unwrap()
                 .iter()
                 .map(EthType::try_from)
                 .collect::<Result<Vec<_>, _>>()?,

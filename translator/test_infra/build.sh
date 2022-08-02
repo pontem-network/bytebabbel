@@ -13,7 +13,7 @@ solc --version
 for path in $(find sol -name "*.sol"); do
   echo "build: ${path}"
 
-  result=$( solc -o bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --error-recovery --asm ${path} 2>&1)
+#  result=$( solc -o bin --bin --optimize-runs=0 --abi --ast-compact-json --overwrite --error-recovery --asm ${path} 2>&1)
   echo $result
 
   if [[ $result == Error* || $result == Warning* ]]; then

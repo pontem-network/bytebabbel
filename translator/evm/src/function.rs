@@ -31,9 +31,13 @@ impl<'a> FunDef<'a> {
         self.hash.as_ref().len()
             + self
                 .abi
-                .inputs
-                .iter()
-                .map(|input| input.size())
-                .sum::<usize>()
+                .function_data()
+                .map(|data| {
+                    data.inputs
+                        .as_ref()
+                        .map(|inp| inp.iter().map(|input| input.size()).sum::<usize>())
+                        .unwrap_or_default()
+                })
+                .unwrap_or_default()
     }
 }

@@ -1,13 +1,13 @@
-use evm::abi::EthType;
+use evm::abi::inc_ret_param::types::ParamType;
+use evm::abi::inc_ret_param::Param as EthType;
 use move_binary_format::file_format::{Signature, SignatureIndex, SignatureToken};
 
 pub fn map_signature(eth_types: &[EthType]) -> Vec<SignatureToken> {
     eth_types
         .iter()
-        .map(|eth| match eth.tp.as_str() {
-            "uint256" => SignatureToken::U128,
-            "uint" => SignatureToken::U128,
-            "bool" => SignatureToken::Bool,
+        .map(|eth| match eth.tp {
+            ParamType::Uint(_) => SignatureToken::U128,
+            ParamType::Bool => SignatureToken::Bool,
             _ => todo!(),
         })
         .collect()
