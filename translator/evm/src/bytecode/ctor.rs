@@ -18,6 +18,7 @@ pub fn split(
         return Ok((blocks, None));
     }
     if let Some(code_copy) = StaticExecutor::new(&blocks).find_next_entry_point()? {
+        println!("Code copy detected at {}", code_copy.0 * 2);
         let (main, ctor) = blocks.into_iter().fold(
             (BTreeMap::new(), BTreeMap::new()),
             |(mut main, mut ctor), (block_id, mut block)| {

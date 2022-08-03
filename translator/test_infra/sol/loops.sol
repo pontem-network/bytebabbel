@@ -11,6 +11,14 @@ library  Loop {
 //        return val;
 //    }
 
+//    function for_loop(uint n) public view returns(uint) {
+//        if (n <= 1) {
+//            return n;
+//        } else {
+//            return for_loop(n - 1) + for_loop(n - 2);
+//        }
+//    }
+
     function for_loop(uint i) public pure returns (uint) {
         uint val = 0;
         for (uint j = 0; j < i; j++) {

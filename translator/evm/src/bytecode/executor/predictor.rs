@@ -1,8 +1,7 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::executor::types::U256;
-use crate::bytecode::instruction::Offset;
 use crate::{BlockId, OpCode};
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::usize;
 
 pub struct Predictor<'a> {
@@ -27,6 +26,7 @@ impl<'a> Predictor<'a> {
 
         self.block = BlockId::default();
         'pc: loop {
+            println!("Block: {}", self.block);
             let next = self.exec_block();
 
             for branch in branch_stack.iter_mut() {
@@ -35,14 +35,14 @@ impl<'a> Predictor<'a> {
 
             match next {
                 Next::Next(next) => {
-                    println!("Block: {:?}", next);
                     self.block = next;
                 }
                 Next::Stop => 'branch: loop {
+                    println!("Stop:{}", self.block);
                     if let Some(branching) = branch_stack.pop() {
-                        let branching = branching.set_end(self.block, false);
+                        let branching = branching.set_end(self.block);
                         self.call_stack = branching.stack().clone();
-                        if let Some(if_el) = branching.make_if() {
+                        if let Some(if_el) = branching.complete() {
                             cnd_branches.push(if_el);
                             continue;
                         } else {
@@ -55,24 +55,45 @@ impl<'a> Predictor<'a> {
                     }
                 },
                 Next::Cnd(true_br, false_br) => {
-                    let block = branch_stack
+                    let loop_br = branch_stack
                         .iter_mut()
-                        .find(|b| b.jmp().block == self.block);
-                    if let Some(mut block) = block {
-                        println!("Loop : {:?}", block.jmp().block);
-                    }
+                        .find(|b| b.jmp().block == self.block)
+                        .map(|b| {
+                            b.set_loop();
+                            true
+                        })
+                        .unwrap_or_default();
 
-                    branch_stack.push(BranchingState::new(
-                        self.block,
-                        true_br,
-                        false_br,
-                        self.call_stack.clone(),
-                    ));
-                    self.block = true_br;
+                    if loop_br {
+                        println!("Loop detected at {}", self.block);
+                        'branch: loop {
+                            if let Some(branching) = branch_stack.pop() {
+                                let branching = branching.set_end(self.block);
+                                self.call_stack = branching.stack().clone();
+                                if let Some(if_el) = branching.complete() {
+                                    cnd_branches.push(if_el);
+                                    continue;
+                                } else {
+                                    self.block = branching.false_br();
+                                    branch_stack.push(branching);
+                                    break 'branch;
+                                }
+                            } else {
+                                break 'pc;
+                            }
+                        }
+                    } else {
+                        branch_stack.push(BranchingState::new(
+                            self.block,
+                            true_br,
+                            false_br,
+                            self.call_stack.clone(),
+                        ));
+                        self.block = true_br;
+                    }
                 }
             }
         }
-
         Self::canonize(cnd_branches)
     }
 
@@ -249,7 +270,19 @@ impl BranchingState {
         }
     }
 
-    pub fn set_end(self, end: BlockId, is_loop: bool) -> BranchingState {
+    pub fn set_loop(&mut self) {
+        match self {
+            BranchingState::JumpIf { true_br, .. } => {
+                true_br.set_loop(true);
+            }
+            BranchingState::TrueBranch { false_br, .. } => {
+                false_br.set_loop(true);
+            }
+            BranchingState::IF { .. } => {}
+        }
+    }
+
+    pub fn set_end(self, end: BlockId) -> BranchingState {
         match self {
             BranchingState::JumpIf {
                 jmp,
@@ -257,7 +290,6 @@ impl BranchingState {
                 mut true_br,
             } => {
                 true_br.set_end(end);
-                true_br.set_loop(is_loop);
                 BranchingState::TrueBranch {
                     jmp,
                     true_br,
@@ -272,7 +304,6 @@ impl BranchingState {
                 stack,
             } => {
                 false_br.set_end(end);
-                false_br.set_loop(is_loop);
                 BranchingState::IF {
                     jmp,
                     true_br,
@@ -284,7 +315,7 @@ impl BranchingState {
         }
     }
 
-    pub fn make_if(&self) -> Option<CndBranch> {
+    pub fn complete(&self) -> Option<CndBranch> {
         match self.clone() {
             BranchingState::IF {
                 jmp,
@@ -441,3 +472,65 @@ pub struct IfFlow {
     pub true_br: Vec<Flow>,
     pub false_br: Vec<Flow>,
 }
+
+/*
+if 0000 {
+    0035 +
+} else {
+    if 0024 { +
+        003a +
+        if 00ed { +
+            0103 +
+            00d8 +
+            00c1 +
+            00b7 +
+            if 00ca { +
+               00d5 +
+               00e7 +
+               0111
+               004f
+               006a
+               if 0074 {
+                  00a8,0054, 0129, 011a,00b7,0123,013e, 0061
+               } else {
+                  007d,0173,00b7,017e,00b7,
+                  if 0189 {
+                    01c2,0088,01cd,00b7,01d8,00b7,
+                    if 01e3 {
+                        0218, 0093, 0223, 00b7
+                        if 022e {
+                            0260, 00a0, 0074
+                        } else {
+                            0258, 0144
+                        }
+                    } else {
+                      0210, 0144
+                    }
+                  } else {
+                    01ba, 0144
+                  }
+               }
+            } else {
+               00d1
+            }
+        } else {
+           00fb, 00b2
+        }
+    } else {
+        0035
+    }
+}
+
+blocks: [
+CndBranch { jmp: CndJmp { block: 022e, true_br: 0260, false_br: 0258 }, true_br: Brunch { end: 0074, blocks: [0260, 00a0, 0074], is_loop: false }, false_br: Brunch { end: 0144, blocks: [0258, 0144], is_loop: false } },
+CndBranch { jmp: CndJmp { block: 01e3, true_br: 0218, false_br: 0210 }, true_br: Brunch { end: 0144, blocks: [0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144], is_loop: false }, false_br: Brunch { end: 0144, blocks: [0210, 0144], is_loop: false } },
+
+CndBranch { jmp: CndJmp { block: 0189, true_br: 01c2, false_br: 01ba }, true_br: Brunch { end: 0144, blocks: [01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144], is_loop: false }, false_br: Brunch { end: 0144, blocks: [01ba, 0144], is_loop: false } },
+
+CndBranch { jmp: CndJmp { block: 0074, true_br: 00a8, false_br: 007d }, true_br: Brunch { end: 0061, blocks: [00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061], is_loop: false }, false_br: Brunch { end: 0144, blocks: [007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144], is_loop: false } },
+CndBranch { jmp: CndJmp { block: 00ca, true_br: 00d5, false_br: 00d1 }, true_br: Brunch { end: 0144, blocks: [00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144], is_loop: false }, false_br: Brunch { end: 00d1, blocks: [00d1], is_loop: false } },
+CndBranch { jmp: CndJmp { block: 00ed, true_br: 0103, false_br: 00fb }, true_br: Brunch { end: 00d1, blocks: [0103, 00d8, 00c1, 00b7, 00ca, 00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144, 00d1], is_loop: false }, false_br: Brunch { end: 00b2, blocks: [00fb, 00b2], is_loop: false } },
+CndBranch { jmp: CndJmp { block: 0024, true_br: 003a, false_br: 0035 }, true_br: Brunch { end: 00b2, blocks: [003a, 00ed, 0103, 00d8, 00c1, 00b7, 00ca, 00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144, 00d1, 00fb, 00b2], is_loop: false }, false_br: Brunch { end: 0035, blocks: [0035], is_loop: false } },
+CndBranch { jmp: CndJmp { block: 0000, true_br: 0035, false_br: 0024 }, true_br: Brunch { end: 0035, blocks: [0035], is_loop: false }, false_br: Brunch { end: 0035, blocks: [0024, 003a, 00ed, 0103, 00d8, 00c1, 00b7, 00ca, 00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144, 00d1, 00fb, 00b2, 0035], is_loop: false } }]
+
+ */
