@@ -6,8 +6,9 @@ use crate::bytecode::executor::mem::Memory;
 use crate::bytecode::executor::stack::{Frame, Stack, StackFrame, FRAME_SIZE};
 use crate::bytecode::executor::types::U256;
 use crate::bytecode::instruction::Instruction;
-use crate::is_trace;
 use anyhow::{anyhow, ensure, Error};
+use log::log_enabled;
+use log::Level;
 use std::collections::BTreeMap;
 
 pub mod debug;
@@ -52,7 +53,6 @@ impl<'a> StaticExecutor<'a> {
         let mut pred = flow_graph::FlowBuilder::new(&self.contract);
         let flow = pred.make_flow();
 
-        println!("{:?}", flow);
         let mut flow = FunctionFlow::default();
         let next_block = BlockId::default();
         self.exec_with_ctx(&env, &mut flow, next_block)?;
@@ -79,8 +79,6 @@ impl<'a> StaticExecutor<'a> {
                     true_br,
                     false_br,
                 } => {
-                    self.handle_loop(true_br)?;
-                    self.handle_loop(false_br)?;
                     self.handle_cnd_jmp(cnd, true_br, false_br, env, flow)?;
                     break;
                 }
@@ -91,37 +89,6 @@ impl<'a> StaticExecutor<'a> {
         self.stack.clean();
         self.new_code_offset = None;
         Ok(())
-    }
-
-    fn handle_loop(&mut self, block_id: BlockId) -> Result<Option<Loop>, Error> {
-        let mut executor = self.inherit();
-        let mut true_br_flow = FunctionFlow::default();
-        //true_br_flow.var_seq = self.var_seq;
-        let mut next_block = block_id;
-
-        // loop {
-        //     let res = executor.exec_block(next_block, env, flow)?;
-        //     match res {
-        //         Jump::None => {
-        //             break;
-        //         }
-        //         Jump::UnCnd(next) => {
-        //             next_block = next;
-        //         }
-        //         Jump::Cnd {
-        //             cnd,
-        //             true_br,
-        //             false_br,
-        //         } => {
-        //             executor.handle_loop(true_br)?;
-        //             executor.handle_loop(false_br)?;
-        //
-        //             // executor.handle_cnd_jmp(cnd, true_br, false_br, env, flow)?;
-        //             break;
-        //         }
-        //     }
-        // }
-        Ok(None)
     }
 
     pub fn find_next_entry_point(&mut self) -> Result<Option<BlockId>, Error> {
@@ -215,7 +182,7 @@ impl<'a> StaticExecutor<'a> {
         len: StackFrame,
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
-        if is_trace() {
+        if log_enabled!(Level::Trace) {
             log::trace!("mem:\n{}", self.mem);
         }
 
@@ -246,7 +213,7 @@ impl<'a> StaticExecutor<'a> {
         _len: StackFrame,
         flow: &mut FunctionFlow,
     ) -> Result<(), Error> {
-        if is_trace() {
+        if log_enabled!(Level::Trace) {
             log::trace!("mem:\n{}", self.mem);
         }
         flow.abort(0);

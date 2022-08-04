@@ -5,6 +5,7 @@ mod testssol;
 
 #[test]
 pub fn test_loops() {
+    env_logger::init();
     let bytecode = make_move_module(
         "0x1::Loop",
         include_str!("../bin/loop.bin"),

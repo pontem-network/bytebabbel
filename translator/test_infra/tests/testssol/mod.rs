@@ -2,8 +2,10 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use evm::{is_trace, parse_program};
+use evm::parse_program;
 use lazy_static::lazy_static;
+use log::log_enabled;
+use log::Level;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_bytecode_source_map::mapping::SourceMapping;
 use move_core_types::account_address::AccountAddress;
@@ -153,7 +155,7 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    if is_trace() {
+    if log_enabled!(Level::Trace) {
         let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
         let dissassemble_string = disassembler.disassemble().unwrap();
         log::trace!("{}", dissassemble_string);

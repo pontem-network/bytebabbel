@@ -12,8 +12,6 @@ use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
 use bytecode::swarm::remove_swarm_hash;
-use log::log_enabled;
-use log::Level;
 use std::collections::{BTreeMap, HashMap};
 
 pub mod abi;
@@ -53,8 +51,4 @@ pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {
     let mut bytecode = hex::decode(input)?;
     remove_swarm_hash(&mut bytecode);
     Ok(bytecode)
-}
-
-pub fn is_trace() -> bool {
-    log_enabled!(Level::Trace)
 }
