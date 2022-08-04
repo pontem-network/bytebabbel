@@ -25,15 +25,15 @@ pub struct Converting {
     #[clap(long = "module", display_order = 4, value_parser)]
     move_module_name: Option<String>,
 
-    /// The address of the Move module.
+    /// Profile name or address. The address must start with "0x". Needed for the module address
     #[clap(
-        long = "address",
+        long = "profile",
         display_order = 5,
-        short = 'a',
-        default_value = "0x1",
+        short = 'p',
+        default_value = "default",
         value_parser
     )]
-    move_module_address: String,
+    profile_or_address: String,
 
     /// Math backend.
     #[clap(long = "math", short = 'm', default_value = "u128", value_parser)]
@@ -48,7 +48,20 @@ impl Converting {
             PathBuf::from("./").join(filename).with_extension("mv")
         });
 
-        let address = AccountAddress::from_hex_literal(&self.move_module_address)?;
+        let address = if self.profile_or_address.starts_with("0x") {
+            AccountAddress::from_hex_literal(&self.profile_or_address)?
+        } else {
+            let aptos_account = aptos::common::types::CliConfig::load_profile(&self.profile_or_address)?
+                .and_then(|profile| profile.account)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "Profile {:?} not found. To create a profile, use: $ e2m aptos init --profile <NAME>",
+                        &self.profile_or_address
+                    )
+                })?;
+            AccountAddress::from_bytes(&aptos_account.into_bytes())?
+        };
+
         let module_name = self
             .move_module_name
             .clone()
