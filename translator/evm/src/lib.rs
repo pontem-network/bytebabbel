@@ -12,7 +12,7 @@ use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
 use bytecode::swarm::remove_swarm_hash;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 pub mod abi;
 pub mod bytecode;

@@ -3,7 +3,7 @@ use crate::bytecode::executor::StaticExecutor;
 use crate::bytecode::loc::Move;
 use crate::OpCode;
 use anyhow::Error;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 type Blocks = HashMap<BlockId, InstructionBlock>;
 

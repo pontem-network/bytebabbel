@@ -44,7 +44,7 @@ impl STest {
                 bin_path: file.bin_path.clone(),
                 abi_path: file.abi_path.clone(),
                 module_name: file.module_name.clone(),
-                test: test,
+                test,
             })
             .collect()
     }
@@ -99,7 +99,7 @@ impl STest {
             .returns
             .iter()
             .map(|(actual_val, actual_tp)| {
-                MoveValue::simple_deserialize(&actual_val, &actual_tp).unwrap()
+                MoveValue::simple_deserialize(actual_val, actual_tp).unwrap()
             })
             .collect();
 

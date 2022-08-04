@@ -5,7 +5,7 @@ use crate::bytecode::executor::execution::FunctionFlow;
 use crate::function::{FunDef, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {

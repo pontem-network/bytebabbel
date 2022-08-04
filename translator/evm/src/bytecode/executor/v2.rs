@@ -15,7 +15,7 @@ pub struct ExecutorV2<'a> {
 
 impl<'a> ExecutorV2<'a> {
     pub fn new(contract: &'a HashMap<BlockId, InstructionBlock>) -> ExecutorV2 {
-        let flow = FlowBuilder::new(&contract).make_flow();
+        let flow = FlowBuilder::new(contract).make_flow();
 
         ExecutorV2 {
             mem: Memory::default(),

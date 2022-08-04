@@ -76,8 +76,8 @@ impl SolFile {
             .map(|line| line.trim())
             .filter(|line| line.starts_with("//"))
             .map(|line| line.trim_start_matches("//").trim())
-            .filter(|line| line.starts_with("#"))
-            .map(|line| line.trim_start_matches("#").trim())
+            .filter(|line| line.starts_with('#'))
+            .map(|line| line.trim_start_matches('#').trim())
             .filter_map(|line| SolTest::try_from(line).ok())
             .collect::<Vec<SolTest>>();
         Ok(())
@@ -138,7 +138,7 @@ impl TryFrom<&str> for SolTest {
         let (params, part) = part
             .split_once(')')
             .ok_or(anyhow!("Function parameters not found: {}", instruction))?;
-        let pre_result: Vec<&str> = part.trim().split_whitespace().collect();
+        let pre_result: Vec<&str> = part.split_whitespace().collect();
 
         let result = if pre_result.contains(&"!panic") {
             SolTestResult::Panic
@@ -215,21 +215,21 @@ fn str_to_movevalue(value: &str) -> Result<MoveValue> {
         s if s.ends_with("u8") => {
             let v = s
                 .trim_end_matches("u8")
-                .trim_end_matches("_")
+                .trim_end_matches('_')
                 .parse::<u8>()?;
             MoveValue::U8(v)
         }
         s if s.ends_with("u64") => {
             let v = s
                 .trim_end_matches("u64")
-                .trim_end_matches("_")
+                .trim_end_matches('_')
                 .parse::<u64>()?;
             MoveValue::U64(v)
         }
         s if s.ends_with("u128") => {
             let v = s
                 .trim_end_matches("u128")
-                .trim_end_matches("_")
+                .trim_end_matches('_')
                 .parse::<u128>()?;
             MoveValue::U128(v)
         }

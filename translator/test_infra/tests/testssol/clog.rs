@@ -20,7 +20,7 @@ impl CustLogger {
             *data = Vec::new();
             return output;
         }
-        return String::new();
+        String::new()
     }
 }
 
@@ -49,9 +49,7 @@ impl log::Log for CustLogger {
             content = format!("{pref} {content}");
         }
 
-        if !buff.contains_key(&id) {
-            buff.insert(id, Vec::new());
-        }
+        buff.entry(id).or_insert_with(Vec::new);
         buff.get_mut(&id).unwrap().push(content);
     }
 

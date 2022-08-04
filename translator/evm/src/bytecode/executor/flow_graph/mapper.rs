@@ -13,7 +13,7 @@ pub fn map_flow(elements: Vec<CndBranch>) -> Flow {
         .map(|flow| (flow.block(), flow))
         .collect::<BTreeMap<BlockId, CndBranch>>();
 
-    let first_block = blocks.keys().next().unwrap().clone();
+    let first_block = *blocks.keys().next().unwrap();
     let first_block = blocks.remove(&first_block).unwrap();
 
     let flow = map_block(first_block, &mut blocks);
@@ -44,10 +44,10 @@ fn map_if_brunch(branch: &Branch, branch_map: &BTreeMap<BlockId, CndBranch>) -> 
     }
     if branch.is_loop {
         Flow::Loop(LoopFlow {
-            loop_br: Box::new(Flow::Sequence(map_branch(&blocks, branch_map))),
+            loop_br: Box::new(Flow::Sequence(map_branch(blocks, branch_map))),
         })
     } else {
-        Flow::Sequence(map_branch(&blocks, branch_map))
+        Flow::Sequence(map_branch(blocks, branch_map))
     }
 }
 

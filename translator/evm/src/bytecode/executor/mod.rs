@@ -10,7 +10,7 @@ use crate::bytecode::instruction::Instruction;
 use anyhow::{anyhow, ensure, Error};
 use log::log_enabled;
 use log::Level;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 pub mod debug;
 pub mod env;
@@ -51,12 +51,12 @@ impl<'a> StaticExecutor<'a> {
     }
 
     pub fn exec(&mut self, fun: Function) -> Result<FunctionFlow, Error> {
-        let executor = ExecutorV2::new(self.contract);
+        let _executor = ExecutorV2::new(self.contract);
         //executor.exec(fun.clone());
 
         let env = Env::new(fun);
-        let mut pred = flow_graph::FlowBuilder::new(&self.contract);
-        let flow = pred.make_flow();
+        let mut pred = flow_graph::FlowBuilder::new(self.contract);
+        let _flow = pred.make_flow();
 
         let mut flow = FunctionFlow::default();
         let next_block = BlockId::default();

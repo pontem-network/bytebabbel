@@ -126,7 +126,7 @@ impl<'a> FlowBuilder<'a> {
                         return Next::Stop
                     }
                     OpCode::Dup(_) => {
-                        let new_item = ops[ops.len() - 1].clone();
+                        let new_item = ops[ops.len() - 1];
                         ops.insert(0, new_item);
                         self.push_stack(ops);
                     }
