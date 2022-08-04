@@ -25,7 +25,7 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
 
     let blocks = BlockIter::new(InstructionIter::new(bytecode))
         .map(|block| (BlockId::from(block.start), block))
-        .collect::<BTreeMap<_, _>>();
+        .collect::<HashMap<_, _>>();
     let (blocks, ctor) = ctor::split(blocks)?;
 
     let mut executor = StaticExecutor::new(&blocks);

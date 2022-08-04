@@ -5,11 +5,12 @@ use crate::bytecode::executor::instructions::execute;
 use crate::bytecode::executor::mem::Memory;
 use crate::bytecode::executor::stack::{Frame, Stack, StackFrame, FRAME_SIZE};
 use crate::bytecode::executor::types::U256;
+use crate::bytecode::executor::v2::ExecutorV2;
 use crate::bytecode::instruction::Instruction;
 use anyhow::{anyhow, ensure, Error};
 use log::log_enabled;
 use log::Level;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 pub mod debug;
 pub mod env;
@@ -21,16 +22,17 @@ pub mod mem;
 pub mod ops;
 pub mod stack;
 pub mod types;
+pub mod v2;
 
 pub struct StaticExecutor<'a> {
     mem: Memory,
     stack: Stack,
-    contract: &'a BTreeMap<BlockId, InstructionBlock>,
+    contract: &'a HashMap<BlockId, InstructionBlock>,
     new_code_offset: Option<BlockId>,
 }
 
 impl<'a> StaticExecutor<'a> {
-    pub fn new(contract: &'a BTreeMap<BlockId, InstructionBlock>) -> StaticExecutor {
+    pub fn new(contract: &'a HashMap<BlockId, InstructionBlock>) -> StaticExecutor {
         StaticExecutor {
             mem: Memory::default(),
             stack: Stack::default(),
@@ -49,6 +51,9 @@ impl<'a> StaticExecutor<'a> {
     }
 
     pub fn exec(&mut self, fun: Function) -> Result<FunctionFlow, Error> {
+        let executor = ExecutorV2::new(self.contract);
+        //executor.exec(fun.clone());
+
         let env = Env::new(fun);
         let mut pred = flow_graph::FlowBuilder::new(&self.contract);
         let flow = pred.make_flow();

@@ -3,12 +3,12 @@ use crate::bytecode::executor::StaticExecutor;
 use crate::bytecode::loc::Move;
 use crate::OpCode;
 use anyhow::Error;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
-type Blocks = BTreeMap<BlockId, InstructionBlock>;
+type Blocks = HashMap<BlockId, InstructionBlock>;
 
 pub fn split(
-    blocks: BTreeMap<BlockId, InstructionBlock>,
+    blocks: HashMap<BlockId, InstructionBlock>,
 ) -> Result<(Blocks, Option<Blocks>), Error> {
     let code_reallocation = blocks
         .iter()
@@ -20,7 +20,7 @@ pub fn split(
     if let Some(code_copy) = StaticExecutor::new(&blocks).find_next_entry_point()? {
         println!("Code copy detected at {}", code_copy.0 * 2);
         let (main, ctor) = blocks.into_iter().fold(
-            (BTreeMap::new(), BTreeMap::new()),
+            (HashMap::new(), HashMap::new()),
             |(mut main, mut ctor), (block_id, mut block)| {
                 if block_id >= code_copy {
                     block.move_back(code_copy.0);

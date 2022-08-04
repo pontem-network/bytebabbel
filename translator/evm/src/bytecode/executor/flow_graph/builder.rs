@@ -3,17 +3,17 @@ use crate::bytecode::executor::flow_graph::flow::Flow;
 use crate::bytecode::executor::flow_graph::mapper::map_flow;
 use crate::bytecode::executor::types::U256;
 use crate::{BlockId, OpCode};
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::usize;
 
 pub struct FlowBuilder<'a> {
     call_stack: Vec<BlockId>,
     block: BlockId,
-    blocks: &'a BTreeMap<BlockId, InstructionBlock>,
+    blocks: &'a HashMap<BlockId, InstructionBlock>,
 }
 
 impl<'a> FlowBuilder<'a> {
-    pub fn new(blocks: &'a BTreeMap<BlockId, InstructionBlock>) -> FlowBuilder<'a> {
+    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>) -> FlowBuilder<'a> {
         FlowBuilder {
             call_stack: Vec::new(),
             block: Default::default(),
