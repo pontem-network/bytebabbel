@@ -1,4 +1,4 @@
-use crate::bytecode::executor::flow_graph::flow::Flow;
+use crate::bytecode::flow_graph::flow::Flow;
 use anyhow::Error;
 use log::log_enabled;
 use log::Level;

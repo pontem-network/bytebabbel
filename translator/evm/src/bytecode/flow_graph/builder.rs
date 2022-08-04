@@ -1,7 +1,7 @@
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::executor::flow_graph::flow::Flow;
-use crate::bytecode::executor::flow_graph::mapper::map_flow;
 use crate::bytecode::executor::types::U256;
+use crate::bytecode::flow_graph::flow::Flow;
+use crate::bytecode::flow_graph::mapper::map_flow;
 use crate::{BlockId, OpCode};
 use std::collections::{HashMap, VecDeque};
 use std::usize;
@@ -25,6 +25,7 @@ impl<'a> FlowBuilder<'a> {
         let mut cnd_branches = Vec::new();
 
         let mut branch_stack: Vec<BranchingState> = Vec::new();
+        let mut root = Vec::<BlockId>::new();
 
         self.block = BlockId::default();
         'pc: loop {
@@ -32,6 +33,10 @@ impl<'a> FlowBuilder<'a> {
 
             for branch in branch_stack.iter_mut() {
                 branch.push_block(self.block);
+            }
+
+            if branch_stack.is_empty() && !cnd_branches.is_empty() {
+                root.push(self.block);
             }
 
             match next {
@@ -97,7 +102,17 @@ impl<'a> FlowBuilder<'a> {
                 }
             }
         }
-        map_flow(cnd_branches)
+
+        if root.is_empty() {
+            map_flow(cnd_branches)
+        } else {
+            Flow::Sequence(
+                root.into_iter()
+                    .map(|block| Flow::Block(block))
+                    .chain([map_flow(cnd_branches)])
+                    .collect(),
+            )
+        }
     }
 
     fn pop_stack(&mut self, count: usize) -> Vec<BlockId> {

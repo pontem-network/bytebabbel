@@ -1,4 +1,4 @@
-use crate::bytecode::executor::flow_graph::builder::CndJmp;
+use crate::bytecode::flow_graph::builder::CndJmp;
 use crate::BlockId;
 
 #[derive(Debug, Clone)]

@@ -5,7 +5,7 @@ use crate::bytecode::executor::stack::FRAME_SIZE;
 use crate::bytecode::executor::types::U256;
 use anyhow::{bail, Error};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Env {
     fun: Function,
 }
@@ -24,7 +24,7 @@ impl Env {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct Function {
     pub hash: FunHash,
     pub name: String,
@@ -32,6 +32,7 @@ pub struct Function {
     pub output_size: Vec<EthType>,
 }
 
+#[derive(Debug, Clone)]
 pub enum EthType {
     U256,
     Bool,

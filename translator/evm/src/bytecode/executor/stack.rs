@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 pub const FRAME_SIZE: usize = 32;
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Stack {
     pub stack: Vec<StackFrame>,
 }

@@ -1,6 +1,6 @@
-use crate::bytecode::executor::flow_graph::builder::{Branch, CndBranch};
-use crate::bytecode::executor::flow_graph::debug::log_flow;
-use crate::bytecode::executor::flow_graph::flow::{Flow, IfFlow, LoopFlow};
+use crate::bytecode::flow_graph::builder::{Branch, CndBranch};
+use crate::bytecode::flow_graph::debug::log_flow;
+use crate::bytecode::flow_graph::flow::{Flow, IfFlow, LoopFlow};
 use crate::BlockId;
 use std::collections::BTreeMap;
 
