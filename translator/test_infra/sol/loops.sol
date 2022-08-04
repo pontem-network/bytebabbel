@@ -19,6 +19,19 @@ library  Loop {
 //        }
 //    }
 
+//    function for_loop(uint n) public pure returns(uint) {
+//        uint val = 0;
+//        uint bff = 0;
+//        for (uint i = 0; i < n; i++) {
+//            for (uint j = 0; j < n; j++) {
+//                val += i * j;
+//                bff += i + j;
+//            }
+//        }
+//
+//        return val + bff;
+//    }
+
     function for_loop(uint i) public pure returns (uint) {
         uint val = 0;
         for (uint j = 0; j < i; j++) {

@@ -13,11 +13,11 @@ use std::collections::BTreeMap;
 pub mod debug;
 pub mod env;
 pub mod execution;
+pub mod flow_graph;
 pub mod history;
 pub mod instructions;
 pub mod mem;
 pub mod ops;
-pub mod predictor;
 pub mod stack;
 pub mod types;
 
@@ -48,10 +48,11 @@ impl<'a> StaticExecutor<'a> {
     }
 
     pub fn exec(&mut self, fun: Function) -> Result<FunctionFlow, Error> {
-        let mut pred = predictor::Predictor::new(&self.contract);
-        let flow = pred.find_elements();
-        println!("{:?}", flow);
         let env = Env::new(fun);
+        let mut pred = flow_graph::FlowBuilder::new(&self.contract);
+        let flow = pred.make_flow();
+
+        println!("{:?}", flow);
         let mut flow = FunctionFlow::default();
         let next_block = BlockId::default();
         self.exec_with_ctx(&env, &mut flow, next_block)?;

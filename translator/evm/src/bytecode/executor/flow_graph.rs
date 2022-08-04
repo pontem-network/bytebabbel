@@ -1,32 +1,33 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::executor::types::U256;
 use crate::{BlockId, OpCode};
+use anyhow::Error;
 use std::collections::{BTreeMap, VecDeque};
+use std::fmt::Write;
 use std::usize;
 
-pub struct Predictor<'a> {
+pub struct FlowBuilder<'a> {
     call_stack: Vec<BlockId>,
     block: BlockId,
     blocks: &'a BTreeMap<BlockId, InstructionBlock>,
 }
 
-impl<'a> Predictor<'a> {
-    pub fn new(blocks: &'a BTreeMap<BlockId, InstructionBlock>) -> Predictor<'a> {
-        Predictor {
+impl<'a> FlowBuilder<'a> {
+    pub fn new(blocks: &'a BTreeMap<BlockId, InstructionBlock>) -> FlowBuilder<'a> {
+        FlowBuilder {
             call_stack: Vec::new(),
             block: Default::default(),
             blocks,
         }
     }
 
-    pub fn find_elements(&mut self) -> Vec<Flow> {
+    pub fn make_flow(&mut self) -> Vec<Flow> {
         let mut cnd_branches = Vec::new();
 
         let mut branch_stack: Vec<BranchingState> = Vec::new();
 
         self.block = BlockId::default();
         'pc: loop {
-            println!("Block: {}", self.block);
             let next = self.exec_block();
 
             for branch in branch_stack.iter_mut() {
@@ -38,7 +39,6 @@ impl<'a> Predictor<'a> {
                     self.block = next;
                 }
                 Next::Stop => 'branch: loop {
-                    println!("Stop:{}", self.block);
                     if let Some(branching) = branch_stack.pop() {
                         let branching = branching.set_end(self.block);
                         self.call_stack = branching.stack().clone();
@@ -65,7 +65,10 @@ impl<'a> Predictor<'a> {
                         .unwrap_or_default();
 
                     if loop_br {
-                        println!("Loop detected at {}", self.block);
+                        for branch in branch_stack.iter_mut() {
+                            branch.pop_block();
+                        }
+
                         'branch: loop {
                             if let Some(branching) = branch_stack.pop() {
                                 let branching = branching.set_end(self.block);
@@ -94,7 +97,7 @@ impl<'a> Predictor<'a> {
                 }
             }
         }
-        Self::canonize(cnd_branches)
+        Self::map_cnd_branches(cnd_branches)
     }
 
     fn pop_stack(&mut self, count: usize) -> Vec<BlockId> {
@@ -157,12 +160,10 @@ impl<'a> Predictor<'a> {
         }
     }
 
-    fn canonize(elements: Vec<CndBranch>) -> Vec<Flow> {
+    fn map_cnd_branches(elements: Vec<CndBranch>) -> Vec<Flow> {
         if elements.is_empty() {
             return vec![];
         }
-        println!("blocks: {:?}", elements);
-
         let mut blocks = elements
             .into_iter()
             .map(|flow| (flow.block(), flow))
@@ -171,47 +172,50 @@ impl<'a> Predictor<'a> {
         let first_block = blocks.keys().next().unwrap().clone();
         let first_block = blocks.remove(&first_block).unwrap();
 
-        let flow = Self::canonize_block(first_block, &mut blocks);
-        println!("flow: {:?}", flow);
+        let flow = Self::map_block(first_block, &mut blocks);
+
+        let mut buffer = String::new();
+        print_flows(&mut buffer, &flow, 0).unwrap();
+        println!("{}", buffer);
+
         flow
     }
 
-    fn canonize_block(element: CndBranch, blocks: &BTreeMap<BlockId, CndBranch>) -> Vec<Flow> {
-        Self::canonize_if(element, blocks)
+    fn map_block(element: CndBranch, blocks: &BTreeMap<BlockId, CndBranch>) -> Vec<Flow> {
+        Self::map_if(element, blocks)
     }
 
-    fn canonize_if(mut if_block: CndBranch, blocks: &BTreeMap<BlockId, CndBranch>) -> Vec<Flow> {
+    fn map_if_brunch(branch: &Branch, branch_map: &BTreeMap<BlockId, CndBranch>) -> Vec<Flow> {
+        let blocks = &branch.blocks;
+        if blocks.is_empty() {
+            return vec![];
+        }
+        if branch.is_loop {
+            vec![Flow::Loop(LoopFlow {
+                loop_br: Self::map_branch(&blocks, branch_map),
+            })]
+        } else {
+            Self::map_branch(&blocks, branch_map)
+        }
+    }
+
+    fn map_if(mut if_block: CndBranch, branch_map: &BTreeMap<BlockId, CndBranch>) -> Vec<Flow> {
         let common_tail = if_block.take_common_fail().into_iter().collect::<Vec<_>>();
-
-        let true_br = if !if_block.true_br.blocks.is_empty() {
-            Self::canonize_branch(&if_block.true_br.blocks, blocks)
-        } else {
-            vec![]
-        };
-
-        let false_br = if !if_block.false_br.blocks.is_empty() {
-            Self::canonize_branch(&if_block.false_br.blocks, blocks)
-        } else {
-            vec![]
-        };
 
         let mut seq = vec![];
         seq.push(Flow::IF(IfFlow {
             jmp: if_block.jmp,
-            true_br,
-            false_br,
+            true_br: Self::map_if_brunch(&if_block.true_br, branch_map),
+            false_br: Self::map_if_brunch(&if_block.false_br, branch_map),
         }));
 
         if !common_tail.is_empty() {
-            seq.extend(Self::canonize_branch(&common_tail, blocks));
+            seq.extend(Self::map_branch(&common_tail, branch_map));
         }
         seq
     }
 
-    fn canonize_branch(
-        mut blocks: &[BlockId],
-        elements: &BTreeMap<BlockId, CndBranch>,
-    ) -> Vec<Flow> {
+    fn map_branch(blocks: &[BlockId], elements: &BTreeMap<BlockId, CndBranch>) -> Vec<Flow> {
         let mut seq = Vec::new();
         if blocks.is_empty() {
             return seq;
@@ -225,11 +229,11 @@ impl<'a> Predictor<'a> {
 
             let block = blocks[index];
             if let Some(element) = elements.get(&block) {
-                seq.extend(Self::canonize_block(element.clone(), elements));
+                seq.extend(Self::map_block(element.clone(), elements));
                 index += element.len();
             } else {
                 index += 1;
-                seq.push(Flow::Sec(block));
+                seq.push(Flow::Block(block));
             }
         }
         seq
@@ -241,18 +245,18 @@ pub enum BranchingState {
     JumpIf {
         jmp: CndJmp,
         stack: Vec<BlockId>,
-        true_br: Brunch,
+        true_br: Branch,
     },
     TrueBranch {
         jmp: CndJmp,
-        true_br: Brunch,
-        false_br: Brunch,
+        true_br: Branch,
+        false_br: Branch,
         stack: Vec<BlockId>,
     },
     IF {
         jmp: CndJmp,
-        true_br: Brunch,
-        false_br: Brunch,
+        true_br: Branch,
+        false_br: Branch,
         stack: Vec<BlockId>,
     },
 }
@@ -266,7 +270,7 @@ impl BranchingState {
                 false_br,
             },
             stack,
-            true_br: Brunch::default(),
+            true_br: Branch::default(),
         }
     }
 
@@ -359,6 +363,18 @@ impl BranchingState {
         }
     }
 
+    pub fn pop_block(&mut self) {
+        match self {
+            BranchingState::JumpIf { true_br, .. } => {
+                true_br.blocks.pop();
+            }
+            BranchingState::TrueBranch { false_br, .. } => {
+                false_br.blocks.pop();
+            }
+            BranchingState::IF { .. } => {}
+        }
+    }
+
     pub fn jmp(&self) -> &CndJmp {
         match self {
             BranchingState::JumpIf { jmp, .. } => jmp,
@@ -378,18 +394,18 @@ pub struct CndJmp {
 #[derive(Debug, Clone)]
 pub struct CndBranch {
     jmp: CndJmp,
-    true_br: Brunch,
-    false_br: Brunch,
+    true_br: Branch,
+    false_br: Branch,
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct Brunch {
-    end: BlockId,
-    blocks: Vec<BlockId>,
-    is_loop: bool,
+pub struct Branch {
+    pub end: BlockId,
+    pub blocks: Vec<BlockId>,
+    pub is_loop: bool,
 }
 
-impl Brunch {
+impl Branch {
     pub fn set_end(&mut self, end: BlockId) {
         self.end = end;
     }
@@ -438,8 +454,8 @@ impl CndBranch {
 }
 
 #[derive(Debug, Clone)]
-pub struct Loop {
-    jmp: CndJmp,
+pub struct LoopFlow {
+    loop_br: Vec<Flow>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -461,9 +477,10 @@ impl CndBranch {
 
 #[derive(Debug, Clone)]
 pub enum Flow {
-    Sec(BlockId),
-    Loop(Loop),
+    Block(BlockId),
+    Loop(LoopFlow),
     IF(IfFlow),
+    Sequence(Vec<Flow>),
 }
 
 #[derive(Debug, Clone)]
@@ -473,64 +490,33 @@ pub struct IfFlow {
     pub false_br: Vec<Flow>,
 }
 
-/*
-if 0000 {
-    0035 +
-} else {
-    if 0024 { +
-        003a +
-        if 00ed { +
-            0103 +
-            00d8 +
-            00c1 +
-            00b7 +
-            if 00ca { +
-               00d5 +
-               00e7 +
-               0111
-               004f
-               006a
-               if 0074 {
-                  00a8,0054, 0129, 011a,00b7,0123,013e, 0061
-               } else {
-                  007d,0173,00b7,017e,00b7,
-                  if 0189 {
-                    01c2,0088,01cd,00b7,01d8,00b7,
-                    if 01e3 {
-                        0218, 0093, 0223, 00b7
-                        if 022e {
-                            0260, 00a0, 0074
-                        } else {
-                            0258, 0144
-                        }
-                    } else {
-                      0210, 0144
-                    }
-                  } else {
-                    01ba, 0144
-                  }
-               }
-            } else {
-               00d1
-            }
-        } else {
-           00fb, 00b2
-        }
-    } else {
-        0035
+fn print_flows<W: Write>(buf: &mut W, vec: &[Flow], width: usize) -> Result<(), Error> {
+    for flow in vec {
+        print_flow(buf, flow, width)?;
     }
+    Ok(())
 }
 
-blocks: [
-CndBranch { jmp: CndJmp { block: 022e, true_br: 0260, false_br: 0258 }, true_br: Brunch { end: 0074, blocks: [0260, 00a0, 0074], is_loop: false }, false_br: Brunch { end: 0144, blocks: [0258, 0144], is_loop: false } },
-CndBranch { jmp: CndJmp { block: 01e3, true_br: 0218, false_br: 0210 }, true_br: Brunch { end: 0144, blocks: [0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144], is_loop: false }, false_br: Brunch { end: 0144, blocks: [0210, 0144], is_loop: false } },
-
-CndBranch { jmp: CndJmp { block: 0189, true_br: 01c2, false_br: 01ba }, true_br: Brunch { end: 0144, blocks: [01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144], is_loop: false }, false_br: Brunch { end: 0144, blocks: [01ba, 0144], is_loop: false } },
-
-CndBranch { jmp: CndJmp { block: 0074, true_br: 00a8, false_br: 007d }, true_br: Brunch { end: 0061, blocks: [00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061], is_loop: false }, false_br: Brunch { end: 0144, blocks: [007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144], is_loop: false } },
-CndBranch { jmp: CndJmp { block: 00ca, true_br: 00d5, false_br: 00d1 }, true_br: Brunch { end: 0144, blocks: [00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144], is_loop: false }, false_br: Brunch { end: 00d1, blocks: [00d1], is_loop: false } },
-CndBranch { jmp: CndJmp { block: 00ed, true_br: 0103, false_br: 00fb }, true_br: Brunch { end: 00d1, blocks: [0103, 00d8, 00c1, 00b7, 00ca, 00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144, 00d1], is_loop: false }, false_br: Brunch { end: 00b2, blocks: [00fb, 00b2], is_loop: false } },
-CndBranch { jmp: CndJmp { block: 0024, true_br: 003a, false_br: 0035 }, true_br: Brunch { end: 00b2, blocks: [003a, 00ed, 0103, 00d8, 00c1, 00b7, 00ca, 00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144, 00d1, 00fb, 00b2], is_loop: false }, false_br: Brunch { end: 0035, blocks: [0035], is_loop: false } },
-CndBranch { jmp: CndJmp { block: 0000, true_br: 0035, false_br: 0024 }, true_br: Brunch { end: 0035, blocks: [0035], is_loop: false }, false_br: Brunch { end: 0035, blocks: [0024, 003a, 00ed, 0103, 00d8, 00c1, 00b7, 00ca, 00d5, 00e7, 0111, 004f, 006a, 0074, 00a8, 0054, 0129, 011a, 00b7, 0123, 013e, 0061, 007d, 0173, 00b7, 017e, 00b7, 0189, 01c2, 0088, 01cd, 00b7, 01d8, 00b7, 01e3, 0218, 0093, 0223, 00b7, 022e, 0260, 00a0, 0074, 0258, 0144, 0210, 0144, 01ba, 0144, 00d1, 00fb, 00b2, 0035], is_loop: false } }]
-
- */
+fn print_flow<W: Write>(buf: &mut W, flow: &Flow, width: usize) -> Result<(), Error> {
+    match flow {
+        Flow::Block(seq) => {
+            writeln!(buf, "{:width$}0x{}", " ", seq)?;
+        }
+        Flow::Loop(loop_) => {
+            writeln!(buf, "{:width$}loop {{", " ")?;
+            print_flows(buf, &loop_.loop_br, width + 4)?;
+            writeln!(buf, "{:width$}}}", " ")?;
+        }
+        Flow::IF(if_) => {
+            writeln!(buf, "{:width$}if ({}) {{", " ", if_.jmp.block)?;
+            print_flows(buf, &if_.true_br, width + 4)?;
+            writeln!(buf, "{:width$}}} else {{", " ")?;
+            print_flows(buf, &if_.false_br, width + 4)?;
+            writeln!(buf, "{:width$}}}", " ")?;
+        }
+        Flow::Sequence(flow) => {
+            print_flows(buf, flow, width)?;
+        }
+    }
+    Ok(())
+}
