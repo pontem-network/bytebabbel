@@ -5,9 +5,9 @@ use crate::bytecode::executor::instructions::execute;
 use crate::bytecode::executor::mem::Memory;
 use crate::bytecode::executor::stack::{Frame, Stack, StackFrame, FRAME_SIZE};
 use crate::bytecode::executor::types::U256;
-use crate::bytecode::executor::v2::LlIrTranslator;
 use crate::bytecode::flow_graph;
 use crate::bytecode::instruction::Instruction;
+use crate::bytecode::llir::Translator;
 use anyhow::{anyhow, ensure, Error};
 use log::log_enabled;
 use log::Level;
@@ -22,7 +22,6 @@ pub mod mem;
 pub mod ops;
 pub mod stack;
 pub mod types;
-pub mod v2;
 
 pub struct StaticExecutor<'a> {
     mem: Memory,
@@ -51,13 +50,7 @@ impl<'a> StaticExecutor<'a> {
     }
 
     pub fn exec(&mut self, fun: Function) -> Result<FunctionFlow, Error> {
-        let mut executor = LlIrTranslator::new(self.contract);
-        executor.make_ir(fun.clone())?;
-
         let env = Env::new(fun);
-        let mut pred = flow_graph::FlowBuilder::new(self.contract);
-        let _flow = pred.make_flow();
-
         let mut flow = FunctionFlow::default();
         let next_block = BlockId::default();
         self.exec_with_ctx(&env, &mut flow, next_block)?;

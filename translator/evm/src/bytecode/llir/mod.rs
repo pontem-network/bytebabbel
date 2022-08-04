@@ -1,32 +1,31 @@
-mod context;
-mod ir;
+pub mod context;
+pub mod ir;
 
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::executor::env::Env;
 use crate::bytecode::executor::mem::Memory;
 use crate::bytecode::executor::stack::Stack;
-use crate::bytecode::executor::v2::context::Context;
 use crate::bytecode::flow_graph::{Flow, FlowBuilder};
+use crate::bytecode::llir::context::Context;
+use crate::bytecode::llir::ir::Ir;
 use crate::{BlockId, Function, FunctionFlow};
 use anyhow::{anyhow, Error};
-use ir::Ir;
 use std::collections::HashMap;
 
-pub struct LlIrTranslator<'a> {
+pub struct Translator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
     contact_flow: Flow,
 }
 
-impl<'a> LlIrTranslator<'a> {
-    pub fn new(contract: &'a HashMap<BlockId, InstructionBlock>) -> LlIrTranslator {
-        let flow = FlowBuilder::new(contract).make_flow();
-        LlIrTranslator {
+impl<'a> Translator<'a> {
+    pub fn new(contract: &'a HashMap<BlockId, InstructionBlock>, contact_flow: Flow) -> Translator {
+        Translator {
             contract,
-            contact_flow: flow,
+            contact_flow,
         }
     }
 
-    pub fn make_ir(&self, fun: Function) -> Result<Ir, Error> {
+    pub fn translate(&self, fun: Function) -> Result<Ir, Error> {
         let mut ctx = Context::new(fun);
         self.exec_flow(&self.contact_flow, &mut ctx)
     }

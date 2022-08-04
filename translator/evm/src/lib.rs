@@ -6,6 +6,9 @@ use crate::bytecode::ctor;
 use crate::bytecode::executor::env::Function;
 use crate::bytecode::executor::execution::FunctionFlow;
 use crate::bytecode::executor::StaticExecutor;
+use crate::bytecode::flow_graph::FlowBuilder;
+use crate::bytecode::llir::ir::Ir;
+use crate::bytecode::llir::Translator;
 use crate::program::Program;
 use anyhow::Error;
 use bytecode::block::BlockIter;
@@ -26,19 +29,30 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
     let blocks = BlockIter::new(InstructionIter::new(bytecode))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
-    let (blocks, ctor) = ctor::split(blocks)?;
+    let (contract, ctor) = ctor::split(blocks)?;
 
-    let mut executor = StaticExecutor::new(&blocks);
+    let mut contract_flow = FlowBuilder::new(&contract).make_flow();
+    let llir = Translator::new(&contract, contract_flow);
+
+    let mut old_executor = StaticExecutor::new(&contract);
+
     let functions = abi
         .fun_hashes()
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
         .map(|(h, entry)| {
             Function::try_from((h, entry))
-                .and_then(|f| executor.exec(f))
+                .and_then(|f| {
+                    translate_function(&llir, f.clone()).unwrap();
+                    old_executor.exec(f)
+                })
                 .map(|res| (h, res))
         })
         .collect::<Result<HashMap<FunHash, FunctionFlow>, _>>()?;
     Program::new(name, functions, ctor, abi)
+}
+
+pub fn translate_function(llir: &Translator, fun: Function) -> Result<Ir, Error> {
+    llir.translate(fun)
 }
 
 pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {
