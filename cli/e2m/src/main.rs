@@ -1,18 +1,22 @@
 use anyhow::Result;
 use clap::Parser;
 
+pub mod aptos_commands;
 pub mod convert;
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[clap(version, about)]
 pub enum Args {
     Translator(convert::Converting),
+
+    #[clap(subcommand)]
+    Aptos(Box<aptos_commands::Tools>),
 }
 
 fn main() {
     match run() {
-        Ok(path) => {
-            println!("Saved in {path:?}");
+        Ok(result) => {
+            println!("{result}");
         }
         Err(err) => {
             println!("Error: {err:?}");
@@ -25,7 +29,7 @@ fn run() -> Result<String> {
     env_logger::init();
 
     match args {
-        Args::Translator(data) => data.execute(),
-        _ => todo!(),
+        Args::Translator(data) => data.execute().map(|path| format!("Saved in: {path:?}")),
+        Args::Aptos(data) => data.execute(),
     }
 }

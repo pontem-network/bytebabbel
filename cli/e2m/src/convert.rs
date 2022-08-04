@@ -3,12 +3,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command as cli;
 
-use anyhow::{anyhow, bail, Error, Result};
+use anyhow::{anyhow, bail, Result};
 use clap::Parser;
 
 use move_core_types::account_address::AccountAddress;
 
-use translator::{translate, Math};
+use translator::translate;
 
 /// Converting the file solidity to binary code move
 #[derive(Parser, Debug)]
