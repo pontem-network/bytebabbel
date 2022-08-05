@@ -63,7 +63,7 @@ enum ProfileValue {
 impl ProfileValue {
     pub fn to_address(&self) -> Result<AccountAddress> {
         let address = match self {
-            ProfileValue::Address(address) => address.clone(),
+            ProfileValue::Address(address) => *address,
             ProfileValue::Profile(profile_name) => {
                 let aptos_account = ProfileValue::profile(profile_name)?.account
                 .ok_or_else(|| {
