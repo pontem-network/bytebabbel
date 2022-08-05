@@ -4,63 +4,19 @@ use std::path::{Path, PathBuf};
 use std::process::Command as cli;
 
 use anyhow::{anyhow, bail, Result};
-use clap::Parser;
 
-use move_core_types::account_address::AccountAddress;
-
+use crate::Args;
 use translator::translate;
 
-/// Converting the file solidity to binary code move
-#[derive(Parser, Debug)]
-pub struct Converting {
-    /// Path to the file. Specify the path to sol file or abi|bin.
-    #[clap(value_parser)]
-    path: PathBuf,
-
-    /// Where to save the converted move binary code
-    #[clap(short, long = "output", display_order = 3, value_parser)]
-    output_path: Option<PathBuf>,
-
-    /// The name of the Move module. If not specified, the name will be taken from the abi path
-    #[clap(long = "module", display_order = 4, value_parser)]
-    move_module_name: Option<String>,
-
-    /// Profile name or address. The address must start with "0x". Needed for the module address
-    #[clap(
-        long = "profile",
-        display_order = 5,
-        short = 'p',
-        default_value = "default",
-        value_parser
-    )]
-    profile_or_address: String,
-
-    /// Math backend.
-    #[clap(long = "math", short = 'm', default_value = "u128", value_parser)]
-    math_backend: String,
-}
-
-impl Converting {
-    pub fn execute(&self) -> Result<String> {
+impl Args {
+    pub fn convert(&self) -> Result<PathBuf> {
         let paths = path_to_abibin(&self.path)?;
         let output_path = self.output_path.clone().unwrap_or_else(|| {
             let filename = path_to_filename(&paths.abi).unwrap();
             PathBuf::from("./").join(filename).with_extension("mv")
         });
 
-        let address = if self.profile_or_address.starts_with("0x") {
-            AccountAddress::from_hex_literal(&self.profile_or_address)?
-        } else {
-            let aptos_account = aptos::common::types::CliConfig::load_profile(&self.profile_or_address)?
-                .and_then(|profile| profile.account)
-                .ok_or_else(|| {
-                    anyhow!(
-                        "Profile {:?} not found. To create a profile, use: $ e2m aptos init --profile <NAME>",
-                        &self.profile_or_address
-                    )
-                })?;
-            AccountAddress::from_bytes(&aptos_account.into_bytes())?
-        };
+        let address = self.profile_or_address.to_address()?;
 
         let module_name = self
             .move_module_name
@@ -81,7 +37,7 @@ impl Converting {
 
         paths.delete_tmp_dir();
 
-        Ok(output_path.to_string_lossy().to_string())
+        Ok(output_path)
     }
 }
 
