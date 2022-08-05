@@ -7,3 +7,4 @@ pub mod llir;
 pub mod loc;
 pub mod ops;
 pub mod swarm;
+pub mod types;

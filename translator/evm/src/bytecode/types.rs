@@ -1,9 +1,12 @@
+#![allow(clippy::assign_op_pattern)]
+#![allow(clippy::ptr_offset_with_cast)]
+
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::Param as AbiType;
 use crate::abi::{Entry, FunHash};
-use crate::bytecode::executor::stack::FRAME_SIZE;
-use crate::bytecode::executor::types::U256;
+use crate::bytecode::llir::stack::FRAME_SIZE;
 use anyhow::{bail, Error};
+use uint::construct_uint;
 
 #[derive(Default, Debug)]
 pub struct Env {
@@ -70,4 +73,8 @@ impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
                 .collect::<Result<Vec<_>, _>>()?,
         })
     }
+}
+
+construct_uint! {
+    pub struct U256(4);
 }

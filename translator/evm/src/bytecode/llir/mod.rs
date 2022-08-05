@@ -1,15 +1,17 @@
 pub mod context;
+pub mod executor;
 pub mod ir;
+pub mod mem;
+mod ops;
+pub mod stack;
 
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::executor::env::Env;
-use crate::bytecode::executor::mem::Memory;
-use crate::bytecode::executor::stack::Stack;
-use crate::bytecode::flow_graph::{Flow, FlowBuilder};
+use crate::bytecode::flow_graph::Flow;
 use crate::bytecode::llir::context::Context;
 use crate::bytecode::llir::ir::Ir;
-use crate::{BlockId, Function, FunctionFlow};
-use anyhow::{anyhow, Error};
+use crate::bytecode::types::Function;
+use crate::BlockId;
+use anyhow::{anyhow, ensure, Error};
 use std::collections::HashMap;
 
 pub struct Translator<'a> {
@@ -50,7 +52,39 @@ impl<'a> Translator<'a> {
 
     fn exec_block(&self, id: &BlockId, ctx: &mut Context) -> Result<Ir, Error> {
         let block = self.get_block(&id)?;
+        for inst in block.iter() {
+            let pops = inst.pops();
+            let pushes = inst.pushes();
+            let mut params = ctx.pop_stack(pops);
+            ensure!(pops == params.len(), "Invalid stake state.");
+            executor::execute(inst, params, ctx);
+        }
 
         todo!()
     }
+
+    // fn exec_instruction(
+    //     &mut self,
+    //     inst: &Instruction,
+    //     env: &Env,
+    //     next_block: BlockId,
+    // ) -> Result<Option<ExecResult>, Error> {
+    //     log::trace!("{}", inst);
+    //     let pops = inst.pops();
+    //     let mut input = self.stack.pop(pops);
+    //     ensure!(pops == input.len(), "Invalid stake state.");
+    //     let mut ctx = Context {
+    //         executor: self,
+    //         input: &mut input,
+    //         env,
+    //         next_block,
+    //         result: None,
+    //     };
+    //     let pushes = execute(inst, &mut ctx)?;
+    //     let result = ctx.result.take();
+    //     ensure!(pushes.len() == inst.pushes(), "Invalid stake state.");
+    //     self.print_stack(&input, &pushes);
+    //     self.stack.push(pushes);
+    //     Ok(result)
+    // }
 }

@@ -4,7 +4,7 @@ use crate::function::code::intrinsic::math::{
 };
 use crate::function::signature::SignatureWriter;
 use evm::bytecode::executor::ops::{BinaryOp, UnaryOp};
-use evm::bytecode::executor::types::U256;
+use evm::bytecode::types::U256;
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken};
 
 const EU128_OVERFLOW: u64 = 1;

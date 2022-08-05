@@ -1,7 +1,7 @@
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::executor::types::U256;
 use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
+use crate::bytecode::types::U256;
 use crate::{BlockId, OpCode};
 use std::collections::{HashMap, VecDeque};
 use std::usize;

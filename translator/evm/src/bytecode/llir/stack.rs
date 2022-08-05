@@ -1,5 +1,5 @@
 use crate::bytecode::block::BlockId;
-use crate::bytecode::executor::ops::{BinaryOp, UnaryOp};
+use crate::bytecode::llir::ops::{BinaryOp, UnaryOp};
 use crate::bytecode::types::U256;
 use std::cell::Cell;
 use std::fmt::{Debug, Display, Formatter};
@@ -36,31 +36,13 @@ impl Stack {
 #[derive(Clone)]
 pub struct StackFrame {
     cell: Rc<Frame>,
-    used: Used,
 }
 
 impl StackFrame {
     pub fn new(cell: Frame) -> StackFrame {
         StackFrame {
             cell: Rc::new(cell),
-            used: Default::default(),
         }
-    }
-
-    pub fn mark_as_used(&self) {
-        self.used.mark_as_used();
-    }
-
-    pub fn is_used(&self) -> bool {
-        self.used.0.get()
-    }
-
-    pub fn get_used_flag(&self) -> Used {
-        self.used.clone()
-    }
-
-    pub fn set_used_flag(&mut self, used: Used) {
-        self.used = used;
     }
 
     pub fn as_usize(&self) -> Option<usize> {

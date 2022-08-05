@@ -1,27 +1,22 @@
 use crate::bytecode::block::{BlockId, InstructionBlock};
-use crate::bytecode::executor::env::{Env, Function};
 use crate::bytecode::executor::execution::{FunctionFlow, Var};
 use crate::bytecode::executor::instructions::execute;
 use crate::bytecode::executor::mem::Memory;
 use crate::bytecode::executor::stack::{Frame, Stack, StackFrame, FRAME_SIZE};
-use crate::bytecode::executor::types::U256;
-use crate::bytecode::flow_graph;
 use crate::bytecode::instruction::Instruction;
-use crate::bytecode::llir::Translator;
+use crate::bytecode::types::{Env, Function, U256};
 use anyhow::{anyhow, ensure, Error};
 use log::log_enabled;
 use log::Level;
 use std::collections::HashMap;
 
 pub mod debug;
-pub mod env;
 pub mod execution;
 pub mod history;
 pub mod instructions;
 pub mod mem;
 pub mod ops;
 pub mod stack;
-pub mod types;
 
 pub struct StaticExecutor<'a> {
     mem: Memory,

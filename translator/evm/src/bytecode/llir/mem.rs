@@ -1,4 +1,4 @@
-use crate::bytecode::executor::stack::{Frame, StackFrame};
+use crate::bytecode::llir::stack::{Frame, StackFrame};
 use crate::bytecode::types::U256;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
@@ -18,7 +18,6 @@ impl Memory {
             .mem
             .entry(rf.clone())
             .or_insert_with(|| StackFrame::new(Frame::Val(U256::from(0))));
-        rf.clone().set_used_flag(val.get_used_flag());
         val.clone()
     }
 

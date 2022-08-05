@@ -3,12 +3,12 @@
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::BlockId;
 use crate::bytecode::ctor;
-use crate::bytecode::executor::env::Function;
 use crate::bytecode::executor::execution::FunctionFlow;
 use crate::bytecode::executor::StaticExecutor;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::llir::ir::Ir;
 use crate::bytecode::llir::Translator;
+use crate::bytecode::types::Function;
 use crate::program::Program;
 use anyhow::Error;
 use bytecode::block::BlockIter;
