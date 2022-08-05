@@ -1,6 +1,8 @@
 use crate::bytecode::llir::ir::debug::print_ir;
 use crate::bytecode::llir::ir::instruction::Instruction;
 use crate::bytecode::llir::ir::var::{Var, VarId, Vars};
+use crate::U256;
+use std::mem;
 
 mod debug;
 mod instruction;
@@ -19,7 +21,28 @@ impl Ir {
         id
     }
 
+    pub fn mem_store(&mut self, offset: U256, val: VarId) {
+        self.instructions.push(Instruction::MemStore(offset, val));
+    }
+
+    pub fn push_if(
+        &mut self,
+        condition: VarId,
+        true_branch: Vec<Instruction>,
+        false_branch: Vec<Instruction>,
+    ) {
+    }
+
     pub fn print(&self) {
         print_ir(self);
+    }
+
+    pub fn swap_instruction(&mut self, mut instruction: Vec<Instruction>) -> Vec<Instruction> {
+        mem::swap(&mut self.instructions, &mut instruction);
+        instruction
+    }
+
+    pub fn resolve_var(&self, id: VarId) -> Option<U256> {
+        self.vars.resolve_var(id)
     }
 }

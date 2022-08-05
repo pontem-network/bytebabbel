@@ -8,7 +8,7 @@ use crate::bytecode::executor::StaticExecutor;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::llir::ir::Ir;
 use crate::bytecode::llir::Translator;
-use crate::bytecode::types::Function;
+use crate::bytecode::types::{Function, U256};
 use crate::program::Program;
 use anyhow::Error;
 use bytecode::block::BlockIter;
@@ -22,7 +22,12 @@ pub mod bytecode;
 pub mod function;
 pub mod program;
 
-pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, Error> {
+pub fn parse_program(
+    name: &str,
+    bytecode: &str,
+    abi: &str,
+    contract_addr: U256,
+) -> Result<Program, Error> {
     let abi = Abi::try_from(abi)?;
     let bytecode = parse_bytecode(bytecode)?;
 
@@ -42,7 +47,7 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
         .map(|(h, entry)| {
             Function::try_from((h, entry))
                 .and_then(|f| {
-                    translate_function(&llir, f.clone()).unwrap();
+                    translate_function(&llir, f.clone(), contract_addr).unwrap();
                     old_executor.exec(f)
                 })
                 .map(|res| (h, res))
@@ -51,8 +56,12 @@ pub fn parse_program(name: &str, bytecode: &str, abi: &str) -> Result<Program, E
     Program::new(name, functions, ctor, abi)
 }
 
-pub fn translate_function(llir: &Translator, fun: Function) -> Result<Ir, Error> {
-    llir.translate(fun)
+pub fn translate_function(
+    llir: &Translator,
+    fun: Function,
+    contract_addr: U256,
+) -> Result<Ir, Error> {
+    llir.translate(fun, contract_addr)
 }
 
 pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {

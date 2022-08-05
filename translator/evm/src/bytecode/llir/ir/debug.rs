@@ -15,8 +15,10 @@ pub fn print_ir(ir: &Ir) {
 }
 
 fn print_buf(ir: &Ir, buf: &mut String, width: usize) -> Result<(), Error> {
+    writeln!(buf, "=================================================================================")?;
     for inst in &ir.instructions {
-        write!(buf, "{:width$}", " ")?;
+        write!(buf, "{:width$} {:?}", " ", inst)?;
     }
+    writeln!(buf, "=================================================================================")?;
     Ok(())
 }

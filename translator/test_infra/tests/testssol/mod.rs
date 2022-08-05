@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
+use evm::bytecode::types::U256;
 use evm::parse_program;
 use lazy_static::lazy_static;
 use log::log_enabled;
@@ -144,7 +145,7 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
 
     let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
     let name = split.next().unwrap();
-    let program = parse_program(name, eth, abi).unwrap();
+    let program = parse_program(name, eth, abi, U256::from(addr.as_slice())).unwrap();
     let module = MvModule::from_evm_program(addr, U128MathModel::default(), program).unwrap();
     let compiled_module = module.make_move_module().unwrap();
     let mut bytecode = Vec::new();

@@ -1,4 +1,4 @@
-use crate::bytecode::llir::stack::Frame;
+use crate::bytecode::llir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::types::U256;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -22,11 +22,22 @@ impl Vars {
     pub fn get(&self, id: &VarId) -> &Var {
         self.inner.get(id).unwrap()
     }
+
+    pub fn resolve_var(&self, id: VarId) -> Option<U256> {
+        match self.inner.get(&id) {
+            Some(Var::Val(val)) => Some(val.clone()),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum Var {
     Val(U256),
+    Param(u16),
+    UnaryOp(UnaryOp, VarId),
+    BinaryOp(BinaryOp, VarId, VarId),
+    TernaryOp(TernaryOp, VarId, VarId, VarId),
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone)]
