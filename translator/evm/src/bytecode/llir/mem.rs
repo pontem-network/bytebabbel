@@ -14,11 +14,12 @@ impl Memory {
     }
 
     pub fn load(&mut self, rf: &StackFrame) -> StackFrame {
-        let val = self
-            .mem
-            .entry(rf.clone())
-            .or_insert_with(|| StackFrame::new(Frame::Val(U256::from(0))));
-        val.clone()
+        // let val = self
+        //     .mem
+        //     .entry(rf.clone())
+        //     .or_insert_with(|| StackFrame::new(Frame::Var(U256::from(0))));
+        //val.clone()
+        todo!()
     }
 
     pub fn clean(&mut self) {

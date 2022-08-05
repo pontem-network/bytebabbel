@@ -2,7 +2,6 @@ pub mod context;
 pub mod executor;
 pub mod ir;
 pub mod mem;
-mod ops;
 pub mod stack;
 
 use crate::bytecode::block::InstructionBlock;
@@ -29,7 +28,9 @@ impl<'a> Translator<'a> {
 
     pub fn translate(&self, fun: Function) -> Result<Ir, Error> {
         let mut ctx = Context::new(fun);
-        self.exec_flow(&self.contact_flow, &mut ctx)
+        let mut ir = Ir::default();
+        self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
+        Ok(ir)
     }
 
     fn get_block(&self, block_id: &BlockId) -> Result<&InstructionBlock, Error> {
@@ -38,10 +39,10 @@ impl<'a> Translator<'a> {
             .ok_or_else(|| anyhow!("block not found"))
     }
 
-    fn exec_flow(&self, flow: &Flow, ctx: &mut Context) -> Result<Ir, Error> {
+    fn exec_flow(&self, flow: &Flow, ir: &mut Ir, ctx: &mut Context) -> Result<(), Error> {
         match flow {
             Flow::Block(id) => {
-                self.exec_block(id, ctx)?;
+                self.exec_block(id, ir, ctx)?;
             }
             Flow::Loop(loop_) => {}
             Flow::IF(if_) => {}
@@ -50,16 +51,17 @@ impl<'a> Translator<'a> {
         todo!()
     }
 
-    fn exec_block(&self, id: &BlockId, ctx: &mut Context) -> Result<Ir, Error> {
+    fn exec_block(&self, id: &BlockId, ir: &mut Ir, ctx: &mut Context) -> Result<(), Error> {
         let block = self.get_block(&id)?;
         for inst in block.iter() {
             let pops = inst.pops();
             let pushes = inst.pushes();
             let mut params = ctx.pop_stack(pops);
             ensure!(pops == params.len(), "Invalid stake state.");
-            executor::execute(inst, params, ctx);
+            executor::execute(inst, params, ir, ctx);
         }
-
+        ir.print();
+        println!("----------------------------------------------------");
         todo!()
     }
 
