@@ -37,7 +37,7 @@ pub struct Args {
     #[clap(long = "math", short = 'm', default_value = "u128", value_parser)]
     math_backend: String,
 
-    /// Math backend.
+    /// deploying the module in aptos node
     #[clap(long = "deploy", short = 'd', value_parser)]
     deploy: bool,
 }
