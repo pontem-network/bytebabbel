@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, bail, Error, Result};
 use aptos::common::types::ProfileConfig;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
@@ -77,8 +77,13 @@ impl ProfileValue {
         Ok(address)
     }
 
-    pub fn is_address(&self) -> bool {
-        matches!(self, ProfileValue::Address(..))
+    pub fn name_profile(&self) -> Result<&String> {
+        match self {
+            ProfileValue::Address(..) => {
+                bail!("The address was transmitted. The profile name was expected.")
+            }
+            ProfileValue::Profile(profile_name) => Ok(profile_name),
+        }
     }
 
     fn profile(profile_name: &str) -> Result<ProfileConfig> {

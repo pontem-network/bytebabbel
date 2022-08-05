@@ -1,20 +1,20 @@
-use std::collections::HashMap;
 use std::fs;
 use std::future::Future;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use anyhow::{anyhow, bail, Result};
-use clap::{App, Parser};
+use anyhow::{anyhow, Result};
 
 use crate::Args;
 use aptos_types::transaction::{ModuleBundle, TransactionPayload};
 
 impl Args {
-    pub fn publish(&self, path: &Path) -> Result<String> {
-        use clap::{CommandFactory, FromArgMatches, Parser};
+    /// Publish in aptos node
+    /// Access keys are taken from profiles (.aptos/config.yaml).
+    pub fn publish(&self, mv_path: &Path) -> Result<String> {
+        use clap::Parser;
 
-        if self.profile_or_address.is_address() {
-            bail!(
+        let profile = self.profile_or_address.name_profile().map_err(|_| {
+            anyhow!(
                 "For deploy, you need to specify the profile name. \n\n\
                     Example: \n\
                     $ e2m <path/to/file.sol> --profile <NameProfile>\n\n\
@@ -23,18 +23,17 @@ impl Args {
                     Create profile with name:\n\
                     $ aptos init --profile <NameProfile>"
             )
-        }
-        todo!();
+        })?;
 
-        let compiled_units = vec![fs::read(&path)?];
+        let compiled_units = vec![fs::read(&mv_path)?];
         let transaction = TransactionPayload::ModuleBundle(ModuleBundle::new(compiled_units));
         let txt_option: aptos::common::types::TransactionOptions =
             aptos::common::types::TransactionOptions::try_parse_from(&[
                 "subcommand",
                 "--profile",
-                "demo",
+                profile,
             ])
-            .map_err(|err| anyhow!("Invalid profile parameter"))?;
+            .map_err(|_| anyhow!("Invalid profile parameter. "))?;
         let fut = txt_option.submit_transaction(transaction);
         let result = wait(fut).map(aptos::common::types::TransactionSummary::from)?;
 
