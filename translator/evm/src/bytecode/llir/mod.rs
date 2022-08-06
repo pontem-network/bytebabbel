@@ -39,7 +39,7 @@ impl<'a> Translator<'a> {
 
     fn get_block(&self, block_id: &BlockId) -> Result<&InstructionBlock, Error> {
         self.contract
-            .get(&block_id)
+            .get(block_id)
             .ok_or_else(|| anyhow!("block not found"))
     }
 
@@ -58,7 +58,7 @@ impl<'a> Translator<'a> {
                 match res {
                     BlockResult::Jmp(jmp) => {
                         if jmp == if_.jmp.true_br {
-                            self.exec_flow(&if_.false_br, ir, ctx)
+                            self.exec_flow(&if_.true_br, ir, ctx)
                         } else if jmp == if_.jmp.false_br {
                             self.exec_flow(&if_.false_br, ir, ctx)
                         } else {
@@ -80,7 +80,7 @@ impl<'a> Translator<'a> {
                         ir.push_if(cnd, true_ir, false_ir);
                         Ok(())
                     }
-                    _ => return Err(anyhow!("unexpected block result")),
+                    _ => Err(anyhow!("unexpected block result")),
                 }
             }
             Flow::Sequence(seq) => {
@@ -98,7 +98,7 @@ impl<'a> Translator<'a> {
         ir: &mut Ir,
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
-        let block = self.get_block(&id)?;
+        let block = self.get_block(id)?;
         for inst in block.iter() {
             let pops = inst.pops();
             let params = ctx.pop_stack(pops);

@@ -25,7 +25,7 @@ impl Vars {
 
     pub fn resolve_var(&self, id: VarId) -> Option<U256> {
         match self.inner.get(&id) {
-            Some(Var::Val(val)) => Some(val.clone()),
+            Some(Var::Val(val)) => Some(*val),
             _ => None,
         }
     }
@@ -43,9 +43,9 @@ pub enum Var {
 #[derive(Hash, Eq, PartialEq, Copy, Clone)]
 pub struct VarId(u64);
 
-impl Into<u64> for VarId {
-    fn into(self) -> u64 {
-        self.0
+impl From<VarId> for u64 {
+    fn from(id: VarId) -> u64 {
+        id.0
     }
 }
 

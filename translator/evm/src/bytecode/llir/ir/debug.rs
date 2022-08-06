@@ -51,7 +51,7 @@ fn print_instruction(
     match inst {
         Instruction::SetVar(id) => {
             write!(buf, "{:width$}let {:?} = ", " ", id)?;
-            print_ir_var(&ir.var(id), buf, 0)?;
+            print_ir_var(ir.var(id), buf, 0)?;
         }
         Instruction::MemStore(addr, val) => {
             let mut addr_bur = [0u8; 32];
@@ -62,15 +62,15 @@ fn print_instruction(
                 " ",
                 hex::encode(&mut addr_bur)
             )?;
-            print_ir_var(&ir.var(val), buf, 0)?;
+            print_ir_var(ir.var(val), buf, 0)?;
         }
         Instruction::Branch {
             condition,
-            true_branch_len,
-            false_branch_len,
+            true_branch_len: _,
+            false_branch_len: _,
         } => {
             write!(buf, "{:width$}if (", " ",)?;
-            print_ir_var(&ir.var(condition), buf, 0)?;
+            print_ir_var(ir.var(condition), buf, 0)?;
             write!(buf, ") {{")?;
         }
     }

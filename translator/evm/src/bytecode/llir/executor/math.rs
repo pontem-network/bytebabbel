@@ -26,7 +26,7 @@ impl InstructionHandler for UnaryOp {
             };
             ir.create_var(Var::Val(val))
         } else {
-            ir.create_var(Var::UnaryOp(self.clone(), params[0]))
+            ir.create_var(Var::UnaryOp(*self, params[0]))
         };
         ExecutionResult::Output(vec![id])
     }
@@ -65,7 +65,7 @@ impl InstructionHandler for BinaryOp {
         let id = if let (Some(a), Some(b)) = (ir.resolve_var(a), ir.resolve_var(b)) {
             ir.create_var(Var::Val(self.calc(a, b)))
         } else {
-            ir.create_var(Var::BinaryOp(self.clone(), a, b))
+            ir.create_var(Var::BinaryOp(*self, a, b))
         };
         ExecutionResult::Output(vec![id])
     }

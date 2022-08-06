@@ -40,7 +40,7 @@ impl<'a> FlowBuilder<'a> {
             }
 
             match next {
-                Next::Next(next) => {
+                Next::Jmp(next) => {
                     self.block = next;
                 }
                 Next::Stop => 'branch: loop {
@@ -108,7 +108,7 @@ impl<'a> FlowBuilder<'a> {
         } else {
             Flow::Sequence(
                 root.into_iter()
-                    .map(|block| Flow::Block(block))
+                    .map(Flow::Block)
                     .chain([map_flow(cnd_branches)])
                     .collect(),
             )
@@ -132,7 +132,7 @@ impl<'a> FlowBuilder<'a> {
             for inst in block.iter() {
                 let mut ops = self.pop_stack(inst.pops());
                 match &inst.1 {
-                    OpCode::Jump => return Next::Next(ops.remove(0)),
+                    OpCode::Jump => return Next::Jmp(ops.remove(0)),
                     OpCode::JumpIf => {
                         let jmp = ops.remove(0);
                         return Next::Cnd(jmp, BlockId(inst.next()));
@@ -168,7 +168,7 @@ impl<'a> FlowBuilder<'a> {
             }
             block
                 .last()
-                .map(|last| Next::Next(BlockId(last.next())))
+                .map(|last| Next::Jmp(BlockId(last.next())))
                 .unwrap_or(Next::Stop)
         } else {
             Next::Stop
@@ -391,7 +391,7 @@ impl CndBranch {
 
 #[derive(Clone, Copy, Debug)]
 enum Next {
-    Next(BlockId),
+    Jmp(BlockId),
     Stop,
     Cnd(BlockId, BlockId),
 }
@@ -403,5 +403,9 @@ impl CndBranch {
 
     pub fn len(&self) -> usize {
         self.true_br.blocks.len() + self.false_br.blocks.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

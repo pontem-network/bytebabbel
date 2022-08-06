@@ -1,5 +1,3 @@
-use crate::testssol::make_move_module;
-use test_infra::executor::MoveExecutor;
 use test_infra::sol::build_sol;
 
 mod testssol;

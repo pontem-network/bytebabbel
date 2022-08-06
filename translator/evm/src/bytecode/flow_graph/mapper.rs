@@ -16,7 +16,7 @@ pub fn map_flow(elements: Vec<CndBranch>) -> Flow {
     let first_block = *blocks.keys().next().unwrap();
     let first_block = blocks.remove(&first_block).unwrap();
 
-    let flow = map_block(first_block, &mut blocks);
+    let flow = map_block(first_block, &blocks);
     log_flow(&flow);
     flow
 }

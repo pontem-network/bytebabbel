@@ -5,7 +5,7 @@ use crate::bytecode::block::BlockId;
 use crate::bytecode::ctor;
 use crate::bytecode::executor::execution::FunctionFlow;
 use crate::bytecode::executor::StaticExecutor;
-use crate::bytecode::flow_graph::FlowBuilder;
+//use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::llir::ir::Ir;
 use crate::bytecode::llir::Translator;
 use crate::bytecode::types::{Function, U256};
@@ -26,18 +26,21 @@ pub fn parse_program(
     name: &str,
     bytecode: &str,
     abi: &str,
-    contract_addr: U256,
+    _contract_addr: U256,
 ) -> Result<Program, Error> {
+    println!("1:{}", abi);
     let abi = Abi::try_from(abi)?;
+    println!("2");
     let bytecode = parse_bytecode(bytecode)?;
-
+    println!("3");
     let blocks = BlockIter::new(InstructionIter::new(bytecode))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
+    println!("4");
     let (contract, ctor) = ctor::split(blocks)?;
 
-    let contract_flow = FlowBuilder::new(&contract).make_flow();
-    let llir = Translator::new(&contract, contract_flow);
+    //let contract_flow = FlowBuilder::new(&contract).make_flow();
+    //let llir = Translator::new(&contract, contract_flow);
 
     let mut old_executor = StaticExecutor::new(&contract);
 
@@ -47,7 +50,7 @@ pub fn parse_program(
         .map(|(h, entry)| {
             Function::try_from((h, entry))
                 .and_then(|f| {
-                    translate_function(&llir, f.clone(), contract_addr).unwrap();
+                    //translate_function(&llir, f.clone(), contract_addr).unwrap();
                     old_executor.exec(f)
                 })
                 .map(|res| (h, res))

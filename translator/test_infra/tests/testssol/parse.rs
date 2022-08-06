@@ -4,13 +4,11 @@ use std::path::{Path, PathBuf};
 use std::{fmt, fs};
 
 use anyhow::{anyhow, bail, Result};
-use serde_json::Value;
 
 use move_core_types::value::MoveValue;
 use test_infra::sol::{build_sol, Evm};
 
 const SOL_DIRECTORY: &str = "./sol";
-const BIN_DIRECTORY: &str = "./bin";
 
 #[derive(Debug)]
 pub struct SolFile {

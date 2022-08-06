@@ -54,6 +54,6 @@ impl Ir {
     }
 
     pub fn var(&self, id: &VarId) -> &Var {
-        self.vars.get(&id)
+        self.vars.get(id)
     }
 }
