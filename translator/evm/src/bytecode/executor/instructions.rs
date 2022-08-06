@@ -1,8 +1,8 @@
 use crate::bytecode::executor::ops::{BinaryOp, UnaryOp};
 use crate::bytecode::executor::stack::{Frame, StackFrame, Used, FRAME_SIZE};
-use crate::bytecode::executor::types::U256;
 use crate::bytecode::executor::{Context, Jump};
 use crate::bytecode::instruction::Instruction;
+use crate::bytecode::types::U256;
 use crate::OpCode;
 use anyhow::Error;
 

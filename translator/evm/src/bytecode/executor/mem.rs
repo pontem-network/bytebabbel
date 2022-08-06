@@ -1,5 +1,5 @@
 use crate::bytecode::executor::stack::{Frame, StackFrame};
-use crate::bytecode::executor::types::U256;
+use crate::bytecode::types::U256;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 

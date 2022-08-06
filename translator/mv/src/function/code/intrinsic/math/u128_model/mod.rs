@@ -1,7 +1,7 @@
 use crate::function::code::context::Context;
 use crate::function::code::intrinsic::math::{Literal, MathModel, PrepareSignatures};
 use crate::function::signature::SignatureWriter;
-use evm::bytecode::executor::types::U256;
+use evm::bytecode::types::U256;
 use move_binary_format::file_format::{Bytecode, SignatureToken};
 
 mod binary_ops;

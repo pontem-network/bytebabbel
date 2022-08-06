@@ -5,13 +5,13 @@ use crate::bytecode::executor::execution::FunctionFlow;
 use crate::function::{FunDef, PublicApi};
 use anyhow::Error;
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
     functions_graph: HashMap<FunHash, FunctionFlow>,
-    ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
+    ctor: Option<HashMap<BlockId, InstructionBlock>>,
     functions: PublicApi,
 }
 
@@ -19,7 +19,7 @@ impl Program {
     pub fn new(
         name: &str,
         functions_graph: HashMap<FunHash, FunctionFlow>,
-        ctor: Option<BTreeMap<BlockId, InstructionBlock>>,
+        ctor: Option<HashMap<BlockId, InstructionBlock>>,
         abi: Abi,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(abi)?;

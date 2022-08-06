@@ -1,6 +1,6 @@
 use crate::bytecode::block::BlockId;
 use crate::bytecode::executor::ops::{BinaryOp, UnaryOp};
-use crate::bytecode::executor::types::U256;
+use crate::bytecode::types::U256;
 use std::cell::Cell;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 pub const FRAME_SIZE: usize = 32;
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Stack {
     pub stack: Vec<StackFrame>,
 }

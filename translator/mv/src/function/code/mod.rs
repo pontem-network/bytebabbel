@@ -7,8 +7,9 @@ use evm::abi::inc_ret_param::types::ParamType;
 use evm::bytecode::executor::execution::{Execution, FunctionFlow};
 use evm::bytecode::executor::stack::{Frame, StackFrame};
 use evm::function::FunDef;
-use evm::is_trace;
 use evm::program::Program;
+use log::log_enabled;
+use log::Level;
 use move_binary_format::file_format::{Bytecode, SignatureToken};
 
 pub mod context;
@@ -43,7 +44,7 @@ impl<'a, M: MathModel> MvTranslator<'a, M> {
                 self.def.abi.name().as_deref().unwrap_or("anonymous")
             )
         })?;
-        if is_trace() {
+        if log_enabled!(Level::Trace) {
             log::trace!("\n{}", &self.program.debug_fn_by_hash(self.def.hash));
             log::trace!("{:?}\n", flow);
         }

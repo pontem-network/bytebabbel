@@ -15,6 +15,10 @@ impl Instruction {
     pub fn offset(&self) -> Offset {
         self.0
     }
+
+    pub fn next(&self) -> Offset {
+        self.0 + self.size()
+    }
 }
 
 impl Deref for Instruction {

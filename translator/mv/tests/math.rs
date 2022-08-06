@@ -65,10 +65,7 @@ pub fn test_u256_math_cast() {
 
     fn test(exec: &mut MoveExecutor, expected: u128) {
         let res = exec
-            .run(
-                "0x1::TestMod::fun_1",
-                &format!("{}, 0", expected.to_string()),
-            )
+            .run("0x1::TestMod::fun_1", &format!("{}, 0", expected))
             .unwrap()
             .returns;
         let (val, tp) = &res[0];
