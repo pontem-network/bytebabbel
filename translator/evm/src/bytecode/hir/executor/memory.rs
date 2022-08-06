@@ -1,8 +1,9 @@
-use crate::bytecode::llir::context::Context;
-use crate::bytecode::llir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::llir::ir::var::{Var, VarId};
-use crate::{Ir, U256};
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir::ir::var::VarId;
+use crate::Hir;
 
+#[derive(Debug, Clone)]
 pub enum MemoryOp {
     MLoad,
     MStore,
@@ -11,18 +12,18 @@ pub enum MemoryOp {
 }
 
 impl InstructionHandler for MemoryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, context: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
         match self {
             MemoryOp::MLoad => {
                 if let Some(addr) = ir.resolve_var(params[0]) {
                     if let Some(val) = context.mem_load(addr) {
+                        ir.mem_load(addr, val);
                         ExecutionResult::Output(vec![val])
                     } else {
-                        let id = ir.create_var(Var::Val(U256::zero()));
-                        ExecutionResult::Output(vec![id])
+                        todo!("memory load")
                     }
                 } else {
-                    todo!("Unaligned memory access");
+                    todo!("Unaligned memory access")
                 }
             }
             MemoryOp::MStore => {
@@ -31,7 +32,7 @@ impl InstructionHandler for MemoryOp {
                     context.mem_store(addr, val);
                     ir.mem_store(addr, val);
                 } else {
-                    todo!("Unaligned memory access");
+                    todo!("Unaligned memory access")
                 }
                 ExecutionResult::None
             }

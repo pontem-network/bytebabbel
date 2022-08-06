@@ -8,34 +8,34 @@ pub mod memory;
 pub mod stack;
 pub mod storage;
 
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::call::CallOp;
+use crate::bytecode::hir::executor::code::CodeOp;
+use crate::bytecode::hir::executor::control_flow::ControlFlow;
+use crate::bytecode::hir::executor::dependency::{Address, Sha3, TxMeta};
+use crate::bytecode::hir::executor::event::EventOp;
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::executor::memory::MemoryOp;
+use crate::bytecode::hir::executor::stack::StackOp;
+use crate::bytecode::hir::executor::storage::StorageOp;
+use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::instruction::Instruction;
-use crate::bytecode::llir::context::Context;
-use crate::bytecode::llir::executor::call::CallOp;
-use crate::bytecode::llir::executor::code::CodeOp;
-use crate::bytecode::llir::executor::control_flow::ControlFlow;
-use crate::bytecode::llir::executor::dependency::{Address, Sha3, TxMeta};
-use crate::bytecode::llir::executor::event::EventOp;
-use crate::bytecode::llir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::llir::executor::memory::MemoryOp;
-use crate::bytecode::llir::executor::stack::StackOp;
-use crate::bytecode::llir::executor::storage::StorageOp;
-use crate::bytecode::llir::ir::var::VarId;
-use crate::{BlockId, Ir, OpCode};
+use crate::{BlockId, Hir, OpCode};
 
 pub trait InstructionHandler {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, context: &mut Context) -> ExecutionResult;
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult;
 }
 
 struct NoOp;
 
 impl InstructionHandler for NoOp {
-    fn handle(&self, _: Vec<VarId>, _: &mut Ir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<VarId>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
         ExecutionResult::None
     }
 }
 
 impl InstructionHandler for Instruction {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, context: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
         match &self.1 {
             OpCode::Add => BinaryOp::Add.handle(params, ir, context),
             OpCode::Mul => BinaryOp::Mul.handle(params, ir, context),
@@ -135,7 +135,6 @@ pub enum ExecutionResult {
     Result {
         offset: VarId,
         len: VarId,
-        revert: bool,
     },
     Stop,
     Jmp(BlockId),

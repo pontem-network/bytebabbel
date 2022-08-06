@@ -1,6 +1,6 @@
 use anyhow::{bail, Error};
 use evm::bytecode::types::U256;
-use evm::parse_program;
+use evm::transpile_program;
 use move_core_types::account_address::AccountAddress;
 use mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use mv::function::code::intrinsic::math::u256_model::U256MathModel;
@@ -14,7 +14,7 @@ pub fn translate(
     abi: &str,
     model: Math,
 ) -> Result<Vec<u8>, Error> {
-    let program = parse_program(name, bytecode, abi, U256::from(addr.as_slice()))?;
+    let program = transpile_program(name, bytecode, abi, U256::from(addr.as_slice()))?;
     let module = match model {
         Math::U128 => MvModule::from_evm_program(addr, U128MathModel::default(), program)?,
         Math::U256 => MvModule::from_evm_program(addr, U256MathModel::default(), program)?,
