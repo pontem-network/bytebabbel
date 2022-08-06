@@ -31,6 +31,13 @@ impl Ir {
         true_branch: Vec<Instruction>,
         false_branch: Vec<Instruction>,
     ) {
+        self.instructions.push(Instruction::Branch {
+            condition,
+            true_branch_len: true_branch.len() as u64,
+            false_branch_len: false_branch.len() as u64,
+        });
+        self.instructions.extend(true_branch);
+        self.instructions.extend(false_branch);
     }
 
     pub fn print(&self) {
@@ -44,5 +51,9 @@ impl Ir {
 
     pub fn resolve_var(&self, id: VarId) -> Option<U256> {
         self.vars.resolve_var(id)
+    }
+
+    pub fn var(&self, id: &VarId) -> &Var {
+        self.vars.get(&id)
     }
 }

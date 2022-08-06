@@ -7,6 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use serde_json::Value;
 
 use move_core_types::value::MoveValue;
+use test_infra::sol::{build_sol, Evm};
 
 const SOL_DIRECTORY: &str = "./sol";
 const BIN_DIRECTORY: &str = "./bin";
@@ -14,9 +15,7 @@ const BIN_DIRECTORY: &str = "./bin";
 #[derive(Debug)]
 pub struct SolFile {
     sol_path: PathBuf,
-    pub bin_path: PathBuf,
-    pub abi_path: PathBuf,
-    pub module_name: String,
+    pub evm: Evm,
     pub tests: Vec<SolTest>,
 }
 
@@ -52,20 +51,6 @@ impl SolFile {
             bail!("expected extension sol -> {:?}", self.sol_path);
         }
 
-        if !self.bin_path.exists() {
-            bail!("bin file not found: {:?}", self.bin_path);
-        }
-        if path_to_ext(&self.bin_path) != "bin" {
-            bail!("expected extension bin -> {:?}", self.bin_path);
-        }
-
-        if !self.abi_path.exists() {
-            bail!("abi file not found: {:?}", self.abi_path);
-        }
-        if path_to_ext(&self.abi_path) != "abi" {
-            bail!("expected extension abi -> {:?}", self.abi_path);
-        }
-
         Ok(())
     }
 
@@ -93,31 +78,12 @@ fn path_is_sol(path: &PathBuf) -> bool {
 }
 
 fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
-    let file_name = sol_path.file_name()?.to_string_lossy().to_string();
-    let ast_path = PathBuf::from(format!("{BIN_DIRECTORY}/{}_json.ast", file_name))
-        .canonicalize()
-        .ok()?;
-
-    let content_ast = fs::read_to_string(&ast_path).ok()?;
-    let ast_json: Value = serde_json::from_str(&content_ast).ok()?;
-    let module_name = ast_json
-        .get("exportedSymbols")
-        .and_then(|ojg| ojg.as_object())
-        .and_then(|m| m.iter().next().map(|(name, _)| name.clone()))?;
-
-    let bin_path = PathBuf::from(format!("{BIN_DIRECTORY}/{}.bin", &module_name))
-        .canonicalize()
-        .ok()?;
-    let abi_path = PathBuf::from(format!("{BIN_DIRECTORY}/{}.abi", &module_name))
-        .canonicalize()
-        .ok()?;
-
+    let content_sol = fs::read(&sol_path).ok()?;
+    let evm = build_sol(&content_sol).ok()?;
     Some(SolFile {
         sol_path,
-        bin_path,
-        abi_path,
-        module_name,
-        tests: Vec::default(),
+        evm,
+        tests: Vec::new(),
     })
 }
 

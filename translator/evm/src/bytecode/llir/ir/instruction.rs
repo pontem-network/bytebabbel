@@ -5,4 +5,9 @@ use crate::U256;
 pub enum Instruction {
     SetVar(VarId),
     MemStore(U256, VarId),
+    Branch {
+        condition: VarId,
+        true_branch_len: u64,
+        false_branch_len: u64,
+    },
 }

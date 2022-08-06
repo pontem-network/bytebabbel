@@ -36,7 +36,7 @@ pub fn parse_program(
         .collect::<HashMap<_, _>>();
     let (contract, ctor) = ctor::split(blocks)?;
 
-    let mut contract_flow = FlowBuilder::new(&contract).make_flow();
+    let contract_flow = FlowBuilder::new(&contract).make_flow();
     let llir = Translator::new(&contract, contract_flow);
 
     let mut old_executor = StaticExecutor::new(&contract);

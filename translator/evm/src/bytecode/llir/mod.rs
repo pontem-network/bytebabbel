@@ -33,6 +33,7 @@ impl<'a> Translator<'a> {
         let mut ctx = Context::new(fun, contract_address);
         let mut ir = Ir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
+        ir.print();
         Ok(ir)
     }
 
@@ -48,7 +49,7 @@ impl<'a> Translator<'a> {
                 self.exec_block(id, ir, ctx)?;
                 Ok(())
             }
-            Flow::Loop(loop_) => {
+            Flow::Loop(_loop_) => {
                 todo!()
             }
             Flow::IF(if_) => {
@@ -100,7 +101,7 @@ impl<'a> Translator<'a> {
         let block = self.get_block(&id)?;
         for inst in block.iter() {
             let pops = inst.pops();
-            let mut params = ctx.pop_stack(pops);
+            let params = ctx.pop_stack(pops);
             ensure!(pops == params.len(), "Invalid stake state.");
             let res = inst.handle(params, ir, ctx);
             match res {
@@ -145,7 +146,6 @@ impl<'a> Translator<'a> {
                 }
             }
         }
-        ir.print();
         Ok(BlockResult::Jmp(
             block.last().map(|i| BlockId(i.next())).unwrap_or_default(),
         ))

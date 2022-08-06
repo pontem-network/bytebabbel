@@ -1,6 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
-
 use anyhow::{bail, Result};
 use evm::bytecode::types::U256;
 use evm::parse_program;
@@ -23,6 +20,7 @@ pub mod parse;
 
 use parse::{SolFile, SolTest};
 use test_infra::executor::{ExecutionResult, MoveExecutor};
+use test_infra::sol::Evm;
 
 const TEST_NAME: &str = "sol";
 
@@ -31,9 +29,7 @@ lazy_static! {
 }
 
 pub struct STest {
-    bin_path: PathBuf,
-    abi_path: PathBuf,
-    module_name: String,
+    contract: Evm,
     test: SolTest,
 }
 
@@ -42,9 +38,7 @@ impl STest {
         file.tests
             .into_iter()
             .map(|test| STest {
-                bin_path: file.bin_path.clone(),
-                abi_path: file.abi_path.clone(),
-                module_name: file.module_name.clone(),
+                contract: file.evm.clone(),
                 test,
             })
             .collect()
@@ -71,7 +65,7 @@ impl STest {
         }
         format!(
             "{TEST_NAME}::{module}::{function}{sub}",
-            module = &self.module_name,
+            module = self.contract.name(),
             function = &self.test.func
         )
     }
@@ -117,13 +111,13 @@ impl STest {
     }
 
     fn module_address(&self) -> String {
-        format!("0x1::{}", &self.module_name)
+        format!("0x1::{}", &self.contract.name())
     }
 
     fn vm_run(&self) -> Result<ExecutionResult> {
         let module_address = self.module_address();
 
-        let bytecode = make_move_module(&module_address, &self.bin()?, &self.abi()?);
+        let bytecode = make_move_module(&module_address, self.bin(), self.abi());
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
 
@@ -131,12 +125,12 @@ impl STest {
         vm.run(&func_address, &self.test.params)
     }
 
-    fn abi(&self) -> Result<String> {
-        Ok(fs::read_to_string(&self.abi_path)?)
+    fn abi(&self) -> &str {
+        self.contract.abi()
     }
 
-    fn bin(&self) -> Result<String> {
-        Ok(fs::read_to_string(&self.bin_path)?)
+    fn bin(&self) -> &str {
+        self.contract.bin()
     }
 }
 
