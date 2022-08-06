@@ -3,57 +3,41 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command as cli;
 
-use anyhow::{anyhow, bail, Error, Result};
-
-use move_core_types::account_address::AccountAddress;
-use translator::{translate, Math};
+use anyhow::{anyhow, bail, Result};
 
 use crate::Args;
+use translator::translate;
 
-#[derive(Debug)]
-pub struct Convert {
-    paths: Paths,
-    mv: PathBuf,
-    math: Math,
-    address: AccountAddress,
-    module_name: String,
-}
+impl Args {
+    pub fn convert(&self) -> Result<PathBuf> {
+        let paths = path_to_abibin(&self.path)?;
+        let output_path = self.output_path.clone().unwrap_or_else(|| {
+            let filename = path_to_filename(&paths.abi).unwrap();
+            PathBuf::from("./").join(filename).with_extension("mv")
+        });
 
-impl Convert {
-    pub fn create_mv(&self) -> Result<&Path> {
-        let abi = fs::read_to_string(&self.paths.abi)?;
-        let eth = fs::read_to_string(&self.paths.bin)?;
+        let address = self.profile_or_address.to_address()?;
 
-        let move_bytecode: Vec<u8> =
-            translate(self.address, &self.module_name, &eth, &abi, self.math)?;
-        fs::write(&self.mv, move_bytecode)?;
-
-        self.paths.delete_tmp_dir();
-
-        Ok(&self.mv)
-    }
-}
-
-impl TryFrom<Args> for Convert {
-    type Error = Error;
-    fn try_from(args: Args) -> std::result::Result<Self, Self::Error> {
-        let paths = path_to_abibin(&args.path)?;
-
-        let address = AccountAddress::from_hex_literal(&args.move_module_address)?;
-        let module_name = args
+        let module_name = self
             .move_module_name
+            .clone()
             .unwrap_or(path_to_filename(&paths.abi)?);
 
-        Ok(Convert {
-            mv: args.output_path.unwrap_or_else(|| {
-                let filename = path_to_filename(&paths.abi).unwrap();
-                PathBuf::from("./").join(filename).with_extension("mv")
-            }),
-            paths,
-            math: args.math_backend.parse()?,
+        let abi_content = fs::read_to_string(&paths.abi)?;
+        let eth_content = fs::read_to_string(&paths.bin)?;
+
+        let move_bytecode: Vec<u8> = translate(
             address,
-            module_name,
-        })
+            &module_name,
+            &eth_content,
+            &abi_content,
+            self.math_backend.parse()?,
+        )?;
+        fs::write(&output_path, move_bytecode)?;
+
+        paths.delete_tmp_dir();
+
+        Ok(output_path)
     }
 }
 
@@ -71,7 +55,7 @@ fn path_to_filename(path: &Path) -> Result<String> {
 ///     sol - compiled into "bin" and "abi" and stored in a temporary directory
 ///     bin - searches next to "abi" with the same name and returns paths to them
 ///     abi - searches next to "bin" with the same name and returns paths to them
-fn path_to_abibin(path: &Path) -> Result<Paths> {
+fn path_to_abibin(path: &Path) -> Result<SolPaths> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
@@ -86,7 +70,7 @@ fn path_to_abibin(path: &Path) -> Result<Paths> {
 
 /// Compile the sol file and return the paths
 ///     return: (abi path, bin path)
-fn compile_sol(path: &Path) -> Result<Paths> {
+fn compile_sol(path: &Path) -> Result<SolPaths> {
     let path = path.canonicalize()?;
 
     if !check_solc() {
@@ -126,7 +110,7 @@ fn compile_sol(path: &Path) -> Result<Paths> {
         .collect();
     log::debug!("finded: {files:?}");
 
-    Ok(Paths {
+    Ok(SolPaths {
         abi: files["abi"].to_owned(),
         bin: files["bin"].to_owned(),
         tmp_dir: Some(tmp_folder),
@@ -166,7 +150,7 @@ fn output_to_result(output: std::process::Output) -> Result<String> {
     Ok(String::from_utf8(output.stdout).unwrap_or_default())
 }
 
-fn find_abibin(path: &Path) -> Result<Paths> {
+fn find_abibin(path: &Path) -> Result<SolPaths> {
     let filename = path_to_filename(path)?;
     let dir = path
         .parent()
@@ -182,7 +166,7 @@ fn find_abibin(path: &Path) -> Result<Paths> {
         bail!("Couldn't find bin.\nPath:{bin_path:?}");
     }
 
-    Ok(Paths {
+    Ok(SolPaths {
         abi: abi_path,
         bin: bin_path,
         tmp_dir: None,
@@ -190,13 +174,13 @@ fn find_abibin(path: &Path) -> Result<Paths> {
 }
 
 #[derive(Debug)]
-struct Paths {
+struct SolPaths {
     abi: PathBuf,
     bin: PathBuf,
     tmp_dir: Option<PathBuf>,
 }
 
-impl Paths {
+impl SolPaths {
     pub fn delete_tmp_dir(&self) {
         if let Some(path) = &self.tmp_dir {
             log::debug!("Deleting a temporary directory {path:?}");
