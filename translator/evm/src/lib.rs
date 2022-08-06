@@ -28,15 +28,11 @@ pub fn parse_program(
     abi: &str,
     _contract_addr: U256,
 ) -> Result<Program, Error> {
-    println!("1:{}", abi);
     let abi = Abi::try_from(abi)?;
-    println!("2");
     let bytecode = parse_bytecode(bytecode)?;
-    println!("3");
     let blocks = BlockIter::new(InstructionIter::new(bytecode))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
-    println!("4");
     let (contract, ctor) = ctor::split(blocks)?;
 
     //let contract_flow = FlowBuilder::new(&contract).make_flow();

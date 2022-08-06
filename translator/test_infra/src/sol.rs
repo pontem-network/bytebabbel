@@ -28,13 +28,16 @@ impl Evm {
 
 pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
     let tmp_dir = TempDir::new()?;
-    let contract = tmp_dir.path().join("contract.sol");
+    let tmp_dir = tmp_dir.path().join(format!("{}", rand::random::<u64>()));
+    fs::create_dir_all(&tmp_dir)?;
+
+    let contract = tmp_dir.join("contract.sol");
     fs::write(&contract, sol)?;
 
     let output = Command::new("solc")
-        .current_dir(tmp_dir.path())
+        .current_dir(tmp_dir.as_path())
         .arg("-o")
-        .arg(tmp_dir.path())
+        .arg(tmp_dir.as_path())
         .arg("--bin")
         .arg("--abi")
         .arg(contract.as_path())
@@ -48,11 +51,16 @@ pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
     );
     fs::remove_file(&contract)?;
 
-    let dir = fs::read_dir(tmp_dir.path())?;
+    let dir = fs::read_dir(tmp_dir)?;
     let dir = dir.into_iter().collect::<Result<Vec<_>, _>>()?;
     ensure!(dir.len() == 2, "Expected 2 files in the output directory");
 
-    let (bin, abi) = if dir[0].path().ends_with("bin") {
+    let ext = dir[0]
+        .path()
+        .extension()
+        .map(|ext| ext.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let (bin, abi) = if ext == "bin" {
         (
             fs::read_to_string(dir[0].path())?,
             fs::read_to_string(dir[1].path())?,
