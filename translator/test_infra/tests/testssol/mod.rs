@@ -13,6 +13,7 @@ use move_ir_types::location::Spanned;
 use mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use mv::mvir::MvModule;
 use regex::Regex;
+use std::path::PathBuf;
 
 pub mod clog;
 pub mod color;
@@ -28,7 +29,9 @@ lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
 }
 
+#[derive(Debug)]
 pub struct STest {
+    prename: String,
     contract: Evm,
     test: SolTest,
 }
@@ -38,6 +41,7 @@ impl STest {
         file.tests
             .into_iter()
             .map(|test| STest {
+                prename: file.name.clone(),
                 contract: file.evm.clone(),
                 test,
             })
@@ -64,7 +68,8 @@ impl STest {
             sub = format!("::{sub}");
         }
         format!(
-            "{TEST_NAME}::{module}::{function}{sub}",
+            "{TEST_NAME}::{file}::{module}::{function}{sub}",
+            file = self.prename,
             module = self.contract.name(),
             function = &self.test.func
         )
