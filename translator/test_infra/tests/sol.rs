@@ -29,10 +29,11 @@ fn main() {
                         msg: Some(format!("{}", err)),
                     },
                 });
+            let is_ignored = name.contains("ignore");
             Ok(Test {
                 name,
                 kind: String::new(),
-                is_ignored: false,
+                is_ignored,
                 is_bench: false,
                 data: testfn,
             })
