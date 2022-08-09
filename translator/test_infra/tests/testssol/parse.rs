@@ -39,7 +39,7 @@ impl SolFile {
             return Ok(result);
         }
 
-        let mut list: Vec<SolFile> = sol_dir
+        let list: Vec<SolFile> = sol_dir
             .read_dir()?
             .filter_map(|path| path.ok())
             .map(|item| item.path())
