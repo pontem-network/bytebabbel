@@ -4,7 +4,7 @@
 
 pragma solidity ^0.8.10;
 
-contract LogicalOperators {
+contract Simple {
 
     // # and_uint (20, 10) 0
     // # and_uint (20, 20) 20
