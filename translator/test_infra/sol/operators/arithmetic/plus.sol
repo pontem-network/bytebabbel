@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathPlus {
+library Plus {
     // # plus_const_3() 3
     function plus_const_3() public pure returns (uint) {
         uint a = 1;
@@ -34,15 +34,4 @@ library MathPlus {
         uint d = 10;
         return d + c;
     }
-
-    // # plus_params(1,2,3) 6
-    // # plus_params(18446744073709551615,0,0) 18446744073709551615
-    // # plus_params(18446744073709551615,18446744073709551615,18446744073709551615) 55340232221128654845
-    // # plus_params(340282366920938463463374607431768211455,0,0) 340282366920938463463374607431768211455
-    // # plus_params(340282366920938463463374607431768211455,1,0) !panic
-    function plus_params(uint a, uint b, uint c) public pure returns (uint) {
-        return a + b + c;
-    }
-
-
 }

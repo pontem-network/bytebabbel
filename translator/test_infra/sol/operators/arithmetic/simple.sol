@@ -42,27 +42,17 @@ library Simple {
         return a * b * c;
     }
 
-    // # dec_pos(2) 10
-    function dec_pos(uint a) public pure returns (uint) {
-        uint c = 8;
-        uint b = c-- + a;
-        assert(c == 7);
-        return b;
+    // # dec(2) 1
+    // # dec(255) 254
+    // # dec(0) !panic
+    function dec(uint a) public pure returns (uint) {
+        return --a;
     }
 
-    // # dec_pre(2) 9
-    function dec_pre(uint a) public pure returns (uint) {
-        uint c = 8;
-        uint b = --c + a;
-        assert(c == 7);
-        return b;
+    // # dec_s(255) 264
+    function dec_s(uint a) public pure returns (uint) {
+        return 10 + --a;
     }
 
-    // # inc_pos(2) 10
-    function inc_pos(uint a) public pure returns (uint) {
-        uint c = 8;
-        uint b = c++ + a;
-        assert(c == 9);
-        return b;
-    }
+
 }
