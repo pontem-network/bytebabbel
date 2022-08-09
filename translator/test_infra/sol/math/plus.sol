@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathPlusFn {
+library MathPlus {
     // # plus_const_3() 3
     function plus_const_3() public pure returns (uint) {
         uint a = 1;

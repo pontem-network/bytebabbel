@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathMinusDevideFn {
+library MinusDevide {
 
     // # minusdevide_const_4() 4
     function minusdevide_const_4() public pure returns (uint) {

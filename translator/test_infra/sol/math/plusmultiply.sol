@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathPlusMultiplyFn {
+library PlusMultiply {
     // # plusmultiply_const_1() 7
     function plusmultiply_const_1() public pure returns (uint) {
         return 1 + 2 * 3;

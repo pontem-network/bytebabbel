@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathMinusFn {
+library Minus {
     // # minus_const_100() 100
     function minus_const_100() public pure returns (uint) {
         uint a = 128;
