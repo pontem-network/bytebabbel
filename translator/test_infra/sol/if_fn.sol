@@ -32,4 +32,10 @@ library IfFn {
 
         return b + c;
     }
+
+    // # test_3 (1, 2) 2
+    // # test_3 (256, 0) 256
+    function test_3(uint a, uint b) public pure returns (uint){
+        return  (a > b ? a : b);
+    }
 }
