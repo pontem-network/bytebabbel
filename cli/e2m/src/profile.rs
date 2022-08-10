@@ -23,7 +23,7 @@ impl ProfileConfig {
                     .and_then(|profiles| profiles.get(profile_name))
                     .and_then(|profile| profile.get("account"))
                     .and_then(|address| address.as_str().map(String::from))
-                    .ok_or(anyhow!("Account not found"))?;
+                    .ok_or_else(|| anyhow!("Account not found"))?;
                 let address = AccountAddress::from_hex_literal(&format!("0x{account}"))?;
 
                 Ok(ProfileConfig {

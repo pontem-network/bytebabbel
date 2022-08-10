@@ -1,4 +1,4 @@
-use anyhow::{bail, Error, Result};
+use anyhow::{Error, Result};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use std::path::PathBuf;
@@ -69,7 +69,7 @@ impl ProfileValue {
     pub fn to_address(&self) -> Result<AccountAddress> {
         let address = match self {
             ProfileValue::Address(address) => *address,
-            ProfileValue::Profile(profile_name) => profile_name.address.clone(),
+            ProfileValue::Profile(profile_name) => profile_name.address,
         };
         Ok(address)
     }
@@ -78,7 +78,7 @@ impl ProfileValue {
     pub fn name_profile(&self) -> Result<&String> {
         match self {
             ProfileValue::Address(..) => {
-                bail!("The address was transmitted. The profile name was expected.")
+                anyhow::bail!("The address was transmitted. The profile name was expected.")
             }
             ProfileValue::Profile(profile_name) => Ok(&profile_name.name),
         }
