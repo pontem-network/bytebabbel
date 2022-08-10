@@ -1,12 +1,15 @@
-use anyhow::{anyhow, bail, Error, Result};
-use aptos::common::types::ProfileConfig;
+use anyhow::{bail, Error, Result};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 pub mod convert;
+#[cfg(feature = "deploy")]
 pub mod deploy;
+pub mod profile;
+
+use crate::profile::ProfileConfig;
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]
@@ -39,6 +42,7 @@ pub struct Args {
 
     /// deploying the module in aptos node
     #[clap(long = "deploy", short = 'd', value_parser)]
+    #[cfg(feature = "deploy")]
     deploy: bool,
 }
 
@@ -46,6 +50,7 @@ impl Args {
     pub fn execute(&self) -> Result<String> {
         let output_path = self.convert()?;
 
+        #[cfg(feature = "deploy")]
         if self.deploy {
             return self.publish(&output_path);
         }
@@ -57,42 +62,26 @@ impl Args {
 #[derive(Debug, Clone, PartialEq)]
 enum ProfileValue {
     Address(AccountAddress),
-    Profile(String),
+    Profile(ProfileConfig),
 }
 
 impl ProfileValue {
     pub fn to_address(&self) -> Result<AccountAddress> {
         let address = match self {
             ProfileValue::Address(address) => *address,
-            ProfileValue::Profile(profile_name) => {
-                let aptos_account = ProfileValue::profile(profile_name)?.account
-                .ok_or_else(|| {
-                    anyhow!(
-                        "The address is not specified in the profile {profile_name:?}. Try to recreate the profile"
-                    )
-                })?;
-                AccountAddress::from_bytes(&aptos_account.into_bytes())?
-            }
+            ProfileValue::Profile(profile_name) => profile_name.address.clone(),
         };
         Ok(address)
     }
 
+    #[cfg(feature = "deploy")]
     pub fn name_profile(&self) -> Result<&String> {
         match self {
             ProfileValue::Address(..) => {
                 bail!("The address was transmitted. The profile name was expected.")
             }
-            ProfileValue::Profile(profile_name) => Ok(profile_name),
+            ProfileValue::Profile(profile_name) => Ok(&profile_name.name),
         }
-    }
-
-    fn profile(profile_name: &str) -> Result<ProfileConfig> {
-        aptos::common::types::CliConfig::load_profile(profile_name)?.ok_or_else(|| {
-            anyhow!(
-                "Profile {:?} not found. To create a profile, use: $ aptos init --profile <NAME>",
-                &profile_name
-            )
-        })
     }
 }
 
@@ -105,9 +94,7 @@ impl FromStr for ProfileValue {
                 value,
             )?))
         } else {
-            ProfileValue::profile(value)?;
-
-            Ok(ProfileValue::Profile(value.to_string()))
+            Ok(ProfileValue::Profile(ProfileConfig::load(value)?))
         }
     }
 }

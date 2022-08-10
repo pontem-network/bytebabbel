@@ -7,7 +7,7 @@ Converts **solidity file** to **binary move** code. You can convert from **abi +
 
 > **! IMPORTANT**\
 > To convert from a **sol** file, **solc** must be installed on the computer and accessible from the terminal using the short command **solc**.\
-> To publish, you need the installed **aptos** utility
+> To publish, you need the installed **aptos** utility and **e2m** build with the flag `--features=deploy`
 
 ### Install solc
 
@@ -40,7 +40,7 @@ Cloning the repository and installing e2m:
 
 ```bash
 git clone https://github.com/pontem-network/eth2move
-cargo +nightly install --path cli/e2m
+cargo +nightly install --path cli/e2m --features=deploy
 ```
 
 ### See help:
