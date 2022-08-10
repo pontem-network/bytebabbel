@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathMinusMultiplyFn {
+library MinusMultiply {
 
     // # minusmultiply_const_2() 2
     function minusmultiply_const_2() public pure returns (uint) {

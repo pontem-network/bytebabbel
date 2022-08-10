@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathMultiplyFn {
+library MathMultiply {
     // # multiply_const_2() 2
     function multiply_const_2() public pure returns (uint) {
         uint a = 1;
@@ -43,10 +43,5 @@ library MathMultiplyFn {
         c = c * 5;
         uint d = 10;
         return d * c;
-    }
-
-    // # multiply_params(1,2,3) 6
-    function multiply_params(uint a, uint b, uint c) public pure returns (uint) {
-        return a * b * c;
     }
 }

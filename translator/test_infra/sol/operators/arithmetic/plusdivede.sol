@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathPlusDevideFn {
+library PlusDevide {
     // # plusdevide_const_3() 3
     function plusdevide_const_3() public pure returns (uint) {
         return 1 + 4 / 2;

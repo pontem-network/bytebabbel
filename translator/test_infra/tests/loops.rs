@@ -1,5 +1,6 @@
 use test_infra::sol::build_sol;
 
+#[allow(dead_code)]
 mod testssol;
 
 #[test]

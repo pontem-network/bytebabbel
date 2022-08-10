@@ -13,7 +13,6 @@ use move_ir_types::location::Spanned;
 use mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use mv::mvir::MvModule;
 use regex::Regex;
-use std::path::PathBuf;
 
 pub mod clog;
 pub mod color;

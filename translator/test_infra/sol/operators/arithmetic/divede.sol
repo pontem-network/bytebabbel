@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathDevideFn {
+library Devide {
     // # devide_const_2() 2
     function devide_const_2() public pure returns (uint) {
         return 4 / 2;
@@ -18,6 +18,6 @@ library MathDevideFn {
         uint a = 8;
         uint b = 2;
 
-        return a/b;
+        return a / b;
     }
 }

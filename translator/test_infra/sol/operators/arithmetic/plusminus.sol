@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library MathPlusMinusFn {
+library PlusMinus {
     // # plusminus_const_106() 106
     function plusminus_const_106() public pure returns (uint) {
         uint a = 128 - 12;
