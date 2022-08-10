@@ -38,7 +38,6 @@ jobs:
         with:
           path: |
             ~/.solc
-            ~/.aptos
           key: ${{ runner.os }}-compile
 
       - name: Install Rust toolchain
@@ -54,11 +53,6 @@ jobs:
 
       - name: Solc latest version
         uses: pontem-network/get-solc@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Aptos latest version
-        uses: pontem-network/get-aptos@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
