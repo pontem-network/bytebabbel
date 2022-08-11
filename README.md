@@ -52,9 +52,9 @@ e2m --help
 * `<PATH>`              Path to the file. Specify the path to sol file or abi | bin
 * `-o`, `--output`      Where to save the converted Move binary file
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
-* `-p`, `--profile`     Profile name or address. The address must start with "0x". Needed for the module address [default: default]
+* `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
 * `-m`, `--math`        Math backend u128 or u256 [default: u128]
-* `-d`, `--deploy`      Deploying the module in aptos node [default: default]
+* `-d`, `--deploy`      Deploying the module in aptos node
 
 ### Example
 You can find the files from the examples in the [eth2move/examples](https://github.com/pontem-network/eth2move/tree/master/examples) folder
