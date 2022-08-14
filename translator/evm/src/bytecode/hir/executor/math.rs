@@ -27,7 +27,14 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+        if !ctx.is_in_loop() {
+            let param = ir.resolve_var(params[0]);
+            if let Some(param) = param {
+                let id = ir.create_var(Var::Val(self.calc(param)));
+                return ExecutionResult::Output(vec![id]);
+            }
+        }
         let id = ir.create_var(Var::UnaryOp(*self, params[0]));
         ExecutionResult::Output(vec![id])
     }
@@ -59,9 +66,24 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let a = params[0];
         let b = params[1];
+        if !ctx.is_in_loop() {
+            let a = ir.resolve_var(a);
+            let b = ir.resolve_var(b);
+            if let (Some(a), Some(b)) = (a, b) {
+                let res = self.calc(a, b);
+                let id = ir.create_var(Var::Val(res));
+                return ExecutionResult::Output(vec![id]);
+            }
+            if self == &BinaryOp::EQ {
+                let val = if a == b { U256::one() } else { U256::zero() };
+                let id = ir.create_var(Var::Val(val));
+                return ExecutionResult::Output(vec![id]);
+            }
+        }
+
         let id = ir.create_var(Var::BinaryOp(*self, a, b));
         ExecutionResult::Output(vec![id])
     }
@@ -219,10 +241,21 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let op1 = params[0];
         let op2 = params[1];
         let op3 = params[2];
+
+        if !ctx.is_in_loop() {
+            let op1 = ir.resolve_var(op1);
+            let op2 = ir.resolve_var(op2);
+            let op3 = ir.resolve_var(op3);
+            if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
+                let res = self.calc(op1, op2, op3);
+                let id = ir.create_var(Var::Val(res));
+                return ExecutionResult::Output(vec![id]);
+            }
+        }
         let id = ir.create_var(Var::TernaryOp(self.clone(), op1, op2, op3));
         ExecutionResult::Output(vec![id])
     }

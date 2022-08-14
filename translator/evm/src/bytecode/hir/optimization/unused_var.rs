@@ -94,7 +94,7 @@ impl UnusedVarClipper {
                     ir.abort(code);
                 }
                 Instruction::MapVar { id, val } => {
-                    if analysis.is_reachable(&id) {
+                    if analysis.is_reachable(&id) && analysis.is_reachable(&val) {
                         let id = Self::map_var_id(id, id_mapping)?;
                         let val = Self::map_var_id(val, id_mapping)?;
                         ir.map_var(id, val);
@@ -368,7 +368,7 @@ impl<'r> ContextAnalyzer<'r> {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct ReachabilityAnalysis {
     reachable_vars: HashSet<VarId>,
     loop_context: HashMap<BlockId, HashSet<VarId>>,

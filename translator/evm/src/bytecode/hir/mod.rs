@@ -92,7 +92,9 @@ impl<'a> HirTranslator<'a> {
     ) -> Result<StopFlag, Error> {
         ctx.create_loop(loop_.jmp.block);
         let before_inst = ir.swap_instruction(vec![]);
+        ctx.enter_loop();
         let res = self.exec_block(&loop_.jmp.block, ir, ctx)?;
+        ctx.exit_loop();
         let cnd_block = ir.swap_instruction(before_inst);
         match res {
             BlockResult::Jmp(jmp) => {
@@ -117,10 +119,11 @@ impl<'a> HirTranslator<'a> {
             } => {
                 ensure!(true_br == loop_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
-
+                ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
                 self.exec_flow(loop_.br.flow(), ir, ctx)?;
                 let loop_inst = ir.swap_instruction(instructions);
+                ctx.exit_loop();
                 ir.push_loop(
                     loop_.jmp.block,
                     cnd_block,

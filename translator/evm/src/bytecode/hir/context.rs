@@ -13,6 +13,7 @@ pub struct Context {
     stack: Stack,
     env: Rc<Env>,
     loop_input: HashMap<BlockId, Stack>,
+    loop_stack_size: usize,
 }
 
 impl Context {
@@ -23,6 +24,7 @@ impl Context {
             stack: Stack::default(),
             env: Rc::new(Env::new(fun)),
             loop_input: Default::default(),
+            loop_stack_size: 0,
         }
     }
 
@@ -85,6 +87,18 @@ impl Context {
         }
 
         mapping
+    }
+
+    pub fn is_in_loop(&self) -> bool {
+        self.loop_stack_size != 0
+    }
+
+    pub fn enter_loop(&mut self) {
+        self.loop_stack_size += 1;
+    }
+
+    pub fn exit_loop(&mut self) {
+        self.loop_stack_size -= 1;
     }
 }
 
