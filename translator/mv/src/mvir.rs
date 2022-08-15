@@ -1,6 +1,3 @@
-use crate::function::code::intrinsic::math::MathModel;
-use crate::function::code::MvTranslator;
-use crate::function::signature::SignatureWriter;
 use crate::function::MvFunction;
 use anyhow::{anyhow, Error};
 use evm::program::Program;
@@ -20,30 +17,27 @@ pub struct MvModule {
 }
 
 impl MvModule {
-    pub fn from_evm_program<M: MathModel>(
-        address: AccountAddress,
-        mut math: M,
-        program: Program,
-    ) -> Result<MvModule, Error> {
-        let name = Identifier::new(program.name())?;
-        let mut signatures = SignatureWriter::default();
-        math.make_signature(&mut signatures);
-        let funcs = program
-            .public_functions()
-            .into_iter()
-            .map(|def| {
-                MvTranslator::new(&program, &def, &mut math)
-                    .translate()
-                    .and_then(|code| MvFunction::new_public(def, code, &mut signatures))
-            })
-            .collect::<Result<_, _>>()?;
-
-        Ok(MvModule {
-            address,
-            name,
-            funcs,
-            signatures: signatures.freeze(),
-        })
+    pub fn from_evm_program(address: AccountAddress, program: Program) -> Result<MvModule, Error> {
+        // let name = Identifier::new(program.name())?;
+        // let mut signatures = SignatureWriter::default();
+        // math.make_signature(&mut signatures);
+        // let funcs = program
+        //     .public_functions()
+        //     .into_iter()
+        //     .map(|def| {
+        //         MvTranslator::new(&program, &def, &mut math)
+        //             .translate()
+        //             .and_then(|code| MvFunction::new_public(def, code, &mut signatures))
+        //     })
+        //     .collect::<Result<_, _>>()?;
+        //
+        // Ok(MvModule {
+        //     address,
+        //     name,
+        //     funcs,
+        //     signatures: signatures.freeze(),
+        // })
+        todo!()
     }
 
     pub fn make_move_module(self) -> Result<CompiledModule, Error> {

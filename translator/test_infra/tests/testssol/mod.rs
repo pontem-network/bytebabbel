@@ -10,7 +10,6 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;
 use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
 use move_ir_types::location::Spanned;
-use mv::function::code::intrinsic::math::u128_model::U128MathModel;
 use mv::mvir::MvModule;
 use regex::Regex;
 
@@ -144,7 +143,7 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
     let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
     let name = split.next().unwrap();
     let program = transpile_program(name, eth, abi, U256::from(addr.as_slice())).unwrap();
-    let module = MvModule::from_evm_program(addr, U128MathModel::default(), program).unwrap();
+    let module = MvModule::from_evm_program(addr, program).unwrap();
     let compiled_module = module.make_move_module().unwrap();
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode).unwrap();
