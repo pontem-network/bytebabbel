@@ -60,7 +60,6 @@ impl MirTranslator {
                 todo!()
             }
             BinaryOp::Sub => {
-                let result = self.map_local_var(result, SType::Bool);
                 translate_sub(self, op, op1, result)?;
                 todo!()
             }
@@ -118,31 +117,31 @@ fn translate_eq(
     Ok(())
 }
 
-///if b > a { // overflow u128::MAX - (b - a) + 1 } else { a - b }
+///if op1 > op { // overflow u128::MAX - (op1 - op) + 1 } else { op - op1 }
 fn translate_sub(
     translator: &mut MirTranslator,
     op: Rc<Variable>,
     op1: Rc<Variable>,
-    result: LocalIndex,
+    result: VarId,
 ) -> Result<(), Error> {
+    let result = translator.map_local_var(result, SType::Bool);
+
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
 
     let cnd = translator.variables.borrow_local(SType::Bool);
-    translator
-        .mir
-        .add_statement(Statement::CreateVar(cnd, Box::new(Statement::Operation(Operation::Gt, op1, op))));
+    translator.mir.add_statement(Statement::CreateVar(
+        cnd,
+        Box::new(Statement::Operation(Operation::Gt, op1, op)),
+    ));
 
-    Statement::IF {
-        cnd: translator.use_var(cnd)?,
+    translator.variables.release_local(result);
+    let cnd = Rc::new(Variable::LocalBorrow(result, SType::U128));
+
+    translator.mir.add_statement(Statement::IF {
+        cnd,
         true_br: vec![],
-        false_br: vec![]
-    }
-
-
-    let action = Statement::Operation(Operation::Eq, op, op1);
-    translator
-        .mir
-        .add_statement(Statement::CreateVar(result, Box::new(action)));
+        false_br: vec![],
+    });
     Ok(())
 }
