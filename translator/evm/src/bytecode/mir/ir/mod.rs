@@ -20,4 +20,8 @@ impl Mir {
         mem::swap(&mut self.statements, &mut mir.statements);
         mir
     }
+
+    pub fn into_inner(self) -> Vec<Statement> {
+        self.statements
+    }
 }

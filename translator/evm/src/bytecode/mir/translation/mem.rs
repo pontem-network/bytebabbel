@@ -31,7 +31,7 @@ impl MirTranslator {
             .or_insert_with(|| self.variables.borrow_local(var.s_type()));
         self.variables.check_type(var.s_type(), *local)?;
 
-        match var.as_ref() {
+        match &var {
             Variable::Const(val, st) => {
                 self.mir.add_statement(Statement::CreateVar(
                     *local,
@@ -57,7 +57,7 @@ impl MirTranslator {
         Ok(())
     }
 
-    fn store_mem_var(&mut self, id: VarId, var: Rc<Variable>) {
+    fn store_mem_var(&mut self, id: VarId, var: Variable) {
         self.data_store.insert(id, var);
     }
 }

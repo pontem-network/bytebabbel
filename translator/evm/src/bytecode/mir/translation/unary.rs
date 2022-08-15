@@ -23,21 +23,11 @@ impl MirTranslator {
         }
     }
 
-    fn unary_with_u128(
-        &mut self,
-        cmd: UnaryOp,
-        op: Rc<Variable>,
-        result: VarId,
-    ) -> Result<(), Error> {
+    fn unary_with_u128(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
         todo!()
     }
 
-    fn unary_with_bool(
-        &mut self,
-        cmd: UnaryOp,
-        op: Rc<Variable>,
-        result: VarId,
-    ) -> Result<(), Error> {
+    fn unary_with_bool(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
         match cmd {
             UnaryOp::IsZero => {
                 let result = self.map_local_var(result, SType::Bool);
