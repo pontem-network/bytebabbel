@@ -1,4 +1,5 @@
 use crate::bytecode::mir::ir::types::{LocalIndex, SType};
+use anyhow::{anyhow, Error};
 use std::collections::HashMap;
 
 pub struct Variables {
@@ -23,6 +24,18 @@ impl Variables {
             self.seq += 1;
             locals.new_borrowed(idx);
             idx
+        }
+    }
+
+    pub fn check_type(&self, tp: SType, local: LocalIndex) -> Result<(), Error> {
+        if let Some(locals) = self.locals.get(&tp) {
+            if locals.contains(local) {
+                Ok(())
+            } else {
+                Err(anyhow!("local {} is not of type {:?}", local, tp))
+            }
+        } else {
+            Err(anyhow!("local {} is not of type {:?}", local, tp))
         }
     }
 

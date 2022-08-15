@@ -9,6 +9,9 @@ use anyhow::{anyhow, Error};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+pub mod binary;
+pub mod brunch;
+pub mod cast;
 pub mod consts;
 pub mod mem;
 pub mod unary;
@@ -40,7 +43,7 @@ impl MirTranslator {
         Ok(self.mir)
     }
 
-    pub(super) fn create_local_var(&mut self, var_id: VarId, tp: SType) -> LocalIndex {
+    pub(super) fn map_local_var(&mut self, var_id: VarId, tp: SType) -> LocalIndex {
         let result_var = self.variables.borrow_local(tp);
         self.data_store
             .insert(var_id, Rc::new(Variable::LocalBorrow(result_var, tp)));
@@ -77,7 +80,14 @@ impl MirTranslator {
                     is_true_br_loop,
                     loop_br,
                 } => {
-                    todo!()
+                    self.translate_loop(
+                        *id,
+                        condition_block,
+                        *condition,
+                        *is_true_br_loop,
+                        loop_br,
+                        vars,
+                    )?;
                 }
 
                 Instruction::Stop => {
@@ -119,8 +129,12 @@ impl MirTranslator {
             Var::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
             }
-            Var::BinaryOp(cmd, _, _) => {}
-            Var::TernaryOp(cmd, _, _, _) => {}
+            Var::BinaryOp(cmd, op1, op2) => {
+                self.translate_binary_op(cmd, op1, op2, id)?;
+            }
+            Var::TernaryOp(cmd, _, _, _) => {
+                todo!()
+            }
         }
         Ok(())
     }

@@ -1,4 +1,5 @@
 use crate::bytecode::mir::ir::statement::Statement;
+use std::mem;
 
 pub mod math;
 pub mod statement;
@@ -13,5 +14,10 @@ impl Mir {
     pub fn add_statement(&mut self, statement: Statement) {
         println!("{:?}", statement);
         self.statements.push(statement);
+    }
+
+    pub fn swap(&mut self, mut mir: Mir) -> Mir {
+        mem::swap(&mut self.statements, &mut mir.statements);
+        mir
     }
 }

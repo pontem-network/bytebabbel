@@ -9,7 +9,7 @@ pub enum SType {
 
 pub type LocalIndex = u8;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     U128(u128),
     Bool(bool),

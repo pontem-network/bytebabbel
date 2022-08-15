@@ -19,7 +19,7 @@ impl MirTranslator {
         let var = self.use_var(op)?;
         match var.s_type() {
             SType::U128 => self.unary_with_u128(cmd, var, result),
-            SType::Bool => self.unary_with_u128(cmd, var, result),
+            SType::Bool => self.unary_with_bool(cmd, var, result),
         }
     }
 
@@ -29,7 +29,7 @@ impl MirTranslator {
         op: Rc<Variable>,
         result: VarId,
     ) -> Result<(), Error> {
-        Ok(())
+        todo!()
     }
 
     fn unary_with_bool(
@@ -40,13 +40,18 @@ impl MirTranslator {
     ) -> Result<(), Error> {
         match cmd {
             UnaryOp::IsZero => {
-                let result = self.create_local_var(result, SType::Bool);
+                let result = self.map_local_var(result, SType::Bool);
                 let false_ = bool_const(false);
                 let action = Statement::Operation(Operation::Eq, op, false_);
                 self.mir
                     .add_statement(Statement::CreateVar(result, Box::new(action)));
             }
-            UnaryOp::Not => {}
+            UnaryOp::Not => {
+                let result = self.map_local_var(result, SType::Bool);
+                let action = Statement::Operation(Operation::Not, op.clone(), op);
+                self.mir
+                    .add_statement(Statement::CreateVar(result, Box::new(action)));
+            }
         }
         Ok(())
     }
