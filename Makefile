@@ -6,7 +6,3 @@ pre_commit:
 
 clean:
 	cargo clean
-	rm -rf ./translator/test_infra/bin
-
-rebuild: clean
-	cargo +nightly build

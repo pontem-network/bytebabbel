@@ -9,6 +9,7 @@ use bytecode::pre_processing::ctor;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
+use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::{Function, U256};
 use crate::program::Program;
@@ -48,8 +49,7 @@ pub fn transpile_program(
         .map(|(h, entry)| {
             Function::try_from((h, entry))
                 .and_then(|f| {
-                    //todo new translator
-                    // translate_function(&hir, f.clone(), contract_addr).unwrap();
+                    //translate_function(&hir, f.clone(), contract_addr).unwrap();
                     old_executor.exec(f)
                 })
                 .map(|res| (h, res))
@@ -62,11 +62,12 @@ pub fn translate_function(
     hir_translator: &HirTranslator,
     fun: Function,
     contract_addr: U256,
-) -> Result<Hir, Error> {
+) -> Result<Mir, Error> {
     let hir = hir_translator.translate(fun.clone(), contract_addr)?;
     let mir_translator = MirTranslator::new(fun);
-    let _mir = mir_translator.translate_hir(hir)?;
-    todo!()
+    let mir = mir_translator.translate_hir(hir)?;
+    mir.print();
+    Ok(mir)
 }
 
 pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {

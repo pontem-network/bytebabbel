@@ -1,10 +1,11 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::{Var, VarId, Vars};
+use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::mem::Memory;
-use crate::bytecode::mir::translation::variables::Variables;
+use crate::bytecode::mir::translation::variables::{Variable, Variables};
 use crate::{Function, Hir};
 use anyhow::{anyhow, Error};
 use std::collections::HashMap;
@@ -21,7 +22,7 @@ pub struct MirTranslator {
     pub(super) fun: Function,
     pub(super) variables: Variables,
     pub(super) mem: Memory,
-    pub(super) data_store: HashMap<VarId, Variable>,
+    pub(super) mapping: HashMap<VarId, Variable>,
     pub(super) mir: Mir,
 }
 
@@ -32,7 +33,7 @@ impl MirTranslator {
             fun,
             variables,
             mem: Default::default(),
-            data_store: Default::default(),
+            mapping: Default::default(),
             mir: Default::default(),
         }
     }
@@ -43,11 +44,10 @@ impl MirTranslator {
         Ok(self.mir)
     }
 
-    pub(super) fn map_local_var(&mut self, var_id: VarId, tp: SType) -> LocalIndex {
-        let result_var = self.variables.borrow_local(tp);
-        self.data_store
-            .insert(var_id, Variable::LocalBorrow(result_var, tp));
-        result_var
+    pub(super) fn map_var(&mut self, var_id: VarId, tp: SType) -> Variable {
+        let var = self.variables.borrow(tp);
+        self.mapping.insert(var_id, var);
+        var
     }
 
     fn translate_instructions(
@@ -55,6 +55,7 @@ impl MirTranslator {
         instructions: &[Instruction],
         vars: &mut Vars,
     ) -> Result<(), Error> {
+        let _scope = self.variables.create_scope();
         for instruction in instructions {
             match instruction {
                 Instruction::SetVar(id) => {
@@ -89,7 +90,6 @@ impl MirTranslator {
                         vars,
                     )?;
                 }
-
                 Instruction::Stop => {
                     self.mir.add_statement(Statement::Abort(u8::MAX));
                 }
@@ -99,18 +99,21 @@ impl MirTranslator {
                 Instruction::Result(vars) => {
                     let vars = vars
                         .iter()
-                        .map(|id| self.use_var(*id))
+                        .map(|id| self.get_var(*id))
                         .collect::<Result<Vec<_>, _>>()?;
                     self.mir.add_statement(Statement::Result(vars));
                 }
-                Instruction::MapVar { id: _, val: _ } => {
-                    todo!()
+                Instruction::MapVar { id, val } => {
+                    let val = self.get_var(*val)?;
+                    let id = self.get_var(*id)?;
+                    self.mir.add_statement(Statement::CreateVar(id, val.expr()));
                 }
                 Instruction::Continue {
-                    loop_id: _,
-                    context: _,
+                    loop_id: id,
+                    context: inst,
                 } => {
-                    todo!()
+                    self.translate_instructions(inst, vars)?;
+                    self.mir.add_statement(Statement::Continue(*id));
                 }
             }
         }
@@ -121,7 +124,13 @@ impl MirTranslator {
         let var = vars.take(id)?;
         match var {
             Var::Val(val) => {
-                self.set_const(id, val);
+                let var = self.variables.borrow(SType::U128);
+                self.mapping.insert(id, var);
+
+                self.mir.add_statement(Statement::CreateVar(
+                    var,
+                    Expression::Const(Value::from(val)),
+                ));
             }
             Var::Param(param_id) => {
                 let param = self
@@ -129,10 +138,13 @@ impl MirTranslator {
                     .input
                     .get(param_id as usize)
                     .ok_or_else(|| anyhow!("parameter index out of bounds"))?;
-                self.data_store.insert(
-                    id,
-                    Variable::ParamAlias(param_id as LocalIndex, SType::from(param)),
-                );
+                let tp = SType::from(param);
+                let var = self.variables.borrow(tp);
+                self.mapping.insert(id, var);
+                self.mir.add_statement(Statement::CreateVar(
+                    var,
+                    Expression::Param(param_id as LocalIndex, tp),
+                ));
             }
             Var::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
@@ -147,40 +159,11 @@ impl MirTranslator {
         Ok(())
     }
 
-    fn set_const<C: Into<Value>>(&mut self, id: VarId, val: C) {
-        let value = val.into();
-        let stype = value.s_type();
-        self.data_store.insert(id, Variable::Const(value, stype));
-    }
-
-    fn use_var(&mut self, id: VarId) -> Result<Variable, Error> {
+    fn get_var(&mut self, id: VarId) -> Result<Variable, Error> {
         let var = self
-            .data_store
+            .mapping
             .get(&id)
-            .ok_or_else(|| anyhow!("variable {:?} not found", id))?
-            .clone();
-
-        if let Variable::LocalBorrow(index, _) = &var {
-            self.data_store.remove(&id);
-            self.variables.release_local(*index);
-        }
-        Ok(var)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Variable {
-    Const(Value, SType),
-    ParamAlias(LocalIndex, SType),
-    LocalBorrow(LocalIndex, SType),
-}
-
-impl Variable {
-    pub fn s_type(&self) -> SType {
-        match self {
-            Variable::Const(_, stype) => *stype,
-            Variable::ParamAlias(_, stype) => *stype,
-            Variable::LocalBorrow(_, stype) => *stype,
-        }
+            .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
+        Ok(*var)
     }
 }
