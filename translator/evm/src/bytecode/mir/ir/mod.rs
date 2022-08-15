@@ -14,7 +14,6 @@ pub struct Mir {
 
 impl Mir {
     pub fn add_statement(&mut self, statement: Statement) {
-        println!("{:?}", statement);
         self.statements.push(statement);
     }
 

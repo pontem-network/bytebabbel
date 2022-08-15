@@ -3,7 +3,7 @@ use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::mir::ir::expression::StackOpsBuilder;
 use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
-use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
+use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 use anyhow::Error;
@@ -16,8 +16,8 @@ impl MirTranslator {
         op1: VarId,
         result: VarId,
     ) -> Result<(), Error> {
-        let op = self.use_var(op)?;
-        let op1 = self.use_var(op1)?;
+        let op = self.get_var(op)?;
+        let op1 = self.get_var(op1)?;
 
         match cmd {
             BinaryOp::EQ => {
@@ -102,7 +102,7 @@ fn translate_eq(
     translator: &mut MirTranslator,
     op: Variable,
     op1: Variable,
-    result: LocalIndex,
+    result: Variable,
 ) -> Result<(), Error> {
     //todo optimize qe cases with consts
     let (op, op1) = if op.s_type() == op1.s_type() {
@@ -134,24 +134,25 @@ fn translate_sub(
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
 
-    let mut cnd = StackOpsBuilder::default();
-    cnd.push_var(op1.clone());
-    cnd.push_var(op.clone());
-    cnd.binary_op(Operation::Gt, SType::U128, SType::Bool)?;
-    let cnd = cnd.build(SType::Bool)?;
+    let cnd = StackOpsBuilder::default()
+        .push_var(op1)
+        .push_var(op)
+        .binary_op(Operation::Gt, SType::U128, SType::Bool)?
+        .build(SType::Bool)?;
 
-    let mut true_br = StackOpsBuilder::default();
-    true_br.push_const(Value::U128(u128::MAX));
-    true_br.push_const(Value::U128(1));
-    true_br.push_var(op1.clone());
-    true_br.push_var(op.clone());
-    true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
-    true_br.binary_op(Operation::Add, SType::U128, SType::U128)?;
-    true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
+    let true_br = StackOpsBuilder::default()
+        .push_const(Value::U128(u128::MAX))
+        .push_const(Value::U128(1))
+        .push_var(op1)
+        .push_var(op)
+        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .binary_op(Operation::Add, SType::U128, SType::U128)?
+        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .build(SType::U128)?;
 
     translator.mir.add_statement(Statement::IF {
         cnd,
-        true_br: vec![Statement::CreateVar(result, true_br.build(SType::U128)?)],
+        true_br: vec![Statement::CreateVar(result, true_br)],
         false_br: vec![Statement::CreateVar(result, Operation::Sub.expr(op, op1))],
     });
     Ok(())
@@ -173,25 +174,27 @@ fn translate_add(
 ) -> Result<(), Error> {
     let result = translator.map_var(result, SType::Bool);
 
-    let mut cnd = StackOpsBuilder::default();
-    cnd.push_const(Value::U128(u128::MAX));
-    cnd.push_var(op1.clone());
-    cnd.binary_op(Operation::Sub, SType::U128, SType::U128)?;
-    cnd.push_var(op.clone());
-    cnd.binary_op(Operation::Lt, SType::U128, SType::Bool)?;
+    let cnd = StackOpsBuilder::default()
+        .push_const(Value::U128(u128::MAX))
+        .push_var(op1)
+        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .push_var(op)
+        .binary_op(Operation::Lt, SType::U128, SType::Bool)?
+        .build(SType::Bool)?;
 
-    let mut true_br = StackOpsBuilder::default();
-    true_br.push_var(op.clone());
-    true_br.push_const(Value::U128(u128::MAX));
-    true_br.push_var(op1.clone());
-    true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
-    true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
-    true_br.push_const(Value::U128(1));
-    true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
+    let true_br = StackOpsBuilder::default()
+        .push_var(op)
+        .push_const(Value::U128(u128::MAX))
+        .push_var(op1)
+        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .push_const(Value::U128(1))
+        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .build(SType::U128)?;
 
     translator.mir.add_statement(Statement::IF {
-        cnd: cnd.build(SType::Bool)?,
-        true_br: vec![Statement::CreateVar(result, true_br.build(SType::U128)?)],
+        cnd,
+        true_br: vec![Statement::CreateVar(result, true_br)],
         false_br: vec![Statement::CreateVar(result, Operation::Add.expr(op, op1))],
     });
     Ok(())

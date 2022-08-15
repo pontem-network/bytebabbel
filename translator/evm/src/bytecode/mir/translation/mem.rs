@@ -1,12 +1,14 @@
 use crate::bytecode::hir::ir::var::{VarId, Vars};
-use crate::bytecode::mir::ir::types::LocalIndex;
+use crate::bytecode::mir::ir::expression::Expression;
+use crate::bytecode::mir::ir::statement::Statement;
+use crate::bytecode::mir::translation::variables::Variable;
 use crate::{MirTranslator, U256};
-use anyhow::Error;
+use anyhow::{ensure, Error};
 use std::collections::HashMap;
 
 #[derive(Default, Debug, Clone)]
 pub struct Memory {
-    mapping: HashMap<U256, LocalIndex>,
+    mapping: HashMap<U256, Variable>,
 }
 
 impl Memory {}
@@ -19,33 +21,17 @@ impl MirTranslator {
         _vars: &mut Vars,
     ) -> Result<(), Error> {
         //todo dynamic memory
-        let var = self.use_var(var_id)?;
+        let var = self.get_var(var_id)?;
 
         let local = self
             .mem
             .mapping
             .entry(addr)
-            .or_insert_with(|| self.variables.borrow(var.s_type()));
-        self.variables.check_type(var.s_type(), *local)?;
-        todo!();
-        // match &var {
-        //     Variable::Const(val, _) => {
-        //         self.mir.add_statement(Statement::CreateVar(
-        //             *local,
-        //             Box::new(Statement::Const(val.clone())),
-        //         ));
-        //     }
-        //     Variable::ParamAlias(val, _) => {
-        //         self.mir.add_statement(Statement::CreateVar(
-        //             *local,
-        //             Box::new(Statement::Param(*val)),
-        //         ));
-        //     }
-        //     Variable::LocalBorrow(val, _) => {
-        //         self.mir
-        //             .add_statement(Statement::CreateVar(*local, Box::new(Statement::Var(*val))));
-        //     }
-        // }
+            .or_insert_with(|| self.variables.borrow_global(var.s_type()));
+        ensure!(local.s_type() == var.s_type(), "type mismatch");
+
+        self.mir
+            .add_statement(Statement::CreateVar(*local, Expression::Var(var)));
         Ok(())
     }
 

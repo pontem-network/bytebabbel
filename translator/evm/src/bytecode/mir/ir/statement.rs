@@ -1,12 +1,10 @@
 use crate::bytecode::mir::ir::expression::Expression;
-use crate::bytecode::mir::ir::types::LocalIndex;
-use crate::bytecode::mir::translation::Variable;
+use crate::bytecode::mir::translation::variables::Variable;
 use crate::BlockId;
 
 #[derive(Debug)]
 pub enum Statement {
-    CreateVar(LocalIndex, Expression),
-    SetVar(LocalIndex, Expression),
+    CreateVar(Variable, Expression),
     IF {
         cnd: Expression,
         true_br: Vec<Statement>,

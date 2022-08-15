@@ -1,13 +1,13 @@
 use crate::bytecode::mir::ir::math::Operation;
-use crate::bytecode::mir::ir::types::{SType, Value};
-use crate::bytecode::mir::translation::Variable;
+use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
+use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::Error;
 
 #[derive(Debug)]
 pub enum Expression {
     Const(Value),
-    Not(Variable),
     Var(Variable),
+    Param(LocalIndex, SType),
     Operation(Operation, Variable, Variable),
     StackOps(StackOps),
 }
@@ -32,17 +32,24 @@ pub struct StackOpsBuilder {
 }
 
 impl StackOpsBuilder {
-    pub fn push_var(&mut self, var: Variable) {
+    pub fn push_var(mut self, var: Variable) -> StackOpsBuilder {
         self.stack.push(var.s_type());
         self.vec.push(StackOp::PushVar(var));
+        self
     }
 
-    pub fn push_const(&mut self, var: Value) {
+    pub fn push_const(mut self, var: Value) -> StackOpsBuilder {
         self.stack.push(var.s_type());
         self.vec.push(StackOp::PushConst(var));
+        self
     }
 
-    pub fn binary_op(&mut self, op: Operation, ops: SType, res: SType) -> Result<(), Error> {
+    pub fn binary_op(
+        mut self,
+        op: Operation,
+        ops: SType,
+        res: SType,
+    ) -> Result<StackOpsBuilder, Error> {
         let op1 = self
             .stack
             .pop()
@@ -56,10 +63,11 @@ impl StackOpsBuilder {
         }
         self.vec.push(StackOp::BinaryOp(op));
         self.stack.push(res);
-        Ok(())
+        Ok(self)
     }
 
-    pub fn not(&mut self) -> Result<(), Error> {
+    #[allow(clippy::should_implement_trait)]
+    pub fn not(mut self) -> Result<StackOpsBuilder, Error> {
         let op = self
             .stack
             .pop()
@@ -69,7 +77,7 @@ impl StackOpsBuilder {
         }
         self.vec.push(StackOp::Not);
         self.stack.push(SType::Bool);
-        Ok(())
+        Ok(self)
     }
 
     pub fn build(mut self, tp: SType) -> Result<Expression, Error> {

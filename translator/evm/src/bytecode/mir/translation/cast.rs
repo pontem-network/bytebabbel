@@ -10,6 +10,7 @@ impl MirTranslator {
         match var.s_type() {
             SType::U128 => Ok(var),
             SType::Bool => {
+                let _scope = self.variables.create_scope();
                 let result = self.variables.borrow(SType::U128);
                 self.mir.add_statement(Statement::IF {
                     cnd: var.expr(),
@@ -22,8 +23,7 @@ impl MirTranslator {
                         Expression::Const(Value::U128(0)),
                     )],
                 });
-                self.variables.release(result);
-                Ok(Variable(result, SType::U128))
+                Ok(result)
             }
         }
     }

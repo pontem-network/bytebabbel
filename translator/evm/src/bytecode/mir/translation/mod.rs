@@ -5,7 +5,7 @@ use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::mem::Memory;
-use crate::bytecode::mir::translation::variables::Variables;
+use crate::bytecode::mir::translation::variables::{Variable, Variables};
 use crate::{Function, Hir};
 use anyhow::{anyhow, Error};
 use std::collections::HashMap;
@@ -44,9 +44,9 @@ impl MirTranslator {
         Ok(self.mir)
     }
 
-    pub(super) fn map_var(&mut self, var_id: VarId, tp: SType) -> LocalIndex {
+    pub(super) fn map_var(&mut self, var_id: VarId, tp: SType) -> Variable {
         let var = self.variables.borrow(tp);
-        self.mapping.insert(var_id, Variable(var, tp));
+        self.mapping.insert(var_id, var);
         var
     }
 
@@ -55,6 +55,7 @@ impl MirTranslator {
         instructions: &[Instruction],
         vars: &mut Vars,
     ) -> Result<(), Error> {
+        let _scope = self.variables.create_scope();
         for instruction in instructions {
             match instruction {
                 Instruction::SetVar(id) => {
@@ -89,7 +90,6 @@ impl MirTranslator {
                         vars,
                     )?;
                 }
-
                 Instruction::Stop => {
                     self.mir.add_statement(Statement::Abort(u8::MAX));
                 }
@@ -99,14 +99,14 @@ impl MirTranslator {
                 Instruction::Result(vars) => {
                     let vars = vars
                         .iter()
-                        .map(|id| self.use_var(*id))
+                        .map(|id| self.get_var(*id))
                         .collect::<Result<Vec<_>, _>>()?;
                     self.mir.add_statement(Statement::Result(vars));
                 }
                 Instruction::MapVar { id, val } => {
-                    let val = self.use_var(*val)?;
-                    let id = self.reuse_local(*id)?;
-                    self.mir.add_statement(Statement::SetVar(id, val.expr()));
+                    let val = self.get_var(*val)?;
+                    let id = self.get_var(*id)?;
+                    self.mir.add_statement(Statement::CreateVar(id, val.expr()));
                 }
                 Instruction::Continue {
                     loop_id: id,
@@ -124,11 +124,11 @@ impl MirTranslator {
         let var = vars.take(id)?;
         match var {
             Var::Val(val) => {
-                let idx = self.variables.borrow(SType::U128);
-                self.mapping.insert(id, Variable(idx, SType::U128));
+                let var = self.variables.borrow(SType::U128);
+                self.mapping.insert(id, var);
 
                 self.mir.add_statement(Statement::CreateVar(
-                    idx,
+                    var,
                     Expression::Const(Value::from(val)),
                 ));
             }
@@ -139,13 +139,12 @@ impl MirTranslator {
                     .get(param_id as usize)
                     .ok_or_else(|| anyhow!("parameter index out of bounds"))?;
                 let tp = SType::from(param);
-
-                let idx = self.variables.borrow(tp);
-                let var = Variable(idx, tp);
+                let var = self.variables.borrow(tp);
                 self.mapping.insert(id, var);
-
-                self.mir
-                    .add_statement(Statement::CreateVar(idx, var.expr()));
+                self.mir.add_statement(Statement::CreateVar(
+                    var,
+                    Expression::Param(param_id as LocalIndex, tp),
+                ));
             }
             Var::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
@@ -160,36 +159,11 @@ impl MirTranslator {
         Ok(())
     }
 
-    fn use_var(&mut self, id: VarId) -> Result<Variable, Error> {
-        let var = self
-            .mapping
-            .get(&id)
-            .ok_or_else(|| anyhow!("variable {:?} not found", id))?
-            .clone();
-        self.variables.release(var.0);
-        Ok(var)
-    }
-
-    fn reuse_local(&mut self, id: VarId) -> Result<LocalIndex, Error> {
+    fn get_var(&mut self, id: VarId) -> Result<Variable, Error> {
         let var = self
             .mapping
             .get(&id)
             .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
-
-        self.variables.borrow_with_id(var.0, var.1)?;
-        Ok(var.0)
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Variable(pub LocalIndex, pub SType);
-
-impl Variable {
-    pub fn s_type(&self) -> SType {
-        self.1
-    }
-
-    pub fn expr(&self) -> Expression {
-        Expression::Var(self.clone())
+        Ok(*var)
     }
 }

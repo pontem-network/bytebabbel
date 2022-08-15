@@ -23,13 +23,13 @@ impl MirTranslator {
         self.translate_instructions(loop_br, vars)?;
         let loop_br = self.mir.swap(before);
 
-        let cnd = self.use_var(condition)?;
+        let cnd = self.get_var(condition)?;
         let cnd = if is_true_br_loop {
             // true branch
-            let mut cnd_builder = StackOpsBuilder::default();
-            cnd_builder.push_var(cnd);
-            cnd_builder.not()?;
-            cnd_builder.build(SType::Bool)?
+            StackOpsBuilder::default()
+                .push_var(cnd)
+                .not()?
+                .build(SType::Bool)?
         } else {
             // false branch
             cnd.expr()
@@ -52,7 +52,7 @@ impl MirTranslator {
         vars: &mut Vars,
     ) -> Result<(), Error> {
         let before = self.mir.swap(Mir::default());
-        let cnd = self.use_var(var)?;
+        let cnd = self.get_var(var)?;
 
         self.translate_instructions(true_br, vars)?;
         let true_br = self.mir.swap(Mir::default());
