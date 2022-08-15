@@ -338,7 +338,14 @@ pub struct CndBranch {
 pub struct Branch {
     pub end: BlockId,
     pub blocks: Vec<BlockId>,
+    pub continue_blocks: Option<Continue>,
     pub is_loop: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Continue {
+    pub loop_head: BlockId,
+    pub continue_block: BlockId,
 }
 
 impl Branch {
@@ -348,6 +355,13 @@ impl Branch {
 
     pub fn set_loop(&mut self, is_loop: bool) {
         self.is_loop = is_loop;
+        let len = self.blocks.len();
+        let loop_head = self.blocks[len - 1];
+        let continue_block = self.blocks[len - 2];
+        self.continue_blocks = Some(Continue {
+            loop_head,
+            continue_block,
+        });
     }
 }
 
@@ -371,20 +385,6 @@ impl CndBranch {
                 break;
             }
         }
-
-        let (large, small) = if self.true_br.blocks.len() > self.false_br.blocks.len() {
-            (&self.true_br.blocks, &self.false_br.blocks)
-        } else {
-            (&self.false_br.blocks, &self.true_br.blocks)
-        };
-
-        for (first_br, second_dr) in large.iter().rev().zip(small.iter().rev()) {
-            if first_br == second_dr {
-                tail.push_front(*first_br);
-            } else {
-                break;
-            }
-        }
         tail
     }
 }
@@ -402,7 +402,7 @@ impl CndBranch {
     }
 
     pub fn len(&self) -> usize {
-        self.true_br.blocks.len() + self.false_br.blocks.len()
+        self.true_br.blocks.len() + self.false_br.blocks.len() + 1
     }
 
     pub fn is_empty(&self) -> bool {

@@ -2170,6 +2170,7 @@ dependencies = [
  "log",
  "move-core-types 0.0.4 (git+https://github.com/move-language/move?rev=f3c921433758340cb95075ae9918095878686d3c)",
  "serde_json",
+ "serde_yaml 0.8.26",
  "sha2 0.10.2",
  "tempfile",
  "tokio",

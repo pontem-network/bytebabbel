@@ -1,4 +1,4 @@
-use crate::bytecode::llir::ir::var::VarId;
+use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::types::U256;
 use std::collections::HashMap;
 
@@ -8,13 +8,11 @@ pub struct Memory {
 }
 
 impl Memory {
-    pub fn store_aligned(&mut self, offset: U256, val: VarId) {
-        assert_eq!(offset % 32, U256::zero());
+    pub fn static_store(&mut self, offset: U256, val: VarId) {
         self.aligned_mem.insert(offset, val);
     }
 
-    pub fn load_aligned(&mut self, offset: U256) -> Option<VarId> {
-        assert_eq!(offset % 32, U256::zero());
+    pub fn static_load(&mut self, offset: U256) -> Option<VarId> {
         self.aligned_mem.get(&offset).cloned()
     }
 }

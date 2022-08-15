@@ -35,17 +35,24 @@ library  Loop {
 //    function for_loop(uint i) public pure returns (uint) {
 //        uint val = 0;
 //        for (uint j = 0; j < i; j++) {
-//            val += j * i;
+//            val += i;
+//
+//            if (val % 2 == 0) {
+//                continue;
+//            }
+//            if (val > 100) {
+//                break;
+//            }
 //        }
 //        return val;
 //    }
-    function for_loop(uint i) public pure returns (uint) {
-       if (i /2 == 0) {
-           return i;
-       } else {
-           return i -1;
-       }
-    }
+//    function for_loop(uint i) public pure returns (uint) {
+//       if (i /2 == 0) {
+//           return i;
+//       } else {
+//           return i -1;
+//       }
+//    }
 
 //    function for_loop(uint i) public pure returns (uint) {
 //       uint val = 1000;

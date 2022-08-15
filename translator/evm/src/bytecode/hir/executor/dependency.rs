@@ -1,13 +1,13 @@
-use crate::bytecode::llir::context::Context;
-use crate::bytecode::llir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::llir::ir::var::{Var, VarId};
-use crate::bytecode::llir::stack::FRAME_SIZE;
-use crate::{Ir, U256};
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir::ir::var::{Var, VarId};
+use crate::bytecode::hir::stack::FRAME_SIZE;
+use crate::{Hir, U256};
 
 pub struct Sha3;
 
 impl InstructionHandler for Sha3 {
-    fn handle(&self, _: Vec<VarId>, _: &mut Ir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<VarId>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
         todo!()
     }
 }
@@ -15,7 +15,7 @@ impl InstructionHandler for Sha3 {
 pub struct Address;
 
 impl InstructionHandler for Address {
-    fn handle(&self, _: Vec<VarId>, ir: &mut Ir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let id = ir.create_var(Var::Val(ctx.address()));
         ExecutionResult::Output(vec![id])
     }
@@ -39,7 +39,7 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, context: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => todo!(),
             TxMeta::Origin => todo!(),
@@ -57,7 +57,10 @@ impl InstructionHandler for TxMeta {
                         return ExecutionResult::Output(vec![id]);
                     }
                 } else {
-                    panic!("Unsupported dynamic call data load");
+                    panic!(
+                        "Unsupported dynamic call data load:{:?}",
+                        ir.var(&params[0])
+                    );
                 }
             }
             TxMeta::CallDataSize => context.env().call_data_size(),

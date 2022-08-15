@@ -1,8 +1,8 @@
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::instruction::Instruction;
-use crate::bytecode::llir::context::Context;
-use crate::bytecode::llir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::llir::ir::var::VarId;
-use crate::{BlockId, Ir};
+use crate::{BlockId, Hir};
 
 pub enum ControlFlow {
     Stop,
@@ -14,20 +14,15 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
         match self {
             ControlFlow::Stop => ExecutionResult::Stop,
             ControlFlow::Abort(code) => ExecutionResult::Abort(*code),
             ControlFlow::Return => ExecutionResult::Result {
                 offset: params[0],
                 len: params[1],
-                revert: false,
             },
-            ControlFlow::Revert => ExecutionResult::Result {
-                offset: params[0],
-                len: params[1],
-                revert: true,
-            },
+            ControlFlow::Revert => ExecutionResult::Stop,
             ControlFlow::Jump => {
                 if let Some(block) = ir.resolve_var(params[0]) {
                     ExecutionResult::Jmp(BlockId::from(block.as_usize()))

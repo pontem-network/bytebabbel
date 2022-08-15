@@ -1,4 +1,5 @@
 use crate::bytecode::flow_graph::flow::Flow;
+use crate::bytecode::flow_graph::LoopBr;
 use anyhow::Error;
 use log::log_enabled;
 use log::Level;
@@ -28,8 +29,27 @@ fn print_flow<W: Write>(buf: &mut W, flow: &Flow, width: usize) -> Result<(), Er
             writeln!(buf, "{:width$}0x{}", " ", seq)?;
         }
         Flow::Loop(loop_) => {
-            writeln!(buf, "{:width$}loop {{", " ")?;
-            print_flow(buf, &loop_.loop_br, width + 4)?;
+            writeln!(buf, "{:width$}'{}: loop {{", " ", loop_.jmp.block)?;
+            writeln!(
+                buf,
+                "{:width$}if ({}) {{",
+                " ",
+                loop_.jmp.block,
+                width = width + 4
+            )?;
+            match &loop_.br {
+                LoopBr::TrueBr(br) => {
+                    print_flow(buf, br, width + 8)?;
+                    writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
+                    writeln!(buf, "{:width$} break;", " ", width = width + 4)?;
+                }
+                LoopBr::FalseBr(br) => {
+                    writeln!(buf, "{:width$} break;", " ", width = width + 4)?;
+                    writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
+                    print_flow(buf, br, width + 8)?;
+                }
+            }
+            writeln!(buf, "{:width$}}}", " ", width = width + 4)?;
             writeln!(buf, "{:width$}}}", " ")?;
         }
         Flow::IF(if_) => {
@@ -41,6 +61,9 @@ fn print_flow<W: Write>(buf: &mut W, flow: &Flow, width: usize) -> Result<(), Er
         }
         Flow::Sequence(flow) => {
             print_flows(buf, flow, width)?;
+        }
+        Flow::Continue(block) => {
+            writeln!(buf, "{:width$}continue {};", " ", block)?;
         }
     }
     Ok(())

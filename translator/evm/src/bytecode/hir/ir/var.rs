@@ -1,5 +1,6 @@
-use crate::bytecode::llir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::types::U256;
+use anyhow::{anyhow, Error};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -26,8 +27,30 @@ impl Vars {
     pub fn resolve_var(&self, id: VarId) -> Option<U256> {
         match self.inner.get(&id) {
             Some(Var::Val(val)) => Some(*val),
-            _ => None,
+            None => None,
+            Some(Var::Param(_)) => None,
+            Some(Var::UnaryOp(cmd, op)) => {
+                let val = self.resolve_var(*op)?;
+                Some(cmd.calc(val))
+            }
+            Some(Var::BinaryOp(cmd, op1, op2)) => {
+                let op1 = self.resolve_var(*op1)?;
+                let op2 = self.resolve_var(*op2)?;
+                Some(cmd.calc(op1, op2))
+            }
+            Some(Var::TernaryOp(cmd, op1, op2, op3)) => {
+                let op1 = self.resolve_var(*op1)?;
+                let op2 = self.resolve_var(*op2)?;
+                let op3 = self.resolve_var(*op3)?;
+                Some(cmd.calc(op1, op2, op3))
+            }
         }
+    }
+
+    pub fn take(&mut self, id: VarId) -> Result<Var, Error> {
+        self.inner
+            .remove(&id)
+            .ok_or_else(|| anyhow!("VarId not found: {:?}", id))
     }
 }
 

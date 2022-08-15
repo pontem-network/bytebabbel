@@ -4,7 +4,7 @@
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::Param as AbiType;
 use crate::abi::{Entry, FunHash};
-use crate::bytecode::llir::stack::FRAME_SIZE;
+use crate::bytecode::hir::stack::FRAME_SIZE;
 use anyhow::{bail, Error};
 use std::cmp::Ordering;
 use std::ops::{Div, Rem};
@@ -21,7 +21,7 @@ impl Env {
     }
 
     pub fn call_data_size(&self) -> U256 {
-        U256::from(self.fun.input_size.len() * FRAME_SIZE + self.fun.hash.as_ref().len())
+        U256::from(self.fun.input.len() * FRAME_SIZE + self.fun.hash.as_ref().len())
     }
 
     pub fn hash(&self) -> FunHash {
@@ -33,8 +33,8 @@ impl Env {
 pub struct Function {
     pub hash: FunHash,
     pub name: String,
-    pub input_size: Vec<EthType>,
-    pub output_size: Vec<EthType>,
+    pub input: Vec<EthType>,
+    pub output: Vec<EthType>,
 }
 
 #[derive(Debug, Clone)]
@@ -62,12 +62,12 @@ impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
         Ok(Function {
             hash,
             name: entry.name().unwrap_or_default(),
-            input_size: entry.inputs().map_or(Ok(Vec::new()), |inp| {
+            input: entry.inputs().map_or(Ok(Vec::new()), |inp| {
                 inp.iter()
                     .map(EthType::try_from)
                     .collect::<Result<Vec<_>, _>>()
             })?,
-            output_size: entry
+            output: entry
                 .outputs()
                 .unwrap()
                 .iter()

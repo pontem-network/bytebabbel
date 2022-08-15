@@ -1,8 +1,8 @@
-use crate::bytecode::llir::context::Context;
-use crate::bytecode::llir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::llir::ir::var::{Var, VarId};
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir::ir::var::{Var, VarId};
 use crate::bytecode::types::{I256, U512};
-use crate::{Ir, U256};
+use crate::{Hir, U256};
 use std::ops::{Div, Rem};
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
@@ -11,23 +11,31 @@ pub enum UnaryOp {
     Not,
 }
 
-impl InstructionHandler for UnaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, _: &mut Context) -> ExecutionResult {
-        let id = if let Some(param) = ir.resolve_var(params[0]) {
-            let val = match self {
-                UnaryOp::IsZero => {
-                    if param.is_zero() {
-                        U256::one()
-                    } else {
-                        U256::zero()
-                    }
+impl UnaryOp {
+    pub fn calc(&self, param: U256) -> U256 {
+        match self {
+            UnaryOp::IsZero => {
+                if param.is_zero() {
+                    U256::one()
+                } else {
+                    U256::zero()
                 }
-                UnaryOp::Not => !param,
-            };
-            ir.create_var(Var::Val(val))
-        } else {
-            ir.create_var(Var::UnaryOp(*self, params[0]))
-        };
+            }
+            UnaryOp::Not => !param,
+        }
+    }
+}
+
+impl InstructionHandler for UnaryOp {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+        if !ctx.is_in_loop() {
+            let param = ir.resolve_var(params[0]);
+            if let Some(param) = param {
+                let id = ir.create_var(Var::Val(self.calc(param)));
+                return ExecutionResult::Output(vec![id]);
+            }
+        }
+        let id = ir.create_var(Var::UnaryOp(*self, params[0]));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -58,15 +66,25 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let a = params[0];
         let b = params[1];
+        if !ctx.is_in_loop() {
+            let a = ir.resolve_var(a);
+            let b = ir.resolve_var(b);
+            if let (Some(a), Some(b)) = (a, b) {
+                let res = self.calc(a, b);
+                let id = ir.create_var(Var::Val(res));
+                return ExecutionResult::Output(vec![id]);
+            }
+            if self == &BinaryOp::EQ {
+                let val = if a == b { U256::one() } else { U256::zero() };
+                let id = ir.create_var(Var::Val(val));
+                return ExecutionResult::Output(vec![id]);
+            }
+        }
 
-        let id = if let (Some(a), Some(b)) = (ir.resolve_var(a), ir.resolve_var(b)) {
-            ir.create_var(Var::Val(self.calc(a, b)))
-        } else {
-            ir.create_var(Var::BinaryOp(*self, a, b))
-        };
+        let id = ir.create_var(Var::BinaryOp(*self, a, b));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -135,7 +153,13 @@ impl BinaryOp {
             BinaryOp::Xor => a ^ b,
             BinaryOp::Mul => a.overflowing_mul(b).0,
             BinaryOp::Sub => a.overflowing_sub(b).0,
-            BinaryOp::Div => a.div(b),
+            BinaryOp::Div => {
+                if b == U256::zero() {
+                    U256::zero()
+                } else {
+                    a / b
+                }
+            }
             BinaryOp::SDiv => U256::from(I256::from(a).div(I256::from(b))),
             BinaryOp::SLt => {
                 if I256::from(a).lt(&I256::from(b)) {
@@ -217,20 +241,22 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Ir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let op1 = params[0];
         let op2 = params[1];
         let op3 = params[2];
 
-        let id = if let (Some(op1), Some(op2), Some(op3)) = (
-            ir.resolve_var(op1),
-            ir.resolve_var(op2),
-            ir.resolve_var(op3),
-        ) {
-            ir.create_var(Var::Val(self.calc(op1, op2, op3)))
-        } else {
-            ir.create_var(Var::TernaryOp(self.clone(), op1, op2, op3))
-        };
+        if !ctx.is_in_loop() {
+            let op1 = ir.resolve_var(op1);
+            let op2 = ir.resolve_var(op2);
+            let op3 = ir.resolve_var(op3);
+            if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
+                let res = self.calc(op1, op2, op3);
+                let id = ir.create_var(Var::Val(res));
+                return ExecutionResult::Output(vec![id]);
+            }
+        }
+        let id = ir.create_var(Var::TernaryOp(self.clone(), op1, op2, op3));
         ExecutionResult::Output(vec![id])
     }
 }

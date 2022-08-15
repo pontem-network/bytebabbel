@@ -1,13 +1,13 @@
-use crate::bytecode::llir::executor::math::{BinaryOp, UnaryOp};
-use crate::bytecode::llir::ir::instruction::Instruction;
-use crate::bytecode::llir::ir::var::Var;
-use crate::Ir;
+use crate::bytecode::hir::executor::math::{BinaryOp, UnaryOp};
+use crate::bytecode::hir::ir::instruction::Instruction;
+use crate::bytecode::hir::ir::var::Var;
+use crate::Hir;
 use anyhow::Error;
 use log::log_enabled;
 use log::Level;
 use std::fmt::Write;
 
-pub fn print_ir(ir: &Ir) {
+pub fn print_ir(ir: &Hir) {
     if log_enabled!(Level::Trace) {
         let mut buf = String::new();
         if let Err(err) = print_buf(ir, &mut buf, 0) {
@@ -17,7 +17,7 @@ pub fn print_ir(ir: &Ir) {
     }
 }
 
-fn print_buf(ir: &Ir, buf: &mut String, width: usize) -> Result<(), Error> {
+fn print_buf(ir: &Hir, buf: &mut String, width: usize) -> Result<(), Error> {
     writeln!(
         buf,
         "================================================================================="
@@ -31,7 +31,7 @@ fn print_buf(ir: &Ir, buf: &mut String, width: usize) -> Result<(), Error> {
 }
 
 fn print_instructions(
-    ir: &Ir,
+    ir: &Hir,
     inst: &[Instruction],
     buf: &mut String,
     width: usize,
@@ -43,7 +43,7 @@ fn print_instructions(
 }
 
 fn print_instruction(
-    ir: &Ir,
+    ir: &Hir,
     inst: &Instruction,
     buf: &mut String,
     width: usize,
@@ -52,28 +52,79 @@ fn print_instruction(
         Instruction::SetVar(id) => {
             write!(buf, "{:width$}let {:?} = ", " ", id)?;
             print_ir_var(ir.var(id), buf, 0)?;
+            write!(buf, ";")?;
+        }
+        Instruction::MemLoad(addr, val) => {
+            write!(buf, "{:width$}{:?} = mem_{:#06x};", " ", val, addr)?;
         }
         Instruction::MemStore(addr, val) => {
-            let mut addr_bur = [0u8; 32];
-            addr.to_big_endian(&mut addr_bur);
             write!(
                 buf,
-                "{:width$}let mem[{}] = ",
+                "{:width$}mem_{:#06x} = {:?};",
                 " ",
-                hex::encode(&mut addr_bur)
+                addr.as_usize(),
+                val
             )?;
-            print_ir_var(ir.var(val), buf, 0)?;
         }
-        Instruction::Branch {
+        Instruction::If {
             condition,
-            true_branch_len: _,
-            false_branch_len: _,
+            true_branch,
+            false_branch,
         } => {
-            write!(buf, "{:width$}if (", " ",)?;
-            print_ir_var(ir.var(condition), buf, 0)?;
-            write!(buf, ") {{")?;
+            writeln!(buf, "{:width$}if {:?} {{", " ", condition)?;
+            print_instructions(ir, true_branch, buf, width + 4)?;
+            writeln!(buf, "{:width$}}} else {{", " ",)?;
+            print_instructions(ir, false_branch, buf, width + 4)?;
+            write!(buf, "{:width$}}}", " ",)?;
         }
-    }
+        Instruction::Stop => {
+            write!(buf, "{:width$}stop!;", " ")?;
+        }
+        Instruction::Abort(code) => {
+            write!(buf, "{:width$}abort!({});", " ", code)?;
+        }
+        Instruction::Result(res) => {
+            write!(buf, "{:width$}return ({:?});", " ", res)?;
+        }
+        Instruction::Loop {
+            id,
+            condition_block,
+            condition,
+            is_true_br_loop,
+            loop_br,
+        } => {
+            writeln!(buf, "{:width$}'{}: loop {{", " ", id)?;
+            print_instructions(ir, condition_block, buf, width + 4)?;
+            writeln!(
+                buf,
+                "{:width$}if {condition:?} {{",
+                " ",
+                width = width + 8,
+                condition = condition
+            )?;
+            if *is_true_br_loop {
+                print_instructions(ir, loop_br, buf, width + 12)?;
+                writeln!(buf, "{:width$}}} else {{", " ", width = width + 8)?;
+                writeln!(buf, "{:width$}break;", " ", width = width + 12)?;
+                writeln!(buf, "{:width$}}}", " ", width = width + 8)?;
+            } else {
+                writeln!(buf, "{:width$}break;", " ", width = width + 12)?;
+                writeln!(buf, "{:width$}}} else {{", " ", width = width + 8)?;
+                print_instructions(ir, loop_br, buf, width + 12)?;
+                writeln!(buf, "{:width$}}}", " ", width = width + 8)?;
+            }
+            write!(buf, "{:width$}}}", " ", width = width + 4)?;
+        }
+        Instruction::Continue { loop_id, context } => {
+            writeln!(buf, "{:width$}{{", " ",)?;
+            print_instructions(ir, context, buf, width + 4)?;
+            writeln!(buf, "{:width$}}}", " ",)?;
+            write!(buf, "{:width$}condition {:?};", " ", loop_id)?;
+        }
+        Instruction::MapVar { id, val } => {
+            write!(buf, "{:width$}{:?} = {:?};", " ", id, val)?;
+        }
+    };
     writeln!(buf)?;
     Ok(())
 }
