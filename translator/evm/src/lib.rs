@@ -28,7 +28,7 @@ pub fn transpile_program(
     name: &str,
     bytecode: &str,
     abi: &str,
-    _contract_addr: U256,
+    contract_addr: U256,
 ) -> Result<Program, Error> {
     let abi = Abi::try_from(abi)?;
     let bytecode = parse_bytecode(bytecode)?;
@@ -39,7 +39,7 @@ pub fn transpile_program(
 
     let contract_flow = FlowBuilder::new(&contract).make_flow();
 
-    let _hir = HirTranslator::new(&contract, contract_flow);
+    let hir = HirTranslator::new(&contract, contract_flow);
     let mut old_executor = StaticExecutor::new(&contract);
 
     let functions = abi
@@ -48,8 +48,7 @@ pub fn transpile_program(
         .map(|(h, entry)| {
             Function::try_from((h, entry))
                 .and_then(|f| {
-                    //todo new translator
-                    // translate_function(&hir, f.clone(), contract_addr).unwrap();
+                    translate_function(&hir, f.clone(), contract_addr).unwrap();
                     old_executor.exec(f)
                 })
                 .map(|res| (h, res))
@@ -65,7 +64,8 @@ pub fn translate_function(
 ) -> Result<Hir, Error> {
     let hir = hir_translator.translate(fun.clone(), contract_addr)?;
     let mir_translator = MirTranslator::new(fun);
-    let _mir = mir_translator.translate_hir(hir)?;
+    let mir = mir_translator.translate_hir(hir)?;
+    mir.print();
     todo!()
 }
 

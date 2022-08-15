@@ -32,10 +32,10 @@ library  Loop {
 //        return val + bff;
 //    }
 
-//    function for_loop(uint i) public pure returns (uint) {
-//        uint val = 0;
-//        for (uint j = 0; j < i; j++) {
-//            val += i;
+    function for_loop(uint i) public pure returns (uint) {
+        uint val = 0;
+        for (uint j = 0; j < i; j++) {
+            val += i;
 //
 //            if (val % 2 == 0) {
 //                continue;
@@ -43,9 +43,9 @@ library  Loop {
 //            if (val > 100) {
 //                break;
 //            }
-//        }
-//        return val;
-//    }
+        }
+        return val;
+    }
 //    function for_loop(uint i) public pure returns (uint) {
 //       if (i /2 == 0) {
 //           return i;

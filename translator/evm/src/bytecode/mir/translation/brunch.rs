@@ -1,6 +1,7 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::{VarId, Vars};
-use crate::bytecode::mir::ir::statement::{StackOpsBuilder, Statement, VarOrStack};
+use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
+use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::ir::Mir;
 use crate::{BlockId, MirTranslator};
@@ -26,12 +27,12 @@ impl MirTranslator {
         let cnd = if is_true_br_loop {
             // true branch
             let mut cnd_builder = StackOpsBuilder::default();
-            cnd_builder.push(cnd);
+            cnd_builder.push_var(cnd);
             cnd_builder.not()?;
-            VarOrStack::Stack(cnd_builder.build(SType::Bool)?)
+            cnd_builder.build(SType::Bool)?
         } else {
             // false branch
-            VarOrStack::Var(cnd)
+            cnd.expr()
         };
 
         self.mir.add_statement(Statement::Loop {
@@ -60,21 +61,11 @@ impl MirTranslator {
         let false_br = self.mir.swap(before);
 
         self.mir.add_statement(Statement::IF {
-            cnd: VarOrStack::Var(cnd),
+            cnd: Expression::Var(cnd),
             true_br: true_br.into_inner(),
             false_br: false_br.into_inner(),
         });
 
         Ok(())
-    }
-
-    pub fn translate_continue(
-        &mut self,
-        _id: BlockId,
-        _true_br: &[Instruction],
-        _false_br: &[Instruction],
-        _vars: &mut Vars,
-    ) {
-        todo!()
     }
 }

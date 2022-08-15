@@ -1,7 +1,8 @@
 use crate::bytecode::hir::executor::math::BinaryOp;
 use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::mir::ir::expression::StackOpsBuilder;
 use crate::bytecode::mir::ir::math::Operation;
-use crate::bytecode::mir::ir::statement::{StackOpsBuilder, Statement, VarOrStack};
+use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
@@ -20,24 +21,22 @@ impl MirTranslator {
 
         match cmd {
             BinaryOp::EQ => {
-                let result = self.map_local_var(result, SType::Bool);
+                let result = self.map_var(result, SType::Bool);
                 translate_eq(self, op, op1, result)?;
             }
             BinaryOp::Lt => {
                 let op = self.cast_number(op)?;
                 let op1 = self.cast_number(op1)?;
-                let result = self.map_local_var(result, SType::Bool);
-                let action = Statement::Operation(Operation::Lt, op, op1);
+                let result = self.map_var(result, SType::Bool);
                 self.mir
-                    .add_statement(Statement::CreateVar(result, Box::new(action)));
+                    .add_statement(Statement::CreateVar(result, Operation::Lt.expr(op, op1)));
             }
             BinaryOp::Gt => {
                 let op = self.cast_number(op)?;
                 let op1 = self.cast_number(op1)?;
-                let result = self.map_local_var(result, SType::Bool);
-                let action = Statement::Operation(Operation::Gt, op, op1);
+                let result = self.map_var(result, SType::Bool);
                 self.mir
-                    .add_statement(Statement::CreateVar(result, Box::new(action)));
+                    .add_statement(Statement::CreateVar(result, Operation::Gt.expr(op, op1)));
             }
             BinaryOp::Shr => {
                 todo!()
@@ -113,10 +112,9 @@ fn translate_eq(
         let op1 = translator.cast_number(op1)?;
         (op, op1)
     };
-    let action = Statement::Operation(Operation::Eq, op, op1);
     translator
         .mir
-        .add_statement(Statement::CreateVar(result, Box::new(action)));
+        .add_statement(Statement::CreateVar(result, Operation::Eq.expr(op, op1)));
     Ok(())
 }
 
@@ -131,36 +129,30 @@ fn translate_sub(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_local_var(result, SType::Bool);
+    let result = translator.map_var(result, SType::Bool);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
 
     let mut cnd = StackOpsBuilder::default();
-    cnd.push(op1.clone());
-    cnd.push(op.clone());
+    cnd.push_var(op1.clone());
+    cnd.push_var(op.clone());
     cnd.binary_op(Operation::Gt, SType::U128, SType::Bool)?;
     let cnd = cnd.build(SType::Bool)?;
 
     let mut true_br = StackOpsBuilder::default();
-    true_br.push(Variable::Const(Value::U128(u128::MAX), SType::U128));
-    true_br.push(Variable::Const(Value::U128(1), SType::U128));
-    true_br.push(op1.clone());
-    true_br.push(op.clone());
+    true_br.push_const(Value::U128(u128::MAX));
+    true_br.push_const(Value::U128(1));
+    true_br.push_var(op1.clone());
+    true_br.push_var(op.clone());
     true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
     true_br.binary_op(Operation::Add, SType::U128, SType::U128)?;
     true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
 
     translator.mir.add_statement(Statement::IF {
-        cnd: VarOrStack::Stack(cnd),
-        true_br: vec![Statement::CreateVar(
-            result,
-            Box::new(Statement::StackOps(true_br.build(SType::U128)?)),
-        )],
-        false_br: vec![Statement::CreateVar(
-            result,
-            Box::new(Statement::Operation(Operation::Sub, op, op1)),
-        )],
+        cnd,
+        true_br: vec![Statement::CreateVar(result, true_br.build(SType::U128)?)],
+        false_br: vec![Statement::CreateVar(result, Operation::Sub.expr(op, op1))],
     });
     Ok(())
 }
@@ -179,34 +171,28 @@ fn translate_add(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_local_var(result, SType::Bool);
+    let result = translator.map_var(result, SType::Bool);
 
     let mut cnd = StackOpsBuilder::default();
-    cnd.push(Variable::Const(Value::U128(u128::MAX), SType::U128));
-    cnd.push(op1.clone());
+    cnd.push_const(Value::U128(u128::MAX));
+    cnd.push_var(op1.clone());
     cnd.binary_op(Operation::Sub, SType::U128, SType::U128)?;
-    cnd.push(op.clone());
+    cnd.push_var(op.clone());
     cnd.binary_op(Operation::Lt, SType::U128, SType::Bool)?;
 
     let mut true_br = StackOpsBuilder::default();
-    true_br.push(op.clone());
-    true_br.push(Variable::Const(Value::U128(u128::MAX), SType::U128));
-    true_br.push(op1.clone());
+    true_br.push_var(op.clone());
+    true_br.push_const(Value::U128(u128::MAX));
+    true_br.push_var(op1.clone());
     true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
     true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
-    true_br.push(Variable::Const(Value::U128(1), SType::U128));
+    true_br.push_const(Value::U128(1));
     true_br.binary_op(Operation::Sub, SType::U128, SType::U128)?;
 
     translator.mir.add_statement(Statement::IF {
-        cnd: VarOrStack::Stack(cnd.build(SType::Bool)?),
-        true_br: vec![Statement::CreateVar(
-            result,
-            Box::new(Statement::StackOps(true_br.build(SType::U128)?)),
-        )],
-        false_br: vec![Statement::CreateVar(
-            result,
-            Box::new(Statement::Operation(Operation::Add, op, op1)),
-        )],
+        cnd: cnd.build(SType::Bool)?,
+        true_br: vec![Statement::CreateVar(result, true_br.build(SType::U128)?)],
+        false_br: vec![Statement::CreateVar(result, Operation::Add.expr(op, op1))],
     });
     Ok(())
 }

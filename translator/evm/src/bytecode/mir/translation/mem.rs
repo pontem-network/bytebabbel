@@ -1,7 +1,5 @@
 use crate::bytecode::hir::ir::var::{VarId, Vars};
-use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::LocalIndex;
-use crate::bytecode::mir::translation::Variable;
 use crate::{MirTranslator, U256};
 use anyhow::Error;
 use std::collections::HashMap;
@@ -27,23 +25,27 @@ impl MirTranslator {
             .mem
             .mapping
             .entry(addr)
-            .or_insert_with(|| self.variables.borrow_local(var.s_type()));
+            .or_insert_with(|| self.variables.borrow(var.s_type()));
         self.variables.check_type(var.s_type(), *local)?;
-
-        match &var {
-            Variable::Const(val, _) => {
-                self.mir.add_statement(Statement::CreateVar(
-                    *local,
-                    Box::new(Statement::Const(val.clone())),
-                ));
-            }
-            Variable::ParamAlias(_, _) => {
-                todo!()
-            }
-            Variable::LocalBorrow(_, _) => {
-                todo!()
-            }
-        }
+        todo!();
+        // match &var {
+        //     Variable::Const(val, _) => {
+        //         self.mir.add_statement(Statement::CreateVar(
+        //             *local,
+        //             Box::new(Statement::Const(val.clone())),
+        //         ));
+        //     }
+        //     Variable::ParamAlias(val, _) => {
+        //         self.mir.add_statement(Statement::CreateVar(
+        //             *local,
+        //             Box::new(Statement::Param(*val)),
+        //         ));
+        //     }
+        //     Variable::LocalBorrow(val, _) => {
+        //         self.mir
+        //             .add_statement(Statement::CreateVar(*local, Box::new(Statement::Var(*val))));
+        //     }
+        // }
         Ok(())
     }
 

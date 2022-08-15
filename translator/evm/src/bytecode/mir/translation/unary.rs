@@ -32,21 +32,22 @@ impl MirTranslator {
     }
 
     fn unary_with_bool(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
-        match cmd {
-            UnaryOp::IsZero => {
-                let result = self.map_local_var(result, SType::Bool);
-                let false_ = bool_const(false);
-                let action = Statement::Operation(Operation::Eq, op, false_);
-                self.mir
-                    .add_statement(Statement::CreateVar(result, Box::new(action)));
-            }
-            UnaryOp::Not => {
-                let result = self.map_local_var(result, SType::Bool);
-                let action = Statement::Operation(Operation::Not, op.clone(), op);
-                self.mir
-                    .add_statement(Statement::CreateVar(result, Box::new(action)));
-            }
-        }
+        todo!();
+        // match cmd {
+        //     UnaryOp::IsZero => {
+        //         let result = self.map_var(result, SType::Bool);
+        //         let false_ = bool_const(false);
+        //         let action = Statement::Operation(Operation::Eq, op, false_);
+        //         self.mir
+        //             .add_statement(Statement::CreateVar(result, Box::new(action)));
+        //     }
+        //     UnaryOp::Not => {
+        //         let result = self.map_var(result, SType::Bool);
+        //         let action = Statement::Operation(Operation::Not, op.clone(), op);
+        //         self.mir
+        //             .add_statement(Statement::CreateVar(result, Box::new(action)));
+        //     }
+        // }
         Ok(())
     }
 }
