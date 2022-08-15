@@ -1,8 +1,7 @@
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::{BlockId, InstructionBlock};
-use crate::bytecode::executor::debug::output_flow;
-use crate::bytecode::executor::execution::FunctionFlow;
 use crate::function::{FunDef, PublicApi};
+use crate::Mir;
 use anyhow::Error;
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -10,7 +9,7 @@ use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
-    functions_graph: HashMap<FunHash, FunctionFlow>,
+    functions_mir: HashMap<FunHash, Mir>,
     ctor: Option<HashMap<BlockId, InstructionBlock>>,
     functions: PublicApi,
 }
@@ -18,14 +17,14 @@ pub struct Program {
 impl Program {
     pub fn new(
         name: &str,
-        functions_graph: HashMap<FunHash, FunctionFlow>,
+        functions_mir: HashMap<FunHash, Mir>,
         ctor: Option<HashMap<BlockId, InstructionBlock>>,
         abi: Abi,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(abi)?;
         Ok(Program {
             name: name.to_string(),
-            functions_graph,
+            functions_mir,
             ctor,
             functions,
         })
@@ -39,8 +38,8 @@ impl Program {
         self.functions.function_definition().collect()
     }
 
-    pub fn function_flow(&self, hash: FunHash) -> Option<&FunctionFlow> {
-        self.functions_graph.get(&hash)
+    pub fn function_flow(&self, hash: FunHash) -> Option<&Mir> {
+        self.functions_mir.get(&hash)
     }
 }
 
@@ -74,8 +73,10 @@ impl Program {
             }
         }
         output += " {";
-        if let Some(flow) = self.functions_graph.get(&fundef.hash) {
-            output += format!("\n{}\n", output_flow(flow, 5)).as_str();
+        if let Some(mir) = self.functions_mir.get(&fundef.hash) {
+            output += "\n";
+            mir.print_to_buffer(&mut output).unwrap();
+            output += "\n";
         } else {
             output += "\nundefined\n";
         }

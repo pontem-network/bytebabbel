@@ -1,4 +1,5 @@
 use crate::bytecode::mir::ir::statement::Statement;
+use anyhow::Error;
 use std::mem;
 
 pub mod debug;
@@ -32,5 +33,9 @@ impl Mir {
 
     pub fn print(&self) {
         debug::print_ir(self);
+    }
+
+    pub fn print_to_buffer(&self, buffer: &mut String) -> Result<(), Error> {
+        debug::print_buf(self, buffer, 0)
     }
 }

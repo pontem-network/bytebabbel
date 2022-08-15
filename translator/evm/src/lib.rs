@@ -2,10 +2,6 @@
 
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::BlockId;
-use crate::bytecode::executor::execution::FunctionFlow;
-use crate::bytecode::executor::StaticExecutor;
-use bytecode::pre_processing::ctor;
-//use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
@@ -17,6 +13,7 @@ use anyhow::Error;
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
+use bytecode::pre_processing::ctor;
 use bytecode::pre_processing::swarm::remove_swarm_hash;
 use std::collections::HashMap;
 
@@ -29,7 +26,7 @@ pub fn transpile_program(
     name: &str,
     bytecode: &str,
     abi: &str,
-    _contract_addr: U256,
+    contract_addr: U256,
 ) -> Result<Program, Error> {
     let abi = Abi::try_from(abi)?;
     let bytecode = parse_bytecode(bytecode)?;
@@ -39,22 +36,17 @@ pub fn transpile_program(
     let (contract, ctor) = ctor::split(blocks)?;
 
     let contract_flow = FlowBuilder::new(&contract).make_flow();
-
-    let _hir = HirTranslator::new(&contract, contract_flow);
-    let mut old_executor = StaticExecutor::new(&contract);
+    let hir = HirTranslator::new(&contract, contract_flow);
 
     let functions = abi
         .fun_hashes()
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
         .map(|(h, entry)| {
             Function::try_from((h, entry))
-                .and_then(|f| {
-                    //translate_function(&hir, f.clone(), contract_addr).unwrap();
-                    old_executor.exec(f)
-                })
+                .and_then(|f| translate_function(&hir, f.clone(), contract_addr))
                 .map(|res| (h, res))
         })
-        .collect::<Result<HashMap<FunHash, FunctionFlow>, _>>()?;
+        .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
     Program::new(name, functions, ctor, abi)
 }
 
