@@ -52,9 +52,9 @@ impl UnusedVarClipper {
                 } => {
                     let condition = Self::map_var_id(condition, id_mapping)?;
                     let inst_before = ir.swap_instruction(vec![]);
-                    Self::optimize_instructions(true_branch, &analysis, id_mapping, vars, ir)?;
+                    Self::optimize_instructions(true_branch, analysis, id_mapping, vars, ir)?;
                     let true_br = ir.swap_instruction(vec![]);
-                    Self::optimize_instructions(false_branch, &analysis, id_mapping, vars, ir)?;
+                    Self::optimize_instructions(false_branch, analysis, id_mapping, vars, ir)?;
                     let false_br = ir.swap_instruction(inst_before);
                     ir.push_if(condition, true_br, false_br);
                 }
@@ -66,17 +66,17 @@ impl UnusedVarClipper {
                     loop_br,
                 } => {
                     let inst_before = ir.swap_instruction(vec![]);
-                    Self::optimize_instructions(condition_block, &analysis, id_mapping, vars, ir)?;
+                    Self::optimize_instructions(condition_block, analysis, id_mapping, vars, ir)?;
                     let condition_block = ir.swap_instruction(vec![]);
                     let condition = Self::map_var_id(condition, id_mapping)?;
-                    Self::optimize_instructions(loop_br, &analysis, id_mapping, vars, ir)?;
+                    Self::optimize_instructions(loop_br, analysis, id_mapping, vars, ir)?;
                     let loop_br = ir.swap_instruction(inst_before);
                     ir.push_loop(id, condition_block, condition, loop_br, is_true_br_loop);
                 }
                 Instruction::Continue { loop_id, context } => {
-                    let context = Self::optimize_context(context, loop_id, &analysis);
+                    let context = Self::optimize_context(context, loop_id, analysis);
                     let inst_before = ir.swap_instruction(vec![]);
-                    Self::optimize_instructions(context, &analysis, id_mapping, vars, ir)?;
+                    Self::optimize_instructions(context, analysis, id_mapping, vars, ir)?;
                     let mapping = ir.swap_instruction(inst_before);
                     ir.push_continue(loop_id, mapping);
                 }
@@ -113,7 +113,7 @@ impl UnusedVarClipper {
         context
             .into_iter()
             .filter(|inst| match inst {
-                Instruction::MapVar { id, val: _ } => analysis.in_loop_context(loop_id, &id),
+                Instruction::MapVar { id, val: _ } => analysis.in_loop_context(loop_id, id),
                 _ => unreachable!(),
             })
             .collect()
@@ -378,7 +378,7 @@ impl ReachabilityAnalysis {
     pub fn calculate(ir: &Hir) -> Self {
         let mut vars = VarReachability::default();
         let instructions = ir.as_ref();
-        vars.check_instructions(ir, &instructions);
+        vars.check_instructions(ir, instructions);
         let reachable_vars = vars.finalize();
 
         let mut context_analyzer = ContextAnalyzer::new(&reachable_vars);

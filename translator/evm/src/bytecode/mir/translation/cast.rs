@@ -3,7 +3,6 @@ use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 use anyhow::Error;
-use std::rc::Rc;
 
 impl MirTranslator {
     pub fn cast_number(&mut self, var: Variable) -> Result<Variable, Error> {

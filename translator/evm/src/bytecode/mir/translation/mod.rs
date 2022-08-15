@@ -8,7 +8,6 @@ use crate::bytecode::mir::translation::variables::Variables;
 use crate::{Function, Hir};
 use anyhow::{anyhow, Error};
 use std::collections::HashMap;
-use std::rc::Rc;
 
 pub mod binary;
 pub mod brunch;
@@ -104,10 +103,13 @@ impl MirTranslator {
                         .collect::<Result<Vec<_>, _>>()?;
                     self.mir.add_statement(Statement::Result(vars));
                 }
-                Instruction::MapVar { id, val } => {
+                Instruction::MapVar { id: _, val: _ } => {
                     todo!()
                 }
-                Instruction::Continue { loop_id, context } => {
+                Instruction::Continue {
+                    loop_id: _,
+                    context: _,
+                } => {
                     todo!()
                 }
             }
@@ -138,7 +140,7 @@ impl MirTranslator {
             Var::BinaryOp(cmd, op1, op2) => {
                 self.translate_binary_op(cmd, op1, op2, id)?;
             }
-            Var::TernaryOp(cmd, _, _, _) => {
+            Var::TernaryOp(_, _, _, _) => {
                 todo!()
             }
         }

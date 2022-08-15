@@ -39,14 +39,14 @@ fn print_flow<W: Write>(buf: &mut W, flow: &Flow, width: usize) -> Result<(), Er
             )?;
             match &loop_.br {
                 LoopBr::TrueBr(br) => {
-                    print_flow(buf, &br, width + 8)?;
+                    print_flow(buf, br, width + 8)?;
                     writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
                     writeln!(buf, "{:width$} break;", " ", width = width + 4)?;
                 }
                 LoopBr::FalseBr(br) => {
                     writeln!(buf, "{:width$} break;", " ", width = width + 4)?;
                     writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
-                    print_flow(buf, &br, width + 8)?;
+                    print_flow(buf, br, width + 8)?;
                 }
             }
             writeln!(buf, "{:width$}}}", " ", width = width + 4)?;

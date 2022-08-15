@@ -5,7 +5,6 @@ use crate::bytecode::mir::translation::Variable;
 use crate::{MirTranslator, U256};
 use anyhow::Error;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 #[derive(Default, Debug, Clone)]
 pub struct Memory {
@@ -19,7 +18,7 @@ impl MirTranslator {
         &mut self,
         addr: U256,
         var_id: VarId,
-        vars: &mut Vars,
+        _vars: &mut Vars,
     ) -> Result<(), Error> {
         //todo dynamic memory
         let var = self.use_var(var_id)?;
@@ -32,16 +31,16 @@ impl MirTranslator {
         self.variables.check_type(var.s_type(), *local)?;
 
         match &var {
-            Variable::Const(val, st) => {
+            Variable::Const(val, _) => {
                 self.mir.add_statement(Statement::CreateVar(
                     *local,
                     Box::new(Statement::Const(val.clone())),
                 ));
             }
-            Variable::ParamAlias(local_index, st) => {
+            Variable::ParamAlias(_, _) => {
                 todo!()
             }
-            Variable::LocalBorrow(local_index, st) => {
+            Variable::LocalBorrow(_, _) => {
                 todo!()
             }
         }
@@ -51,13 +50,9 @@ impl MirTranslator {
     pub(super) fn translate_mem_load(
         &mut self,
         _: U256,
-        var_id: VarId,
-        vars: &mut Vars,
+        _var_id: VarId,
+        _vars: &mut Vars,
     ) -> Result<(), Error> {
         Ok(())
-    }
-
-    fn store_mem_var(&mut self, id: VarId, var: Variable) {
-        self.data_store.insert(id, var);
     }
 }

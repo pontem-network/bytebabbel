@@ -1,10 +1,8 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::{VarId, Vars};
-use crate::bytecode::mir::ir::statement::Statement::StackOps;
 use crate::bytecode::mir::ir::statement::{StackOpsBuilder, Statement, VarOrStack};
 use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::ir::Mir;
-use crate::bytecode::mir::translation::variables::Variables;
 use crate::{BlockId, MirTranslator};
 use anyhow::Error;
 
@@ -72,10 +70,11 @@ impl MirTranslator {
 
     pub fn translate_continue(
         &mut self,
-        id: BlockId,
-        true_br: &[Instruction],
-        false_br: &[Instruction],
-        vars: &mut Vars,
+        _id: BlockId,
+        _true_br: &[Instruction],
+        _false_br: &[Instruction],
+        _vars: &mut Vars,
     ) {
+        todo!()
     }
 }

@@ -37,7 +37,7 @@ pub enum VarOrStack {
 
 #[derive(Debug)]
 pub struct StackOps {
-    vec: Vec<StackOp>,
+    pub vec: Vec<StackOp>,
 }
 
 #[derive(Debug)]

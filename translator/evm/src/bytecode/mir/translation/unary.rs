@@ -7,7 +7,6 @@ use crate::bytecode::mir::translation::consts::bool_const;
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 use anyhow::Error;
-use std::rc::Rc;
 
 impl MirTranslator {
     pub(super) fn translate_unary_op(
@@ -23,7 +22,12 @@ impl MirTranslator {
         }
     }
 
-    fn unary_with_u128(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
+    fn unary_with_u128(
+        &mut self,
+        _cmd: UnaryOp,
+        _op: Variable,
+        _result: VarId,
+    ) -> Result<(), Error> {
         todo!()
     }
 

@@ -102,14 +102,12 @@ impl<'a> HirTranslator<'a> {
                     if loop_.jmp.true_br == jmp {
                         bail!("infinite loop detected");
                     } else {
-                        self.exec_flow(&loop_.br.flow(), ir, ctx)
+                        self.exec_flow(loop_.br.flow(), ir, ctx)
                     }
+                } else if loop_.jmp.false_br == jmp {
+                    bail!("infinite loop detected");
                 } else {
-                    if loop_.jmp.false_br == jmp {
-                        bail!("infinite loop detected");
-                    } else {
-                        self.exec_flow(&loop_.br.flow(), ir, ctx)
-                    }
+                    self.exec_flow(loop_.br.flow(), ir, ctx)
                 }
             }
             BlockResult::CndJmp {

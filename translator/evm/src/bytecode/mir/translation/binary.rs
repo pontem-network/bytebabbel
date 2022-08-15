@@ -1,12 +1,11 @@
 use crate::bytecode::hir::executor::math::BinaryOp;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::mir::ir::math::Operation;
-use crate::bytecode::mir::ir::statement::{StackOps, StackOpsBuilder, Statement, VarOrStack};
+use crate::bytecode::mir::ir::statement::{StackOpsBuilder, Statement, VarOrStack};
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 use anyhow::Error;
-use std::rc::Rc;
 
 impl MirTranslator {
     pub(super) fn translate_binary_op(
@@ -106,7 +105,7 @@ fn translate_eq(
     op1: Variable,
     result: LocalIndex,
 ) -> Result<(), Error> {
-    ///todo optimize qe cases with consts
+    //todo optimize qe cases with consts
     let (op, op1) = if op.s_type() == op1.s_type() {
         (op, op1)
     } else {

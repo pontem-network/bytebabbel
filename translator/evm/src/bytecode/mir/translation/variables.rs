@@ -42,7 +42,7 @@ impl Variables {
     pub fn release_local(&mut self, idx: LocalIndex) -> Option<SType> {
         for (tp, locals) in self.locals.iter_mut() {
             if locals.release(idx) {
-                return Some(tp.clone());
+                return Some(*tp);
             }
         }
         None
