@@ -1,9 +1,7 @@
 pub mod func;
 
 use crate::mv_ir::func::Func;
-use crate::translator::signature::SignatureWriter;
 use anyhow::{anyhow, Error};
-use evm::program::Program;
 use move_binary_format::file_format::{empty_module, Signature};
 use move_binary_format::internals::ModuleIndex;
 use move_binary_format::CompiledModule;
@@ -27,15 +25,15 @@ impl Module {
         }
 
         module.signatures = self.signatures;
-        CodeUnitVerifier::verify_module(&module).map_err(|err| {
-            anyhow!(
-                "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?}",
-                err.major_status(),
-                err.sub_status(),
-                err.message(),
-                err.location()
-            )
-        })?;
+        // CodeUnitVerifier::verify_module(&module).map_err(|err| {
+        //     anyhow!(
+        //         "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?}",
+        //         err.major_status(),
+        //         err.sub_status(),
+        //         err.message(),
+        //         err.location()
+        //     )
+        // })?;
         Ok(module)
     }
 

@@ -5,12 +5,13 @@ use lazy_static::lazy_static;
 use log::log_enabled;
 use log::Level;
 use move_binary_format::binary_views::BinaryIndexedView;
+use move_binary_format::CompiledModule;
 use move_bytecode_source_map::mapping::SourceMapping;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;
 use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
 use move_ir_types::location::Spanned;
-use mv::mvir::MvModule;
+use mv::translator::MvIrTranslator;
 use regex::Regex;
 
 pub mod clog;
@@ -143,20 +144,25 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
     let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
     let name = split.next().unwrap();
     let program = transpile_program(name, eth, abi, U256::from(addr.as_slice())).unwrap();
-    let module = MvModule::new(addr, program).unwrap();
+    let mvir = MvIrTranslator::default();
+    let module = mvir.translate(addr, program).unwrap();
     let compiled_module = module.make_move_module().unwrap();
+    print_move_module(&compiled_module);
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode).unwrap();
+    bytecode
+}
 
+fn print_move_module(module: &CompiledModule) {
+    if !log_enabled!(Level::Trace) {
+        return;
+    }
     let source_mapping = SourceMapping::new_from_view(
-        BinaryIndexedView::Module(&compiled_module),
+        BinaryIndexedView::Module(&module),
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    if log_enabled!(Level::Trace) {
-        let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-        let dissassemble_string = disassembler.disassemble().unwrap();
-        log::trace!("{}", dissassemble_string);
-    }
-    bytecode
+    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+    let dissassemble_string = disassembler.disassemble().unwrap();
+    log::trace!("{}", dissassemble_string);
 }

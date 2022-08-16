@@ -1,10 +1,12 @@
-use std::mem;
 use anyhow::Error;
 use move_binary_format::access::ModuleAccess;
+use move_binary_format::file_format::{
+    Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
+    SignatureIndex, Visibility,
+};
 use move_binary_format::CompiledModule;
-use move_binary_format::file_format::{Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex, SignatureIndex, Visibility};
 use move_core_types::identifier::Identifier;
-use crate::translator::signature::SignatureWriter;
+use std::mem;
 
 #[derive(Debug)]
 pub struct Func {
@@ -17,24 +19,24 @@ pub struct Func {
 }
 
 impl Func {
-    pub fn new_public(
-        def: EthFunDef,
-        //fn_code: FunctionCode,
-        sign_writer: &mut SignatureWriter,
-    ) -> Result<Func, Error> {
-        // let input = sign_writer.make_signature(map_signature(def.abi.inputs().unwrap().as_slice()));
-        // let output =
-        //     sign_writer.make_signature(map_signature(def.abi.outputs().unwrap().as_slice()));
-        // Ok(MvFunction {
-        //     name: Identifier::new(def.abi.name().as_deref().unwrap_or("anonymous"))?,
-        //     visibility: Visibility::Public,
-        //     input,
-        //     output,
-        //     locals: sign_writer.make_signature(fn_code.locals),
-        //     code: fn_code.code,
-        // })
-        todo!()
-    }
+    // pub fn new_public(
+    //     def: EthFunDef,
+    //     //fn_code: FunctionCode,
+    //     sign_writer: &mut SignatureWriter,
+    // ) -> Result<Func, Error> {
+    //     // let input = sign_writer.make_signature(map_signature(def.abi.inputs().unwrap().as_slice()));
+    //     // let output =
+    //     //     sign_writer.make_signature(map_signature(def.abi.outputs().unwrap().as_slice()));
+    //     // Ok(MvFunction {
+    //     //     name: Identifier::new(def.abi.name().as_deref().unwrap_or("anonymous"))?,
+    //     //     visibility: Visibility::Public,
+    //     //     input,
+    //     //     output,
+    //     //     locals: sign_writer.make_signature(fn_code.locals),
+    //     //     code: fn_code.code,
+    //     // })
+    //     todo!()
+    // }
 
     pub fn write_function(mut self, module: &mut CompiledModule) -> Result<(), Error> {
         let name_id = IdentifierIndex(module.identifiers.len() as u16);

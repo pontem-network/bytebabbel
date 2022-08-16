@@ -57,7 +57,7 @@ pub fn translate_function(
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate(fun.clone(), contract_addr)?;
     let mir_translator = MirTranslator::new(fun);
-    let mir = mir_translator.translate_hir(hir)?;
+    let mir = mir_translator.translate(hir)?;
     mir.print();
     Ok(mir)
 }

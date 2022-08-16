@@ -1,19 +1,27 @@
 use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
+use crate::translator::writer::Writer;
 use anyhow::{anyhow, Error};
+use evm::bytecode::mir::ir::expression::{Expression, StackOp};
+use evm::bytecode::mir::ir::math::Operation;
+use evm::bytecode::mir::ir::statement::Statement;
+use evm::bytecode::mir::ir::types::SType;
 use evm::bytecode::mir::ir::Mir;
 use evm::function::FunDef;
 use evm::program::Program;
-use move_binary_format::file_format::{Bytecode, SignatureIndex, Visibility};
+use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 
+pub mod bytecode;
 pub mod signature;
+pub mod writer;
 
 #[derive(Default)]
 pub struct MvIrTranslator {
     sign_writer: SignatureWriter,
+    code: Writer,
 }
 
 impl MvIrTranslator {
@@ -49,7 +57,10 @@ impl MvIrTranslator {
             .function_mir(def.hash)
             .ok_or_else(|| anyhow!("Function {} not found", def.hash))?;
 
-        let (locals, code) = self.translate_mir(mir)?;
+        let locals = self.map_locals(mir);
+        self.code.reset();
+        self.translate_statements(mir.statements())?;
+        let code = self.code.freeze()?;
 
         Ok(Func {
             name,
@@ -61,7 +72,124 @@ impl MvIrTranslator {
         })
     }
 
-    fn translate_mir(&mut self, mir: &Mir) -> Result<(SignatureIndex, Vec<Bytecode>), Error> {
-        todo!()
+    fn map_locals(&mut self, mir: &Mir) -> SignatureIndex {
+        let types = mir
+            .locals()
+            .iter()
+            .map(|tp| match tp {
+                SType::U128 => SignatureToken::U128,
+                SType::Bool => SignatureToken::Bool,
+            })
+            .collect();
+        self.sign_writer.make_signature(types)
+    }
+
+    fn translate_statements(&mut self, statements: &[Statement]) -> Result<(), Error> {
+        for st in statements {
+            self.translate_statement(st)?;
+        }
+        Ok(())
+    }
+
+    fn translate_statement(&mut self, st: &Statement) -> Result<(), Error> {
+        match st {
+            Statement::CreateVar(var, exp) => {
+                self.translate_expr(exp)?;
+                self.code.set_var(var.index());
+            }
+            Statement::IF {
+                cnd,
+                true_br,
+                false_br,
+            } => {
+                self.translate_expr(cnd)?;
+                let before = self.code.swap(Writer::default());
+                self.translate_statements(true_br)?;
+                let true_br = self.code.swap(Writer::default());
+                self.translate_statements(false_br)?;
+
+                let mut false_br = self.code.swap(before);
+                false_br.mark_jmp();
+                false_br.write(Bytecode::Branch(false_br.pc() + true_br.pc()));
+
+                self.code.mark_jmp();
+                self.code
+                    .write(Bytecode::BrTrue(self.code.pc() + true_br.pc()));
+                self.code.extend(false_br)?;
+                self.code.extend(true_br)?;
+            }
+            Statement::Loop {
+                id,
+                cnd_calc,
+                cnd,
+                body,
+            } => {
+                self.code.create_label(*id);
+                self.translate_statements(cnd_calc)?;
+                self.translate_expr(cnd)?;
+                let before = self.code.swap(Writer::default());
+                self.translate_statements(body)?;
+                let loop_br = self.code.swap(before);
+                self.code.mark_jmp();
+                self.code
+                    .write(Bytecode::Branch(self.code.pc() + loop_br.pc()));
+                self.code.extend(loop_br)?;
+            }
+            Statement::Abort(code) => {
+                self.code.abort(*code);
+            }
+            Statement::Result(vars) => {
+                for var in vars {
+                    self.code.ld_var(var.index());
+                }
+                self.code.write(Bytecode::Ret);
+            }
+            Statement::Continue(id) => {
+                self.code.mark_jmp_to_label(*id);
+            }
+        }
+        Ok(())
+    }
+
+    fn translate_expr(&mut self, exp: &Expression) -> Result<(), Error> {
+        match exp {
+            Expression::Const(val) => {
+                self.code.push_val(val);
+            }
+            Expression::Var(var) => {
+                self.code.ld_var(var.index());
+            }
+            Expression::Param(idx, _) => {
+                self.code.ld_var(*idx);
+            }
+            Expression::Operation(cmd, op, op1) => {
+                if *cmd == Operation::Not {
+                    self.code.ld_var(op.index());
+                } else {
+                    self.code.ld_var(op.index());
+                    self.code.ld_var(op1.index());
+                }
+                self.code.op(*cmd);
+            }
+            Expression::StackOps(ops) => {
+                for op in &ops.vec {
+                    match op {
+                        StackOp::PushConst(val) => {
+                            self.code.push_val(val);
+                        }
+                        StackOp::PushVar(var) => {
+                            self.code.ld_var(var.index());
+                        }
+                        StackOp::BinaryOp(op) => {
+                            self.code.op(*op);
+                        }
+                        StackOp::Not => {
+                            self.code.op(Operation::Not);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }

@@ -38,9 +38,10 @@ impl MirTranslator {
         }
     }
 
-    pub fn translate_hir(mut self, hir: Hir) -> Result<Mir, Error> {
+    pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
         let (mut vars, instructions) = hir.into_inner();
         self.translate_instructions(&instructions, &mut vars)?;
+        self.mir.set_locals(self.variables.locals());
         Ok(self.mir)
     }
 

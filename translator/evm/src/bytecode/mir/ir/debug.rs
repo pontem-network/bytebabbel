@@ -23,7 +23,7 @@ pub fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> 
         buf,
         "================================================================================="
     )?;
-    print_statements(ir.as_statements(), buf, width)?;
+    print_statements(ir.statements(), buf, width)?;
     writeln!(
         buf,
         "================================================================================="
