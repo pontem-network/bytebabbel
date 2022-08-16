@@ -3,6 +3,7 @@ use evm::bytecode::types::U256;
 use evm::transpile_program;
 use move_core_types::account_address::AccountAddress;
 use mv::mvir::MvModule;
+use mv::translator::MvIrTranslator;
 use std::str::FromStr;
 
 pub fn translate(
@@ -10,13 +11,11 @@ pub fn translate(
     name: &str,
     bytecode: &str,
     abi: &str,
-    model: Math,
+    _model: Math,
 ) -> Result<Vec<u8>, Error> {
     let program = transpile_program(name, bytecode, abi, U256::from(addr.as_slice()))?;
-    let module = match model {
-        Math::U128 => MvModule::from_evm_program(addr, program)?,
-        Math::U256 => MvModule::from_evm_program(addr, program)?,
-    };
+    let mvir = MvIrTranslator::default();
+    let module = mvir.translate(addr, program)?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;

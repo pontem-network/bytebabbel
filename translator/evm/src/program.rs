@@ -38,7 +38,7 @@ impl Program {
         self.functions.function_definition().collect()
     }
 
-    pub fn function_flow(&self, hash: FunHash) -> Option<&Mir> {
+    pub fn function_mir(&self, hash: FunHash) -> Option<&Mir> {
         self.functions_mir.get(&hash)
     }
 }
@@ -84,6 +84,7 @@ impl Program {
 
         output
     }
+
     pub fn debug_fn_by_hash(&self, hash: FunHash) -> String {
         self.functions
             .function_definition()
