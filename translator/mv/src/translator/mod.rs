@@ -132,7 +132,7 @@ impl MvIrTranslator {
                 let loop_br = self.code.swap(before);
                 self.code.mark_jmp();
                 self.code
-                    .write(Bytecode::Branch(self.code.pc() + loop_br.pc()));
+                    .write(Bytecode::Branch(self.code.pc() + loop_br.pc() + 1));
                 self.code.extend(loop_br)?;
             }
             Statement::Abort(code) => {
