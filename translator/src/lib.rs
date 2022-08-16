@@ -2,7 +2,6 @@ use anyhow::{bail, Error};
 use evm::bytecode::types::U256;
 use evm::transpile_program;
 use move_core_types::account_address::AccountAddress;
-use mv::mvir::MvModule;
 use mv::translator::MvIrTranslator;
 use std::str::FromStr;
 

@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Error, Result};
 use evm::bytecode::types::U256;
 use evm::transpile_program;
 use lazy_static::lazy_static;
@@ -114,7 +114,7 @@ impl STest {
     fn vm_run(&self) -> Result<ExecutionResult> {
         let module_address = self.module_address();
 
-        let bytecode = make_move_module(&module_address, self.bin(), self.abi());
+        let bytecode = make_move_module(&module_address, self.bin(), self.abi())?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
 
@@ -131,16 +131,15 @@ impl STest {
     }
 }
 
-pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
+pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Result<Vec<u8>, Error> {
     let mut split = name.split("::");
-
-    let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
+    let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
-    let program = transpile_program(name, eth, abi, U256::from(addr.as_slice())).unwrap();
+    let program = transpile_program(name, eth, abi, U256::from(addr.as_slice()))?;
     let mvir = MvIrTranslator::default();
-    let module = mvir.translate(addr, program).unwrap();
-    let compiled_module = module.make_move_module().unwrap();
+    let module = mvir.translate(addr, program)?;
+    let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
-    compiled_module.serialize(&mut bytecode).unwrap();
-    bytecode
+    compiled_module.serialize(&mut bytecode)?;
+    Ok(bytecode)
 }

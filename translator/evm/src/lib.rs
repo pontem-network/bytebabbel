@@ -15,6 +15,7 @@ use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
 use bytecode::pre_processing::ctor;
 use bytecode::pre_processing::swarm::remove_swarm_hash;
+use log::{log_enabled, trace};
 use std::collections::HashMap;
 
 pub mod abi;
@@ -29,11 +30,15 @@ pub fn transpile_program(
     contract_addr: U256,
 ) -> Result<Program, Error> {
     let abi = Abi::try_from(abi)?;
-    let bytecode = parse_bytecode(bytecode)?;
-    let blocks = BlockIter::new(InstructionIter::new(bytecode))
+    let blocks = BlockIter::new(InstructionIter::new(parse_bytecode(bytecode)?))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
-    let (contract, ctor) = ctor::split(blocks)?;
+    let (contract, entry_point, ctor) = ctor::split(blocks)?;
+
+    if log_enabled!(log::Level::Trace) {
+        trace!("Entry point: {}", entry_point);
+        trace!("{}", &bytecode[entry_point.0 * 2..]);
+    }
 
     let contract_flow = FlowBuilder::new(&contract).make_flow();
     let hir = HirTranslator::new(&contract, contract_flow);

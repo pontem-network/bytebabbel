@@ -9,13 +9,13 @@ type Blocks = HashMap<BlockId, InstructionBlock>;
 
 pub fn split(
     blocks: HashMap<BlockId, InstructionBlock>,
-) -> Result<(Blocks, Option<Blocks>), Error> {
+) -> Result<(Blocks, BlockId, Option<Blocks>), Error> {
     let code_reallocation = blocks
         .iter()
         .any(|(_, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
 
     if !code_reallocation {
-        return Ok((blocks, None));
+        return Ok((blocks, BlockId::default(), None));
     }
 
     if let Some(code_copy) = find_entry_points(&blocks)? {
@@ -31,8 +31,8 @@ pub fn split(
                 (main, ctor)
             },
         );
-        Ok((main, Some(ctor)))
+        Ok((main, code_copy, Some(ctor)))
     } else {
-        Ok((blocks, None))
+        Ok((blocks, BlockId::default(), None))
     }
 }

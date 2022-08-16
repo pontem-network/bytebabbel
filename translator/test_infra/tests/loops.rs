@@ -1,4 +1,5 @@
 use crate::testssol::make_move_module;
+use test_infra::executor::MoveExecutor;
 use test_infra::sol::build_sol;
 
 #[allow(dead_code)]
@@ -7,10 +8,10 @@ mod testssol;
 #[test]
 pub fn test_loops() {
     env_logger::init();
-    let evm = build_sol(include_bytes!("../sol/ignore_loops.sol")).unwrap();
+    let evm = build_sol(include_bytes!("../sol/operators/bitwise/simple.sol")).unwrap();
     println!("{:?}", evm.bin());
-    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi());
-    // let mut vm = MoveExecutor::new();
-    // vm.deploy("0x1", bytecode);
-    // vm.run("0x1::Loop::for_loop", "10").unwrap();
+    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+    let mut vm = MoveExecutor::new();
+    vm.deploy("0x1", bytecode);
+    vm.run("0x1::Simple::and_uint", "10, 10").unwrap();
 }
