@@ -107,24 +107,25 @@ impl<'a> HirTranslator<'a> {
         ctx: &mut Context,
     ) -> Result<StopFlag, Error> {
         ctx.create_loop(loop_.jmp.block);
-        let before_inst = ir.swap_instruction(vec![]);
         ctx.enter_loop();
+        let before_inst = ir.swap_instruction(vec![]);
         let res = self.exec_block(&loop_.jmp.block, ir, ctx)?;
-        ctx.exit_loop();
         let cnd_block = ir.swap_instruction(before_inst);
-        match res {
-            BlockResult::Jmp(jmp) => {
-                if loop_.br.is_true_br() {
-                    if loop_.jmp.true_br == jmp {
-                        bail!("infinite loop detected");
-                    } else {
-                        self.exec_flow(loop_.br.flow(), ir, ctx)
-                    }
-                } else if loop_.jmp.false_br == jmp {
-                    bail!("infinite loop detected");
-                } else {
-                    self.exec_flow(loop_.br.flow(), ir, ctx)
-                }
+        let res = match res {
+            BlockResult::Jmp(cnd, _) => {
+                ctx.enter_loop();
+                let instructions = ir.swap_instruction(vec![]);
+                self.exec_flow(loop_.br.flow(), ir, ctx)?;
+                let loop_inst = ir.swap_instruction(instructions);
+                ctx.exit_loop();
+                ir.push_loop(
+                    loop_.jmp.block,
+                    cnd_block,
+                    cnd,
+                    loop_inst,
+                    loop_.br.is_true_br(),
+                );
+                Ok(StopFlag::Continue)
             }
             BlockResult::CndJmp {
                 cnd,
@@ -148,7 +149,9 @@ impl<'a> HirTranslator<'a> {
                 Ok(StopFlag::Continue)
             }
             _ => bail!("loop condition must be a conditional jump"),
-        }
+        };
+        ctx.exit_loop();
+        res
     }
 
     fn exec_flow_seq(
@@ -173,7 +176,7 @@ impl<'a> HirTranslator<'a> {
     ) -> Result<StopFlag, Error> {
         let res = self.exec_block(id, ir, ctx)?;
         match res {
-            BlockResult::Jmp(_) => {
+            BlockResult::Jmp(_, _) => {
                 //no op
                 Ok(StopFlag::Continue)
             }
@@ -220,7 +223,7 @@ impl<'a> HirTranslator<'a> {
         let cnd_block = if_.jmp.block;
         let res = self.exec_block(&cnd_block, ir, ctx)?;
         match res {
-            BlockResult::Jmp(jmp) => {
+            BlockResult::Jmp(_, jmp) => {
                 if jmp == if_.jmp.true_br {
                     self.exec_flow(&if_.true_br, ir, ctx)
                 } else if jmp == if_.jmp.false_br {
@@ -278,8 +281,8 @@ impl<'a> HirTranslator<'a> {
                 ExecutionResult::Stop => {
                     return Ok(BlockResult::Stop);
                 }
-                ExecutionResult::Jmp(block) => {
-                    return Ok(BlockResult::Jmp(block));
+                ExecutionResult::Jmp(cnd, block) => {
+                    return Ok(BlockResult::Jmp(cnd, block));
                 }
                 ExecutionResult::CndJmp {
                     cnd,
@@ -295,6 +298,7 @@ impl<'a> HirTranslator<'a> {
             }
         }
         Ok(BlockResult::Jmp(
+            VarId::default(),
             block.last().map(|i| BlockId(i.next())).unwrap_or_default(),
         ))
     }
@@ -314,7 +318,7 @@ pub struct BlockIO {
 
 #[derive(Debug)]
 pub enum BlockResult {
-    Jmp(BlockId),
+    Jmp(VarId, BlockId),
     CndJmp {
         cnd: VarId,
         true_br: BlockId,

@@ -3,6 +3,7 @@ use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::Writer;
 use anyhow::{anyhow, Error};
+use evm::bytecode::block::BlockId;
 use evm::bytecode::mir::ir::expression::{Expression, StackOp};
 use evm::bytecode::mir::ir::math::Operation;
 use evm::bytecode::mir::ir::statement::Statement;
@@ -110,16 +111,7 @@ impl MvIrTranslator {
                 cnd,
                 body,
             } => {
-                self.code.create_label(*id);
-                self.translate_statements(cnd_calc)?;
-                self.translate_expr(cnd)?;
-                let before = self.code.swap(Writer::default());
-                self.translate_statements(body)?;
-                let loop_br = self.code.swap(before);
-                self.code.mark_jmp();
-                self.code
-                    .write(Bytecode::Branch(self.code.pc() + loop_br.pc() + 1));
-                self.code.extend(loop_br)?;
+                self.translate_loop(*id, cnd_calc, cnd, body)?;
             }
             Statement::Abort(code) => {
                 self.code.abort(*code);
@@ -203,6 +195,33 @@ impl MvIrTranslator {
 
         self.code.extend(false_br)?;
         self.code.extend(true_br)?;
+        Ok(())
+    }
+
+    fn translate_loop(
+        &mut self,
+        id: BlockId,
+        cnd_calc: &[Statement],
+        cnd: &Expression,
+        // false br
+        body: &[Statement],
+    ) -> Result<(), Error> {
+        dbg!(&self.code);
+
+        self.code.create_label(id);
+        self.translate_statements(cnd_calc)?;
+        self.translate_expr(cnd)?;
+        dbg!(&self.code);
+
+        let before = self.code.swap(Writer::default());
+        self.translate_statements(body)?;
+        let loop_br = self.code.swap(before);
+        dbg!(&loop_br);
+
+        self.code.mark_jmp();
+        self.code
+            .write(Bytecode::BrTrue(self.code.pc() + loop_br.pc() + 1));
+        self.code.extend(loop_br)?;
         Ok(())
     }
 }

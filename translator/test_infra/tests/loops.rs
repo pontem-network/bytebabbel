@@ -13,5 +13,6 @@ pub fn test_loops() {
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
+    println!("run");
     dbg!(vm.run("0x1::Loop::for_loop", "10").unwrap());
 }
