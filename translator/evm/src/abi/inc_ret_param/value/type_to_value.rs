@@ -1,10 +1,10 @@
 use anyhow::{bail, ensure, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
+use crate::abi::inc_ret_param::value::collection::{TryParamAddress, TryParamBytes};
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 
 impl ParamType {
-    // @todo remove debug
     pub fn set_value<T>(&self, value: T) -> Result<ParamValue>
     where
         T: AsParamValue,
@@ -47,25 +47,16 @@ impl ParamType {
             ParamType::Array { .. } => value.try_as_array_by_type(self),
             ParamType::String => value.try_as_param_string(),
             ParamType::Bytes => {
-                todo!()
-                // value.try_as_param_bytes()
+                let v = value.try_vec_u8()?;
+                Ok(v.try_as_param_bytes())
             }
-            ParamType::Byte(_size) => {
-                todo!()
-                // let result = value.try_as_param_bytes()?;
-                // ensure!(
-                //     *size as usize == result.len().unwrap_or_default(),
-                //     "An array of {size} elements was expected"
-                // );
-                // if let ParamValue::Bytes(data) = result {
-                //     Ok(ParamValue::Byte(data))
-                // } else {
-                //     bail!("Error")
-                // }
+            ParamType::Byte(size) => {
+                let v = value.try_vec_u8()?;
+                v.try_as_param_bytes_with_size(*size as usize)
             }
             ParamType::Address => {
-                todo!()
-                // value.try_as_param_address()
+                let v = value.try_vec_u8()?;
+                v.try_as_param_address()
             }
             _ => unreachable!(),
         }
@@ -270,12 +261,8 @@ mod test {
             ParamValue::String("2".as_bytes().to_vec()),
         ]);
         assert_eq!(tp.set_value(["1", "2"]).unwrap(), result);
-
-        // @todo address
-        // @todo bytes
     }
 
-    #[ignore]
     #[test]
     fn type_set_value_bytes() {
         let tp = ParamType::Bytes;
@@ -297,7 +284,6 @@ mod test {
         assert!(tp.set_value([1, 2]).is_err());
     }
 
-    #[ignore]
     #[test]
     fn type_set_value_address() {
         let tp = ParamType::Address;

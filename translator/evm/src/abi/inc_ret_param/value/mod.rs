@@ -1,4 +1,5 @@
 use crate::abi::inc_ret_param::types::ParamType;
+use crate::abi::inc_ret_param::value::collection::TryParamBytes;
 use anyhow::{anyhow, bail, Result};
 use itertools::Itertools;
 use std::fmt::Debug;
@@ -135,13 +136,6 @@ pub trait AsParamValue: Debug {
         bail!("Expected &str type. Not implemented");
     }
 
-    fn try_as_param_address(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        bail!("Expected [u8;32] type. Not implemented");
-    }
-
     fn try_as_param_array(self) -> Result<ParamValue>
     where
         Self: Sized,
@@ -163,7 +157,7 @@ pub trait AsParamValue: Debug {
         bail!("Expected UInt type. Not implemented")
     }
 
-    fn try_as_param_bytes(self) -> Result<ParamValue>
+    fn try_vec_u8(self) -> Result<Vec<u8>>
     where
         Self: Sized,
     {
