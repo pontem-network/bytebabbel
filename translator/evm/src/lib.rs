@@ -2,10 +2,6 @@
 
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::BlockId;
-use crate::bytecode::executor::execution::FunctionFlow;
-use crate::bytecode::executor::StaticExecutor;
-use bytecode::pre_processing::ctor;
-//use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
@@ -17,7 +13,9 @@ use anyhow::Error;
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
+use bytecode::pre_processing::ctor;
 use bytecode::pre_processing::swarm::remove_swarm_hash;
+use log::{log_enabled, trace};
 use std::collections::HashMap;
 
 pub mod abi;
@@ -29,32 +27,31 @@ pub fn transpile_program(
     name: &str,
     bytecode: &str,
     abi: &str,
-    _contract_addr: U256,
+    contract_addr: U256,
 ) -> Result<Program, Error> {
     let abi = Abi::try_from(abi)?;
-    let bytecode = parse_bytecode(bytecode)?;
-    let blocks = BlockIter::new(InstructionIter::new(bytecode))
+    let blocks = BlockIter::new(InstructionIter::new(parse_bytecode(bytecode)?))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
-    let (contract, ctor) = ctor::split(blocks)?;
+    let (contract, entry_point, ctor) = ctor::split(blocks)?;
+
+    if log_enabled!(log::Level::Trace) {
+        trace!("Entry point: {}", entry_point);
+        trace!("{}", &bytecode[entry_point.0 * 2..]);
+    }
 
     let contract_flow = FlowBuilder::new(&contract).make_flow();
-
-    let _hir = HirTranslator::new(&contract, contract_flow);
-    let mut old_executor = StaticExecutor::new(&contract);
+    let hir = HirTranslator::new(&contract, contract_flow);
 
     let functions = abi
         .fun_hashes()
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
         .map(|(h, entry)| {
             Function::try_from((h, entry))
-                .and_then(|f| {
-                    //translate_function(&hir, f.clone(), contract_addr).unwrap();
-                    old_executor.exec(f)
-                })
+                .and_then(|f| translate_function(&hir, f, contract_addr))
                 .map(|res| (h, res))
         })
-        .collect::<Result<HashMap<FunHash, FunctionFlow>, _>>()?;
+        .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
     Program::new(name, functions, ctor, abi)
 }
 
@@ -65,7 +62,7 @@ pub fn translate_function(
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate(fun.clone(), contract_addr)?;
     let mir_translator = MirTranslator::new(fun);
-    let mir = mir_translator.translate_hir(hir)?;
+    let mir = mir_translator.translate(hir)?;
     mir.print();
     Ok(mir)
 }

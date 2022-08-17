@@ -1,6 +1,6 @@
 use crate::bytecode::hir::executor::math::BinaryOp;
 use crate::bytecode::hir::ir::var::VarId;
-use crate::bytecode::mir::ir::expression::StackOpsBuilder;
+use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
 use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{SType, Value};
@@ -39,10 +39,10 @@ impl MirTranslator {
                     .add_statement(Statement::CreateVar(result, Operation::Gt.expr(op, op1)));
             }
             BinaryOp::Shr => {
-                todo!()
+                translate_shr(self, op, op1, result)?;
             }
             BinaryOp::Shl => {
-                todo!()
+                translate_shl(self, op, op1, result)?;
             }
             BinaryOp::Sar => {
                 todo!()
@@ -51,22 +51,23 @@ impl MirTranslator {
                 translate_add(self, op, op1, result)?;
             }
             BinaryOp::And => {
-                todo!()
+                plain_u128_ops(self, Operation::BitAnd, op, op1, result)?;
             }
             BinaryOp::Or => {
-                todo!()
+                plain_u128_ops(self, Operation::BitOr, op, op1, result)?;
             }
             BinaryOp::Xor => {
-                todo!()
+                plain_u128_ops(self, Operation::Xor, op, op1, result)?;
             }
             BinaryOp::Mul => {
-                todo!()
+                // todo overflowing mul
+                plain_u128_ops(self, Operation::Mul, op, op1, result)?;
             }
             BinaryOp::Sub => {
                 translate_sub(self, op, op1, result)?;
             }
             BinaryOp::Div => {
-                todo!()
+                translate_div(self, op, op1, result)?;
             }
             BinaryOp::SDiv => {
                 todo!()
@@ -81,7 +82,7 @@ impl MirTranslator {
                 todo!()
             }
             BinaryOp::Mod => {
-                todo!()
+                translate_mod(self, op, op1, result)?;
             }
             BinaryOp::SMod => {
                 todo!()
@@ -96,6 +97,155 @@ impl MirTranslator {
 
         Ok(())
     }
+}
+
+fn translate_shr(
+    translator: &mut MirTranslator,
+    op: Variable,
+    op1: Variable,
+    result: VarId,
+) -> Result<(), Error> {
+    // if op1 == 0 || op >= 256 {
+    //     0
+    // } else {
+    //     op1 >> op
+    // }
+    let result = translator.map_var(result, SType::U128);
+
+    let op = translator.cast_number(op)?;
+    let op1 = translator.cast_number(op1)?;
+
+    let cnd = StackOpsBuilder::default()
+        .push_var(op1)
+        .push_const(Value::U128(0))
+        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .push_var(op)
+        .push_const(Value::U128(256))
+        .binary_op(Operation::Ge, SType::U128, SType::Bool)?
+        .binary_op(Operation::Or, SType::Bool, SType::Bool)?
+        .build(SType::Bool)?;
+
+    translator.mir.add_statement(Statement::IF {
+        cnd,
+        true_br: vec![Statement::CreateVar(
+            result,
+            Expression::Const(Value::U128(0)),
+        )],
+        false_br: vec![Statement::CreateVar(result, Operation::Shr.expr(op1, op))],
+    });
+    Ok(())
+}
+fn translate_shl(
+    translator: &mut MirTranslator,
+    op: Variable,
+    op1: Variable,
+    result: VarId,
+) -> Result<(), Error> {
+    // if op1 == 0 || op >= 256 {
+    //     0
+    // } else {
+    //     op1 << op
+    // }
+    let result = translator.map_var(result, SType::U128);
+
+    let op = translator.cast_number(op)?;
+    let op1 = translator.cast_number(op1)?;
+
+    let cnd = StackOpsBuilder::default()
+        .push_var(op1)
+        .push_const(Value::U128(0))
+        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .push_var(op)
+        .push_const(Value::U128(256))
+        .binary_op(Operation::Ge, SType::U128, SType::Bool)?
+        .binary_op(Operation::Or, SType::Bool, SType::Bool)?
+        .build(SType::Bool)?;
+
+    translator.mir.add_statement(Statement::IF {
+        cnd,
+        true_br: vec![Statement::CreateVar(
+            result,
+            Expression::Const(Value::U128(0)),
+        )],
+        false_br: vec![Statement::CreateVar(result, Operation::Shl.expr(op1, op))],
+    });
+    Ok(())
+}
+
+fn translate_div(
+    translator: &mut MirTranslator,
+    op: Variable,
+    op1: Variable,
+    result: VarId,
+) -> Result<(), Error> {
+    /*
+        fn div(op: u256, op1: u256) -> u256 {
+            if op1 == U256::zero() {
+                U256::zero()
+            } else {
+                op / op1
+            }
+        }
+    */
+    let result = translator.map_var(result, SType::U128);
+
+    let op = translator.cast_number(op)?;
+    let op1 = translator.cast_number(op1)?;
+
+    let cnd = StackOpsBuilder::default()
+        .push_var(op1)
+        .push_const(Value::U128(0))
+        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .build(SType::Bool)?;
+
+    translator.mir.add_statement(Statement::IF {
+        cnd,
+        true_br: vec![Statement::CreateVar(
+            result,
+            Expression::Const(Value::U128(0)),
+        )],
+        false_br: vec![Statement::CreateVar(result, Operation::Div.expr(op, op1))],
+    });
+
+    Ok(())
+}
+
+fn translate_mod(
+    translator: &mut MirTranslator,
+    op: Variable,
+    op1: Variable,
+    result: VarId,
+) -> Result<(), Error> {
+    /*
+        fn div(op: u256, op1: u256) -> u256 {
+            if op1 == 0 {
+                0
+            } else {
+                op % op1
+            }
+        }
+    */
+    let result = translator.map_var(result, SType::U128);
+
+    let op = translator.cast_number(op)?;
+    let op1 = translator.cast_number(op1)?;
+
+    let cnd = StackOpsBuilder::default()
+        .push_var(op1)
+        .push_const(Value::U128(0))
+        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .build(SType::Bool)?;
+
+    translator.mir.add_statement(Statement::IF {
+        cnd,
+        true_br: vec![Statement::CreateVar(
+            result,
+            Expression::Const(Value::U128(0)),
+        )],
+        false_br: vec![Statement::CreateVar(result, Operation::Mod.expr(op, op1))],
+    });
+
+    Ok(())
 }
 
 fn translate_eq(
@@ -129,7 +279,7 @@ fn translate_sub(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_var(result, SType::Bool);
+    let result = translator.map_var(result, SType::U128);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -158,6 +308,24 @@ fn translate_sub(
     Ok(())
 }
 
+fn plain_u128_ops(
+    translator: &mut MirTranslator,
+    cmd: Operation,
+    op: Variable,
+    op1: Variable,
+    result: VarId,
+) -> Result<(), Error> {
+    let result = translator.map_var(result, SType::U128);
+
+    let op = translator.cast_number(op)?;
+    let op1 = translator.cast_number(op1)?;
+
+    translator
+        .mir
+        .add_statement(Statement::CreateVar(result, cmd.expr(op, op1)));
+    Ok(())
+}
+
 ///
 /// let revert_op1 = u128::max - op1;
 /// if revert_op1 < op {
@@ -172,7 +340,7 @@ fn translate_add(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_var(result, SType::Bool);
+    let result = translator.map_var(result, SType::U128);
 
     let cnd = StackOpsBuilder::default()
         .push_const(Value::U128(u128::MAX))

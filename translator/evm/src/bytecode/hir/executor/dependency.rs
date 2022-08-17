@@ -41,10 +41,10 @@ pub enum TxMeta {
 impl InstructionHandler for TxMeta {
     fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
         let val = match self {
-            TxMeta::Balance => todo!(),
-            TxMeta::Origin => todo!(),
-            TxMeta::Caller => todo!(),
-            TxMeta::CallValue => todo!(),
+            TxMeta::Balance => U256::zero(),
+            TxMeta::Origin => U256::zero(),
+            TxMeta::Caller => U256::zero(),
+            TxMeta::CallValue => U256::zero(),
             TxMeta::CallDataLoad => {
                 if let Some(offset) = ir.resolve_var(params[0]) {
                     if offset.is_zero() {

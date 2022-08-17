@@ -1,7 +1,4 @@
-use crate::function::code::writer::FunctionCode;
-use crate::function::signature::{map_signature, SignatureWriter};
 use anyhow::Error;
-use evm::function::FunDef as EthFunDef;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
@@ -11,11 +8,8 @@ use move_binary_format::CompiledModule;
 use move_core_types::identifier::Identifier;
 use std::mem;
 
-pub mod code;
-pub mod signature;
-
 #[derive(Debug)]
-pub struct MvFunction {
+pub struct Func {
     pub name: Identifier,
     pub visibility: Visibility,
     pub input: SignatureIndex,
@@ -24,25 +18,7 @@ pub struct MvFunction {
     pub code: Vec<Bytecode>,
 }
 
-impl MvFunction {
-    pub fn new_public(
-        def: EthFunDef,
-        fn_code: FunctionCode,
-        sign_writer: &mut SignatureWriter,
-    ) -> Result<MvFunction, Error> {
-        let input = sign_writer.make_signature(map_signature(def.abi.inputs().unwrap().as_slice()));
-        let output =
-            sign_writer.make_signature(map_signature(def.abi.outputs().unwrap().as_slice()));
-        Ok(MvFunction {
-            name: Identifier::new(def.abi.name().as_deref().unwrap_or("anonymous"))?,
-            visibility: Visibility::Public,
-            input,
-            output,
-            locals: sign_writer.make_signature(fn_code.locals),
-            code: fn_code.code,
-        })
-    }
-
+impl Func {
     pub fn write_function(mut self, module: &mut CompiledModule) -> Result<(), Error> {
         let name_id = IdentifierIndex(module.identifiers.len() as u16);
         module.identifiers.push(self.name.clone());

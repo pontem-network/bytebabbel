@@ -24,7 +24,6 @@ serde = {version = "1.0.138", features = ["derive"]}
 serde_json = "1.0.82"
 mv = {path = "../mv"}
 evm = {path = "../evm"}
-move-disassembler = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
 move-bytecode-source-map = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
 move-ir-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
 

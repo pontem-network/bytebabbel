@@ -13,6 +13,7 @@ pub struct Inner {
     locals: HashMap<SType, Locals>,
     seq: LocalIndex,
     scopes: Vec<HashSet<Variable>>,
+    list: Vec<SType>,
 }
 
 impl Variables {
@@ -22,6 +23,7 @@ impl Variables {
                 locals: HashMap::new(),
                 seq: params_count,
                 scopes: Vec::new(),
+                list: vec![],
             })),
         }
     }
@@ -35,6 +37,7 @@ impl Variables {
         } else {
             locals.new_borrowed(idx);
             vars.seq += 1;
+            vars.list.push(tp);
             Variable(idx, tp)
         }
     }
@@ -48,6 +51,7 @@ impl Variables {
         } else {
             locals.new_borrowed(idx);
             vars.seq += 1;
+            vars.list.push(tp);
             Variable(idx, tp)
         };
         let current_scope = vars.scopes.len() - 1;
@@ -78,6 +82,10 @@ impl Variables {
                 inner: self.inner.clone(),
             },
         }
+    }
+
+    pub fn locals(&self) -> Vec<SType> {
+        self.inner.borrow().list.to_vec()
     }
 }
 

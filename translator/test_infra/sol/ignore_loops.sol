@@ -46,6 +46,7 @@ library  Loop {
         }
         return val;
     }
+
 //    function for_loop(uint i) public pure returns (uint) {
 //       if (i /2 == 0) {
 //           return i;

@@ -1,51 +1,30 @@
-use crate::function::code::intrinsic::math::MathModel;
-use crate::function::code::MvTranslator;
-use crate::function::signature::SignatureWriter;
-use crate::function::MvFunction;
+pub mod func;
+
+use crate::mv_ir::func::Func;
 use anyhow::{anyhow, Error};
-use evm::program::Program;
+use log::log_enabled;
+use log::Level;
+use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{empty_module, Signature};
 use move_binary_format::internals::ModuleIndex;
 use move_binary_format::CompiledModule;
+use move_bytecode_source_map::mapping::SourceMapping;
 use move_bytecode_verifier::CodeUnitVerifier;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
+use move_disassembler::disassembler::Disassembler;
+use move_disassembler::disassembler::DisassemblerOptions;
+use move_ir_types::location::Spanned;
 
 #[derive(Debug)]
-pub struct MvModule {
+pub struct Module {
     pub address: AccountAddress,
     pub name: Identifier,
-    pub funcs: Vec<MvFunction>,
+    pub funcs: Vec<Func>,
     pub signatures: Vec<Signature>,
 }
 
-impl MvModule {
-    pub fn from_evm_program<M: MathModel>(
-        address: AccountAddress,
-        mut math: M,
-        program: Program,
-    ) -> Result<MvModule, Error> {
-        let name = Identifier::new(program.name())?;
-        let mut signatures = SignatureWriter::default();
-        math.make_signature(&mut signatures);
-        let funcs = program
-            .public_functions()
-            .into_iter()
-            .map(|def| {
-                MvTranslator::new(&program, &def, &mut math)
-                    .translate()
-                    .and_then(|code| MvFunction::new_public(def, code, &mut signatures))
-            })
-            .collect::<Result<_, _>>()?;
-
-        Ok(MvModule {
-            address,
-            name,
-            funcs,
-            signatures: signatures.freeze(),
-        })
-    }
-
+impl Module {
     pub fn make_move_module(self) -> Result<CompiledModule, Error> {
         let mut module = self.empty_module();
         for func in self.funcs {
@@ -53,6 +32,8 @@ impl MvModule {
         }
 
         module.signatures = self.signatures;
+
+        print_move_module(&module);
         CodeUnitVerifier::verify_module(&module).map_err(|err| {
             anyhow!(
                 "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?}",
@@ -82,4 +63,18 @@ impl MvModule {
         );
         module
     }
+}
+
+fn print_move_module(module: &CompiledModule) {
+    if !log_enabled!(Level::Trace) {
+        return;
+    }
+    let source_mapping = SourceMapping::new_from_view(
+        BinaryIndexedView::Module(module),
+        Spanned::unsafe_no_loc(()).loc,
+    )
+    .unwrap();
+    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+    let dissassemble_string = disassembler.disassemble().unwrap();
+    log::trace!("{}", dissassemble_string);
 }

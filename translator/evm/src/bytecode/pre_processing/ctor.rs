@@ -1,6 +1,6 @@
 use crate::bytecode::block::{BlockId, InstructionBlock};
-use crate::bytecode::executor::StaticExecutor;
 use crate::bytecode::loc::Move;
+use crate::bytecode::pre_processing::code_copy::find_entry_points;
 use crate::OpCode;
 use anyhow::Error;
 use std::collections::HashMap;
@@ -9,15 +9,16 @@ type Blocks = HashMap<BlockId, InstructionBlock>;
 
 pub fn split(
     blocks: HashMap<BlockId, InstructionBlock>,
-) -> Result<(Blocks, Option<Blocks>), Error> {
+) -> Result<(Blocks, BlockId, Option<Blocks>), Error> {
     let code_reallocation = blocks
         .iter()
         .any(|(_, block)| block.iter().any(|i| i.1 == OpCode::CodeCopy));
 
     if !code_reallocation {
-        return Ok((blocks, None));
+        return Ok((blocks, BlockId::default(), None));
     }
-    if let Some(code_copy) = StaticExecutor::new(&blocks).find_next_entry_point()? {
+
+    if let Some(code_copy) = find_entry_points(&blocks)? {
         let (main, ctor) = blocks.into_iter().fold(
             (HashMap::new(), HashMap::new()),
             |(mut main, mut ctor), (block_id, mut block)| {
@@ -30,8 +31,8 @@ pub fn split(
                 (main, ctor)
             },
         );
-        Ok((main, Some(ctor)))
+        Ok((main, code_copy, Some(ctor)))
     } else {
-        Ok((blocks, None))
+        Ok((blocks, BlockId::default(), None))
     }
 }

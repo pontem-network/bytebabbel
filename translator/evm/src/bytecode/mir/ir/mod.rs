@@ -1,4 +1,6 @@
 use crate::bytecode::mir::ir::statement::Statement;
+use crate::bytecode::mir::ir::types::SType;
+use anyhow::Error;
 use std::mem;
 
 pub mod debug;
@@ -9,6 +11,7 @@ pub mod types;
 
 #[derive(Debug, Default)]
 pub struct Mir {
+    locals: Vec<SType>,
     statements: Vec<Statement>,
 }
 
@@ -26,11 +29,23 @@ impl Mir {
         self.statements
     }
 
-    pub fn as_statements(&self) -> &[Statement] {
+    pub fn statements(&self) -> &[Statement] {
         &self.statements
+    }
+
+    pub fn locals(&self) -> &[SType] {
+        &self.locals
+    }
+
+    pub fn set_locals(&mut self, locals: Vec<SType>) {
+        self.locals = locals;
     }
 
     pub fn print(&self) {
         debug::print_ir(self);
+    }
+
+    pub fn print_to_buffer(&self, buffer: &mut String) -> Result<(), Error> {
+        debug::print_buf(self, buffer, 0)
     }
 }

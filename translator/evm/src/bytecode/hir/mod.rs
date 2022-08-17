@@ -46,6 +46,22 @@ impl<'a> HirTranslator<'a> {
         Ok(ir)
     }
 
+    pub fn find_entry_points(&self) -> Result<Option<BlockId>, Error> {
+        let mut ctx = Context::new(Function::default(), U256::zero());
+        let mut ir = Hir::default();
+        let result = self.exec_flow(&self.contact_flow, &mut ir, &mut ctx);
+        match result {
+            Ok(_) => Ok(None),
+            Err(err) => {
+                if let Some(SpecialError::CodeCopy(block)) = err.downcast_ref::<SpecialError>() {
+                    Ok(Some(*block))
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    }
+
     fn get_block(&self, block_id: &BlockId) -> Result<&InstructionBlock, Error> {
         self.contract
             .get(block_id)

@@ -18,12 +18,12 @@ pub fn print_ir(ir: &Mir) {
     }
 }
 
-fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> {
+pub fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> {
     writeln!(
         buf,
         "================================================================================="
     )?;
-    print_statements(ir.as_statements(), buf, width)?;
+    print_statements(ir.statements(), buf, width)?;
     writeln!(
         buf,
         "================================================================================="

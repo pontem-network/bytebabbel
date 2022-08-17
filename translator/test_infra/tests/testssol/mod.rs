@@ -1,17 +1,10 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Error, Result};
 use evm::bytecode::types::U256;
 use evm::transpile_program;
 use lazy_static::lazy_static;
-use log::log_enabled;
-use log::Level;
-use move_binary_format::binary_views::BinaryIndexedView;
-use move_bytecode_source_map::mapping::SourceMapping;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;
-use move_disassembler::disassembler::{Disassembler, DisassemblerOptions};
-use move_ir_types::location::Spanned;
-use mv::function::code::intrinsic::math::u128_model::U128MathModel;
-use mv::mvir::MvModule;
+use mv::translator::MvIrTranslator;
 use regex::Regex;
 
 pub mod clog;
@@ -121,7 +114,7 @@ impl STest {
     fn vm_run(&self) -> Result<ExecutionResult> {
         let module_address = self.module_address();
 
-        let bytecode = make_move_module(&module_address, self.bin(), self.abi());
+        let bytecode = make_move_module(&module_address, self.bin(), self.abi())?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
 
@@ -138,26 +131,15 @@ impl STest {
     }
 }
 
-pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Vec<u8> {
+pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Result<Vec<u8>, Error> {
     let mut split = name.split("::");
-
-    let addr = AccountAddress::from_hex_literal(split.next().unwrap()).unwrap();
+    let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
-    let program = transpile_program(name, eth, abi, U256::from(addr.as_slice())).unwrap();
-    let module = MvModule::from_evm_program(addr, U128MathModel::default(), program).unwrap();
-    let compiled_module = module.make_move_module().unwrap();
+    let program = transpile_program(name, eth, abi, U256::from(addr.as_slice()))?;
+    let mvir = MvIrTranslator::default();
+    let module = mvir.translate(addr, program)?;
+    let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
-    compiled_module.serialize(&mut bytecode).unwrap();
-
-    let source_mapping = SourceMapping::new_from_view(
-        BinaryIndexedView::Module(&compiled_module),
-        Spanned::unsafe_no_loc(()).loc,
-    )
-    .unwrap();
-    if log_enabled!(Level::Trace) {
-        let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
-        let dissassemble_string = disassembler.disassemble().unwrap();
-        log::trace!("{}", dissassemble_string);
-    }
-    bytecode
+    compiled_module.serialize(&mut bytecode)?;
+    Ok(bytecode)
 }

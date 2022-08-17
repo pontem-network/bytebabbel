@@ -1,2 +1,2 @@
-pub mod function;
-pub mod mvir;
+pub mod mv_ir;
+pub mod translator;

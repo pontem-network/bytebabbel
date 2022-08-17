@@ -29,4 +29,10 @@ contract Simple {
         a*=10;
         return a;
     }
+
+    // # mod (12) 2
+    function mod(uint a) public pure returns (uint) {
+        a%=10;
+        return a;
+    }
 }

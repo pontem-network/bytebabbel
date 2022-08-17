@@ -70,16 +70,17 @@ impl InstructionHandler for BinaryOp {
         let a = params[0];
         let b = params[1];
         if !ctx.is_in_loop() {
-            let a = ir.resolve_var(a);
-            let b = ir.resolve_var(b);
-            if let (Some(a), Some(b)) = (a, b) {
-                let res = self.calc(a, b);
-                let id = ir.create_var(Var::Val(res));
-                return ExecutionResult::Output(vec![id]);
+            {
+                let a = ir.resolve_var(a);
+                let b = ir.resolve_var(b);
+                if let (Some(a), Some(b)) = (a, b) {
+                    let res = self.calc(a, b);
+                    let id = ir.create_var(Var::Val(res));
+                    return ExecutionResult::Output(vec![id]);
+                }
             }
-            if self == &BinaryOp::EQ {
-                let val = if a == b { U256::one() } else { U256::zero() };
-                let id = ir.create_var(Var::Val(val));
+            if self == &BinaryOp::EQ && a == b {
+                let id = ir.create_var(Var::Val(U256::one()));
                 return ExecutionResult::Output(vec![id]);
             }
         }

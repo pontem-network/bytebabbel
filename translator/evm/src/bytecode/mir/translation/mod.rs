@@ -38,9 +38,10 @@ impl MirTranslator {
         }
     }
 
-    pub fn translate_hir(mut self, hir: Hir) -> Result<Mir, Error> {
+    pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
         let (mut vars, instructions) = hir.into_inner();
         self.translate_instructions(&instructions, &mut vars)?;
+        self.mir.set_locals(self.variables.locals());
         Ok(self.mir)
     }
 
@@ -91,17 +92,17 @@ impl MirTranslator {
                     )?;
                 }
                 Instruction::Stop => {
-                    self.mir.add_statement(Statement::Abort(u8::MAX));
+                    if !self.fun.output.is_empty() {
+                        self.mir.add_statement(Statement::Abort(u8::MAX));
+                    } else {
+                        self.translate_ret(&[])?;
+                    }
                 }
                 Instruction::Abort(code) => {
                     self.mir.add_statement(Statement::Abort(*code));
                 }
                 Instruction::Result(vars) => {
-                    let vars = vars
-                        .iter()
-                        .map(|id| self.get_var(*id))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    self.mir.add_statement(Statement::Result(vars));
+                    self.translate_ret(vars)?;
                 }
                 Instruction::MapVar { id, val } => {
                     let val = self.get_var(*val)?;
@@ -165,5 +166,21 @@ impl MirTranslator {
             .get(&id)
             .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
         Ok(*var)
+    }
+
+    fn translate_ret(&mut self, vars: &[VarId]) -> Result<(), Error> {
+        let vars = vars
+            .iter()
+            .zip(self.fun.output.clone())
+            .map(|(id, tp)| {
+                let var = self.get_var(*id)?;
+                match SType::from(&tp) {
+                    SType::U128 => self.cast_number(var),
+                    SType::Bool => self.cast_bool(var),
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.mir.add_statement(Statement::Result(vars));
+        Ok(())
     }
 }

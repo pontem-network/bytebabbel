@@ -1,5 +1,5 @@
 use move_binary_format::file_format::{Signature, SignatureToken};
-use mv::function::signature::SignatureWriter;
+use mv::translator::signature::SignatureWriter;
 use test_infra::log_init;
 
 #[test]
