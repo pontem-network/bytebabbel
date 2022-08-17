@@ -1,7 +1,7 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::VarId;
-use crate::{BlockId, Hir};
+use crate::bytecode::hir::ir::var::{Var, VarId};
+use crate::{BlockId, Hir, U256};
 
 pub enum CodeOp {
     CodeSize,
@@ -24,7 +24,8 @@ impl InstructionHandler for CodeOp {
                 todo!()
             }
             CodeOp::CallDataCopy => {
-                todo!()
+                let id = ir.create_var(Var::Val(U256::from(42)));
+                ExecutionResult::Output(vec![id])
             }
             CodeOp::CodeCopy => {
                 let offset = ir.resolve_var(ops[1]).unwrap_or_default();
