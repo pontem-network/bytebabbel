@@ -2,7 +2,6 @@
 
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::BlockId;
-use crate::bytecode::flow_graph::traicing::FlowTracing;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
@@ -41,8 +40,6 @@ pub fn transpile_program(
         trace!("{}", &bytecode[entry_point.0 * 2..]);
     }
 
-    FlowTracing::new(&contract).make_flow();
-
     let contract_flow = FlowBuilder::new(&contract).make_flow();
     let hir = HirTranslator::new(&contract, contract_flow);
 
@@ -51,7 +48,7 @@ pub fn transpile_program(
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
         .map(|(h, entry)| {
             Function::try_from((h, entry))
-                .and_then(|f| translate_function(&hir, f.clone(), contract_addr))
+                .and_then(|f| translate_function(&hir, f, contract_addr))
                 .map(|res| (h, res))
         })
         .collect::<Result<HashMap<FunHash, Mir>, _>>()?;

@@ -14,7 +14,7 @@ pub fn find_entry_points(
         return Ok(None);
     }
 
-    let contract_flow = FlowBuilder::new(&contract).make_flow();
-    let hir = HirTranslator::new(&contract, contract_flow);
+    let contract_flow = FlowBuilder::new(contract).make_flow();
+    let hir = HirTranslator::new(contract, contract_flow);
     hir.find_entry_points()
 }

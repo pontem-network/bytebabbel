@@ -92,7 +92,7 @@ impl MirTranslator {
                     )?;
                 }
                 Instruction::Stop => {
-                    if self.fun.output.len() > 0 {
+                    if !self.fun.output.is_empty() {
                         self.mir.add_statement(Statement::Abort(u8::MAX));
                     } else {
                         self.translate_ret(&[])?;

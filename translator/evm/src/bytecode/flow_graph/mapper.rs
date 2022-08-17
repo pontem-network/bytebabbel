@@ -132,7 +132,7 @@ impl Mapper {
         self.elements
             .iter()
             .filter(|cnd| cnd.block() == blocks[0])
-            .find(|cnd| cnd.is_subset(&blocks))
+            .find(|cnd| cnd.is_subset(blocks))
     }
 }
 

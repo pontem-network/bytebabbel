@@ -70,7 +70,7 @@ fn print_move_module(module: &CompiledModule) {
         return;
     }
     let source_mapping = SourceMapping::new_from_view(
-        BinaryIndexedView::Module(&module),
+        BinaryIndexedView::Module(module),
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();

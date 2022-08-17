@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
@@ -396,12 +397,10 @@ impl CndBranch {
         idx += 1;
 
         fn is_subset_branch(br: &Branch, other: &[BlockId]) -> bool {
-            let mut idx = 0;
-            for block in &br.blocks {
+            for (idx, block) in br.blocks.iter().enumerate() {
                 if *block != other[idx] {
                     return false;
                 }
-                idx += 1;
             }
             true
         }
@@ -411,11 +410,8 @@ impl CndBranch {
         } else {
             return false;
         }
-        if is_subset_branch(&self.false_br, &other[idx..]) {
-            true
-        } else {
-            false
-        }
+
+        is_subset_branch(&self.false_br, &other[idx..])
     }
 }
 
