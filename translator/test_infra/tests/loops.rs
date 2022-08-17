@@ -8,10 +8,10 @@ mod testssol;
 #[test]
 pub fn test_loops() {
     env_logger::init();
-    let evm = build_sol(include_bytes!("../sol/operators/bitwise/simple.sol")).unwrap();
+    let evm = build_sol(include_bytes!("../sol/fn/fn.sol")).unwrap();
     println!("{:?}", evm.bin());
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
-    vm.run("0x1::Simple::and_uint", "10, 10").unwrap();
+    dbg!(vm.run("0x1::Fn::fn_const_return_bool", "").unwrap());
 }

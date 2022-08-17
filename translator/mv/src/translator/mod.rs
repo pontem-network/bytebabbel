@@ -102,21 +102,7 @@ impl MvIrTranslator {
                 true_br,
                 false_br,
             } => {
-                self.translate_expr(cnd)?;
-                let before = self.code.swap(Writer::default());
-                self.translate_statements(true_br)?;
-                let true_br = self.code.swap(Writer::default());
-                self.translate_statements(false_br)?;
-
-                let mut false_br = self.code.swap(before);
-                false_br.mark_jmp();
-                false_br.write(Bytecode::Branch(false_br.pc() + true_br.pc()));
-
-                self.code.mark_jmp();
-                self.code
-                    .write(Bytecode::BrTrue(self.code.pc() + true_br.pc()));
-                self.code.extend(false_br)?;
-                self.code.extend(true_br)?;
+                self.translate_if(cnd, true_br, false_br)?;
             }
             Statement::Loop {
                 id,
@@ -190,6 +176,33 @@ impl MvIrTranslator {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn translate_if(
+        &mut self,
+        cnd: &Expression,
+        true_br: &[Statement],
+        false_br: &[Statement],
+    ) -> Result<(), Error> {
+        self.translate_expr(cnd)?;
+        let before = self.code.swap(Writer::default());
+        self.translate_statements(true_br)?;
+        let true_br = self.code.swap(Writer::default());
+        self.translate_statements(false_br)?;
+        let mut false_br = self.code.swap(before);
+
+        if !false_br.is_final() {
+            false_br.mark_jmp();
+            false_br.write(Bytecode::Branch(false_br.pc() + true_br.pc() + 1));
+        }
+
+        self.code.mark_jmp();
+        self.code
+            .write(Bytecode::BrTrue(self.code.pc() + false_br.pc() + 1));
+
+        self.code.extend(false_br)?;
+        self.code.extend(true_br)?;
         Ok(())
     }
 }

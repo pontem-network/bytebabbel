@@ -59,7 +59,13 @@ impl StackOpsBuilder {
             .pop()
             .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
         if op1 != op2 || op1 != ops {
-            return Err(anyhow::anyhow!("incompatible types"));
+            return Err(anyhow::anyhow!(
+                "incompatible types: binary_op({:?}) ops:{:?}, res:{:?}.\n{:?}",
+                op,
+                ops,
+                res,
+                self
+            ));
         }
         self.vec.push(StackOp::BinaryOp(op));
         self.stack.push(res);
@@ -73,7 +79,7 @@ impl StackOpsBuilder {
             .pop()
             .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
         if op != SType::Bool {
-            return Err(anyhow::anyhow!("incompatible types"));
+            return Err(anyhow::anyhow!("incompatible types for not: {:?}", self));
         }
         self.vec.push(StackOp::Not);
         self.stack.push(SType::Bool);
@@ -86,7 +92,11 @@ impl StackOpsBuilder {
             .pop()
             .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
         if res != tp {
-            return Err(anyhow::anyhow!("incompatible types"));
+            return Err(anyhow::anyhow!(
+                "incompatible result types:{:?}. Type:{:?}",
+                self,
+                tp
+            ));
         }
         Ok(Expression::StackOps(StackOps { vec: self.vec }))
     }

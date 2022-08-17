@@ -4,7 +4,7 @@ use move_binary_format::file_format::{Bytecode, CodeOffset};
 use std::collections::HashMap;
 use std::mem;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Writer {
     code: Vec<Bytecode>,
     labels: HashMap<BlockId, CodeOffset>,
@@ -105,5 +105,9 @@ impl Writer {
 
     pub fn mark_jmp(&mut self) {
         self.jmps.push(self.pc());
+    }
+
+    pub fn get_opcode(&self, pc: CodeOffset) -> Option<&Bytecode> {
+        self.code.get(pc as usize)
     }
 }

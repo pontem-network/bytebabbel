@@ -98,11 +98,7 @@ impl MirTranslator {
                     self.mir.add_statement(Statement::Abort(*code));
                 }
                 Instruction::Result(vars) => {
-                    let vars = vars
-                        .iter()
-                        .map(|id| self.get_var(*id))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    self.mir.add_statement(Statement::Result(vars));
+                    self.translate_ret(vars)?;
                 }
                 Instruction::MapVar { id, val } => {
                     let val = self.get_var(*val)?;
@@ -166,5 +162,21 @@ impl MirTranslator {
             .get(&id)
             .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
         Ok(*var)
+    }
+
+    fn translate_ret(&mut self, vars: &[VarId]) -> Result<(), Error> {
+        let vars = vars
+            .iter()
+            .zip(self.fun.output.clone())
+            .map(|(id, tp)| {
+                let var = self.get_var(*id)?;
+                match SType::from(&tp) {
+                    SType::U128 => self.cast_number(var),
+                    SType::Bool => self.cast_bool(var),
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.mir.add_statement(Statement::Result(vars));
+        Ok(())
     }
 }

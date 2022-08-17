@@ -7,30 +7,37 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 struct Mapper {
-    blocks: BTreeMap<BlockId, CndBranch>,
+    //blocks: BTreeMap<BlockId, CndBranch>,
+    elements: Vec<CndBranch>,
     /// continue -> loop head
     loop_map: BTreeMap<BlockId, BlockId>,
 }
 
 impl Mapper {
     pub fn new(elements: Vec<CndBranch>) -> Mapper {
-        let blocks = elements
-            .into_iter()
-            .map(|flow| (flow.block(), flow))
-            .collect::<BTreeMap<BlockId, CndBranch>>();
+        // let blocks = elements
+        //     .into_iter()
+        //     .map(|flow| (flow.block(), flow))
+        //     .collect::<BTreeMap<BlockId, CndBranch>>();
         Mapper {
-            blocks,
+            //blocks,
+            elements,
             loop_map: Default::default(),
         }
     }
 
     pub fn make_flow(mut self) -> Flow {
-        if self.blocks.is_empty() {
-            return Flow::Sequence(vec![]);
-        }
+        let element = self
+            .elements
+            .iter()
+            .find(|cnd| cnd.block() == BlockId::default())
+            .cloned();
 
-        let first_block = *self.blocks.keys().next().unwrap();
-        let first_block = self.blocks.remove(&first_block).unwrap();
+        let first_block = if let Some(element) = element {
+            element
+        } else {
+            return Flow::Sequence(vec![]);
+        };
 
         let flow = self.map_branch(first_block);
         log_flow(&flow);
@@ -78,16 +85,16 @@ impl Mapper {
             }
             (false, false) => {
                 // IF
-                let common_tail = block.take_common_fail().into_iter().collect::<Vec<_>>();
+                // let common_tail = block.take_common_fail().into_iter().collect::<Vec<_>>();
 
                 seq.push(Flow::IF(IfFlow {
                     jmp: block.jmp,
                     true_br: Box::new(Flow::Sequence(self.map_block(&block.true_br.blocks))),
                     false_br: Box::new(Flow::Sequence(self.map_block(&block.false_br.blocks))),
                 }));
-                if !common_tail.is_empty() {
-                    seq.extend(self.map_block(&common_tail));
-                }
+                // if !common_tail.is_empty() {
+                //     seq.extend(self.map_block(&common_tail));
+                // }
             }
         }
         Flow::Sequence(seq)
@@ -106,7 +113,7 @@ impl Mapper {
             }
 
             let block = blocks[index];
-            if let Some(element) = self.blocks.get(&block) {
+            if let Some(element) = self.find_element(&blocks[index..]) {
                 index += element.len();
                 seq.push(self.map_branch(element.clone()));
             } else {
@@ -119,6 +126,13 @@ impl Mapper {
             }
         }
         seq
+    }
+
+    fn find_element(&self, blocks: &[BlockId]) -> Option<&CndBranch> {
+        self.elements
+            .iter()
+            .filter(|cnd| cnd.block() == blocks[0])
+            .find(|cnd| cnd.is_subset(&blocks))
     }
 }
 

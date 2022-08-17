@@ -2,6 +2,7 @@
 
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::BlockId;
+use crate::bytecode::flow_graph::traicing::FlowTracing;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
@@ -39,6 +40,8 @@ pub fn transpile_program(
         trace!("Entry point: {}", entry_point);
         trace!("{}", &bytecode[entry_point.0 * 2..]);
     }
+
+    FlowTracing::new(&contract).make_flow();
 
     let contract_flow = FlowBuilder::new(&contract).make_flow();
     let hir = HirTranslator::new(&contract, contract_flow);
