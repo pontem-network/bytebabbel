@@ -22,7 +22,7 @@ impl InstructionHandler for ControlFlow {
                 offset: params[0],
                 len: params[1],
             },
-            ControlFlow::Revert => ExecutionResult::Stop,
+            ControlFlow::Revert => ExecutionResult::Abort(255),
             ControlFlow::Jump => {
                 if let Some(block) = ir.resolve_var(params[0]) {
                     ExecutionResult::Jmp(BlockId::from(block.as_usize()))
