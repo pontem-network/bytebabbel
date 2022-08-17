@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
-use anyhow::Error;
+use anyhow::{Error, Result};
 use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
@@ -27,6 +27,13 @@ impl Abi {
 
     pub fn entry(&self, hash: &FunHash) -> Option<&Entry> {
         self.entries.get(hash)
+    }
+
+    pub fn by_name(&self, name: &str) -> Option<&Entry> {
+        self.entries
+            .iter()
+            .find(|(_, item)| item.name().as_deref() == Some(name))
+            .map(|(_, item)| item)
     }
 }
 
@@ -143,6 +150,10 @@ impl Entry {
         }
     }
 
+    pub fn call_ecoding(&self, _value: Vec<inc_ret_param::types::ParamType>) -> Result<Vec<u8>> {
+        todo!()
+    }
+
     pub fn outputs(&self) -> Option<&Vec<Param>> {
         match self {
             Entry::Function(data)
@@ -238,15 +249,15 @@ mod tests {
                 inputs: vec![
                     Param {
                         name: "available".to_string(),
-                        tp: ParamType::Uint(256),
-                        internal_type: Some(ParamType::Uint(256)),
+                        tp: ParamType::UInt(256),
+                        internal_type: Some(ParamType::UInt(256)),
                         components: None,
                         indexed: None
                     },
                     Param {
                         name: "required".to_string(),
-                        tp: ParamType::Uint(256),
-                        internal_type: Some(ParamType::Uint(256)),
+                        tp: ParamType::UInt(256),
+                        internal_type: Some(ParamType::UInt(256)),
                         components: None,
                         indexed: None
                     },
@@ -292,8 +303,8 @@ mod tests {
                     },
                     Param {
                         name: "".to_string(),
-                        tp: ParamType::Uint(256),
-                        internal_type: Some(ParamType::Uint(256)),
+                        tp: ParamType::UInt(256),
+                        internal_type: Some(ParamType::UInt(256)),
                         components: None,
                         indexed: Some(false)
                     }
@@ -354,8 +365,8 @@ mod tests {
                     },
                     Param {
                         name: "value".to_string(),
-                        tp: ParamType::Uint(256),
-                        internal_type: Some(ParamType::Uint(256)),
+                        tp: ParamType::UInt(256),
+                        internal_type: Some(ParamType::UInt(256)),
                         components: None,
                         indexed: Some(false)
                     }
@@ -456,8 +467,8 @@ mod tests {
                 inputs: Some(vec![]),
                 outputs: Some(vec![Param {
                     name: "".to_string(),
-                    tp: ParamType::Uint(256),
-                    internal_type: Some(ParamType::Uint(256)),
+                    tp: ParamType::UInt(256),
+                    internal_type: Some(ParamType::UInt(256)),
                     components: None,
                     indexed: None
                 }]),
@@ -548,5 +559,92 @@ mod tests {
             "outputs": []
         }]"#;
         let _: Abi = serde_json::from_str(ABI_TEST).unwrap();
+    }
+
+    /// Encoding and decoding input/output
+    ///
+    /// https://docs.soliditylang.org/en/v0.8.0/abi-spec.html#examples
+    /// ============================================================================================
+    /// // SPDX-License-Identifier: GPL-3.0
+    /// pragma solidity >=0.4.16 <0.9.0;
+    ///
+    /// contract Foo {
+    ///    function bar(bytes3[2] memory) public pure {}
+    ///    function baz(uint32 x, bool y) public pure returns (bool r) { r = x > 32 || y; }
+    ///    function sam(bytes memory, bool, uint[] memory) public pure {}
+    /// }
+    /// ============================================================================================
+    #[test]
+    fn test_input_ecode() {
+        let abi_str = r#"[
+          {
+            "inputs": [
+              {
+                "internalType": "bytes3[2]",
+                "name": "",
+                "type": "bytes3[2]"
+              }
+            ],
+            "name": "bar",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "uint32",
+                "name": "x",
+                "type": "uint32"
+              },
+              {
+                "internalType": "bool",
+                "name": "y",
+                "type": "bool"
+              }
+            ],
+            "name": "baz",
+            "outputs": [
+              {
+                "internalType": "bool",
+                "name": "r",
+                "type": "bool"
+              }
+            ],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+              }
+            ],
+            "name": "sam",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          }
+        ]"#;
+
+        let abi: Abi = serde_json::from_str(abi_str).unwrap();
+        let baz = abi.by_name("baz").unwrap().call_ecoding(vec![]).unwrap();
+        let _t = hex::encode(&baz);
+
+        // assert_eq!("0xcdcd77c000000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000001");
+
+        todo!()
     }
 }

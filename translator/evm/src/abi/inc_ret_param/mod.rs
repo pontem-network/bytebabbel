@@ -2,6 +2,7 @@ use crate::abi::inc_ret_param::types::ParamType;
 use serde::Deserialize;
 
 pub mod types;
+pub mod value;
 
 /// Аn incoming or returned parameter in a function
 #[derive(Debug, Deserialize, Eq, PartialEq)]
@@ -79,8 +80,8 @@ mod test {
             result[1],
             Param {
                 name: String::new(),
-                tp: ParamType::Uint(256),
-                internal_type: Some(ParamType::Uint(256)),
+                tp: ParamType::UInt(256),
+                internal_type: Some(ParamType::UInt(256)),
                 indexed: Some(false),
                 components: None
             }
@@ -145,15 +146,15 @@ mod test {
             vec![
                 Param {
                     name: "available".to_string(),
-                    tp: ParamType::Uint(256),
-                    internal_type: Some(ParamType::Uint(256)),
+                    tp: ParamType::UInt(256),
+                    internal_type: Some(ParamType::UInt(256)),
                     indexed: None,
                     components: None
                 },
                 Param {
                     name: "required".to_string(),
-                    tp: ParamType::Uint(256),
-                    internal_type: Some(ParamType::Uint(256)),
+                    tp: ParamType::UInt(256),
+                    internal_type: Some(ParamType::UInt(256)),
                     indexed: None,
                     components: None
                 }
@@ -206,8 +207,8 @@ mod test {
             vec![
                 Param {
                     name: String::new(),
-                    tp: ParamType::Uint(256),
-                    internal_type: Some(ParamType::Uint(256)),
+                    tp: ParamType::UInt(256),
+                    internal_type: Some(ParamType::UInt(256)),
                     indexed: None,
                     components: None
                 },

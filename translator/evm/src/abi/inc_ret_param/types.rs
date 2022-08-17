@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 
-use anyhow::{anyhow, bail, Error};
+use anyhow::{anyhow, bail, Error, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserializer;
@@ -21,7 +21,7 @@ pub enum ParamType {
     Int(u16),
     // 2^3...2^8 = 8 ... 256
     // default: 256
-    Uint(u16),
+    UInt(u16),
     // 1 ... 32
     Byte(u8),
     // Holds a 20 byte value (size of an Ethereum address).
@@ -38,12 +38,18 @@ pub enum ParamType {
     Custom(String),
 }
 
+impl ParamType {
+    pub fn array_sizes(&self) -> Result<Vec<Option<u32>>> {
+        todo!()
+    }
+}
+
 impl ToString for ParamType {
     fn to_string(&self) -> String {
         match self {
             ParamType::Bool => "bool".to_string(),
             ParamType::Int(size) => format!("int{size}"),
-            ParamType::Uint(size) => format!("uint{size}"),
+            ParamType::UInt(size) => format!("uint{size}"),
             ParamType::Byte(size) => format!("int{size}"),
             ParamType::Address => "address".to_string(),
             ParamType::Bytes => "bytes".to_string(),
@@ -122,7 +128,7 @@ impl TryFrom<&str> for ParamType {
 
                 match tp {
                     "int" => ParamType::Int(size),
-                    "uint" => ParamType::Uint(size),
+                    "uint" => ParamType::UInt(size),
                     _ => bail!("incorrect format: {value}"),
                 }
             }
@@ -192,7 +198,7 @@ mod test {
         static ref EXEPLES: Vec<(&'static str, ParamType)> = vec![
             ("bool", ParamType::Bool),
             ("int", ParamType::Int(256)),
-            ("uint", ParamType::Uint(256)),
+            ("uint", ParamType::UInt(256)),
             ("address", ParamType::Address),
             ("bytes", ParamType::Bytes),
             ("string", ParamType::String),
@@ -221,7 +227,7 @@ mod test {
                 "uint[][]",
                 ParamType::Array {
                     tp: Box::new(ParamType::Array {
-                        tp: Box::new(ParamType::Uint(256)),
+                        tp: Box::new(ParamType::UInt(256)),
                         size: None,
                     }),
                     size: None,
@@ -254,7 +260,7 @@ mod test {
                 "uint[][]",
                 ParamType::Array {
                     tp: Box::new(ParamType::Array {
-                        tp: Box::new(ParamType::Uint(256)),
+                        tp: Box::new(ParamType::UInt(256)),
                         size: None,
                     }),
                     size: None,
@@ -284,7 +290,7 @@ mod test {
             );
             let cont_uint = format!("uint{size}");
             assert_eq!(
-                ParamType::Uint(size),
+                ParamType::UInt(size),
                 ParamType::try_from(cont_uint.as_str()).unwrap()
             );
         }

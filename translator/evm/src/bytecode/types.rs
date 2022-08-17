@@ -49,7 +49,7 @@ impl<'a> TryFrom<&'a AbiType> for EthType {
     fn try_from(value: &'a AbiType) -> Result<Self, Self::Error> {
         Ok(match value.tp {
             ParamType::Bool => EthType::Bool,
-            ParamType::Uint(_) | ParamType::Int(_) => EthType::U256,
+            ParamType::UInt(_) | ParamType::Int(_) => EthType::U256,
             _ => bail!("Unknown type: {}", value.tp.to_string()),
         })
     }
