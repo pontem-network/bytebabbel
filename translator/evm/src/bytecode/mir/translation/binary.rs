@@ -122,6 +122,7 @@ fn translate_shr(
         .push_var(op)
         .push_const(Value::U128(256))
         .binary_op(Operation::Ge, SType::U128, SType::Bool)?
+        .binary_op(Operation::Or, SType::Bool, SType::Bool)?
         .build(SType::Bool)?;
 
     translator.mir.add_statement(Statement::IF {
@@ -130,7 +131,7 @@ fn translate_shr(
             result,
             Expression::Const(Value::U128(0)),
         )],
-        false_br: vec![Statement::CreateVar(result, Operation::Shr.expr(op, op1))],
+        false_br: vec![Statement::CreateVar(result, Operation::Shr.expr(op1, op))],
     });
     Ok(())
 }
@@ -157,6 +158,7 @@ fn translate_shl(
         .push_var(op)
         .push_const(Value::U128(256))
         .binary_op(Operation::Ge, SType::U128, SType::Bool)?
+        .binary_op(Operation::Or, SType::Bool, SType::Bool)?
         .build(SType::Bool)?;
 
     translator.mir.add_statement(Statement::IF {
@@ -165,7 +167,7 @@ fn translate_shl(
             result,
             Expression::Const(Value::U128(0)),
         )],
-        false_br: vec![Statement::CreateVar(result, Operation::Shl.expr(op, op1))],
+        false_br: vec![Statement::CreateVar(result, Operation::Shl.expr(op1, op))],
     });
     Ok(())
 }

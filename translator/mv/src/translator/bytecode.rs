@@ -23,6 +23,10 @@ impl Writer {
     }
 
     pub fn op(&mut self, cmd: Operation) {
+        if cmd == Operation::Shl || cmd == Operation::Shr {
+            self.write(Bytecode::CastU8);
+        }
+
         let code = match cmd {
             Operation::Add => Bytecode::Add,
             Operation::Sub => Bytecode::Sub,
