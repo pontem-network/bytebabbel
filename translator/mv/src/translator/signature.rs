@@ -6,7 +6,7 @@ pub fn map_signature(eth_types: &[EthType]) -> Vec<SignatureToken> {
     eth_types
         .iter()
         .map(|eth| match eth.tp {
-            ParamType::Uint(_) => SignatureToken::U128,
+            ParamType::UInt(_) => SignatureToken::U128,
             ParamType::Bool => SignatureToken::Bool,
             _ => todo!(),
         })
