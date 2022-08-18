@@ -1,6 +1,6 @@
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
-use anyhow::{anyhow, bail, ensure, Error, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 
 // =================================================================================================
 // Array
@@ -9,21 +9,21 @@ impl<T> AsParamValue for Vec<T>
 where
     T: AsParamValue,
 {
-    fn as_param(self) -> ParamValue {
-        ParamValue::Array(self.into_iter().map(|item| item.as_param()).collect())
+    fn to_param(self) -> ParamValue {
+        ParamValue::Array(self.into_iter().map(|item| item.to_param()).collect())
     }
 
     /// Transformation together with checking the length of vectors
-    fn try_as_param_array(self) -> Result<ParamValue>
+    fn try_to_param_array(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        let param = self.as_param();
+        let param = self.to_param();
         param.to_type()?;
         Ok(param)
     }
 
-    fn try_as_array_by_type(self, tp: &ParamType) -> Result<ParamValue>
+    fn try_to_array_by_type(self, tp: &ParamType) -> Result<ParamValue>
     where
         Self: Sized,
     {
@@ -51,11 +51,11 @@ where
         Ok(ParamValue::Array(value))
     }
 
-    fn try_vec_u8(self) -> Result<Vec<u8>>
+    fn try_to_vec_u8(self) -> Result<Vec<u8>>
     where
         Self: Sized,
     {
-        let v = if let ParamValue::Array(v) = self.as_param() {
+        let v = if let ParamValue::Array(v) = self.to_param() {
             v
         } else {
             bail!("Expected [u8;N]");
@@ -74,29 +74,29 @@ impl<T> AsParamValue for &[T]
 where
     T: AsParamValue + Clone,
 {
-    fn as_param(self) -> ParamValue {
-        self.to_vec().as_param()
+    fn to_param(self) -> ParamValue {
+        self.to_vec().to_param()
     }
 
-    fn try_as_param_array(self) -> Result<ParamValue>
+    fn try_to_param_array(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        self.to_vec().try_as_param_array()
+        self.to_vec().try_to_param_array()
     }
 
-    fn try_as_array_by_type(self, tp: &ParamType) -> Result<ParamValue>
+    fn try_to_array_by_type(self, tp: &ParamType) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        self.to_vec().try_as_array_by_type(tp)
+        self.to_vec().try_to_array_by_type(tp)
     }
 
-    fn try_vec_u8(self) -> Result<Vec<u8>>
+    fn try_to_vec_u8(self) -> Result<Vec<u8>>
     where
         Self: Sized,
     {
-        self.to_vec().try_vec_u8()
+        self.to_vec().try_to_vec_u8()
     }
 }
 
@@ -104,29 +104,29 @@ impl<T, const N: usize> AsParamValue for [T; N]
 where
     T: AsParamValue + Clone,
 {
-    fn as_param(self) -> ParamValue {
-        self.to_vec().as_param()
+    fn to_param(self) -> ParamValue {
+        self.to_vec().to_param()
     }
 
-    fn try_as_param_array(self) -> Result<ParamValue>
+    fn try_to_param_array(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        self.to_vec().try_as_param_array()
+        self.to_vec().try_to_param_array()
     }
 
-    fn try_as_array_by_type(self, tp: &ParamType) -> Result<ParamValue>
+    fn try_to_array_by_type(self, tp: &ParamType) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        self.to_vec().try_as_array_by_type(tp)
+        self.to_vec().try_to_array_by_type(tp)
     }
 
-    fn try_vec_u8(self) -> Result<Vec<u8>>
+    fn try_to_vec_u8(self) -> Result<Vec<u8>>
     where
         Self: Sized,
     {
-        self.to_vec().try_vec_u8()
+        self.to_vec().try_to_vec_u8()
     }
 }
 
@@ -138,7 +138,7 @@ pub trait TryParamBytes {
 
     fn to_vector(self) -> Vec<u8>;
 
-    fn try_as_param_bytes(self) -> ParamValue
+    fn try_to_param_bytes(self) -> ParamValue
     where
         Self: Sized,
     {
@@ -146,11 +146,11 @@ pub trait TryParamBytes {
         ParamValue::Bytes(vec)
     }
 
-    fn try_as_param_bytes_with_size(self, size: usize) -> Result<ParamValue>
+    fn try_to_param_bytes_with_size(self, size: usize) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        if size < 1 || size > 32 {
+        if !(1..=32).contains(&size) {
             bail!("The length of the array must be >= 1 and <= 32");
         }
 
@@ -159,230 +159,6 @@ pub trait TryParamBytes {
             bail!("An array of length {size} was expected. An array of length {len} was passed")
         }
         Ok(ParamValue::Byte(self.to_vector()))
-    }
-
-    fn try_as_param_bytes1(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(1)
-    }
-
-    fn try_as_param_bytes2(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(2)
-    }
-
-    fn try_as_param_bytes3(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(3)
-    }
-
-    fn try_as_param_bytes4(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(4)
-    }
-
-    fn try_as_param_bytes5(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(5)
-    }
-
-    fn try_as_param_bytes6(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(6)
-    }
-
-    fn try_as_param_bytes7(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(7)
-    }
-
-    fn try_as_param_bytes8(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(8)
-    }
-
-    fn try_as_param_bytes9(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(9)
-    }
-
-    fn try_as_param_bytes10(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(10)
-    }
-
-    fn try_as_param_bytes11(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(11)
-    }
-
-    fn try_as_param_bytes12(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(12)
-    }
-
-    fn try_as_param_bytes13(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(13)
-    }
-
-    fn try_as_param_bytes14(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(14)
-    }
-
-    fn try_as_param_bytes15(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(15)
-    }
-
-    fn try_as_param_bytes16(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(16)
-    }
-
-    fn try_as_param_bytes17(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(17)
-    }
-
-    fn try_as_param_bytes18(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(18)
-    }
-
-    fn try_as_param_bytes19(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(19)
-    }
-
-    fn try_as_param_bytes20(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(20)
-    }
-
-    fn try_as_param_bytes21(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(21)
-    }
-
-    fn try_as_param_bytes22(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(22)
-    }
-
-    fn try_as_param_bytes23(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(23)
-    }
-
-    fn try_as_param_bytes24(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(24)
-    }
-
-    fn try_as_param_bytes25(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(25)
-    }
-
-    fn try_as_param_bytes26(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(26)
-    }
-
-    fn try_as_param_bytes27(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(27)
-    }
-
-    fn try_as_param_bytes28(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(28)
-    }
-
-    fn try_as_param_bytes29(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(29)
-    }
-
-    fn try_as_param_bytes30(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(30)
-    }
-
-    fn try_as_param_bytes31(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(31)
-    }
-
-    fn try_as_param_bytes32(self) -> Result<ParamValue>
-    where
-        Self: Sized,
-    {
-        self.try_as_param_bytes_with_size(32)
     }
 }
 
@@ -469,34 +245,30 @@ mod test {
         let bytes = vec![1, 2, 3, 4, 5];
 
         assert_eq!(
-            ParamValue::from(bytes.clone().try_vec_u8().unwrap().try_as_param_bytes()),
+            ParamValue::from(bytes.clone().try_to_vec_u8().unwrap().try_to_param_bytes()),
             ParamValue::Bytes(bytes.clone())
         );
         assert_eq!(
-            bytes.clone().try_as_param_bytes(),
+            bytes.clone().try_to_param_bytes(),
             ParamValue::Bytes(bytes.clone())
         );
 
         assert_eq!(
-            [1, 2, 3].try_as_param_bytes(),
+            [1, 2, 3].try_to_param_bytes(),
             ParamValue::Bytes(vec![1, 2, 3])
         );
         assert_eq!(
-            [1, 2, 3].as_slice().try_as_param_bytes(),
+            [1, 2, 3].as_slice().try_to_param_bytes(),
             ParamValue::Bytes(vec![1, 2, 3])
         );
 
         assert_eq!(
-            vec![1].try_as_param_bytes1().unwrap(),
+            vec![1].try_to_param_bytes_with_size(1).unwrap(),
             ParamValue::Byte(vec![1])
         );
         assert_eq!(
-            [1, 2].try_as_param_bytes2().unwrap(),
+            [1, 2].try_to_param_bytes_with_size(2).unwrap(),
             ParamValue::Byte(vec![1, 2])
-        );
-        assert_eq!(
-            [1, 2, 3].as_slice().try_as_param_bytes3().unwrap(),
-            ParamValue::Byte(vec![1, 2, 3])
         );
 
         assert_eq!(
@@ -504,7 +276,7 @@ mod test {
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
                 24, 25, 26, 27, 28, 29, 30, 31, 32
             ]
-            .try_as_param_bytes32()
+            .try_to_param_bytes_with_size(32)
             .unwrap(),
             ParamValue::Byte(vec![
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
@@ -512,7 +284,7 @@ mod test {
             ])
         );
 
-        assert!(vec![1, 2].try_as_param_bytes1().is_err());
+        assert!(vec![1, 2].try_to_param_bytes_with_size(1).is_err());
     }
 
     #[test]
@@ -538,27 +310,27 @@ mod test {
     #[test]
     fn try_as_param_array() {
         assert_eq!(
-            vec![1u16].as_param(),
+            vec![1u16].to_param(),
             ParamValue::Array(vec![ParamValue::UInt { size: 16, value: 1 }])
         );
         assert_eq!(
-            [1i32].as_slice().as_param(),
+            [1i32].as_slice().to_param(),
             ParamValue::Array(vec![ParamValue::Int { size: 32, value: 1 }])
         );
         assert_eq!(
-            [1u64].as_param(),
+            [1u64].to_param(),
             ParamValue::Array(vec![ParamValue::UInt { size: 64, value: 1 }])
         );
 
         assert_eq!(
-            [1u8, 2].as_param(),
+            [1u8, 2].to_param(),
             ParamValue::Array(vec![
                 ParamValue::UInt { size: 8, value: 1 },
                 ParamValue::UInt { size: 8, value: 2 }
             ])
         );
         assert_eq!(
-            [[1i8, 2], [3, 4]].as_param(),
+            [[1i8, 2], [3, 4]].to_param(),
             ParamValue::Array(vec![
                 ParamValue::Array(vec![
                     ParamValue::Int { size: 8, value: 1 },
@@ -572,17 +344,17 @@ mod test {
         );
 
         assert_eq!(
-            vec![vec![1u8], vec![2]].as_param(),
+            vec![vec![1u8], vec![2]].to_param(),
             ParamValue::Array(vec![
                 ParamValue::Array(vec![ParamValue::UInt { size: 8, value: 1 },]),
                 ParamValue::Array(vec![ParamValue::UInt { size: 8, value: 2 },])
             ])
         );
-        assert!(vec![vec![1u8], vec![2, 3]].try_as_param_array().is_err());
-        assert!([1].try_as_param_array().is_ok());
+        assert!(vec![vec![1u8], vec![2, 3]].try_to_param_array().is_err());
+        assert!([1].try_to_param_array().is_ok());
 
         assert_eq!(
-            [[["1"]]].as_param(),
+            [[["1"]]].to_param(),
             ParamValue::Array(vec![ParamValue::Array(vec![ParamValue::Array(vec![
                 ParamValue::String("1".as_bytes().to_vec(),)
             ])])])

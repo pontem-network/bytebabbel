@@ -1,6 +1,5 @@
 use crate::abi::inc_ret_param::types::ParamType;
-use crate::abi::inc_ret_param::value::collection::TryParamBytes;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use itertools::Itertools;
 use std::fmt::Debug;
 
@@ -62,7 +61,7 @@ impl ParamValue {
     }
 
     /// Bytes, Array
-    pub fn len(&self) -> Result<usize> {
+    pub fn length(&self) -> Result<usize> {
         match self {
             ParamValue::Bytes(data) => Ok(data.len()),
             ParamValue::Array(data) => Ok(data.len()),
@@ -113,51 +112,51 @@ impl ParamValue {
 }
 
 pub trait AsParamValue: Debug {
-    fn as_param(self) -> ParamValue;
+    fn to_param(self) -> ParamValue;
 
-    fn try_as_param_bool(self) -> Result<ParamValue>
+    fn try_to_param_bool(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
         bail!("Expected bool type. Not implemented")
     }
 
-    fn try_as_param_int(self) -> Result<ParamValue>
+    fn try_to_param_int(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
         bail!("Expected Int type. Not implemented")
     }
 
-    fn try_as_param_string(self) -> Result<ParamValue>
+    fn try_to_param_string(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
         bail!("Expected &str type. Not implemented");
     }
 
-    fn try_as_param_array(self) -> Result<ParamValue>
+    fn try_to_param_array(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
         bail!("Expected [..] type. Not implemented");
     }
 
-    fn try_as_array_by_type(self, _tp: &ParamType) -> Result<ParamValue>
+    fn try_to_array_by_type(self, _tp: &ParamType) -> Result<ParamValue>
     where
         Self: Sized,
     {
         bail!("Expected [..] type. Not implemented");
     }
 
-    fn try_as_param_uint(self) -> Result<ParamValue>
+    fn try_to_param_uint(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
         bail!("Expected UInt type. Not implemented")
     }
 
-    fn try_vec_u8(self) -> Result<Vec<u8>>
+    fn try_to_vec_u8(self) -> Result<Vec<u8>>
     where
         Self: Sized,
     {
@@ -167,33 +166,33 @@ pub trait AsParamValue: Debug {
 
 impl<T: AsParamValue> From<T> for ParamValue {
     fn from(v: T) -> Self {
-        v.as_param()
+        v.to_param()
     }
 }
 
 impl AsParamValue for &str {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::String(self.as_bytes().to_vec())
     }
 
-    fn try_as_param_string(self) -> Result<ParamValue>
+    fn try_to_param_string(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for bool {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::Bool(self)
     }
 
-    fn try_as_param_bool(self) -> Result<ParamValue>
+    fn try_to_param_bool(self) -> Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
@@ -204,9 +203,9 @@ mod test {
     #[test]
     fn test_to_param_bool() {
         assert_eq!(ParamValue::from(true), ParamValue::Bool(true));
-        assert_eq!(true.as_param(), ParamValue::Bool(true));
+        assert_eq!(true.to_param(), ParamValue::Bool(true));
         assert_eq!(ParamValue::from(false), ParamValue::Bool(false));
-        assert_eq!(false.as_param(), ParamValue::Bool(false));
+        assert_eq!(false.to_param(), ParamValue::Bool(false));
     }
 
     #[test]
@@ -217,7 +216,7 @@ mod test {
             ParamValue::String(string.as_bytes().to_vec())
         );
         assert_eq!(
-            string.as_param(),
+            string.to_param(),
             ParamValue::String(string.as_bytes().to_vec())
         );
     }

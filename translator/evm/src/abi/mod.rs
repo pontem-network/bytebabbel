@@ -574,6 +574,7 @@ mod tests {
     ///    function sam(bytes memory, bool, uint[] memory) public pure {}
     /// }
     /// ============================================================================================
+    #[ignore]
     #[test]
     fn test_input_ecode() {
         let abi_str = r#"[

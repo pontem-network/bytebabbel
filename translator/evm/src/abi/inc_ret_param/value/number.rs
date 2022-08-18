@@ -5,7 +5,7 @@ use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 // =================================================================================================
 
 impl AsParamValue for i8 {
-    fn as_param(self) -> ParamValue
+    fn to_param(self) -> ParamValue
     where
         Self: Sized,
     {
@@ -15,91 +15,91 @@ impl AsParamValue for i8 {
         }
     }
 
-    fn try_as_param_int(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_int(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for i16 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::Int {
             size: 16,
             value: self as isize,
         }
     }
 
-    fn try_as_param_int(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_int(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for i32 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::Int {
             size: 32,
             value: self as isize,
         }
     }
 
-    fn try_as_param_int(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_int(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for i64 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::Int {
             size: 64,
             value: self as isize,
         }
     }
 
-    fn try_as_param_int(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_int(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for i128 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::Int {
             size: 128,
             value: self as isize,
         }
     }
 
-    fn try_as_param_int(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_int(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for isize {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::Int {
             size: 128,
             value: self as isize,
         }
     }
 
-    fn try_as_param_int(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_int(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
@@ -108,7 +108,7 @@ pub trait Int: AsParamValue {
     where
         Self: Sized,
     {
-        self.as_param()
+        self.to_param()
     }
 }
 
@@ -139,98 +139,98 @@ impl<T: Int> I256 for T {}
 // =================================================================================================
 
 impl AsParamValue for u8 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::UInt {
             size: 8,
             value: self as usize,
         }
     }
 
-    fn try_as_param_uint(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_uint(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for u16 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::UInt {
             size: 16,
             value: self as usize,
         }
     }
 
-    fn try_as_param_uint(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_uint(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for u32 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::UInt {
             size: 32,
             value: self as usize,
         }
     }
 
-    fn try_as_param_uint(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_uint(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for u64 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::UInt {
             size: 64,
             value: self as usize,
         }
     }
 
-    fn try_as_param_uint(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_uint(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for u128 {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::UInt {
             size: 128,
             value: self as usize,
         }
     }
 
-    fn try_as_param_uint(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_uint(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
 impl AsParamValue for usize {
-    fn as_param(self) -> ParamValue {
+    fn to_param(self) -> ParamValue {
         ParamValue::UInt {
             size: 128,
             value: self as usize,
         }
     }
 
-    fn try_as_param_uint(self) -> anyhow::Result<ParamValue>
+    fn try_to_param_uint(self) -> anyhow::Result<ParamValue>
     where
         Self: Sized,
     {
-        Ok(self.as_param())
+        Ok(self.to_param())
     }
 }
 
@@ -239,7 +239,7 @@ pub trait UInt: AsParamValue {
     where
         Self: Sized,
     {
-        self.as_param()
+        self.to_param()
     }
 }
 
@@ -274,25 +274,25 @@ mod test {
     fn test_to_param_int() {
         // i8
         assert_eq!(ParamValue::from(2i8), ParamValue::Int { size: 8, value: 2 });
-        assert_eq!(3i8.as_param(), ParamValue::Int { size: 8, value: 3 });
+        assert_eq!(3i8.to_param(), ParamValue::Int { size: 8, value: 3 });
         // i16
         assert_eq!(
             ParamValue::from(4i16),
             ParamValue::Int { size: 16, value: 4 }
         );
-        assert_eq!(5i16.as_param(), ParamValue::Int { size: 16, value: 5 });
+        assert_eq!(5i16.to_param(), ParamValue::Int { size: 16, value: 5 });
         // i32
         assert_eq!(
             ParamValue::from(6i32),
             ParamValue::Int { size: 32, value: 6 }
         );
-        assert_eq!(7i32.as_param(), ParamValue::Int { size: 32, value: 7 });
+        assert_eq!(7i32.to_param(), ParamValue::Int { size: 32, value: 7 });
         // i64
         assert_eq!(
             ParamValue::from(8i64),
             ParamValue::Int { size: 64, value: 8 }
         );
-        assert_eq!(9i64.as_param(), ParamValue::Int { size: 64, value: 9 });
+        assert_eq!(9i64.to_param(), ParamValue::Int { size: 64, value: 9 });
 
         // i128
         assert_eq!(
@@ -303,7 +303,7 @@ mod test {
             }
         );
         assert_eq!(
-            11i128.as_param(),
+            11i128.to_param(),
             ParamValue::Int {
                 size: 128,
                 value: 11
@@ -318,7 +318,7 @@ mod test {
             }
         );
         assert_eq!(
-            13isize.as_param(),
+            13isize.to_param(),
             ParamValue::Int {
                 size: 128,
                 value: 13
@@ -341,25 +341,25 @@ mod test {
             ParamValue::from(2u8),
             ParamValue::UInt { size: 8, value: 2 }
         );
-        assert_eq!(3u8.as_param(), ParamValue::UInt { size: 8, value: 3 });
+        assert_eq!(3u8.to_param(), ParamValue::UInt { size: 8, value: 3 });
         // u16
         assert_eq!(
             ParamValue::from(4u16),
             ParamValue::UInt { size: 16, value: 4 }
         );
-        assert_eq!(5u16.as_param(), ParamValue::UInt { size: 16, value: 5 });
+        assert_eq!(5u16.to_param(), ParamValue::UInt { size: 16, value: 5 });
         // u32
         assert_eq!(
             ParamValue::from(6u32),
             ParamValue::UInt { size: 32, value: 6 }
         );
-        assert_eq!(7u32.as_param(), ParamValue::UInt { size: 32, value: 7 });
+        assert_eq!(7u32.to_param(), ParamValue::UInt { size: 32, value: 7 });
         // u64
         assert_eq!(
             ParamValue::from(8u64),
             ParamValue::UInt { size: 64, value: 8 }
         );
-        assert_eq!(9u64.as_param(), ParamValue::UInt { size: 64, value: 9 });
+        assert_eq!(9u64.to_param(), ParamValue::UInt { size: 64, value: 9 });
 
         // u128
         assert_eq!(
@@ -370,7 +370,7 @@ mod test {
             }
         );
         assert_eq!(
-            11u128.as_param(),
+            11u128.to_param(),
             ParamValue::UInt {
                 size: 128,
                 value: 11
@@ -385,7 +385,7 @@ mod test {
             }
         );
         assert_eq!(
-            13usize.as_param(),
+            13usize.to_param(),
             ParamValue::UInt {
                 size: 128,
                 value: 13

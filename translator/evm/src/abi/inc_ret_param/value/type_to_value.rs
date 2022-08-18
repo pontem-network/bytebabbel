@@ -1,4 +1,4 @@
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::collection::{TryParamAddress, TryParamBytes};
@@ -14,11 +14,11 @@ impl ParamType {
         dbg!(&value);
 
         match self {
-            ParamType::Bool => value.try_as_param_bool(),
+            ParamType::Bool => value.try_to_param_bool(),
             ParamType::Int(size) => {
                 let size = *size;
 
-                let mut result = value.try_as_param_int()?;
+                let mut result = value.try_to_param_int()?;
                 let rsize = result.size().unwrap_or_default() as u16;
 
                 if size == rsize {
@@ -32,7 +32,7 @@ impl ParamType {
             }
             ParamType::UInt(size) => {
                 let size = *size;
-                let mut result = value.try_as_param_uint()?;
+                let mut result = value.try_to_param_uint()?;
                 let rsize = result.size().unwrap_or_default() as u16;
 
                 if size == rsize {
@@ -44,18 +44,18 @@ impl ParamType {
                 }
                 bail!("Type u{size} was expected")
             }
-            ParamType::Array { .. } => value.try_as_array_by_type(self),
-            ParamType::String => value.try_as_param_string(),
+            ParamType::Array { .. } => value.try_to_array_by_type(self),
+            ParamType::String => value.try_to_param_string(),
             ParamType::Bytes => {
-                let v = value.try_vec_u8()?;
-                Ok(v.try_as_param_bytes())
+                let v = value.try_to_vec_u8()?;
+                Ok(v.try_to_param_bytes())
             }
             ParamType::Byte(size) => {
-                let v = value.try_vec_u8()?;
-                v.try_as_param_bytes_with_size(*size as usize)
+                let v = value.try_to_vec_u8()?;
+                v.try_to_param_bytes_with_size(*size as usize)
             }
             ParamType::Address => {
-                let v = value.try_vec_u8()?;
+                let v = value.try_to_vec_u8()?;
                 v.try_as_param_address()
             }
             _ => unreachable!(),
