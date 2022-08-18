@@ -7,9 +7,11 @@ use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
 
+pub mod call;
 pub mod inc_ret_param;
 pub mod types;
 
+use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 use inc_ret_param::Param;
 
 #[derive(Debug, Default)]
@@ -150,10 +152,6 @@ impl Entry {
         }
     }
 
-    pub fn call_ecoding(&self, _value: Vec<inc_ret_param::types::ParamType>) -> Result<Vec<u8>> {
-        todo!()
-    }
-
     pub fn outputs(&self) -> Option<&Vec<Param>> {
         match self {
             Entry::Function(data)
@@ -218,6 +216,7 @@ impl Display for FunHash {
 
 #[cfg(test)]
 mod tests {
+    use crate::abi::call::ToCall;
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::types::StateMutability;
     use crate::abi::{Abi, Entry, FunctionData, Param};
@@ -574,7 +573,6 @@ mod tests {
     ///    function sam(bytes memory, bool, uint[] memory) public pure {}
     /// }
     /// ============================================================================================
-    #[ignore]
     #[test]
     fn test_input_ecode() {
         let abi_str = r#"[
@@ -641,8 +639,21 @@ mod tests {
         ]"#;
 
         let abi: Abi = serde_json::from_str(abi_str).unwrap();
-        let baz = abi.by_name("baz").unwrap().call_ecoding(vec![]).unwrap();
-        let _t = hex::encode(&baz);
+        let entry_fn = abi.by_name("baz").unwrap();
+        let mut call_fn = entry_fn.try_call().unwrap();
+        call_fn
+            .set_param_by_pos(0, 69)
+            .unwrap()
+            .set_param_by_pos(1, true)
+            .unwrap();
+
+        dbg!(&call_fn);
+        // let baz = ;
+
+        //
+        //     .call_ecoding(vec![69, true])
+        //     .unwrap();
+        // let _t = hex::encode(&baz);
 
         // assert_eq!("0xcdcd77c000000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000001");
 
