@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{format, Debug, Formatter};
 
 use anyhow::{anyhow, bail, Error, Result};
 use lazy_static::lazy_static;
@@ -38,26 +38,24 @@ pub enum ParamType {
     Custom(String),
 }
 
-impl ParamType {
-    pub fn array_sizes(&self) -> Result<Vec<Option<u32>>> {
-        todo!()
-    }
-}
-
 impl ToString for ParamType {
     fn to_string(&self) -> String {
         match self {
             ParamType::Bool => "bool".to_string(),
             ParamType::Int(size) => format!("int{size}"),
             ParamType::UInt(size) => format!("uint{size}"),
-            ParamType::Byte(size) => format!("int{size}"),
-            ParamType::Address => "address".to_string(),
+            ParamType::Byte(size) => format!("bytes{size}"),
             ParamType::Bytes => "bytes".to_string(),
+            ParamType::Address => "address".to_string(),
             ParamType::String => "string".to_string(),
             ParamType::Array { tp, size } => {
-                format!("{}[{}]", tp.to_string(), size.unwrap_or_default())
+                if let Some(size) = size {
+                    format!("{tp:?}[{size}]")
+                } else {
+                    format!("{tp:?}[]")
+                }
             }
-            ParamType::Custom(name) => name.clone(),
+            ParamType::Custom(name) => format!("{name}"),
         }
     }
 }
