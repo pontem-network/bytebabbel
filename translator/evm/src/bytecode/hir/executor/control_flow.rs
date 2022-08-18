@@ -14,7 +14,7 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         match self {
             ControlFlow::Stop => ExecutionResult::Stop,
             ControlFlow::Abort(code) => ExecutionResult::Abort(*code),
@@ -36,15 +36,21 @@ impl InstructionHandler for ControlFlow {
                     .expect("Unsupported dynamic jump if");
                 let true_br = BlockId::from(true_br.as_usize());
                 let false_br = BlockId::from(inst.next());
+
                 let cnd = params[1];
-                if let Some(cnd_val) = ir.resolve_var(cnd) {
-                    ExecutionResult::Jmp(cnd, if cnd_val.is_zero() { false_br } else { true_br })
-                } else {
-                    ExecutionResult::CndJmp {
-                        cnd,
-                        true_br,
-                        false_br,
+                if !ctx.is_in_loop() {
+                    if let Some(cnd_val) = ir.resolve_var(cnd) {
+                        return ExecutionResult::Jmp(
+                            cnd,
+                            if cnd_val.is_zero() { false_br } else { true_br },
+                        );
                     }
+                }
+
+                ExecutionResult::CndJmp {
+                    cnd,
+                    true_br,
+                    false_br,
                 }
             }
         }

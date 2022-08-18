@@ -106,7 +106,7 @@ impl<'a> HirTranslator<'a> {
         ir: &mut Hir,
         ctx: &mut Context,
     ) -> Result<StopFlag, Error> {
-        ctx.create_loop(loop_.jmp.block);
+        ctx.create_loop(loop_.jmp.block, loop_.break_block());
         ctx.enter_loop();
         let before_inst = ir.swap_instruction(vec![]);
         let res = self.exec_block(&loop_.jmp.block, ir, ctx)?;
@@ -115,7 +115,7 @@ impl<'a> HirTranslator<'a> {
             BlockResult::Jmp(cnd, _) => {
                 ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
-                self.exec_flow(loop_.br.flow(), ir, ctx)?;
+                self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
                 let loop_inst = ir.swap_instruction(instructions);
                 ctx.exit_loop();
                 ir.push_loop(
@@ -123,7 +123,7 @@ impl<'a> HirTranslator<'a> {
                     cnd_block,
                     cnd,
                     loop_inst,
-                    loop_.br.is_true_br(),
+                    loop_.br.is_true_br_loop(),
                 );
                 Ok(StopFlag::Continue)
             }
@@ -136,7 +136,7 @@ impl<'a> HirTranslator<'a> {
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
                 ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
-                self.exec_flow(loop_.br.flow(), ir, ctx)?;
+                self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
                 let loop_inst = ir.swap_instruction(instructions);
                 ctx.exit_loop();
                 ir.push_loop(
@@ -144,7 +144,7 @@ impl<'a> HirTranslator<'a> {
                     cnd_block,
                     cnd,
                     loop_inst,
-                    loop_.br.is_true_br(),
+                    loop_.br.is_true_br_loop(),
                 );
                 Ok(StopFlag::Continue)
             }
@@ -237,6 +237,8 @@ impl<'a> HirTranslator<'a> {
                 true_br,
                 false_br,
             } => {
+                if ctx.is_in_loop() {}
+
                 ensure!(true_br == if_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == if_.jmp.false_br, "invalid false_br");
                 let instructions = ir.swap_instruction(vec![]);

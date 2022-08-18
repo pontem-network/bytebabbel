@@ -206,17 +206,13 @@ impl MvIrTranslator {
         // false br
         body: &[Statement],
     ) -> Result<(), Error> {
-        dbg!(&self.code);
-
         self.code.create_label(id);
         self.translate_statements(cnd_calc)?;
         self.translate_expr(cnd)?;
-        dbg!(&self.code);
 
         let before = self.code.swap(Writer::default());
         self.translate_statements(body)?;
         let loop_br = self.code.swap(before);
-        dbg!(&loop_br);
 
         self.code.mark_jmp();
         self.code

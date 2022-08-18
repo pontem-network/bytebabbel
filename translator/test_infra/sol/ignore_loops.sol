@@ -33,9 +33,12 @@ library  Loop {
 //    }
 
     function for_loop(uint i) public pure returns (uint) {
-        uint val = 0;
+        uint val = 1000;
         for (uint j = 0; j < 10; j++) {
-            val+=1;
+            if (j / 2 == 0) {
+                break;
+            }
+            val += j;
         }
         return val;
     }

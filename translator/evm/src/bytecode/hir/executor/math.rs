@@ -79,11 +79,10 @@ impl InstructionHandler for BinaryOp {
                     return ExecutionResult::Output(vec![id]);
                 }
             }
-        }
-
-        if self == &BinaryOp::EQ && a == b {
-            let id = ir.create_var(Var::Val(U256::one()));
-            return ExecutionResult::Output(vec![id]);
+            if self == &BinaryOp::EQ && a == b {
+                let id = ir.create_var(Var::Val(U256::one()));
+                return ExecutionResult::Output(vec![id]);
+            }
         }
 
         let id = ir.create_var(Var::BinaryOp(*self, a, b));

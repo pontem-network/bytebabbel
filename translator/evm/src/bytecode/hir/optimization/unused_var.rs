@@ -396,8 +396,9 @@ impl ReachabilityAnalysis {
     }
 
     pub fn in_loop_context(&self, loop_br: BlockId, var: &VarId) -> bool {
-        self.loop_context
-            .get(&loop_br)
-            .map_or(false, |vars| vars.contains(var))
+        // self.loop_context
+        //     .get(&loop_br)
+        //     .map_or(false, |vars| vars.contains(var))
+        true
     }
 }
