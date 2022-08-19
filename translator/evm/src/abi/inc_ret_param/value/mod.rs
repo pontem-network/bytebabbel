@@ -1,5 +1,5 @@
 use crate::abi::inc_ret_param::types::ParamType;
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, Result};
 use itertools::Itertools;
 use std::fmt::Debug;
 
@@ -109,63 +109,6 @@ impl ParamValue {
             ParamValue::Custom { .. } => todo!(),
         }
     }
-
-    pub fn encode(&self, tp: Option<&ParamType>) -> Result<Vec<u8>> {
-        match self {
-            ParamValue::Bool(value) => {
-                let mut result = [0u8; 32];
-                result[31] = if *value { 1 } else { 0 };
-                Ok(result.to_vec())
-            }
-            ParamValue::Int { value, .. } => {
-                let value_bytes = value.to_be_bytes();
-                Ok(pad_left32(&value_bytes).to_vec())
-            }
-            ParamValue::UInt { value, .. } => {
-                let value_bytes = value.to_be_bytes();
-                Ok(pad_left32(&value_bytes).to_vec())
-            }
-            ParamValue::String(..) => todo!(),
-            ParamValue::Byte(data) => Ok(pad_right32(data).to_vec()),
-            ParamValue::Bytes(data) => {
-                // len
-                let mut result = pad_left32(&data.len().to_be_bytes()).to_vec();
-                // + value
-                result.extend(pad_right32(&data));
-                Ok(result)
-            }
-            ParamValue::Address(..) => todo!(),
-            ParamValue::Array(data) => {
-                if let Some(tp) = tp {
-                    let (size, subtp) = match tp {
-                        ParamType::Array { size, tp: subtp } => (size, subtp),
-                        _ => bail!("Expected array. Type passed: {tp:?}"),
-                    };
-                    let venc = vec![Some(subtp.as_ref()); data.len()]
-                        .into_iter()
-                        .zip(&*data)
-                        .collect();
-                    let mut value = vec_encode(venc)?;
-                    if let Some(size) = size {
-                        ensure!(
-                            data.len() == *size as usize,
-                            "Invalid array length. Expected {tp:?}"
-                        );
-                        Ok(value)
-                    } else {
-                        // size + value
-                        let mut result = pad_left32(&data.len().to_be_bytes()).to_vec();
-                        result.append(&mut value);
-                        Ok(result)
-                    }
-                } else {
-                    let venc = vec![None; data.len()].into_iter().zip(&*data).collect();
-                    vec_encode(venc)
-                }
-            }
-            ParamValue::Custom { .. } => todo!(),
-        }
-    }
 }
 
 pub trait AsParamValue: Debug {
@@ -253,33 +196,8 @@ impl AsParamValue for bool {
     }
 }
 
-// =================================================================================================
-fn pad_left32(data: &[u8]) -> [u8; 32] {
-    let mut result = [0u8; 32];
-    result[32 - data.len()..32].copy_from_slice(&data);
-    result
-}
-
-fn pad_right32(data: &[u8]) -> [u8; 32] {
-    let mut result = [0u8; 32];
-    result[0..data.len()].copy_from_slice(&data);
-    result
-}
-
-fn vec_encode(data: Vec<(Option<&ParamType>, &ParamValue)>) -> Result<Vec<u8>> {
-    let result = data
-        .iter()
-        .map(|(tp, item)| item.encode(*tp))
-        .collect::<Result<Vec<_>>>()?
-        .into_iter()
-        .flatten()
-        .collect();
-    Ok(result)
-}
-
 #[cfg(test)]
 mod test {
-    use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 
     #[test]
@@ -300,80 +218,6 @@ mod test {
         assert_eq!(
             string.to_param(),
             ParamValue::String(string.as_bytes().to_vec())
-        );
-    }
-
-    /// https://docs.soliditylang.org/en/v0.8.0/abi-spec.html#examples
-    #[test]
-    fn test_encode() {
-        // true
-        assert_eq!(
-            hex::encode(true.to_param().encode(None).unwrap()),
-            "0000000000000000000000000000000000000000000000000000000000000001",
-        );
-
-        // false
-        assert_eq!(
-            hex::encode(false.to_param().encode(None).unwrap()),
-            "0000000000000000000000000000000000000000000000000000000000000000",
-        );
-
-        assert_eq!(
-            hex::encode(69u32.to_param().encode(None).unwrap()),
-            "0000000000000000000000000000000000000000000000000000000000000045",
-        );
-
-        // bytes3["abc","def"])
-        assert_eq!(
-            hex::encode(ParamValue::Array(vec![
-                ParamValue::Byte("abc".as_bytes().to_vec()),
-                ParamValue::Byte("def".as_bytes().to_vec()),
-            ]).encode(None).unwrap()),
-            "61626300000000000000000000000000000000000000000000000000000000006465660000000000000000000000000000000000000000000000000000000000"
-        );
-
-        // bytes("dove")
-        // len + value
-        assert_eq!(
-            hex::encode(ParamValue::Bytes("dave".as_bytes().to_vec()).encode(None).unwrap()),
-            "00000000000000000000000000000000000000000000000000000000000000046461766500000000000000000000000000000000000000000000000000000000",
-        );
-
-        // uint256[1,2,3]
-        let value = ParamValue::Array(vec![
-            ParamValue::UInt {
-                size: 256,
-                value: 1,
-            },
-            ParamValue::UInt {
-                size: 256,
-                value: 2,
-            },
-            ParamValue::UInt {
-                size: 256,
-                value: 3,
-            },
-        ]);
-
-        // Fixed size
-        let tp = ParamType::Array {
-            size: Some(3),
-            tp: Box::new(ParamType::UInt(256)),
-        };
-
-        assert_eq!(
-            hex::encode(value.encode(Some(&tp)).unwrap()),
-            "000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003"
-        );
-
-        // Dynamic size
-        let tp = ParamType::Array {
-            size: None,
-            tp: Box::new(ParamType::UInt(256)),
-        };
-        assert_eq!(
-            hex::encode(value.encode(Some(&tp)).unwrap()),
-            "0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003"
         );
     }
 }

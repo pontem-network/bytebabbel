@@ -1,8 +1,11 @@
+use crate::abi::call::encode::encode_value;
 use anyhow::{anyhow, bail, ensure, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 use crate::abi::Entry;
+
+pub mod encode;
 
 #[derive(Debug, Clone)]
 pub struct CallFn<'a> {
@@ -55,7 +58,8 @@ impl<'a> CallFn<'a> {
             .iter()
             .filter_map(|v| match v {
                 // @todo None
-                Some(v) => Some(v.encode(None)),
+                // @todo start
+                Some(v) => Some(encode_value(v, None, 0)),
                 None => None,
             })
             .collect::<Result<Vec<_>>>()?
