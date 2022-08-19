@@ -58,27 +58,6 @@ impl ParamType {
             ParamType::Custom(name) => todo!(),
         }
     }
-
-    pub fn size_bytes(&self) -> Option<u32> {
-        if !self.is_static_size() {
-            return None;
-        }
-
-        match self {
-            ParamType::Bool => Some(32),
-            ParamType::Int(..) => Some(32),
-            ParamType::UInt(..) => Some(32),
-            ParamType::Byte(..) => Some(32),
-            ParamType::Bytes => None,
-            ParamType::Address => Some(32),
-            ParamType::String => None,
-            ParamType::Array { tp, size } => size.and_then(|mult| {
-                let ch = tp.size_bytes()?;
-                Some(mult * ch)
-            }),
-            ParamType::Custom(name) => todo!(),
-        }
-    }
 }
 
 impl ToString for ParamType {
@@ -421,70 +400,5 @@ mod test {
             }),
         }
         .is_static_size());
-    }
-
-    #[test]
-    fn test_size_bytes() {
-        assert_eq!(Some(32), ParamType::Bool.size_bytes());
-        assert_eq!(Some(32), ParamType::Int(8).size_bytes());
-        assert_eq!(Some(32), ParamType::UInt(16).size_bytes());
-        assert_eq!(Some(32), ParamType::Byte(3).size_bytes());
-        assert_eq!(Some(32), ParamType::Address.size_bytes());
-        assert_eq!(None, ParamType::Bytes.size_bytes());
-        assert_eq!(None, ParamType::String.size_bytes());
-
-        assert_eq!(
-            None,
-            ParamType::Array {
-                size: None,
-                tp: Box::new(ParamType::UInt(8))
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            Some(32 * 3),
-            ParamType::Array {
-                size: Some(3),
-                tp: Box::new(ParamType::UInt(8))
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            Some(32 * 3 * 3),
-            ParamType::Array {
-                size: Some(3),
-                tp: Box::new(ParamType::Array {
-                    size: Some(3),
-                    tp: Box::new(ParamType::Bool),
-                }),
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            None,
-            ParamType::Array {
-                size: Some(3),
-                tp: Box::new(ParamType::Array {
-                    size: None,
-                    tp: Box::new(ParamType::Bool),
-                }),
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            None,
-            ParamType::Array {
-                size: None,
-                tp: Box::new(ParamType::Array {
-                    size: Some(3),
-                    tp: Box::new(ParamType::Bool),
-                }),
-            }
-            .size_bytes()
-        );
     }
 }
