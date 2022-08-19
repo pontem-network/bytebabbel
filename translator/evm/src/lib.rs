@@ -7,6 +7,8 @@ use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
+use crate::bytecode::tracing::tracer::Tracer;
+use crate::bytecode::tracing::WFC;
 use crate::bytecode::types::{Function, U256};
 use crate::program::Program;
 use anyhow::Error;
@@ -41,6 +43,7 @@ pub fn transpile_program(
     }
 
     let contract_flow = FlowBuilder::new(&contract).make_flow();
+    WFC::new(&contract).trace();
     let hir = HirTranslator::new(&contract, contract_flow);
 
     let functions = abi

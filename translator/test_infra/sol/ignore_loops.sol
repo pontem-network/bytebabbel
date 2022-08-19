@@ -40,6 +40,19 @@ library  Loop {
             }
             val += j;
         }
+
+        uint result = 0;
+        do {
+            --i;
+            result += i;
+        }
+        while (i > 0);
+
+        while (i > 0) {
+            --i;
+            result += i;
+        }
+
         return val;
     }
 
