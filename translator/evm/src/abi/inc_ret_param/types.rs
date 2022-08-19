@@ -1,4 +1,4 @@
-use std::fmt::{format, Debug, Formatter};
+use std::fmt::{Debug, Formatter};
 
 use anyhow::{anyhow, bail, Error, Result};
 use lazy_static::lazy_static;
