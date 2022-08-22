@@ -39,8 +39,24 @@ pub enum ParamType {
 }
 
 impl ParamType {
-    pub fn array_sizes(&self) -> Result<Vec<Option<u32>>> {
-        todo!()
+    pub fn is_static_size(&self) -> bool {
+        match self {
+            ParamType::Bool => true,
+            ParamType::Int(..) => true,
+            ParamType::UInt(..) => true,
+            ParamType::Byte(..) => true,
+            ParamType::Bytes => false,
+            ParamType::Address => true,
+            ParamType::String => false,
+            ParamType::Array { tp, size } => {
+                if size.is_some() {
+                    tp.is_static_size()
+                } else {
+                    false
+                }
+            }
+            ParamType::Custom(_name) => todo!(),
+        }
     }
 }
 
@@ -50,14 +66,18 @@ impl ToString for ParamType {
             ParamType::Bool => "bool".to_string(),
             ParamType::Int(size) => format!("int{size}"),
             ParamType::UInt(size) => format!("uint{size}"),
-            ParamType::Byte(size) => format!("int{size}"),
-            ParamType::Address => "address".to_string(),
+            ParamType::Byte(size) => format!("bytes{size}"),
             ParamType::Bytes => "bytes".to_string(),
+            ParamType::Address => "address".to_string(),
             ParamType::String => "string".to_string(),
             ParamType::Array { tp, size } => {
-                format!("{}[{}]", tp.to_string(), size.unwrap_or_default())
+                if let Some(size) = size {
+                    format!("{tp:?}[{size}]")
+                } else {
+                    format!("{tp:?}[]")
+                }
             }
-            ParamType::Custom(name) => name.clone(),
+            ParamType::Custom(name) => name.to_string(),
         }
     }
 }
@@ -319,6 +339,7 @@ mod test {
             assert_eq!(&result, value);
         }
     }
+
     #[test]
     fn test_deserialize() {
         let cont = format!(
@@ -329,5 +350,55 @@ mod test {
         let expected_result: Vec<ParamType> = EXEPLES.iter().map(|(_, r)| r).cloned().collect();
 
         assert_eq!(parse_result, expected_result);
+    }
+
+    #[test]
+    fn test_is_static_size() {
+        assert!(ParamType::Bool.is_static_size());
+        assert!(ParamType::Int(8).is_static_size());
+        assert!(ParamType::UInt(8).is_static_size());
+        assert!(ParamType::Byte(3).is_static_size());
+        assert!(ParamType::Address.is_static_size());
+        assert!(!ParamType::Bytes.is_static_size());
+        assert!(!ParamType::String.is_static_size());
+
+        assert!(!ParamType::Array {
+            size: None,
+            tp: Box::new(ParamType::UInt(8))
+        }
+        .is_static_size());
+
+        assert!(ParamType::Array {
+            size: Some(3),
+            tp: Box::new(ParamType::UInt(8))
+        }
+        .is_static_size());
+
+        assert!(ParamType::Array {
+            size: Some(3),
+            tp: Box::new(ParamType::Array {
+                size: Some(3),
+                tp: Box::new(ParamType::Bool),
+            }),
+        }
+        .is_static_size());
+
+        assert!(!ParamType::Array {
+            size: Some(3),
+            tp: Box::new(ParamType::Array {
+                size: None,
+                tp: Box::new(ParamType::Bool),
+            }),
+        }
+        .is_static_size());
+
+        assert!(!ParamType::Array {
+            size: None,
+            tp: Box::new(ParamType::Array {
+                size: Some(3),
+                tp: Box::new(ParamType::Bool),
+            }),
+        }
+        .is_static_size());
     }
 }

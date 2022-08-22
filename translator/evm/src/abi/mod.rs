@@ -7,6 +7,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
 
+pub mod call;
 pub mod inc_ret_param;
 pub mod types;
 
@@ -150,10 +151,6 @@ impl Entry {
         }
     }
 
-    pub fn call_ecoding(&self, _value: Vec<inc_ret_param::types::ParamType>) -> Result<Vec<u8>> {
-        todo!()
-    }
-
     pub fn outputs(&self) -> Option<&Vec<Param>> {
         match self {
             Entry::Function(data)
@@ -162,6 +159,12 @@ impl Entry {
             | Entry::Fallback(data) => data.outputs.as_ref(),
             Entry::Error { .. } | Entry::Event { .. } => None,
         }
+    }
+
+    /// hash of the function in hexadecimal format without the prefix "0x"
+    pub fn hash_hex(&self) -> String {
+        let hash: FunHash = self.into();
+        hex::encode(hash.0)
     }
 }
 
@@ -218,6 +221,7 @@ impl Display for FunHash {
 
 #[cfg(test)]
 mod tests {
+    use crate::abi::call::ToCall;
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::types::StateMutability;
     use crate::abi::{Abi, Entry, FunctionData, Param};
@@ -574,7 +578,6 @@ mod tests {
     ///    function sam(bytes memory, bool, uint[] memory) public pure {}
     /// }
     /// ============================================================================================
-    #[ignore]
     #[test]
     fn test_input_ecode() {
         let abi_str = r#"[
@@ -637,15 +640,198 @@ mod tests {
             "outputs": [],
             "stateMutability": "pure",
             "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint32[]",
+                "name": "",
+                "type": "uint32[]"
+              },
+              {
+                "internalType": "bytes10",
+                "name": "",
+                "type": "bytes10"
+              },
+              {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+              }
+            ],
+            "name": "f",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "uint256[][]",
+                "name": "",
+                "type": "uint256[][]"
+              },
+              {
+                "internalType": "string[]",
+                "name": "",
+                "type": "string[]"
+              }
+            ],
+            "name": "g",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
           }
         ]"#;
 
         let abi: Abi = serde_json::from_str(abi_str).unwrap();
-        let baz = abi.by_name("baz").unwrap().call_ecoding(vec![]).unwrap();
-        let _t = hex::encode(&baz);
+        // =========================================================================================
+        // function baz(uint32 x, bool y)
+        // =========================================================================================
 
-        // assert_eq!("0xcdcd77c000000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000001");
+        let entry_fn = abi.by_name("baz").unwrap();
 
-        todo!()
+        assert_eq!("0xcdcd77c0", &format!("0x{}", entry_fn.hash_hex()));
+
+        let mut call_fn = entry_fn.try_call().unwrap();
+        assert!(call_fn.clone().encode().is_err());
+
+        call_fn.set_input(1, true).unwrap();
+        assert!(call_fn.clone().encode().is_err());
+
+        call_fn.set_input(0, 69u32).unwrap();
+
+        let encode = call_fn.encode().unwrap();
+        assert_eq!(
+            "0xcdcd77c0\
+            0000000000000000000000000000000000000000000000000000000000000045\
+            0000000000000000000000000000000000000000000000000000000000000001",
+            encode.as_str()
+        );
+
+        // =========================================================================================
+        // function bar(bytes3[2] memory)
+        // =========================================================================================
+        let entry_fn = abi.by_name("bar").unwrap();
+        assert_eq!("0xfce353f6", &format!("0x{}", entry_fn.hash_hex()));
+
+        let mut call_fn = entry_fn.try_call().unwrap();
+        call_fn
+            .set_input(0, ["abc".as_bytes(), "def".as_bytes()])
+            .unwrap();
+        let encode = call_fn.encode().unwrap();
+        assert_eq!(
+            "0xfce353f6\
+            6162630000000000000000000000000000000000000000000000000000000000\
+            6465660000000000000000000000000000000000000000000000000000000000",
+            encode.as_str()
+        );
+
+        // @todo
+
+        for x in 0..16 {
+            let c: usize = x * 32;
+            let h = hex::encode(c.to_be_bytes().to_vec());
+            println!("{x}: {h}");
+        }
+
+        // =========================================================================================
+        // function sam(bytes memory, bool, uint[] memory)
+        // sam("dave",true,[1,2,3])
+        // =========================================================================================
+        let entry_fn = abi.by_name("sam").unwrap();
+        assert_eq!("0xa5643bf2", &format!("0x{}", entry_fn.hash_hex()));
+
+        let mut call_fn = entry_fn.try_call().unwrap();
+        call_fn.set_input(0, "dave".as_bytes()).unwrap();
+        call_fn.set_input(1, true).unwrap();
+        call_fn.set_input(2, [1usize, 2, 3]).unwrap();
+        let encode = call_fn.encode().unwrap();
+
+        assert_eq!(
+            encode.as_str(),
+            "0xa5643bf2\
+            0000000000000000000000000000000000000000000000000000000000000060\
+            0000000000000000000000000000000000000000000000000000000000000001\
+            00000000000000000000000000000000000000000000000000000000000000a0\
+            0000000000000000000000000000000000000000000000000000000000000004\
+            6461766500000000000000000000000000000000000000000000000000000000\
+            0000000000000000000000000000000000000000000000000000000000000003\
+            0000000000000000000000000000000000000000000000000000000000000001\
+            0000000000000000000000000000000000000000000000000000000000000002\
+            0000000000000000000000000000000000000000000000000000000000000003",
+        );
+
+        // =========================================================================================
+        // f(uint,uint32[],bytes10,bytes)
+        // f(0x123, [0x456, 0x789], "1234567890", "Hello, world!")
+        // =========================================================================================
+        let entry_fn = abi.by_name("f").unwrap();
+        assert_eq!("0x8be65246", &format!("0x{}", entry_fn.hash_hex()));
+
+        let mut call_fn = entry_fn.try_call().unwrap();
+        call_fn.set_input(0, 291usize).unwrap();
+        call_fn.set_input(1, [1110u32, 1929u32]).unwrap();
+        call_fn.set_input(2, "1234567890".as_bytes()).unwrap();
+        call_fn.set_input(3, "Hello, world!".as_bytes()).unwrap();
+        let encode = call_fn.encode().unwrap();
+
+        assert_eq!(
+            encode.as_str(),
+            "0x8be65246\
+            0000000000000000000000000000000000000000000000000000000000000123\
+            0000000000000000000000000000000000000000000000000000000000000080\
+            3132333435363738393000000000000000000000000000000000000000000000\
+            00000000000000000000000000000000000000000000000000000000000000e0\
+            0000000000000000000000000000000000000000000000000000000000000002\
+            0000000000000000000000000000000000000000000000000000000000000456\
+            0000000000000000000000000000000000000000000000000000000000000789\
+            000000000000000000000000000000000000000000000000000000000000000d\
+            48656c6c6f2c20776f726c642100000000000000000000000000000000000000",
+        );
+
+        // =========================================================================================
+        // g(uint[][],string[])
+        // g([[1, 2], [3]], ["one", "two", "three"])
+        // =========================================================================================
+        let entry_fn = abi.by_name("g").unwrap();
+        assert_eq!("0x2289b18c", &format!("0x{}", entry_fn.hash_hex()));
+
+        let mut call_fn = entry_fn.try_call().unwrap();
+        call_fn
+            .set_input(0, vec![vec![1usize, 2], vec![3usize]])
+            .unwrap();
+        call_fn.set_input(1, ["one", "two", "three"]).unwrap();
+        let encode = call_fn.encode().unwrap();
+
+        assert_eq!(
+            encode.as_str(),
+            "0x2289b18c\
+            0000000000000000000000000000000000000000000000000000000000000040\
+            0000000000000000000000000000000000000000000000000000000000000140\
+            0000000000000000000000000000000000000000000000000000000000000002\
+            0000000000000000000000000000000000000000000000000000000000000040\
+            00000000000000000000000000000000000000000000000000000000000000a0\
+            0000000000000000000000000000000000000000000000000000000000000002\
+            0000000000000000000000000000000000000000000000000000000000000001\
+            0000000000000000000000000000000000000000000000000000000000000002\
+            0000000000000000000000000000000000000000000000000000000000000001\
+            0000000000000000000000000000000000000000000000000000000000000003\
+            0000000000000000000000000000000000000000000000000000000000000003\
+            0000000000000000000000000000000000000000000000000000000000000060\
+            00000000000000000000000000000000000000000000000000000000000000a0\
+            00000000000000000000000000000000000000000000000000000000000000e0\
+            0000000000000000000000000000000000000000000000000000000000000003\
+            6f6e650000000000000000000000000000000000000000000000000000000000\
+            0000000000000000000000000000000000000000000000000000000000000003\
+            74776f0000000000000000000000000000000000000000000000000000000000\
+            0000000000000000000000000000000000000000000000000000000000000005\
+            7468726565000000000000000000000000000000000000000000000000000000",
+        );
     }
 }

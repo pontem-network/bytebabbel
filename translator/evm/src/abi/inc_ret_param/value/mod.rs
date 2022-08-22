@@ -33,7 +33,6 @@ pub enum ParamValue {
     String(Vec<u8>),
     Array(Vec<ParamValue>),
     // Not a Primitive type
-    // @todo
     Custom {
         name: String,
         params: Vec<ParamValue>,

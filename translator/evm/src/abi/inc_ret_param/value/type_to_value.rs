@@ -9,10 +9,6 @@ impl ParamType {
     where
         T: AsParamValue,
     {
-        println!("= = = set_value = = = ");
-        dbg!(&self);
-        dbg!(&value);
-
         match self {
             ParamType::Bool => value.try_to_param_bool(),
             ParamType::Int(size) => {
