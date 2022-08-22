@@ -117,7 +117,11 @@ fn pad_right32(data: &[u8]) -> [u8; 32] {
     result
 }
 
-trait ParamTypeSize {
+pub fn enc_offset(start: u32) -> [u8; 32] {
+    pad_left32(&start.to_be_bytes())
+}
+
+pub trait ParamTypeSize {
     fn size_bytes(&self) -> Option<u32>;
 }
 

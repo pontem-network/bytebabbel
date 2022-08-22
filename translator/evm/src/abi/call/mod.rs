@@ -1,5 +1,6 @@
-use crate::abi::call::encode::encode_value;
+use crate::abi::call::encode::{enc_offset, encode_value, ParamTypeSize, ValueEncodeType};
 use anyhow::{anyhow, bail, ensure, Result};
+use std::io::BufRead;
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
@@ -48,25 +49,49 @@ impl<'a> CallFn<'a> {
         Ok(self)
     }
 
-    pub fn encode_input(&self) -> Result<String> {
+    pub fn encode(&self) -> Result<String> {
         self.are_all_inputs_filled()?;
 
+        let input_types = self.inputs_types()?;
         let method_id = self.entry.hash_hex();
 
-        let params: Vec<u8> = self
+        if self.input.iter().any(|item| item.is_none()) {
+            bail!("Not all parameters were filled in");
+        }
+
+        let value = self
             .input
             .iter()
-            .filter_map(|v| match v {
-                // @todo None
-                // @todo start
-                Some(v) => Some(encode_value(v, None, 0)),
+            .zip(input_types)
+            .filter_map(|(v, tp)| match v {
+                Some(v) => Some(encode_value(v, tp, 0).map(|value| (tp, value))),
                 None => None,
             })
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .flatten()
-            .collect();
-        let params_hex = hex::encode(&params);
+            .collect::<Result<Vec<_>>>()?;
+
+        let mut result = Vec::new();
+        let mut ds: Vec<u8> = Vec::new();
+        let mut start = value
+            .iter()
+            .map(|(tp, _)| tp.size_bytes().unwrap_or(32))
+            .sum::<u32>();
+
+        for num in 0..value.len() {
+            let (tp, v) = &value[num];
+            match v {
+                ValueEncodeType::Static(data) => {
+                    result.extend(data);
+                }
+                ValueEncodeType::Dynamic(data) => {
+                    let offset = start + ds.len() as u32;
+                    result.extend(enc_offset(offset));
+                    ds.extend(data);
+                }
+            }
+        }
+        result.append(&mut ds);
+
+        let params_hex = hex::encode(&result);
         Ok(format!("0x{method_id}{params_hex}"))
     }
 }
@@ -79,7 +104,7 @@ impl ToCall for &Entry {
     fn try_call(&self) -> Result<CallFn> {
         ensure!(self.is_function(), "Is not a function");
         let count = self.inputs().ok_or(anyhow!("Is not a function"))?.len();
-        let input = vec![None; count];
+        let input: Vec<Option<ParamValue>> = vec![None; count];
         Ok(CallFn { entry: self, input })
     }
 }

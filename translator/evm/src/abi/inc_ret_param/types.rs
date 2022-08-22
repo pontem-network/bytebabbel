@@ -5,6 +5,8 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserializer;
 
+use crate::abi::call::encode::ParamTypeSize;
+
 lazy_static! {
     static ref REG_UINT: Regex = Regex::new(r#"^(?P<tp>(u)?int)(?P<size>\d+)?$"#).unwrap();
     static ref REG_BYTES: Regex = Regex::new(r#"^bytes(?P<size>\d+)$"#).unwrap();
