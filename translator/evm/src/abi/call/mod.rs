@@ -1,6 +1,5 @@
 use crate::abi::call::encode::{enc_offset, encode_value, ParamTypeSize, ValueEncodeType};
 use anyhow::{anyhow, bail, ensure, Result};
-use std::io::BufRead;
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
@@ -19,7 +18,7 @@ impl<'a> CallFn<'a> {
         let param = self
             .entry
             .inputs()
-            .ok_or(anyhow!("The object is not a function"))?;
+            .ok_or_else(|| anyhow!("The object is not a function"))?;
         Ok(param.iter().map(|p| &p.tp).collect())
     }
 
@@ -29,7 +28,7 @@ impl<'a> CallFn<'a> {
             let need_type = types[position];
             bail!("Fill in all incoming parameters for the function. Expected data for {position} param. Type: {need_type:?}")
         }
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -39,9 +38,9 @@ impl<'a> CallFn<'a> {
         T: AsParamValue,
     {
         let types = self.inputs_types()?;
-        let tp = types.get(number_position).ok_or(anyhow!(
-            "The function parameter number is specified incorrectly"
-        ))?;
+        let tp = types
+            .get(number_position)
+            .ok_or_else(|| anyhow!("The function parameter number is specified incorrectly"))?;
         let value = tp.set_value(value)?;
 
         self.input[number_position] = Some(value);
@@ -63,21 +62,20 @@ impl<'a> CallFn<'a> {
             .input
             .iter()
             .zip(input_types)
-            .filter_map(|(v, tp)| match v {
-                Some(v) => Some(encode_value(v, tp, 0).map(|value| (tp, value))),
-                None => None,
+            .filter_map(|(v, tp)| {
+                v.as_ref()
+                    .map(|v| encode_value(v, tp, 0).map(|value| (tp, value)))
             })
             .collect::<Result<Vec<_>>>()?;
 
         let mut result = Vec::new();
         let mut ds: Vec<u8> = Vec::new();
-        let mut start = value
+        let start = value
             .iter()
             .map(|(tp, _)| tp.size_bytes().unwrap_or(32))
             .sum::<u32>();
 
-        for num in 0..value.len() {
-            let (tp, v) = &value[num];
+        for (_, v) in &value {
             match v {
                 ValueEncodeType::Static(data) => {
                     result.extend(data);
@@ -103,7 +101,10 @@ pub trait ToCall {
 impl ToCall for &Entry {
     fn try_call(&self) -> Result<CallFn> {
         ensure!(self.is_function(), "Is not a function");
-        let count = self.inputs().ok_or(anyhow!("Is not a function"))?.len();
+        let count = self
+            .inputs()
+            .ok_or_else(|| anyhow!("Is not a function"))?
+            .len();
         let input: Vec<Option<ParamValue>> = vec![None; count];
         Ok(CallFn { entry: self, input })
     }

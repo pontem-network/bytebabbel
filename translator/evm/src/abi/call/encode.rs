@@ -1,6 +1,4 @@
-use anyhow::{bail, ensure, Result};
-use std::borrow::Borrow;
-use std::io::BufRead;
+use anyhow::{bail, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::ParamValue;
@@ -21,6 +19,10 @@ impl ValueEncodeType {
 
     pub fn len(&self) -> usize {
         self.data_ref().len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data_ref().is_empty()
     }
 
     pub fn as_vec(self) -> Vec<u8> {
@@ -73,8 +75,7 @@ pub fn encode_value(
                     .map(|item| encode_value(item, sub_type, start))
                     .collect::<Result<Vec<_>>>()?
                     .into_iter()
-                    .map(|item| item.as_vec())
-                    .flatten()
+                    .flat_map(|item| item.as_vec())
                     .collect::<Vec<u8>>();
                 return Ok(ValueEncodeType::Static(result));
             }
@@ -107,13 +108,13 @@ pub fn encode_value(
 
 fn pad_left32(data: &[u8]) -> [u8; 32] {
     let mut result = [0u8; 32];
-    result[32 - data.len()..32].copy_from_slice(&data);
+    result[32 - data.len()..32].copy_from_slice(data);
     result
 }
 
 fn pad_right32(data: &[u8]) -> [u8; 32] {
     let mut result = [0u8; 32];
-    result[0..data.len()].copy_from_slice(&data);
+    result[0..data.len()].copy_from_slice(data);
     result
 }
 
@@ -150,9 +151,8 @@ impl ParamTypeSize for ParamType {
 
 #[cfg(test)]
 mod test {
-    use crate::abi::call::encode::{encode_value, pad_left32, ParamTypeSize};
+    use crate::abi::call::encode::{encode_value, ParamTypeSize};
     use crate::abi::inc_ret_param::types::ParamType;
-    use crate::abi::inc_ret_param::value::collection::TryParamBytes;
     use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 
     // https://docs.soliditylang.org/en/v0.8.0/abi-spec.html#examples
