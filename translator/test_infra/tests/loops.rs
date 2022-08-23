@@ -17,7 +17,7 @@ pub fn test_loops() {
     vm.deploy("0x1", bytecode);
     println!("run");
 
-    let res = vm.run("0x1::Loop::for_loop", "2").unwrap();
+    let res = vm.run("0x1::Loop::for_loop", "2,9").unwrap();
     for (val, tp) in res.returns.iter() {
         println!("{:?}", MoveValue::simple_deserialize(val, tp));
     }

@@ -4,7 +4,7 @@ use crate::{BlockId, OpCode, U256};
 #[derive(Debug, Clone, Default)]
 pub struct Executor {
     call_stack: Vec<BlockId>,
-    path: Vec<BlockId>,
+    pub path: Vec<BlockId>,
 }
 
 impl Executor {
@@ -69,9 +69,18 @@ impl Executor {
             .map(|last| Next::Jmp(BlockId(last.next())))
             .unwrap_or(Next::Stop)
     }
-    
+
     pub fn in_path(&self, id: BlockId) -> bool {
         self.path.contains(&id)
+    }
+
+    pub fn take_while(&self, id: BlockId) -> Vec<BlockId> {
+        self.path
+            .iter()
+            .rev()
+            .take_while(|&x| x != &id)
+            .cloned()
+            .collect()
     }
 }
 

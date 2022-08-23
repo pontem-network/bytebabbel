@@ -29,7 +29,7 @@ impl Evm {
 
 pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
     let tmp_dir = std::env::temp_dir().join(sha_name(sol));
-    if !tmp_dir.exists() {
+    if !tmp_dir.exists() || dbg!(fs::read_dir(&tmp_dir)?.count() != 2) {
         fs::create_dir_all(&tmp_dir)?;
 
         let contract = tmp_dir.join("contract.sol");
