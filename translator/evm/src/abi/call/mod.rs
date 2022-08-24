@@ -1,4 +1,6 @@
-use crate::abi::call::encode::{enc_offset, encode_value, ParamTypeSize, ValueEncodeType};
+use crate::abi::call::encode::{
+    decode_value, enc_offset, encode_value, ParamTypeSize, ValueEncodeType,
+};
 use anyhow::{anyhow, bail, ensure, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
@@ -22,6 +24,14 @@ impl<'a> CallFn<'a> {
         Ok(param.iter().map(|p| &p.tp).collect())
     }
 
+    fn outputs_types(&'a self) -> Result<Vec<&'a ParamType>> {
+        let param = self
+            .entry
+            .outputs()
+            .ok_or_else(|| anyhow!("The object is not a function"))?;
+        Ok(param.iter().map(|p| &p.tp).collect())
+    }
+
     fn are_all_inputs_filled(&self) -> Result<()> {
         if let Some(position) = self.input.iter().position(|item| item.is_none()) {
             let types = self.inputs_types()?;
@@ -30,9 +40,7 @@ impl<'a> CallFn<'a> {
         }
         Ok(())
     }
-}
 
-impl<'a> CallFn<'a> {
     pub fn set_input<T>(&mut self, number_position: usize, value: T) -> Result<&mut Self>
     where
         T: AsParamValue,
@@ -48,7 +56,7 @@ impl<'a> CallFn<'a> {
         Ok(self)
     }
 
-    pub fn encode(&self) -> Result<String> {
+    pub fn encode(&self) -> Result<Vec<u8>> {
         self.are_all_inputs_filled()?;
 
         let input_types = self.inputs_types()?;
@@ -68,7 +76,7 @@ impl<'a> CallFn<'a> {
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let mut result = Vec::new();
+        let mut params = Vec::new();
         let mut ds: Vec<u8> = Vec::new();
         let start = value
             .iter()
@@ -78,28 +86,54 @@ impl<'a> CallFn<'a> {
         for (_, v) in &value {
             match v {
                 ValueEncodeType::Static(data) => {
-                    result.extend(data);
+                    params.extend(data);
                 }
                 ValueEncodeType::Dynamic(data) => {
                     let offset = start + ds.len() as u32;
-                    result.extend(enc_offset(offset));
+                    params.extend(enc_offset(offset));
                     ds.extend(data);
                 }
             }
         }
-        result.append(&mut ds);
+        params.append(&mut ds);
 
-        let params_hex = hex::encode(&result);
-        Ok(format!("0x{method_id}{params_hex}"))
+        let mut result = hex::decode(method_id)?;
+        result.append(&mut params);
+        Ok(result)
+    }
+
+    pub fn decode_return(&self, value: Vec<u8>) -> Result<Vec<ParamValue>> {
+        let output_types = self.outputs_types()?;
+        if output_types.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut start: usize = 0;
+        output_types
+            .iter()
+            .map(|tp| {
+                if let Some(size) = tp.size_bytes() {
+                    let size = size as usize;
+                    let result = decode_value(&value[start..start + size], tp, 0)?;
+                    start += size;
+                    return Ok(result);
+                }
+
+                let offset = encode::to_usize(&value[start..start + 32]);
+                let result = decode_value(&value[offset..], tp, 0)?;
+                start += 32;
+                Ok(result)
+            })
+            .collect::<Result<_>>()
     }
 }
 
 pub trait ToCall {
-    fn try_call(&self) -> Result<CallFn>;
+    fn try_call<'a>(&'a self) -> Result<CallFn<'a>>;
 }
 
 impl ToCall for &Entry {
-    fn try_call(&self) -> Result<CallFn> {
+    fn try_call<'a>(&'a self) -> Result<CallFn<'a>> {
         ensure!(self.is_function(), "Is not a function");
         let count = self
             .inputs()

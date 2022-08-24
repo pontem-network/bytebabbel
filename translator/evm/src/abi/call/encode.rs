@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::ParamValue;
@@ -106,6 +106,80 @@ pub fn encode_value(
     }
 }
 
+pub fn decode_value(value: &[u8], value_type: &ParamType, mut start: usize) -> Result<ParamValue> {
+    match value_type {
+        ParamType::Bool => {
+            let b = value.last().ok_or_else(|| anyhow!("Value not passed"))?;
+            let result = if b == &0 { false } else { true };
+            Ok(ParamValue::Bool(result))
+        }
+        ParamType::Int(size) => Ok(ParamValue::Int {
+            size: *size,
+            value: to_isize(&value),
+        }),
+        ParamType::UInt(size) => Ok(ParamValue::UInt {
+            size: *size,
+            value: to_usize(&value),
+        }),
+        ParamType::Byte(size) => {
+            let data = { &value[0..*size as usize] }.to_vec();
+            ensure!(*size as usize == data.len(), "incorrect length");
+            Ok(ParamValue::Byte(data))
+        }
+        ParamType::Bytes | ParamType::String => {
+            let len = to_usize(&value[0..32]);
+            let data = { &value[32..32 + len] }.to_vec();
+            let result = match value_type {
+                ParamType::Bytes => ParamValue::Bytes(data),
+                ParamType::String => ParamValue::String(data),
+                _ => unreachable!(),
+            };
+            Ok(result)
+        }
+        ParamType::Address => {
+            todo!()
+            // Ok(ValueEncodeType::Static(data.to_vec()))
+        }
+        ParamType::Array { size: len, tp } => {
+            let sub_type = match value_type {
+                ParamType::Array { tp: subtp, .. } => subtp,
+                _ => bail!("Expected array. Type passed: {value_type:?}"),
+            };
+            let mut value = value;
+            let len = match len {
+                Some(size) => *size as usize,
+                None => {
+                    let size = to_usize(&value[0..32]);
+                    value = &value[32..];
+                    size
+                }
+            };
+
+            // static
+            if sub_type.is_static_size() {
+                let sub_size = sub_type.size_bytes().unwrap_or(32) as usize;
+                let data = value
+                    .chunks(sub_size)
+                    .take(len)
+                    .map(|value| decode_value(value, sub_type, start))
+                    .collect::<Result<Vec<ParamValue>>>()?;
+
+                return Ok(ParamValue::Array(data));
+            }
+
+            let result = (0..len)
+                .map(|index| {
+                    let offset = to_usize(&value[32 * index..32 * (index + 1)]);
+                    decode_value(&value[offset..], sub_type, 0)
+                })
+                .collect::<Result<Vec<ParamValue>>>()?;
+
+            Ok(ParamValue::Array(result))
+        }
+        ParamType::Custom { .. } => todo!(),
+    }
+}
+
 fn pad_left32(data: &[u8]) -> [u8; 32] {
     let mut result = [0u8; 32];
     result[32 - data.len()..32].copy_from_slice(data);
@@ -116,6 +190,18 @@ fn pad_right32(data: &[u8]) -> [u8; 32] {
     let mut result = [0u8; 32];
     result[0..data.len()].copy_from_slice(data);
     result
+}
+
+pub fn to_usize(data: &[u8]) -> usize {
+    let mut bytes = [0u8; 8];
+    bytes.clone_from_slice(&data[24..32]);
+    usize::from_be_bytes(bytes)
+}
+
+fn to_isize(data: &[u8]) -> isize {
+    let mut bytes = [0u8; 8];
+    bytes.clone_from_slice(&data[24..32]);
+    isize::from_be_bytes(bytes)
 }
 
 pub fn enc_offset(start: u32) -> [u8; 32] {
@@ -151,7 +237,7 @@ impl ParamTypeSize for ParamType {
 
 #[cfg(test)]
 mod test {
-    use crate::abi::call::encode::{encode_value, ParamTypeSize};
+    use crate::abi::call::encode::{decode_value, encode_value, ParamTypeSize};
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 
@@ -224,71 +310,84 @@ mod test {
 
     #[test]
     fn test_encode_bool() {
-        // true
-        assert_eq!(
-            hex::encode(
-                encode_value(&true.to_param(), &ParamType::Bool, 0)
-                    .unwrap()
-                    .data_ref()
-            ),
-            "0000000000000000000000000000000000000000000000000000000000000001",
-        );
+        let tp = ParamType::Bool;
 
-        // false
-        assert_eq!(
-            hex::encode(
-                encode_value(&false.to_param(), &ParamType::Bool, 0)
-                    .unwrap()
-                    .data_ref()
+        for (value, enc) in [
+            (
+                true.to_param(),
+                hex::decode("0000000000000000000000000000000000000000000000000000000000000001")
+                    .unwrap(),
             ),
-            "0000000000000000000000000000000000000000000000000000000000000000",
-        );
+            (
+                false.to_param(),
+                hex::decode("0000000000000000000000000000000000000000000000000000000000000000")
+                    .unwrap(),
+            ),
+        ] {
+            assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+            assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        }
     }
 
     #[test]
     fn test_encode_num() {
-        assert_eq!(
-            hex::encode(
-                encode_value(&69u32.to_param(), &ParamType::UInt(32), 0)
-                    .unwrap()
-                    .data_ref()
-            ),
-            "0000000000000000000000000000000000000000000000000000000000000045",
-        );
+        let tp = ParamType::UInt(32);
+        let value = 69u32.to_param();
+        let enc = hex::decode("0000000000000000000000000000000000000000000000000000000000000045")
+            .unwrap();
+
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+
+        let tp = ParamType::Int(128);
+        let value = { -69i128 }.to_param();
+        let enc = hex::decode("000000000000000000000000000000000000000000000000ffffffffffffffbb")
+            .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
     }
 
     #[test]
     fn test_encode_bytes() {
         // bytes3["abc","def"])
-        assert_eq!(
-            hex::encode(encode_value(&ParamValue::Array(vec![
-                ParamValue::Byte("abc".as_bytes().to_vec()),
-                ParamValue::Byte("def".as_bytes().to_vec()),
-            ]),&ParamType::Array {
-                size:Some(2),
-                tp:Box::new(ParamType::Byte(3))
-            },0).unwrap().data_ref()),
-            "61626300000000000000000000000000000000000000000000000000000000006465660000000000000000000000000000000000000000000000000000000000"
-        );
+        let tp = ParamType::Array {
+            size: Some(2),
+            tp: Box::new(ParamType::Byte(3)),
+        };
+        let value = ParamValue::Array(vec![
+            ParamValue::Byte("abc".as_bytes().to_vec()),
+            ParamValue::Byte("def".as_bytes().to_vec()),
+        ]);
+        let enc = hex::decode("61626300000000000000000000000000000000000000000000000000000000006465660000000000000000000000000000000000000000000000000000000000")
+            .unwrap();
+
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
 
         // bytes("dove")
         // len + value
-        assert_eq!(
-            hex::encode(encode_value(&ParamValue::Bytes("dave".as_bytes().to_vec()),&ParamType::Bytes,0).unwrap().data_ref()),
-            "00000000000000000000000000000000000000000000000000000000000000046461766500000000000000000000000000000000000000000000000000000000",
-        );
+        let tp = ParamType::Bytes;
+        let value = ParamValue::Bytes("dave".as_bytes().to_vec());
+        let enc = hex::decode("00000000000000000000000000000000000000000000000000000000000000046461766500000000000000000000000000000000000000000000000000000000")
+            .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
 
         let tp = ParamType::Bytes;
         let value = ParamValue::Bytes("Hello, world!".as_bytes().to_vec());
-        assert_eq!(
-            hex::encode(encode_value(&value,&tp,0).unwrap().data_ref()),
-            "000000000000000000000000000000000000000000000000000000000000000d48656c6c6f2c20776f726c642100000000000000000000000000000000000000"
-        );
+        let enc = hex::decode("000000000000000000000000000000000000000000000000000000000000000d48656c6c6f2c20776f726c642100000000000000000000000000000000000000").unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
     }
 
     #[test]
     fn test_encode_array() {
         // uint256[1,2,3]
+        // Fixed size
+        let tp = ParamType::Array {
+            size: Some(3),
+            tp: Box::new(ParamType::UInt(256)),
+        };
         let value = ParamValue::Array(vec![
             ParamValue::UInt {
                 size: 256,
@@ -303,32 +402,29 @@ mod test {
                 value: 3,
             },
         ]);
-
-        // Fixed size
-        let tp = ParamType::Array {
-            size: Some(3),
-            tp: Box::new(ParamType::UInt(256)),
-        };
-
-        assert_eq!(
-            hex::encode(encode_value(&value, &tp, 0).unwrap().data_ref()),
+        let enc = hex::decode(
             "0000000000000000000000000000000000000000000000000000000000000001\
             0000000000000000000000000000000000000000000000000000000000000002\
-            0000000000000000000000000000000000000000000000000000000000000003"
-        );
+            0000000000000000000000000000000000000000000000000000000000000003",
+        )
+        .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
 
         // Dynamic size
         let tp = ParamType::Array {
             size: None,
             tp: Box::new(ParamType::UInt(256)),
         };
-        assert_eq!(
-            hex::encode(encode_value(&value, &tp, 0).unwrap().data_ref()),
+        let enc = hex::decode(
             "0000000000000000000000000000000000000000000000000000000000000003\
             0000000000000000000000000000000000000000000000000000000000000001\
             0000000000000000000000000000000000000000000000000000000000000002\
-            0000000000000000000000000000000000000000000000000000000000000003"
-        );
+            0000000000000000000000000000000000000000000000000000000000000003",
+        )
+        .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
 
         // uint32[]
         // uint32[1110, 1929]
@@ -346,23 +442,24 @@ mod test {
                 value: 1929,
             },
         ]);
-        assert_eq!(
-            hex::encode(encode_value(&value, &tp, 0).unwrap().data_ref()),
+        let enc = hex::decode(
             "0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000456\
-            0000000000000000000000000000000000000000000000000000000000000789"
-        );
+            0000000000000000000000000000000000000000000000000000000000000789",
+        )
+        .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+
         let tp = ParamType::Array {
             size: Some(2),
             tp: Box::new(ParamType::UInt(32)),
         };
-        assert_eq!(
-            hex::encode(encode_value(&value,&tp,0).unwrap().data_ref()),
-            "00000000000000000000000000000000000000000000000000000000000004560000000000000000000000000000000000000000000000000000000000000789"
-        );
+        let enc = hex::decode("00000000000000000000000000000000000000000000000000000000000004560000000000000000000000000000000000000000000000000000000000000789").unwrap() ;
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
 
         // g(uint[][],string[])
-
         // uint[][]
         // [[1,2],[3]]
         let tp = ParamType::Array {
@@ -396,8 +493,7 @@ mod test {
         // 4 - 0000000000000000000000000000000000000000000000000000000000000002 - encoding of 2
         // 5 - 0000000000000000000000000000000000000000000000000000000000000001 - count for [3]
         // 6 - 0000000000000000000000000000000000000000000000000000000000000003 - encoding of 3
-        assert_eq!(
-            hex::encode(encode_value(&value, &tp, 0).unwrap().data_ref()),
+        let enc = hex::decode(
             "0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000040\
             00000000000000000000000000000000000000000000000000000000000000a0\
@@ -405,8 +501,11 @@ mod test {
             0000000000000000000000000000000000000000000000000000000000000001\
             0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000001\
-            0000000000000000000000000000000000000000000000000000000000000003"
-        );
+            0000000000000000000000000000000000000000000000000000000000000003",
+        )
+        .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
 
         // string[]
         // ["one", "two", "three"]
@@ -431,8 +530,7 @@ mod test {
         // 17 - 74776f0000000000000000000000000000000000000000000000000000000000 - encoding of "two"
         // 18 - 0000000000000000000000000000000000000000000000000000000000000005 - count for "three"
         // 19 - 7468726565000000000000000000000000000000000000000000000000000000 - encoding of "three"
-        assert_eq!(
-            hex::encode(encode_value(&value, &tp, 0).unwrap().data_ref()),
+        let enc = hex::decode(
             "0000000000000000000000000000000000000000000000000000000000000003\
             0000000000000000000000000000000000000000000000000000000000000060\
             00000000000000000000000000000000000000000000000000000000000000a0\
@@ -442,7 +540,10 @@ mod test {
             0000000000000000000000000000000000000000000000000000000000000003\
             74776f0000000000000000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000005\
-            7468726565000000000000000000000000000000000000000000000000000000"
-        );
+            7468726565000000000000000000000000000000000000000000000000000000",
+        )
+        .unwrap();
+        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
+        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
     }
 }
