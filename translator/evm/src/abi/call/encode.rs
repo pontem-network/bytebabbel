@@ -106,20 +106,20 @@ pub fn encode_value(
     }
 }
 
-pub fn decode_value(value: &[u8], value_type: &ParamType, mut start: usize) -> Result<ParamValue> {
+pub fn decode_value(value: &[u8], value_type: &ParamType, start: usize) -> Result<ParamValue> {
     match value_type {
         ParamType::Bool => {
             let b = value.last().ok_or_else(|| anyhow!("Value not passed"))?;
-            let result = if b == &0 { false } else { true };
+            let result = b != &0;
             Ok(ParamValue::Bool(result))
         }
         ParamType::Int(size) => Ok(ParamValue::Int {
             size: *size,
-            value: to_isize(&value),
+            value: to_isize(value),
         }),
         ParamType::UInt(size) => Ok(ParamValue::UInt {
             size: *size,
-            value: to_usize(&value),
+            value: to_usize(value),
         }),
         ParamType::Byte(size) => {
             let data = { &value[0..*size as usize] }.to_vec();
@@ -137,14 +137,14 @@ pub fn decode_value(value: &[u8], value_type: &ParamType, mut start: usize) -> R
             Ok(result)
         }
         ParamType::Address => {
-            todo!()
-            // Ok(ValueEncodeType::Static(data.to_vec()))
+            let mut address = [0u8; 32];
+            address.copy_from_slice(&value[..32]);
+            Ok(ParamValue::Address(address))
         }
-        ParamType::Array { size: len, tp } => {
-            let sub_type = match value_type {
-                ParamType::Array { tp: subtp, .. } => subtp,
-                _ => bail!("Expected array. Type passed: {value_type:?}"),
-            };
+        ParamType::Array {
+            size: len,
+            tp: sub_type,
+        } => {
             let mut value = value;
             let len = match len {
                 Some(size) => *size as usize,

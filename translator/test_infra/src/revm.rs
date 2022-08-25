@@ -172,7 +172,7 @@ mod test {
             .iter()
             .find_map(|item| item.abi_as_ref().by_name("without_params_bool"))
             .unwrap();
-        let mut call = fn_abi.try_call().unwrap();
+        let call = fn_abi.try_call().unwrap();
         let tx = call.encode().unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);

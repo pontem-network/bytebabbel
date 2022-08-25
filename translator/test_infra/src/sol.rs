@@ -79,7 +79,7 @@ pub fn build_sol_by_path(path: &Path) -> Result<Vec<Evm>, Error> {
         .and_then(|item| {
             item.iter()
                 .map(|(name, json)| {
-                    let (_, name) = name.rsplit_once(":")?;
+                    let (_, name) = name.rsplit_once(':')?;
                     Some(Evm {
                         name: Arc::new(name.to_string()),
                         abi: Arc::new(json.get("abi")?.to_string()),

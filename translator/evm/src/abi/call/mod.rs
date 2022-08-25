@@ -129,11 +129,11 @@ impl<'a> CallFn<'a> {
 }
 
 pub trait ToCall {
-    fn try_call<'a>(&'a self) -> Result<CallFn<'a>>;
+    fn try_call(&self) -> Result<CallFn>;
 }
 
 impl ToCall for &Entry {
-    fn try_call<'a>(&'a self) -> Result<CallFn<'a>> {
+    fn try_call(&self) -> Result<CallFn> {
         ensure!(self.is_function(), "Is not a function");
         let count = self
             .inputs()
