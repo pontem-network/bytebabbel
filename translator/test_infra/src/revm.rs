@@ -111,7 +111,6 @@ mod test {
     use std::path::PathBuf;
     use std::sync::Mutex;
 
-    use anyhow::Result;
     use lazy_static::lazy_static;
 
     use evm::abi::call::ToCall;
@@ -270,7 +269,7 @@ mod test {
             .iter()
             .find_map(|item| item.abi_as_ref().by_name("array_bool_3"))
             .unwrap();
-        let mut call = fn_abi.try_call().unwrap();
+        let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
@@ -312,7 +311,7 @@ mod test {
             .iter()
             .find_map(|item| item.abi_as_ref().by_name("array_bool_dyn2"))
             .unwrap();
-        let mut call = fn_abi.try_call().unwrap();
+        let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
@@ -331,7 +330,7 @@ mod test {
             .iter()
             .find_map(|item| item.abi_as_ref().by_name("array_bool_dyn3"))
             .unwrap();
-        let mut call = fn_abi.try_call().unwrap();
+        let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
@@ -372,7 +371,7 @@ mod test {
             .iter()
             .find_map(|item| item.abi_as_ref().by_name("byte_tuple"))
             .unwrap();
-        let mut call = fn_abi.try_call().unwrap();
+        let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
