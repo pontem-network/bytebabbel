@@ -5,6 +5,7 @@ use std::fmt::Debug;
 
 // bytes,byte1,byte2,byte<N>.., address and array
 pub mod collection;
+pub mod conv;
 pub mod number;
 pub mod type_to_value;
 

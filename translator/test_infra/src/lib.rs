@@ -2,6 +2,8 @@ extern crate core;
 
 pub mod executor;
 pub mod generator;
+#[cfg(test)]
+pub mod revm;
 pub mod sol;
 
 pub fn log_init() {

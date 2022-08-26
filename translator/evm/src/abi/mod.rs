@@ -30,7 +30,7 @@ impl Abi {
         self.entries.get(hash)
     }
 
-    pub fn by_name(&self, name: &str) -> Option<&Entry> {
+    pub fn by_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'a Entry> {
         self.entries
             .iter()
             .find(|(_, item)| item.name().as_deref() == Some(name))
@@ -706,12 +706,12 @@ mod tests {
 
         call_fn.set_input(0, 69u32).unwrap();
 
-        let encode = call_fn.encode().unwrap();
+        let encode = hex::encode(call_fn.encode().unwrap());
         assert_eq!(
             "0xcdcd77c0\
             0000000000000000000000000000000000000000000000000000000000000045\
             0000000000000000000000000000000000000000000000000000000000000001",
-            encode.as_str()
+            format!("0x{encode}")
         );
 
         // =========================================================================================
@@ -724,21 +724,13 @@ mod tests {
         call_fn
             .set_input(0, ["abc".as_bytes(), "def".as_bytes()])
             .unwrap();
-        let encode = call_fn.encode().unwrap();
+        let encode = hex::encode(call_fn.encode().unwrap());
         assert_eq!(
             "0xfce353f6\
             6162630000000000000000000000000000000000000000000000000000000000\
             6465660000000000000000000000000000000000000000000000000000000000",
-            encode.as_str()
+            format!("0x{encode}")
         );
-
-        // @todo
-
-        for x in 0..16 {
-            let c: usize = x * 32;
-            let h = hex::encode(c.to_be_bytes().to_vec());
-            println!("{x}: {h}");
-        }
 
         // =========================================================================================
         // function sam(bytes memory, bool, uint[] memory)
@@ -751,10 +743,10 @@ mod tests {
         call_fn.set_input(0, "dave".as_bytes()).unwrap();
         call_fn.set_input(1, true).unwrap();
         call_fn.set_input(2, [1usize, 2, 3]).unwrap();
-        let encode = call_fn.encode().unwrap();
+        let encode = hex::encode(call_fn.encode().unwrap());
 
         assert_eq!(
-            encode.as_str(),
+            format!("0x{encode}"),
             "0xa5643bf2\
             0000000000000000000000000000000000000000000000000000000000000060\
             0000000000000000000000000000000000000000000000000000000000000001\
@@ -779,10 +771,10 @@ mod tests {
         call_fn.set_input(1, [1110u32, 1929u32]).unwrap();
         call_fn.set_input(2, "1234567890".as_bytes()).unwrap();
         call_fn.set_input(3, "Hello, world!".as_bytes()).unwrap();
-        let encode = call_fn.encode().unwrap();
+        let encode = hex::encode(call_fn.encode().unwrap());
 
         assert_eq!(
-            encode.as_str(),
+            format!("0x{encode}"),
             "0x8be65246\
             0000000000000000000000000000000000000000000000000000000000000123\
             0000000000000000000000000000000000000000000000000000000000000080\
@@ -807,10 +799,10 @@ mod tests {
             .set_input(0, vec![vec![1usize, 2], vec![3usize]])
             .unwrap();
         call_fn.set_input(1, ["one", "two", "three"]).unwrap();
-        let encode = call_fn.encode().unwrap();
+        let encode = hex::encode(call_fn.encode().unwrap());
 
         assert_eq!(
-            encode.as_str(),
+            format!("0x{encode}"),
             "0x2289b18c\
             0000000000000000000000000000000000000000000000000000000000000040\
             0000000000000000000000000000000000000000000000000000000000000140\
