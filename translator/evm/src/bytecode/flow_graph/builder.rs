@@ -64,16 +64,17 @@ impl<'a> FlowBuilder<'a> {
                     }
                 },
                 Next::Cnd(true_br, false_br) => {
-                    // let loop_br = branch_stack
-                    //     .iter_mut()
-                    //     .find(|b| b.jmp().block == self.block)
-                    //     .map(|b| {
-                    //         b.set_loop();
-                    //         true
-                    //     })
-                    //     .unwrap_or_default();
+                    let loop_br = branch_stack
+                        .iter_mut()
+                        .filter(|b| b.jmp().block == self.block)
+                        .find(|b| self.flow_trace.loops.contains_key(&b.jmp().block))
+                        .map(|b| {
+                            b.set_loop();
+                            true
+                        })
+                        .unwrap_or_default();
 
-                    if false {
+                    if loop_br {
                         for branch in branch_stack.iter_mut() {
                             branch.pop_block();
                         }
