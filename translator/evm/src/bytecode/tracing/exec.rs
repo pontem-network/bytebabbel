@@ -5,15 +5,23 @@ use crate::{BlockId, OpCode, U256};
 pub struct Executor {
     call_stack: Vec<BlockId>,
     pub path: Vec<BlockId>,
+    negative_stack: usize,
 }
 
 impl Executor {
     fn pop_stack(&mut self, count: usize) -> Vec<BlockId> {
         let mut res = Vec::with_capacity(count);
+        if count > self.call_stack.len() {
+            self.negative_stack += count - self.call_stack.len();
+        }
         for _ in 0..count {
             res.push(self.call_stack.pop().unwrap_or_default());
         }
         res
+    }
+
+    fn negative_stack(&self) -> usize {
+        self.negative_stack
     }
 
     fn push_stack(&mut self, to_push: Vec<BlockId>) {

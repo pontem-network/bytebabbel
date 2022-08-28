@@ -1,8 +1,6 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::tracing::exec::{Executor, Next};
-use crate::bytecode::tracing::flow::Flow;
-use crate::BlockId;
-use anyhow::Error;
+use crate::{BlockId, OpCode, U256};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -12,65 +10,71 @@ pub struct Tracer<'a> {
 }
 
 impl<'a> Tracer<'a> {
-    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>, executor: Executor) -> Self {
-        Self { blocks, executor }
-    }
-
-    pub fn exec(&mut self, block: BlockId) -> Next {
-        let loop_ = self.clone().find_loops();
-        println!("++++++++++++++++++++++++++++++++++++++++++++++++");
-        for (id, lp) in loop_ {
-            println!("{:?}", id);
-            println!("{:?}", lp);
+    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>) -> Self {
+        Self {
+            blocks,
+            executor: Executor::default(),
         }
-        println!("\n\n\n");
-        // let block = self.blocks.get(&block);
-        // match block {
-        //     Some(block) => self.executor.exec_block(block),
-        //     None => Next::Stop,
-        // }
-        todo!();
     }
 
-    pub fn trace(&mut self, id: BlockId) -> Result<Flow, Error> {
-        let mut flow = vec![];
+    pub fn trace(&mut self) -> FlowTrace {
         let loops = self.clone().find_loops();
-        todo!();
+        let funcs = self.clone().find_funcs(&loops);
+        FlowTrace { funcs, loops }
+    }
 
-        let block = self
-            .blocks
-            .get(&id)
-            .ok_or_else(|| anyhow::anyhow!("block {} not found", id))?;
-        let res = self.executor.exec_block(block);
+    fn next_block(block: &InstructionBlock) -> BlockId {
+        block
+            .last()
+            .map(|lst| BlockId::from(lst.offset() + lst.size()))
+            .unwrap()
+    }
 
-        match res {
-            Next::Jmp(jmp_to) => {
-                let mut loop_detector = self.clone();
-                let loop_ = loop_detector.find_loops();
-                println!("loop: {:?}", loop_);
-                // let stop_block = block
-                //     .last()
-                //     .map(|lst| BlockId::from(lst.offset() + lst.size()))
-                //     .unwrap_or(BlockId::default());
-                //
-                // let mut tracer = self.clone();
-                // let sec = tracer.trace(jmp_to)?;
-                // println!("seq: {:?}", sec);
+    fn find_funcs(&mut self, loops: &HashMap<BlockId, Loop>) -> HashMap<BlockId, Func> {
+        let mut funcs: HashMap<BlockId, Func> = HashMap::new();
+
+        for (id, block) in self.blocks {
+            let last = if let Some(last) = block.last() {
+                last
+            } else {
+                continue;
+            };
+            if last.1 != OpCode::Jump {
+                continue;
             }
-            Next::Stop => {
-                flow.push(Flow::Block(id));
-                flow.push(Flow::Stop);
-            }
-            Next::Cnd(true_br, false_br) => {
-                flow.push(Flow::If {
-                    cnd: id,
-                    true_br: Box::new(self.clone().trace(true_br)?),
-                    false_br: Box::new(self.clone().trace(false_br)?),
-                });
-            }
+
+            let call_addr = if let Some(inst) = block.get(block.len() - 2) {
+                if let OpCode::Push(vec) = &inst.1 {
+                    let val = U256::from(vec.as_slice());
+                    BlockId::from(val.as_usize())
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            };
+
+            let func = funcs.entry(call_addr).or_insert_with(|| Func {
+                entry_point: call_addr,
+                calls: Default::default(),
+            });
+            func.calls.insert(
+                *id,
+                Call {
+                    entry_point: *id,
+                    return_point: Self::next_block(block),
+                },
+            );
         }
 
-        Ok(Flow::Sequence(flow))
+        funcs
+            .into_iter()
+            .filter(|(id, fun)| self.check_func(id, fun, loops))
+            .collect()
+    }
+
+    fn check_func(&self, id: &BlockId, fun: &Func, loops: &HashMap<BlockId, Loop>) -> bool {
+        true
     }
 
     fn find_loops(&mut self) -> HashMap<BlockId, Loop> {
@@ -180,8 +184,20 @@ impl<'a> Tracer<'a> {
 }
 
 #[derive(Debug)]
-pub enum LoopCandidate {
+enum LoopCandidate {
     Candidate(BlockId, Vec<BlockId>),
+}
+
+#[derive(Debug)]
+pub struct Func {
+    pub entry_point: BlockId,
+    pub calls: HashMap<BlockId, Call>,
+}
+
+#[derive(Debug)]
+pub struct Call {
+    pub entry_point: BlockId,
+    pub return_point: BlockId,
 }
 
 #[derive(Clone, Debug)]
@@ -200,4 +216,10 @@ pub struct Loop {
     pub continuous: BlockId,
     pub breaks: HashSet<BlockId>,
     pub fork: Fork,
+}
+
+#[derive(Debug)]
+pub struct FlowTrace {
+    pub funcs: HashMap<BlockId, Func>,
+    pub loops: HashMap<BlockId, Loop>,
 }

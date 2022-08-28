@@ -2,6 +2,7 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
+use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::bytecode::types::U256;
 use crate::{BlockId, OpCode};
 use std::collections::{HashMap, VecDeque};
@@ -11,6 +12,7 @@ pub struct FlowBuilder<'a> {
     call_stack: Vec<BlockId>,
     block: BlockId,
     blocks: &'a HashMap<BlockId, InstructionBlock>,
+    flow_trace: FlowTrace,
 }
 
 impl<'a> FlowBuilder<'a> {
@@ -19,6 +21,7 @@ impl<'a> FlowBuilder<'a> {
             call_stack: Vec::new(),
             block: Default::default(),
             blocks,
+            flow_trace: Tracer::new(blocks).trace(),
         }
     }
 
@@ -61,16 +64,16 @@ impl<'a> FlowBuilder<'a> {
                     }
                 },
                 Next::Cnd(true_br, false_br) => {
-                    let loop_br = branch_stack
-                        .iter_mut()
-                        .find(|b| b.jmp().block == self.block)
-                        .map(|b| {
-                            b.set_loop();
-                            true
-                        })
-                        .unwrap_or_default();
+                    // let loop_br = branch_stack
+                    //     .iter_mut()
+                    //     .find(|b| b.jmp().block == self.block)
+                    //     .map(|b| {
+                    //         b.set_loop();
+                    //         true
+                    //     })
+                    //     .unwrap_or_default();
 
-                    if loop_br {
+                    if false {
                         for branch in branch_stack.iter_mut() {
                             branch.pop_block();
                         }
