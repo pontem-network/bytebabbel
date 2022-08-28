@@ -43,6 +43,10 @@ impl<'a> Tracer<'a> {
                 continue;
             }
 
+            if block.len() < 2 {
+                continue;
+            }
+
             let call_addr = if let Some(inst) = block.get(block.len() - 2) {
                 if let OpCode::Push(vec) = &inst.1 {
                     let val = U256::from(vec.as_slice());
