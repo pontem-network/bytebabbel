@@ -43,7 +43,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::CreateVar(var, value) => {
             write!(
                 buf,
-                "{:width$}let var_{:?}: {:?} = ",
+                "{:width$}let var_{:?}: {} = ",
                 " ",
                 var.index(),
                 var.s_type()
@@ -70,14 +70,15 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
             cnd,
             body,
         } => {
-            writeln!(buf, "{:width$}'{} loop {{", " ", id)?;
+            writeln!(buf, "{:width$}'l{}: loop {{", " ", id)?;
             print_statements(cnd_calc, buf, width + 4)?;
             write!(buf, "{:width$}if ", " ", width = width + 4)?;
             print_expr(cnd, buf, width)?;
             writeln!(buf, "{:width$}{{", " ",)?;
-            writeln!(buf, "{:width$} break '{};", " ", id, width = width + 4)?;
+            writeln!(buf, "{:width$} break 'l{};", " ", id, width = width + 4)?;
             writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
             print_statements(body, buf, width + 4)?;
+            writeln!(buf, "{:width$}}}", " ",)?;
             writeln!(buf, "{:width$}}}", " ",)?;
         }
         Statement::Abort(code) => {
@@ -94,7 +95,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
             writeln!(buf, ");")?;
         }
         Statement::Continue(id) => {
-            writeln!(buf, "{:width$}continue '{:?};", " ", id)?;
+            writeln!(buf, "{:width$}continue 'l{:?};", " ", id)?;
         }
     }
     Ok(())

@@ -63,7 +63,7 @@ pub enum Var {
     TernaryOp(TernaryOp, VarId, VarId, VarId),
 }
 
-#[derive(Hash, Eq, PartialEq, Copy, Clone)]
+#[derive(Hash, Eq, PartialEq, Copy, Clone, Default)]
 pub struct VarId(u64);
 
 impl From<VarId> for u64 {

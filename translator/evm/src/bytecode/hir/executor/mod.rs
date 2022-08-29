@@ -137,7 +137,7 @@ pub enum ExecutionResult {
         len: VarId,
     },
     Stop,
-    Jmp(BlockId),
+    Jmp(VarId, BlockId),
     CndJmp {
         cnd: VarId,
         true_br: BlockId,

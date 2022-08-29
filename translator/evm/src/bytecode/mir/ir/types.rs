@@ -1,10 +1,24 @@
 use crate::bytecode::types::EthType;
 use crate::U256;
+use std::fmt::{Display, Formatter};
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Clone, Hash, Copy)]
 pub enum SType {
     U128,
     Bool,
+}
+
+impl Display for SType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                SType::U128 => "u128",
+                SType::Bool => "bool",
+            }
+        )
+    }
 }
 
 pub type LocalIndex = u8;

@@ -93,7 +93,7 @@ pub fn build_sol_by_path(path: &Path) -> Result<Vec<Evm>, Error> {
 
 pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
     let tmp_dir = std::env::temp_dir().join(sha_name(sol));
-    if !tmp_dir.exists() {
+    if !tmp_dir.exists() || fs::read_dir(&tmp_dir)?.count() != 2 {
         fs::create_dir_all(&tmp_dir)?;
 
         let contract = tmp_dir.join("contract.sol");

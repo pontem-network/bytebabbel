@@ -12,7 +12,7 @@ pub struct Context {
     mem: Memory,
     stack: Stack,
     env: Rc<Env>,
-    loop_input: HashMap<BlockId, Stack>,
+    loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
 }
 
@@ -52,39 +52,48 @@ impl Context {
         self.mem.static_store(offset, val)
     }
 
-    pub fn create_loop(&mut self, block_id: BlockId) {
-        self.loop_input.insert(block_id, self.stack.clone());
+    pub fn create_loop(&mut self, block_id: BlockId, break_br: BlockId) {
+        self.loop_input
+            .insert(block_id, (self.stack.clone(), break_br));
     }
 
     pub fn get_loop(&self, block_id: &BlockId) -> Option<&Stack> {
-        self.loop_input.get(block_id)
+        self.loop_input.get(block_id).map(|(stack, _)| stack)
     }
 
     pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
         let mut mapping = Vec::with_capacity(origin.stack.len());
 
-        let mut last_origin_index = origin.stack.len() - 1;
-        let mut last_new_index = self.stack.stack.len() - 1;
-        loop {
-            let new = self.stack.stack.get(last_new_index);
-            let origin = origin.stack.get(last_origin_index);
-
-            if let (Some(new), Some(origin)) = (new, origin) {
-                if new != origin {
-                    mapping.push(MapStackItem {
-                        origin: *origin,
-                        new: *new,
-                    });
-                }
-            } else {
-                break;
-            }
-            if last_origin_index == 0 || last_new_index == 0 {
-                break;
-            }
-            last_origin_index -= 1;
-            last_new_index -= 1;
-        }
+        mapping.push(MapStackItem {
+            origin: origin.stack[origin.stack.len() - 1],
+            new: self.stack.stack[self.stack.stack.len() - 1],
+        });
+        mapping.push(MapStackItem {
+            origin: origin.stack[origin.stack.len() - 2],
+            new: self.stack.stack[self.stack.stack.len() - 2],
+        });
+        // let mut last_origin_index = origin.stack.len() - 1;
+        // let mut last_new_index = self.stack.stack.len() - 1;
+        // loop {
+        //     let new = self.stack.stack.get(last_new_index);
+        //     let origin = origin.stack.get(last_origin_index);
+        //
+        //     if let (Some(new), Some(origin)) = (new, origin) {
+        //         if new != origin {
+        //             mapping.push(MapStackItem {
+        //                 origin: *origin,
+        //                 new: *new,
+        //             });
+        //         }
+        //     } else {
+        //         break;
+        //     }
+        //     if last_origin_index == 0 || last_new_index == 0 {
+        //         break;
+        //     }
+        //     last_origin_index -= 1;
+        //     last_new_index -= 1;
+        // }
 
         mapping
     }
@@ -102,6 +111,7 @@ impl Context {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct MapStackItem {
     pub origin: VarId,
     pub new: VarId,

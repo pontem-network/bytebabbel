@@ -6,4 +6,5 @@ pub mod loc;
 pub mod mir;
 pub mod ops;
 pub mod pre_processing;
+pub mod tracing;
 pub mod types;

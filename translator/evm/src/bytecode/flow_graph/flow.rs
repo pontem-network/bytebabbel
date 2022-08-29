@@ -16,6 +16,16 @@ pub struct LoopFlow {
     pub br: LoopBr,
 }
 
+impl LoopFlow {
+    pub fn break_block(&self) -> BlockId {
+        if self.br.is_true_br_loop() {
+            self.jmp.false_br
+        } else {
+            self.jmp.true_br
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum LoopBr {
     TrueBr(Box<Flow>),
@@ -23,7 +33,7 @@ pub enum LoopBr {
 }
 
 impl LoopBr {
-    pub fn is_true_br(&self) -> bool {
+    pub fn is_true_br_loop(&self) -> bool {
         matches!(self, LoopBr::TrueBr(_))
     }
 
