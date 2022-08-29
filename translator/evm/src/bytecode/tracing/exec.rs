@@ -20,10 +20,6 @@ impl Executor {
         res
     }
 
-    fn negative_stack(&self) -> usize {
-        self.negative_stack
-    }
-
     fn push_stack(&mut self, to_push: Vec<BlockId>) {
         self.call_stack.extend(to_push.into_iter().rev());
     }

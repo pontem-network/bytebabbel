@@ -77,7 +77,8 @@ impl<'a> Tracer<'a> {
             .collect()
     }
 
-    fn check_func(&self, id: &BlockId, fun: &Func, loops: &HashMap<BlockId, Loop>) -> bool {
+    fn check_func(&self, _id: &BlockId, _fun: &Func, _loops: &HashMap<BlockId, Loop>) -> bool {
+        //todo
         true
     }
 
@@ -94,7 +95,7 @@ impl<'a> Tracer<'a> {
             match res {
                 Next::Jmp(jmp) => {
                     if let Some(lp) = breaks.get(&jmp) {
-                        loops.get_mut(&lp).unwrap().breaks.insert(id);
+                        loops.get_mut(lp).unwrap().breaks.insert(id);
                     }
 
                     if let Some(lp) = loops.get_mut(&jmp) {
@@ -127,7 +128,7 @@ impl<'a> Tracer<'a> {
                                             root: *id,
                                             loop_exit,
                                             loop_br,
-                                            continuous: lp.last().unwrap().clone(),
+                                            continuous: *lp.last().unwrap(),
                                             breaks: HashSet::new(),
                                             fork: fork.clone(),
                                         },
@@ -159,7 +160,7 @@ impl<'a> Tracer<'a> {
                 },
                 Next::Cnd(true_br, false_br) => {
                     if let Some(lp) = breaks.get(&true_br) {
-                        loops.get_mut(&lp).unwrap().breaks.insert(id);
+                        loops.get_mut(lp).unwrap().breaks.insert(id);
                         stack.push(Fork {
                             id,
                             exec: self.executor.clone(),
@@ -171,7 +172,7 @@ impl<'a> Tracer<'a> {
                     }
 
                     if let Some(lp) = breaks.get(&false_br) {
-                        loops.get_mut(&lp).unwrap().breaks.insert(id);
+                        loops.get_mut(lp).unwrap().breaks.insert(id);
                     }
 
                     stack.push(Fork {
@@ -185,11 +186,6 @@ impl<'a> Tracer<'a> {
             }
         }
     }
-}
-
-#[derive(Debug)]
-enum LoopCandidate {
-    Candidate(BlockId, Vec<BlockId>),
 }
 
 #[derive(Debug)]
