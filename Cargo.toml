@@ -2,6 +2,7 @@
 members = [
     "translator/evm",
     "translator/mv",
+    "translator/intrinsic",
     "translator",
     "translator/test_infra",
     "cli/e2m",
