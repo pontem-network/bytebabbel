@@ -119,23 +119,13 @@ mod test {
     use evm::abi::Abi;
 
     use crate::revm::{evm_bytecode, REvm};
-    use crate::sol::build_sol_by_path;
+    use crate::sol::{build_sol_by_path, EvmPack};
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
 
     lazy_static! {
-        static ref TESTFILE: Mutex<Vec<SolData>> = Mutex::new(
-            build_sol_by_path(&PathBuf::from(TEST_SOL_FILE))
-                .map(|item| {
-                    item.iter()
-                        .map(|item| SolData {
-                            abi: Abi::try_from(item.abi()).unwrap(),
-                            bin: evm_bytecode(hex::decode(item.bin()).unwrap()).unwrap(),
-                        })
-                        .collect()
-                })
-                .unwrap()
-        );
+        static ref TESTFILE: Mutex<EvmPack> =
+            Mutex::new(build_sol_by_path(&PathBuf::from(TEST_SOL_FILE)).unwrap());
     }
 
     struct SolData {
@@ -156,21 +146,15 @@ mod test {
     #[test]
     fn test_bool() {
         let sol = TESTFILE.lock().unwrap();
-
-        let contract_bytes: Vec<u8> = sol
-            .iter()
-            .flat_map(|item| item.bin_as_ref().clone())
-            .collect();
+        let abi = sol.abi().unwrap();
+        let contract_bytes: Vec<u8> = sol.code().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
 
         // without_params_bool
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("without_params_bool"))
-            .unwrap();
+        let fn_abi = abi.by_name("without_params_bool").unwrap();
         let call = fn_abi.try_call().unwrap();
         let tx = call.encode().unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
@@ -179,10 +163,7 @@ mod test {
 
         // without_params_bool
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("param_bool"))
-            .unwrap();
+        let fn_abi = abi.by_name("param_bool").unwrap();
         let mut call = fn_abi.try_call().unwrap();
         let tx = call
             .set_input(0, true)
@@ -199,21 +180,15 @@ mod test {
     #[test]
     fn test_num() {
         let sol = TESTFILE.lock().unwrap();
-
-        let contract_bytes: Vec<u8> = sol
-            .iter()
-            .flat_map(|item| item.bin_as_ref().clone())
-            .collect();
+        let abi = sol.abi().unwrap();
+        let contract_bytes: Vec<u8> = sol.code().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
 
         // with_uint
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("with_uint"))
-            .unwrap();
+        let fn_abi = abi.by_name("with_uint").unwrap();
         let mut call = fn_abi.try_call().unwrap();
 
         let tx = call.set_input(0, 2usize).unwrap().encode().unwrap();
@@ -228,10 +203,7 @@ mod test {
 
         // max_num_tuple
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("max_num_tuple"))
-            .unwrap();
+        let fn_abi = abi.by_name("max_num_tuple").unwrap();
         let mut call = fn_abi.try_call().unwrap();
 
         let tx = call
@@ -254,21 +226,15 @@ mod test {
     #[test]
     fn test_array() {
         let sol = TESTFILE.lock().unwrap();
-
-        let contract_bytes: Vec<u8> = sol
-            .iter()
-            .flat_map(|item| item.bin_as_ref().clone())
-            .collect();
+        let abi = sol.abi().unwrap();
+        let contract_bytes: Vec<u8> = sol.code().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
 
         // array_bool_3
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("array_bool_3"))
-            .unwrap();
+        let fn_abi = abi.by_name("array_bool_3").unwrap();
         let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
@@ -286,10 +252,7 @@ mod test {
 
         // array_bool_dyn
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("array_bool_dyn"))
-            .unwrap();
+        let fn_abi = abi.by_name("array_bool_dyn").unwrap();
         let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
@@ -307,10 +270,7 @@ mod test {
 
         // array_bool_dyn2
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("array_bool_dyn2"))
-            .unwrap();
+        let fn_abi = abi.by_name("array_bool_dyn2").unwrap();
         let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
@@ -326,10 +286,7 @@ mod test {
 
         // array_bool_dyn3
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("array_bool_dyn3"))
-            .unwrap();
+        let fn_abi = abi.by_name("array_bool_dyn3").unwrap();
         let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();
@@ -356,21 +313,15 @@ mod test {
     #[test]
     fn test_bytes() {
         let sol = TESTFILE.lock().unwrap();
-
-        let contract_bytes: Vec<u8> = sol
-            .iter()
-            .flat_map(|item| item.bin_as_ref().clone())
-            .collect();
+        let abi = sol.abi().unwrap();
+        let contract_bytes: Vec<u8> = sol.code().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
 
         // array_bool_3
 
-        let fn_abi = sol
-            .iter()
-            .find_map(|item| item.abi_as_ref().by_name("byte_tuple"))
-            .unwrap();
+        let fn_abi = abi.by_name("byte_tuple").unwrap();
         let call = fn_abi.try_call().unwrap();
 
         let tx = call.encode().unwrap();

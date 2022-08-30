@@ -43,5 +43,13 @@ fn main() {
     tests.sort_unstable_by(|a, b| a.name.cmp(&b.name));
 
     let configs = Arguments::from_args();
+
+    // Build logs
+    let error = CustLogger::flush_and_get();
+    if !error.is_empty() {
+        println!("{error}");
+    }
+
+    // run tests
     libtest_mimic::run_tests(&configs, tests, |test| (test.data)()).exit()
 }
