@@ -22,7 +22,7 @@ tokio = { version = "1.18", features = ["full"] }
 serde_json = "1.0.82"
 serde_yaml = "0.8.24"
 #
-move-core-types = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" , features = ["address32"] }
+move-core-types = { git = "https://github.com/move-language/move", rev = "4cd47108661a5717486e4e90821a4a10f2710ea7" , features = ["address32"] }
 # local
 translator = { path = "../../translator" }
 
@@ -30,9 +30,9 @@ translator = { path = "../../translator" }
 # It is necessary to monitor the relevance. At the moment, this particular client is working with devnet
 # You need to download a working client from https://github.com/aptos-labs/aptos-core/releases
 #   test it and find out the commit using "aptos info".
-aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "908aff867fcc1e1b12f058d474329097ab96f14b", optional = true }
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "908aff867fcc1e1b12f058d474329097ab96f14b", optional = true }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "908aff867fcc1e1b12f058d474329097ab96f14b", optional = true }
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "61d0d364b43ac0e911c6dc6969fc9e2a8b3e5d2a", optional = true }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "61d0d364b43ac0e911c6dc6969fc9e2a8b3e5d2a", optional = true }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "61d0d364b43ac0e911c6dc6969fc9e2a8b3e5d2a", optional = true }
 
 [features]
 deploy = ["aptos", "aptos-vm", "aptos-types"]

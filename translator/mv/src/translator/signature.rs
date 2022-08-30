@@ -13,12 +13,18 @@ pub fn map_signature(eth_types: &[EthType]) -> Vec<SignatureToken> {
         .collect()
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct SignatureWriter {
     signatures: Vec<Signature>,
 }
 
 impl SignatureWriter {
+    pub fn new(signatures: &[Signature]) -> Self {
+        Self {
+            signatures: signatures.to_vec(),
+        }
+    }
+
     pub fn make_signature(&mut self, sign: Vec<SignatureToken>) -> SignatureIndex {
         let sign = Signature(sign);
         let idx = self

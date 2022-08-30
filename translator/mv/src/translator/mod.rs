@@ -11,7 +11,9 @@ use evm::bytecode::mir::ir::types::SType;
 use evm::bytecode::mir::ir::Mir;
 use evm::function::FunDef;
 use evm::program::Program;
+use intrinsic::template;
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
+use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 
@@ -19,10 +21,21 @@ pub mod bytecode;
 pub mod signature;
 pub mod writer;
 
-#[derive(Default)]
 pub struct MvIrTranslator {
     sign_writer: SignatureWriter,
     code: Writer,
+    template: CompiledModule,
+}
+
+impl Default for MvIrTranslator {
+    fn default() -> Self {
+        let template = template();
+        Self {
+            sign_writer: SignatureWriter::new(&template.signatures),
+            code: Default::default(),
+            template,
+        }
+    }
 }
 
 impl MvIrTranslator {
@@ -35,12 +48,13 @@ impl MvIrTranslator {
             .map(|def| self.translate_func(def, &program))
             .collect::<Result<_, _>>()?;
 
-        Ok(Module {
+        Ok(Module::new(
             address,
             name,
             funcs,
-            signatures: self.sign_writer.freeze(),
-        })
+            self.sign_writer.freeze(),
+            self.template,
+        ))
     }
 
     fn translate_func(&mut self, def: FunDef, program: &Program) -> Result<Func, Error> {

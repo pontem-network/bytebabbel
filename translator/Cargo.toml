@@ -10,4 +10,4 @@ mv = {path = "mv"}
 anyhow = "1.0.58"
 
 # move:
-move-core-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" , features = ["address32"] }
+move-core-types = {git = "https://github.com/move-language/move", rev = "4cd47108661a5717486e4e90821a4a10f2710ea7" , features = ["address32"] }

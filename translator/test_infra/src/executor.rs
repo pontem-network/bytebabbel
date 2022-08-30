@@ -1,16 +1,22 @@
+use crate::stdlib::publish_std;
 use anyhow::{ensure, Error, Result};
+use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
+use aptos_vm::natives::{aptos_natives, configure_for_unit_test};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::{ChangeSet, Event};
+use move_core_types::effects::{ChangeSet, Event, Op};
 use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{ModuleId, StructTag, CORE_CODE_ADDRESS};
+use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::session::Session;
-use move_vm_types::gas_schedule::GasStatus;
+use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
+use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::str::FromStr;
+
+static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
 pub struct MoveExecutor {
     resolver: Resolver,
@@ -19,22 +25,40 @@ pub struct MoveExecutor {
 
 impl MoveExecutor {
     pub fn new() -> MoveExecutor {
-        let natives = move_stdlib::natives::all_natives(CORE_CODE_ADDRESS);
-        let vm = MoveVM::new(natives).unwrap();
+        let resolver = INSTANCE
+            .get_or_init(|| {
+                let mut resolver = Resolver::default();
+                let vm = Self::create_vm();
+                let mut session = vm.new_session(&resolver);
+                publish_std(&mut session);
+                let (ds, _) = session.finish().unwrap();
+                resolver.apply(ds);
+                resolver
+            })
+            .clone();
         MoveExecutor {
-            resolver: Default::default(),
-            vm,
+            resolver,
+            vm: Self::create_vm(),
         }
+    }
+
+    fn create_vm() -> MoveVM {
+        configure_for_unit_test();
+        let natives = aptos_natives(
+            NativeGasParameters::zeros(),
+            AbstractValueSizeGasParameters::zeros(),
+        );
+
+        MoveVM::new(natives).unwrap()
     }
 
     pub fn deploy(&mut self, addr: &str, module: Vec<u8>) {
         let mut session = self.vm.new_session(&self.resolver);
-        let mut gas_status = GasStatus::new_unmetered();
         session
             .publish_module(
                 module,
                 AccountAddress::from_hex_literal(addr).unwrap(),
-                &mut gas_status,
+                &mut UnmeteredGasMeter,
             )
             .unwrap();
         let (ds, _) = session.finish().unwrap();
@@ -44,10 +68,9 @@ impl MoveExecutor {
     pub fn run(&mut self, ident: &str, params: &str) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
         let mut session = self.vm.new_session(&self.resolver);
-        let mut gas_status = GasStatus::new_unmetered();
         let args = Self::prepare_args(params, &module_id, &ident, &session)?;
         let returns = session
-            .execute_entry_function(&module_id, &ident, vec![], args, &mut gas_status)?
+            .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
         let (ds, events) = session.finish().unwrap();
         self.resolver.apply(ds);
@@ -114,7 +137,7 @@ pub struct ExecutionResult {
     pub events: Vec<Event>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Resolver {
     modules: HashMap<ModuleId, Vec<u8>>,
     resources: HashMap<(AccountAddress, StructTag), Vec<u8>>,
@@ -123,18 +146,24 @@ struct Resolver {
 impl Resolver {
     pub fn apply(&mut self, ds: ChangeSet) {
         for (acc, name, module) in ds.modules() {
-            if let Some(module) = module {
-                self.modules
-                    .insert(ModuleId::new(acc, name.clone()), module.to_vec());
-            } else {
-                self.modules.remove(&ModuleId::new(acc, name.clone()));
+            match module {
+                Op::New(module) | Op::Modify(module) => {
+                    self.modules
+                        .insert(ModuleId::new(acc, name.clone()), module.to_vec());
+                }
+                Op::Delete => {
+                    self.modules.remove(&ModuleId::new(acc, name.clone()));
+                }
             }
         }
         for (acc, tag, res) in ds.resources() {
-            if let Some(res) = res {
-                self.resources.insert((acc, tag.clone()), res.to_vec());
-            } else {
-                self.resources.remove(&(acc, tag.clone()));
+            match res {
+                Op::New(res) | Op::Modify(res) => {
+                    self.resources.insert((acc, tag.clone()), res.to_vec());
+                }
+                Op::Delete => {
+                    self.resources.remove(&(acc, tag.clone()));
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 .DS_Store
 /target
 translator/test_infra/bin
+translator/intrinsic/mv/build
 /aptos
 Cargo.lock
