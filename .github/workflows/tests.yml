@@ -38,6 +38,7 @@ jobs:
         with:
           path: |
             ~/.solc
+            ~/.aptos
           key: ${{ runner.os }}-compile
 
       - name: Install Rust toolchain
