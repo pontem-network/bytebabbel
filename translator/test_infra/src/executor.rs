@@ -17,38 +17,40 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-static INSTANCE: OnceCell<MoveExecutor> = OnceCell::new();
+static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
-#[derive(Clone)]
 pub struct MoveExecutor {
     resolver: Resolver,
-    vm: Arc<MoveVM>,
+    vm: MoveVM,
 }
 
 impl MoveExecutor {
     pub fn new() -> MoveExecutor {
-        INSTANCE
+        let resolver = INSTANCE
             .get_or_init(|| {
-                configure_for_unit_test();
-                let natives = aptos_natives(
-                    NativeGasParameters::zeros(),
-                    AbstractValueSizeGasParameters::zeros(),
-                );
-
-                let vm = MoveVM::new(natives).unwrap();
                 let mut resolver = Resolver::default();
-
+                let vm = Self::create_vm();
                 let mut session = vm.new_session(&resolver);
                 publish_std(&mut session);
                 let (ds, _) = session.finish().unwrap();
                 resolver.apply(ds);
-
-                MoveExecutor {
-                    resolver,
-                    vm: Arc::new(vm),
-                }
+                resolver
             })
-            .clone()
+            .clone();
+        MoveExecutor {
+            resolver,
+            vm: Self::create_vm(),
+        }
+    }
+
+    fn create_vm() -> MoveVM {
+        configure_for_unit_test();
+        let natives = aptos_natives(
+            NativeGasParameters::zeros(),
+            AbstractValueSizeGasParameters::zeros(),
+        );
+
+        MoveVM::new(natives).unwrap()
     }
 
     pub fn deploy(&mut self, addr: &str, module: Vec<u8>) {
