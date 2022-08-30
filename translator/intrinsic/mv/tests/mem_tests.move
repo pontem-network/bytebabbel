@@ -1,6 +1,6 @@
 #[test_only]
-module std::mem_tests {
-    use 0x42::mem;
+module self::mem_tests {
+    use self::mem;
 
     #[test]
     fun load_store_with_same_offset() {

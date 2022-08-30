@@ -1,4 +1,4 @@
-module 0x42::mem {
+module self::mem {
     use std::vector;
 
     const ELENGTH: u64 = 0x1;
