@@ -149,7 +149,7 @@ dependencies = [
  "base64 0.13.0",
  "bcs",
  "cached-packages",
- "clap 3.2.18",
+ "clap 3.2.19",
  "clap_complete",
  "dirs 4.0.0",
  "executor",
@@ -394,7 +394,7 @@ dependencies = [
  "aptos-warp-webserver",
  "bcs",
  "bytes 1.2.1",
- "clap 3.2.18",
+ "clap 3.2.19",
  "futures",
  "hex",
  "rand 0.7.3",
@@ -659,7 +659,7 @@ dependencies = [
  "backup-service",
  "bcs",
  "cached-packages",
- "clap 3.2.18",
+ "clap 3.2.19",
  "consensus",
  "consensus-notifications",
  "crash-handler",
@@ -924,7 +924,7 @@ dependencies = [
  "aptos-types",
  "bcs",
  "chrono",
- "clap 3.2.18",
+ "clap 3.2.19",
  "flate2",
  "gcp-bigquery-client",
  "hex",
@@ -980,7 +980,7 @@ dependencies = [
  "aptos-vm",
  "bcs",
  "cached-packages",
- "clap 3.2.18",
+ "clap 3.2.19",
  "framework",
  "hex",
  "language-e2e-tests",
@@ -1745,9 +1745,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.18"
+version = "3.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b15f2ea93df33549dbe2e8eecd1ca55269d63ae0b3ba1f55db030817d1c2867f"
+checksum = "68d43934757334b5c0519ff882e1ab9647ac0258b47c24c4f490d78e42697fd5"
 dependencies = [
  "atty",
  "bitflags",
@@ -1766,7 +1766,7 @@ version = "3.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4179da71abd56c26b54dd0c248cc081c1f43b0a1a7e8448e28e57a29baa993d"
 dependencies = [
- "clap 3.2.18",
+ "clap 3.2.19",
 ]
 
 [[package]]
@@ -2472,7 +2472,7 @@ dependencies = [
  "aptos-types",
  "aptos-vm",
  "base32",
- "clap 3.2.18",
+ "clap 3.2.19",
  "env_logger",
  "log",
  "move-core-types",
@@ -2923,7 +2923,7 @@ dependencies = [
  "bcs",
  "better_any",
  "claim",
- "clap 3.2.18",
+ "clap 3.2.19",
  "curve25519-dalek",
  "flate2",
  "gas-algebra-ext",
@@ -3955,7 +3955,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc195aab5b803465bf614a5a4765741abce6c8d64e7d8ca57acd2923661fba9f"
 dependencies = [
- "clap 3.2.18",
+ "clap 3.2.19",
  "crossbeam-channel",
  "rayon",
  "termcolor",
@@ -4247,7 +4247,7 @@ version = "0.1.0"
 source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90821a4a10f2710ea7#4cd47108661a5717486e4e90821a4a10f2710ea7"
 dependencies = [
  "anyhow",
- "clap 3.2.18",
+ "clap 3.2.19",
  "crossterm 0.21.0",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -4265,7 +4265,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.18",
+ "clap 3.2.19",
  "codespan-reporting",
  "colored",
  "difference",
@@ -4328,7 +4328,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.18",
+ "clap 3.2.19",
  "codespan-reporting",
  "difference",
  "hex",
@@ -4374,7 +4374,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.18",
+ "clap 3.2.19",
  "codespan",
  "colored",
  "move-binary-format",
@@ -4428,7 +4428,7 @@ version = "0.1.0"
 source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90821a4a10f2710ea7#4cd47108661a5717486e4e90821a4a10f2710ea7"
 dependencies = [
  "anyhow",
- "clap 3.2.18",
+ "clap 3.2.19",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -4479,7 +4479,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.18",
+ "clap 3.2.19",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -4570,7 +4570,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.18",
+ "clap 3.2.19",
  "colored",
  "dirs-next",
  "itertools",
@@ -4607,7 +4607,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 3.2.18",
+ "clap 3.2.19",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -4735,7 +4735,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "bytecode-interpreter-crypto",
- "clap 3.2.18",
+ "clap 3.2.19",
  "codespan-reporting",
  "itertools",
  "move-binary-format",
@@ -4800,7 +4800,7 @@ version = "0.1.0"
 source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90821a4a10f2710ea7#4cd47108661a5717486e4e90821a4a10f2710ea7"
 dependencies = [
  "anyhow",
- "clap 3.2.18",
+ "clap 3.2.19",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -4832,7 +4832,7 @@ source = "git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90
 dependencies = [
  "anyhow",
  "better_any",
- "clap 3.2.18",
+ "clap 3.2.19",
  "codespan-reporting",
  "colored",
  "itertools",
