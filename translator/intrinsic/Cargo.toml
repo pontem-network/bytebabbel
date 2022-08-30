@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-move-binary-format = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
+move-binary-format = {git = "https://github.com/move-language/move", rev = "4cd47108661a5717486e4e90821a4a10f2710ea7" }
 anyhow = "1.0.62"
 
 [dev-dependencies]
-move-bytecode-verifier = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
+move-bytecode-verifier = {git = "https://github.com/move-language/move", rev = "4cd47108661a5717486e4e90821a4a10f2710ea7"  }

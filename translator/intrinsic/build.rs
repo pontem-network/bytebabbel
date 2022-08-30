@@ -8,8 +8,8 @@ pub fn main() {
     Command::new("aptos")
         .stderr(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
-        .current_dir(project_dir)
-        .args(&["move", "test"])
+        .current_dir(&project_dir)
+        .args(&["move", "compile"])
         .output()
         .unwrap();
 }

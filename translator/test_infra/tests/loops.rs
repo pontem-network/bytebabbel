@@ -1,3 +1,5 @@
+use test_infra::executor::MoveExecutor;
+
 #[allow(dead_code)]
 mod testssol;
 
@@ -8,7 +10,7 @@ pub fn test_loops() {
     // let evm = build_sol(include_bytes!("../sol/ignore_loops.sol")).unwrap();
     // println!("{:?}", evm.bin());
     // let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
-    // let mut vm = MoveExecutor::new();
+    let mut vm = MoveExecutor::new();
     // vm.deploy("0x1", bytecode);
     // println!("run");
     //

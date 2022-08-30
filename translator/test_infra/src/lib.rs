@@ -2,6 +2,7 @@ extern crate core;
 
 pub mod executor;
 pub mod generator;
+pub mod stdlib;
 #[cfg(test)]
 pub mod revm;
 pub mod sol;

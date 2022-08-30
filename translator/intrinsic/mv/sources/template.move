@@ -1,4 +1,4 @@
-module self::contruct_template {
+module self::template {
     use std::vector;
 
     const ELENGTH: u64 = 0x1;
