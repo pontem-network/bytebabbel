@@ -56,6 +56,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Formatting
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
