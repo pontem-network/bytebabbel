@@ -3300,6 +3300,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "move-binary-format 0.0.3 (git+https://github.com/move-language/move?rev=f3c921433758340cb95075ae9918095878686d3c)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/move-language/move?rev=f3c921433758340cb95075ae9918095878686d3c)",
 ]
 
 [[package]]
@@ -4891,6 +4892,7 @@ dependencies = [
  "anyhow",
  "evm 0.1.0",
  "hex",
+ "intrinsic",
  "itertools",
  "log",
  "move-binary-format 0.0.3 (git+https://github.com/move-language/move?rev=f3c921433758340cb95075ae9918095878686d3c)",

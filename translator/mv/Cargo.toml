@@ -15,6 +15,7 @@ log = "0.4.17"
 
 # local dependencies
 evm = {path = "../evm" }
+intrinsic = {path = "../intrinsic" }
 
 # move:
 move-core-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" , features = ["address32"] }

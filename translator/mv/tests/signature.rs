@@ -6,7 +6,7 @@ use test_infra::log_init;
 pub fn test_signature() {
     log_init();
 
-    let mut sign = SignatureWriter::default();
+    let mut sign = SignatureWriter::new(&[]);
     sign.make_signature(vec![SignatureToken::U64]);
     sign.make_signature(vec![SignatureToken::U128]);
     sign.make_signature(vec![SignatureToken::U128]);
