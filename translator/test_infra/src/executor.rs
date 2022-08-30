@@ -15,7 +15,6 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::Arc;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 

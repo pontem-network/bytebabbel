@@ -1,4 +1,3 @@
-use include_dir::{include_dir, Dir};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
@@ -6,52 +5,44 @@ use move_core_types::resolver::MoveResolver;
 use move_vm_runtime::session::Session;
 use move_vm_types::gas::UnmeteredGasMeter;
 use std::collections::BTreeMap;
-
-const MOVE_STD: Dir<'_> = include_dir!(
-    "translator/intrinsic/mv/build/intrinsic/bytecode_modules/dependencies/MoveStdlib"
-);
-const APTOS_STD: Dir<'_> = include_dir!(
-    "translator/intrinsic/mv/build/intrinsic/bytecode_modules/dependencies/AptosStdlib"
-);
-const APTOS_FW: Dir<'_> = include_dir!(
-    "translator/intrinsic/mv/build/intrinsic/bytecode_modules/dependencies/AptosFramework"
-);
+use std::fs;
+use std::path::{Path, PathBuf};
 
 pub fn publish_std<S: MoveResolver>(session: &mut Session<'_, '_, S>) {
-    session
-        .publish_module_bundle_relax_compatibility(
-            sorted_code_and_modules(&MOVE_STD),
-            CORE_CODE_ADDRESS,
-            &mut UnmeteredGasMeter,
-        )
-        .unwrap();
+    publish(session, "MoveStdlib");
+    publish(session, "AptosStdlib");
+    publish(session, "AptosFramework");
+}
+
+fn publish<S: MoveResolver>(session: &mut Session<'_, '_, S>, dir: &str) {
+    let translator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let aptos_fw_dir = translator_dir
+        .join("..")
+        .join("intrinsic/mv/build/intrinsic/bytecode_modules/dependencies")
+        .join(dir);
 
     session
         .publish_module_bundle_relax_compatibility(
-            sorted_code_and_modules(&APTOS_STD),
-            CORE_CODE_ADDRESS,
-            &mut UnmeteredGasMeter,
-        )
-        .unwrap();
-
-    session
-        .publish_module_bundle_relax_compatibility(
-            sorted_code_and_modules(&APTOS_FW),
+            read_dir(&aptos_fw_dir),
             CORE_CODE_ADDRESS,
             &mut UnmeteredGasMeter,
         )
         .unwrap();
 }
 
-pub fn sorted_code_and_modules(dir: &Dir<'_>) -> Vec<Vec<u8>> {
+fn read_dir(dir: &Path) -> Vec<Vec<u8>> {
     let mut map = dir
-        .files()
-        .map(|c| c.contents().to_vec())
+        .read_dir()
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|e| e.is_file())
+        .map(|p| fs::read(p).unwrap())
         .map(|c| {
             let m = CompiledModule::deserialize(&c).unwrap();
             (m.self_id(), (c, m))
         })
         .collect::<BTreeMap<_, _>>();
+
     let mut order = vec![];
     for id in map.keys() {
         sort_by_deps(&map, &mut order, id.clone());
