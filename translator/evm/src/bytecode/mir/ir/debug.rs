@@ -97,6 +97,48 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::Continue(id) => {
             writeln!(buf, "{:width$}continue 'l{:?};", " ", id)?;
         }
+        Statement::MStore {
+            memory,
+            offset,
+            val,
+        } => {
+            writeln!(
+                buf,
+                "{:width$}var_{:?}.mem_store(var_{:?}, var_{:?});",
+                " ",
+                memory.index(),
+                offset,
+                val.index()
+            )?;
+        }
+        Statement::MStore8 {
+            memory,
+            offset,
+            val,
+        } => {
+            writeln!(
+                buf,
+                "{:width$}var_{:?}.mem_store8(var_{:?}, var_{:?});",
+                " ",
+                memory.index(),
+                offset,
+                val.index()
+            )?;
+        }
+        Statement::SStore {
+            storage,
+            offset,
+            val,
+        } => {
+            writeln!(
+                buf,
+                "{:width$}var_{:?}.state_store(var_{:?}, var_{:?});",
+                " ",
+                storage.index(),
+                offset,
+                val.index()
+            )?;
+        }
     }
     Ok(())
 }
@@ -125,6 +167,21 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
                 writeln!(buf, ";")?;
             }
             write!(buf, "{:width$}}}", " ")?;
+        }
+        Expression::MLoad { memory, offset } => {
+            writeln!(buf, "var_{:?}.mem_load(var_{:?})", memory, offset)?;
+        }
+        Expression::SLoad { storage, offset } => {
+            writeln!(buf, "var_{:?}.state_load(var_{:?})", storage, offset)?;
+        }
+        Expression::MSize { memory } => {
+            writeln!(buf, "var_{:?}.mem_len()", memory)?;
+        }
+        Expression::GetMem => {
+            writeln!(buf, "contract_memory")?;
+        }
+        Expression::GetStore => {
+            writeln!(buf, "borrow_storage")?;
         }
     }
     Ok(())

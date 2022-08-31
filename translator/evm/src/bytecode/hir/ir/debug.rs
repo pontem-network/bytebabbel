@@ -54,18 +54,6 @@ fn print_instruction(
             print_ir_var(ir.var(id), buf, 0)?;
             write!(buf, ";")?;
         }
-        Instruction::MemLoad(addr, val) => {
-            write!(buf, "{:width$}{:?} = mem_{:#06x};", " ", val, addr)?;
-        }
-        Instruction::MemStore(addr, val) => {
-            write!(
-                buf,
-                "{:width$}mem_{:#06x} = {:?};",
-                " ",
-                addr.as_usize(),
-                val
-            )?;
-        }
         Instruction::If {
             condition,
             true_branch,
@@ -83,8 +71,8 @@ fn print_instruction(
         Instruction::Abort(code) => {
             write!(buf, "{:width$}abort!({});", " ", code)?;
         }
-        Instruction::Result(res) => {
-            write!(buf, "{:width$}return ({:?});", " ", res)?;
+        Instruction::Result { offset, len } => {
+            write!(buf, "{:width$}return [{:?}; {:?}];", " ", offset, len)?;
         }
         Instruction::Loop {
             id,
@@ -124,6 +112,15 @@ fn print_instruction(
         Instruction::MapVar { id, val } => {
             write!(buf, "{:width$}{:?} = {:?};", " ", id, val)?;
         }
+        Instruction::MemStore8 { addr, var } => {
+            write!(buf, "{:width$}mem[{:?}] = {:?});", " ", addr, var)?;
+        }
+        Instruction::MemStore { addr, var } => {
+            write!(buf, "{:width$}mem[{:?}] = {:?};", " ", addr, var)?;
+        }
+        Instruction::SStore { addr, var } => {
+            write!(buf, "{:width$}store[{:?}] = {:?};", " ", addr, var)?;
+        }
     };
     writeln!(buf)?;
     Ok(())
@@ -152,6 +149,15 @@ fn print_ir_var(var: &Var, buf: &mut String, width: usize) -> Result<(), Error> 
                 "{:width$}{:?}({:?}, {:?}, {:?})",
                 " ", cmd, op1, op2, op3
             )?;
+        }
+        Var::MLoad(addr) => {
+            write!(buf, "{:width$}mem[{:?}]", " ", addr)?;
+        }
+        Var::SLoad(addr) => {
+            write!(buf, "{:width$}store[{:?}]", " ", addr)?;
+        }
+        Var::MSize => {
+            write!(buf, "{:width$}mem.len()", " ",)?;
         }
     }
     Ok(())

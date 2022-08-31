@@ -5,6 +5,21 @@ use crate::BlockId;
 #[derive(Debug)]
 pub enum Statement {
     CreateVar(Variable, Expression),
+    MStore {
+        memory: Variable,
+        offset: Variable,
+        val: Variable,
+    },
+    MStore8 {
+        memory: Variable,
+        offset: Variable,
+        val: Variable,
+    },
+    SStore {
+        storage: Variable,
+        offset: Variable,
+        val: Variable,
+    },
     IF {
         cnd: Expression,
         true_br: Vec<Statement>,

@@ -5,8 +5,6 @@ module self::template {
     const OUT_OF_MEMORY: u64 = 0x2;
     const INVALID_RANGE: u64 = 0x3;
 
-    const MAX_SIZE: u64 = 16 * 1024;
-
     // todo replace with 32 bit
     const WORD_SIZE: u64 = 16;
 
@@ -16,9 +14,8 @@ module self::template {
         limit: u64,
     }
 
-    public fun new(limit: u64): Memory {
+    fun new(limit: u64): Memory {
         assert!(limit > 0, ELENGTH);
-        assert!(limit < MAX_SIZE, ELENGTH);
         let data = vector::empty();
 
         Memory {
@@ -28,11 +25,11 @@ module self::template {
         }
     }
 
-    public fun effective_len(self: &Memory): u128 {
+    fun effective_len(self: &Memory): u128 {
         self.effective_len
     }
 
-    public fun mload(mem: &mut Memory, offset: u128): u128 {
+    fun mload(mem: &mut Memory, offset: u128): u128 {
         resize_offset(mem, offset, WORD_SIZE);
         let result = 0;
 
@@ -55,7 +52,7 @@ module self::template {
         return result
     }
 
-    public fun mstore(mem: &mut Memory, position: u128, value: u128): u128 {
+    fun mstore(mem: &mut Memory, position: u128, value: u128): u128 {
         resize_offset(mem, position, WORD_SIZE);
         let position = (position as u64);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
@@ -77,7 +74,7 @@ module self::template {
         return value
     }
 
-    public fun mstore8(mem: &mut Memory, position: u128, value: u128) {
+    fun mstore8(mem: &mut Memory, position: u128, value: u128) {
         resize_offset(mem, position, 1);
         let position = (position as u64);
 
@@ -114,15 +111,15 @@ module self::template {
         return x + (word_size - (x % word_size))
     }
 
-    use aptos_framework::table;
+
+    use aptos_std::table;
     use std::signer;
 
-    //TODO Add ability to revert state.
     struct Persist has store, key {
         tbl: table::Table<u128, u128>,
     }
 
-    public fun init_store(self: &signer) {
+    fun init_store(self: &signer) {
         let addr = signer::borrow_address(self);
         assert!(addr == &@self, 1);
         assert!(!exists<Persist>(@self), 1);
@@ -131,7 +128,7 @@ module self::template {
         move_to(self, store);
     }
 
-    public fun sstore(store: &mut Persist, key: u128, val: u128) {
+    fun sstore(store: &mut Persist, key: u128, val: u128) {
         if (table::contains(&mut store.tbl, key)) {
             table::remove(&mut store.tbl, key);
         };
@@ -139,7 +136,7 @@ module self::template {
         table::add(&mut store.tbl, key, val);
     }
 
-    public fun sload(store: &Persist, key: u128): u128 {
+    fun sload(store: &Persist, key: u128): u128 {
         if (table::contains(&store.tbl, key)) {
             *table::borrow(&store.tbl, key)
         } else {

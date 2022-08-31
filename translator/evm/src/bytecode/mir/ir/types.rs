@@ -4,7 +4,9 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Clone, Hash, Copy)]
 pub enum SType {
-    U128,
+    Storage,
+    Memory,
+    Number,
     Bool,
 }
 
@@ -14,8 +16,10 @@ impl Display for SType {
             f,
             "{}",
             match self {
-                SType::U128 => "u128",
+                SType::Number => "u128",
                 SType::Bool => "bool",
+                SType::Storage => "Storage",
+                SType::Memory => "Memory",
             }
         )
     }
@@ -48,7 +52,7 @@ impl From<bool> for Value {
 impl Value {
     pub fn s_type(&self) -> SType {
         match self {
-            Value::U128(_) => SType::U128,
+            Value::U128(_) => SType::Number,
             Value::Bool(_) => SType::Bool,
         }
     }
@@ -57,7 +61,7 @@ impl Value {
 impl From<&EthType> for SType {
     fn from(tp: &EthType) -> Self {
         match tp {
-            EthType::U256 => SType::U128,
+            EthType::U256 => SType::Number,
             EthType::Bool => SType::Bool,
         }
     }

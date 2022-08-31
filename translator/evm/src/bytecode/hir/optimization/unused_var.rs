@@ -33,16 +33,25 @@ impl UnusedVarClipper {
                         id_mapping.insert(id, new_id);
                     }
                 }
-                Instruction::MemStore(addr, var_id) => {
-                    if analysis.is_reachable(&var_id) {
-                        let var_id = Self::map_var_id(var_id, id_mapping)?;
-                        ir.mem_store(addr, var_id);
+                Instruction::MemStore { addr, var } => {
+                    if analysis.is_reachable(&addr) && analysis.is_reachable(&var) {
+                        let addr = Self::map_var_id(addr, id_mapping)?;
+                        let var_id = Self::map_var_id(var, id_mapping)?;
+                        ir.mstore(addr, var_id);
                     }
                 }
-                Instruction::MemLoad(addr, var_id) => {
-                    if analysis.is_reachable(&var_id) {
-                        let var_id = Self::map_var_id(var_id, id_mapping)?;
-                        ir.mem_load(addr, var_id);
+                Instruction::MemStore8 { addr, var } => {
+                    if analysis.is_reachable(&addr) && analysis.is_reachable(&var) {
+                        let addr = Self::map_var_id(addr, id_mapping)?;
+                        let var_id = Self::map_var_id(var, id_mapping)?;
+                        ir.mstore8(addr, var_id);
+                    }
+                }
+                Instruction::SStore { addr, var } => {
+                    if analysis.is_reachable(&addr) && analysis.is_reachable(&var) {
+                        let addr = Self::map_var_id(addr, id_mapping)?;
+                        let var_id = Self::map_var_id(var, id_mapping)?;
+                        ir.sstore(addr, var_id);
                     }
                 }
                 Instruction::If {
@@ -80,12 +89,10 @@ impl UnusedVarClipper {
                     let mapping = ir.swap_instruction(inst_before);
                     ir.push_continue(loop_id, mapping);
                 }
-                Instruction::Result(vars) => {
-                    let res = vars
-                        .iter()
-                        .filter_map(|var| id_mapping.get(var).cloned())
-                        .collect();
-                    ir.result(res);
+                Instruction::Result { offset, len } => {
+                    let offset = Self::map_var_id(offset, id_mapping)?;
+                    let len = Self::map_var_id(len, id_mapping)?;
+                    ir.result(offset, len);
                 }
                 Instruction::Stop => {
                     ir.stop();
@@ -142,6 +149,15 @@ impl UnusedVarClipper {
                 Self::map_var_id(op2, id_mapping)?,
                 Self::map_var_id(op3, id_mapping)?,
             ),
+            Var::MLoad(addr) => {
+                let addr = Self::map_var_id(addr, id_mapping)?;
+                Var::MLoad(addr)
+            }
+            Var::SLoad(addr) => {
+                let addr = Self::map_var_id(addr, id_mapping)?;
+                Var::SLoad(addr)
+            }
+            Var::MSize => Var::MSize,
         })
     }
 }
@@ -176,11 +192,17 @@ impl VarReachability {
                 Instruction::SetVar(var_id) => {
                     self.insert_var(ir, var_id);
                 }
-                Instruction::MemStore(_, var_id) => {
-                    self.mark_var_as_reachable(var_id);
+                Instruction::MemStore { addr, var } => {
+                    self.mark_var_as_reachable(addr);
+                    self.mark_var_as_reachable(var);
                 }
-                Instruction::MemLoad(_, var_id) => {
-                    self.insert_var(ir, var_id);
+                Instruction::MemStore8 { addr, var } => {
+                    self.mark_var_as_reachable(addr);
+                    self.mark_var_as_reachable(var);
+                }
+                Instruction::SStore { addr, var } => {
+                    self.mark_var_as_reachable(addr);
+                    self.mark_var_as_reachable(var);
                 }
                 Instruction::Loop {
                     id: _,
@@ -204,10 +226,9 @@ impl VarReachability {
                 }
                 Instruction::Stop => {}
                 Instruction::Abort(_) => {}
-                Instruction::Result(vars) => {
-                    for var_id in vars {
-                        self.mark_var_as_reachable(var_id);
-                    }
+                Instruction::Result { offset, len } => {
+                    self.mark_var_as_reachable(offset);
+                    self.mark_var_as_reachable(len);
                 }
                 Instruction::Continue {
                     loop_id: _,
@@ -241,6 +262,13 @@ impl VarReachability {
             Var::TernaryOp(_, op1, op2, op3) => {
                 self.push_var(var, &[*op1, *op2, *op3]);
             }
+            Var::MLoad(addr) => {
+                self.push_var(var, &[*addr]);
+            }
+            Var::SLoad(addr) => {
+                self.push_var(var, &[*addr]);
+            }
+            Var::MSize => {}
         }
     }
 
@@ -301,11 +329,17 @@ impl<'r> ContextAnalyzer<'r> {
                     self.push_to_context(loops, id, ir);
                     self.push_to_context(loops, val, ir);
                 }
-                Instruction::MemStore(_, id) => {
-                    self.push_to_context(loops, id, ir);
+                Instruction::MemStore8 { addr, var } => {
+                    self.push_to_context(loops, var, ir);
+                    self.push_to_context(loops, addr, ir);
                 }
-                Instruction::MemLoad(_, id) => {
-                    self.push_to_context(loops, id, ir);
+                Instruction::MemStore { addr, var } => {
+                    self.push_to_context(loops, var, ir);
+                    self.push_to_context(loops, addr, ir);
+                }
+                Instruction::SStore { addr, var } => {
+                    self.push_to_context(loops, var, ir);
+                    self.push_to_context(loops, addr, ir);
                 }
                 Instruction::If {
                     condition,
@@ -324,10 +358,9 @@ impl<'r> ContextAnalyzer<'r> {
                 }
                 Instruction::Stop => {}
                 Instruction::Abort(_) => {}
-                Instruction::Result(val) => {
-                    for v in val {
-                        self.push_to_context(loops, v, ir);
-                    }
+                Instruction::Result { offset, len } => {
+                    self.push_to_context(loops, offset, ir);
+                    self.push_to_context(loops, len, ir);
                 }
             }
         }
@@ -350,6 +383,13 @@ impl<'r> ContextAnalyzer<'r> {
                 self.resolve_ids(op2, ir, ids);
                 self.resolve_ids(op3, ir, ids);
             }
+            Var::MLoad(addr) => {
+                self.resolve_ids(addr, ir, ids);
+            }
+            Var::SLoad(addr) => {
+                self.resolve_ids(addr, ir, ids);
+            }
+            Var::MSize => {}
         }
     }
 

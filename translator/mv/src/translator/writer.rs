@@ -1,6 +1,7 @@
 use anyhow::{bail, Error};
 use evm::bytecode::block::BlockId;
-use move_binary_format::file_format::{Bytecode, CodeOffset};
+use evm::bytecode::mir::translation::variables::Variable;
+use move_binary_format::file_format::{Bytecode, CodeOffset, FunctionHandleIndex};
 use std::collections::HashMap;
 use std::mem;
 
@@ -110,4 +111,23 @@ impl Writer {
     pub fn get_opcode(&self, pc: CodeOffset) -> Option<&Bytecode> {
         self.code.get(pc as usize)
     }
+
+    pub fn call(&mut self, fun: FunctionHandleIndex, args: &[CallOp]) {
+        for arg in args {
+            match arg {
+                CallOp::Var(var) => {
+                    self.ld_var(var.index());
+                }
+                CallOp::ConstU64(val) => {
+                    self.code.push(Bytecode::LdU64(*val));
+                }
+            }
+        }
+        self.code.push(Bytecode::Call(fun));
+    }
+}
+
+pub enum CallOp {
+    Var(Variable),
+    ConstU64(u64),
 }

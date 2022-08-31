@@ -21,12 +21,16 @@ impl Hir {
         id
     }
 
-    pub fn mem_store(&mut self, offset: U256, val: VarId) {
-        self.instructions.push(Instruction::MemStore(offset, val));
+    pub fn mstore(&mut self, addr: VarId, var: VarId) {
+        self.instructions.push(Instruction::MemStore { addr, var });
     }
 
-    pub fn mem_load(&mut self, offset: U256, val: VarId) {
-        self.instructions.push(Instruction::MemLoad(offset, val));
+    pub fn mstore8(&mut self, addr: VarId, var: VarId) {
+        self.instructions.push(Instruction::MemStore8 { addr, var });
+    }
+
+    pub fn sstore(&mut self, addr: VarId, var: VarId) {
+        self.instructions.push(Instruction::SStore { addr, var });
     }
 
     pub fn push_loop(
@@ -93,8 +97,8 @@ impl Hir {
         self.instructions.push(Instruction::MapVar { id, val });
     }
 
-    pub fn result(&mut self, res: Vec<VarId>) {
-        self.instructions.push(Instruction::Result(res));
+    pub fn result(&mut self, offset: VarId, len: VarId) {
+        self.instructions.push(Instruction::Result { offset, len });
     }
 
     pub fn into_inner(self) -> (Vars, Vec<Instruction>) {

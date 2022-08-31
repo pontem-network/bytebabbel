@@ -1,7 +1,7 @@
 use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
-use crate::translator::writer::Writer;
+use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, Error};
 use evm::bytecode::block::BlockId;
 use evm::bytecode::mir::ir::expression::{Expression, StackOp};
@@ -11,7 +11,7 @@ use evm::bytecode::mir::ir::types::SType;
 use evm::bytecode::mir::ir::Mir;
 use evm::function::FunDef;
 use evm::program::Program;
-use intrinsic::template;
+use intrinsic::{template, Mem, Storage};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
@@ -25,6 +25,7 @@ pub struct MvIrTranslator {
     sign_writer: SignatureWriter,
     code: Writer,
     template: CompiledModule,
+    max_memory: u64,
 }
 
 impl Default for MvIrTranslator {
@@ -34,14 +35,20 @@ impl Default for MvIrTranslator {
             sign_writer: SignatureWriter::new(&template.signatures),
             code: Default::default(),
             template,
+            max_memory: 0,
         }
     }
 }
 
 impl MvIrTranslator {
-    pub fn translate(mut self, address: AccountAddress, program: Program) -> Result<Module, Error> {
+    pub fn translate(
+        mut self,
+        address: AccountAddress,
+        max_memory: u64,
+        program: Program,
+    ) -> Result<Module, Error> {
         let name = Identifier::new(program.name())?;
-
+        self.max_memory = max_memory;
         let funcs = program
             .public_functions()
             .into_iter()
@@ -92,8 +99,10 @@ impl MvIrTranslator {
             .locals()
             .iter()
             .map(|tp| match tp {
-                SType::U128 => SignatureToken::U128,
+                SType::Number => SignatureToken::U128,
                 SType::Bool => SignatureToken::Bool,
+                SType::Storage => Storage::token(&self.template),
+                SType::Memory => Mem::token(&self.template),
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -139,6 +148,48 @@ impl MvIrTranslator {
             Statement::Continue(id) => {
                 self.code.mark_jmp_to_label(*id);
             }
+            Statement::MStore {
+                memory,
+                offset,
+                val,
+            } => {
+                self.code.call(
+                    Mem::Store.func_handler(&self.template),
+                    &[
+                        CallOp::Var(*memory),
+                        CallOp::Var(*offset),
+                        CallOp::Var(*val),
+                    ],
+                );
+            }
+            Statement::MStore8 {
+                memory,
+                offset,
+                val,
+            } => {
+                self.code.call(
+                    Mem::Store8.func_handler(&self.template),
+                    &[
+                        CallOp::Var(*memory),
+                        CallOp::Var(*offset),
+                        CallOp::Var(*val),
+                    ],
+                );
+            }
+            Statement::SStore {
+                storage,
+                offset,
+                val,
+            } => {
+                self.code.call(
+                    Storage::Store.func_handler(&self.template),
+                    &[
+                        CallOp::Var(*storage),
+                        CallOp::Var(*offset),
+                        CallOp::Var(*val),
+                    ],
+                );
+            }
         }
         Ok(())
     }
@@ -180,6 +231,34 @@ impl MvIrTranslator {
                         }
                     }
                 }
+            }
+            Expression::GetMem => {
+                self.code.call(
+                    Mem::New.func_handler(&self.template),
+                    &[CallOp::ConstU64(self.max_memory)],
+                );
+            }
+            Expression::GetStore => {
+                self.code
+                    .write(Bytecode::MutBorrowGlobal(Storage::instance(&self.template)));
+            }
+            Expression::MLoad { memory, offset } => {
+                self.code.call(
+                    Mem::Load.func_handler(&self.template),
+                    &[CallOp::Var(*memory), CallOp::Var(*offset)],
+                );
+            }
+            Expression::SLoad { storage, offset } => {
+                self.code.call(
+                    Storage::Load.func_handler(&self.template),
+                    &[CallOp::Var(*storage), CallOp::Var(*offset)],
+                );
+            }
+            Expression::MSize { memory } => {
+                self.code.call(
+                    Mem::Size.func_handler(&self.template),
+                    &[CallOp::Var(*memory)],
+                );
             }
         }
         Ok(())

@@ -5,6 +5,8 @@ use move_core_types::account_address::AccountAddress;
 use mv::translator::MvIrTranslator;
 use std::str::FromStr;
 
+pub const MAX_MEMORY: u64 = 1024 * 32;
+
 pub fn translate(
     addr: AccountAddress,
     name: &str,
@@ -14,7 +16,7 @@ pub fn translate(
 ) -> Result<Vec<u8>, Error> {
     let program = transpile_program(name, bytecode, abi, U256::from(addr.as_slice()))?;
     let mvir = MvIrTranslator::default();
-    let module = mvir.translate(addr, program)?;
+    let module = mvir.translate(addr, MAX_MEMORY, program)?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;

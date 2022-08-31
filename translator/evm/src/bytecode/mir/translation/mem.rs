@@ -1,46 +1,43 @@
 use crate::bytecode::hir::ir::var::{VarId, Vars};
-use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
-use crate::bytecode::mir::translation::variables::Variable;
-use crate::{MirTranslator, U256};
+use crate::bytecode::mir::ir::types::SType;
+use crate::MirTranslator;
 use anyhow::{ensure, Error};
-use std::collections::HashMap;
-
-#[derive(Default, Debug, Clone)]
-pub struct Memory {
-    mapping: HashMap<U256, Variable>,
-}
-
-impl Memory {}
 
 impl MirTranslator {
     pub(super) fn translate_mem_store(
         &mut self,
-        addr: U256,
+        addr: VarId,
         var_id: VarId,
         _vars: &mut Vars,
     ) -> Result<(), Error> {
-        //todo dynamic memory
         let var = self.get_var(var_id)?;
-
-        let local = self
-            .mem
-            .mapping
-            .entry(addr)
-            .or_insert_with(|| self.variables.borrow_global(var.s_type()));
-        ensure!(local.s_type() == var.s_type(), "type mismatch");
-
-        self.mir
-            .add_statement(Statement::CreateVar(*local, Expression::Var(var)));
+        let addr = self.get_var(addr)?;
+        ensure!(var.s_type() == SType::Number, "Expected Number type");
+        ensure!(addr.s_type() == SType::Number, "Expected Number type");
+        self.mir.add_statement(Statement::MStore {
+            memory: self.mem_var,
+            offset: addr,
+            val: var,
+        });
         Ok(())
     }
 
-    pub(super) fn translate_mem_load(
+    pub(super) fn translate_mem_store8(
         &mut self,
-        _: U256,
-        _var_id: VarId,
+        addr: VarId,
+        var_id: VarId,
         _vars: &mut Vars,
     ) -> Result<(), Error> {
+        let var = self.get_var(var_id)?;
+        let addr = self.get_var(addr)?;
+        ensure!(var.s_type() == SType::Number, "Expected Number type");
+        ensure!(addr.s_type() == SType::Number, "Expected Number type");
+        self.mir.add_statement(Statement::MStore8 {
+            memory: self.mem_var,
+            offset: addr,
+            val: var,
+        });
         Ok(())
     }
 }

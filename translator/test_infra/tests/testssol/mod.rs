@@ -16,6 +16,7 @@ use test_infra::executor::{ExecutionResult, MoveExecutor};
 use test_infra::sol::Evm;
 
 const TEST_NAME: &str = "sol";
+pub const MAX_MEMORY: u64 = 1024 * 32;
 
 lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
@@ -137,7 +138,7 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Result<Vec<u8>, Err
     let name = split.next().unwrap();
     let program = transpile_program(name, eth, abi, U256::from(addr.as_slice()))?;
     let mvir = MvIrTranslator::default();
-    let module = mvir.translate(addr, program)?;
+    let module = mvir.translate(addr, MAX_MEMORY, program)?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;
