@@ -6,7 +6,7 @@ use std::{fmt, fs};
 use anyhow::{anyhow, bail, Result};
 
 use move_core_types::value::MoveValue;
-use test_infra::sol::{build_sol, Evm};
+use test_infra::sol::{build_sol_by_path, EvmPack};
 
 const SOL_DIRECTORY: &str = "./sol";
 
@@ -14,13 +14,14 @@ const SOL_DIRECTORY: &str = "./sol";
 pub struct SolFile {
     sol_path: PathBuf,
     pub name: String,
-    pub evm: Evm,
+    pub contract: EvmPack,
     pub tests: Vec<SolTest>,
 }
 
 impl SolFile {
     pub fn from_sol_dir() -> Result<Vec<SolFile>> {
-        SolFile::from_dir(PathBuf::from(SOL_DIRECTORY))
+        let dir = PathBuf::from(SOL_DIRECTORY).canonicalize()?;
+        SolFile::from_dir(PathBuf::from(dir))
     }
 
     /// The search is carried out by nested folders inclusive
@@ -91,13 +92,22 @@ fn path_is_sol(path: &Path) -> bool {
 }
 
 fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
-    let content_sol = fs::read(&sol_path).ok()?;
-    let evm = build_sol(&content_sol).ok()?;
+    // @todo
+    if let Some(name) = sol_path.file_name() {
+        let name = name.to_string_lossy();
+        if name.starts_with("i_") || name.starts_with("l_") {
+            return None;
+        }
+    }
+
+    let contract = build_sol_by_path(&sol_path)
+        .map_err(|err| log::error!("{err:?}"))
+        .ok()?;
 
     let name: String = sol_path
         .to_string_lossy()
         .to_string()
-        .split_once(SOL_DIRECTORY)?
+        .split_once(&SOL_DIRECTORY[2..])?
         .1
         .split("/")
         .filter(|p| !p.is_empty())
@@ -107,7 +117,7 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
     Some(SolFile {
         name,
         sol_path,
-        evm,
+        contract,
         tests: Vec::new(),
     })
 }

@@ -1,14 +1,22 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 use std::{fs, io};
 
-use anyhow::{anyhow, ensure, Error};
+use anyhow::{anyhow, ensure, Error, Result};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Sha3_256};
 
-#[derive(Debug, Clone)]
+use evm::abi::Abi;
+use evm::bytecode::block::{BlockId, BlockIter};
+use evm::bytecode::ops::InstructionIter;
+use evm::bytecode::pre_processing::ctor;
+use evm::bytecode::pre_processing::swarm::remove_swarm_hash;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evm {
     name: Arc<String>,
     bin: Arc<String>,
@@ -29,24 +37,20 @@ impl Evm {
     }
 }
 
-pub fn build_sol_by_path(path: &Path) -> Result<Vec<Evm>, Error> {
-    let sol_contetnt = fs::read_to_string(path)?;
+pub fn build_sol_by_path(path: &Path) -> Result<EvmPack> {
+    let path = path.canonicalize()?;
+    let sol_contetnt = fs::read_to_string(&path)?;
 
     let tmp_dir_path = std::env::temp_dir().join(sha_name(sol_contetnt.as_bytes()) + "0");
     let contract_compile_path = tmp_dir_path.join("compiled.json");
 
-    let mut contract_json: Option<Value> = None;
-
     if !tmp_dir_path.exists() || !contract_compile_path.exists() {
         fs::create_dir_all(&tmp_dir_path)?;
-
-        let contract_sol_path = tmp_dir_path.join("contract.sol");
-        fs::write(&contract_sol_path, sol_contetnt)?;
 
         let output = Command::new("solc")
             .current_dir(tmp_dir_path.as_path())
             .args(["--combined-json", "abi,bin"])
-            .arg(contract_sol_path.as_path())
+            .arg(&path)
             .output()?;
 
         ensure!(
@@ -55,40 +59,57 @@ pub fn build_sol_by_path(path: &Path) -> Result<Vec<Evm>, Error> {
             String::from_utf8(output.stderr).unwrap_or_default()
         );
 
-        let json = serde_json::from_str(&String::from_utf8(output.stdout)?)?;
+        let json_output: Value = serde_json::from_str(&String::from_utf8(output.stdout)?)?;
+        let list_evm = json_output
+            .get("contracts")
+            .and_then(|item| item.as_object())
+            .map(|item| {
+                item.iter()
+                    .filter_map(|(name, json)| {
+                        let (_, name) = name.rsplit_once(':')?;
+
+                        let abi = json.get("abi")?;
+                        let abi_string =
+                            if abi.as_array().map(|item| !item.is_empty()).unwrap_or(false) {
+                                abi.to_string()
+                            } else {
+                                "".to_string()
+                            };
+
+                        let bin = json.get("bin")?.as_str().unwrap_or_default().to_string();
+                        if bin.is_empty() {
+                            return None;
+                        }
+                        Some(Evm {
+                            name: Arc::new(name.to_string()),
+                            abi: Arc::new(abi_string),
+                            bin: Arc::new(bin),
+                        })
+                    })
+                    .collect::<Vec<Evm>>()
+            })
+            .ok_or_else(|| anyhow!("Couldn't find a contract. {path:?}"))?;
+
+        let (mut r_contracts, r_modules): (Vec<_>, Vec<_>) =
+            list_evm.into_iter().partition(|item| !item.abi.is_empty());
+
+        ensure!(
+            r_contracts.len() == 1,
+            "It was expected that there would be one contract in the file. {path:?}"
+        );
+
+        let contract = EvmPack::from((r_contracts.remove(0), r_modules));
+        let json: Value = serde_json::to_value(&contract)?;
         let contract_str_formated = serde_json::to_string_pretty(&json)?;
-
-        io::stdout().write_all(contract_str_formated.as_bytes())?;
-
         fs::write(&contract_compile_path, &contract_str_formated)?;
-        fs::remove_file(&contract_sol_path)?;
 
-        contract_json = Some(json);
+        return Ok(contract);
     }
 
-    let json = contract_json
-        .or_else(|| {
-            fs::read_to_string(&contract_compile_path)
-                .ok()
-                .and_then(|cont| serde_json::from_str(&cont).ok())
-        })
-        .ok_or_else(|| anyhow!("file not found {contract_compile_path:?}"))?;
+    let cont = fs::read_to_string(&contract_compile_path)?;
+    let contract: EvmPack = serde_json::from_str(&cont)?;
 
-    json.get("contracts")
-        .and_then(|item| item.as_object())
-        .and_then(|item| {
-            item.iter()
-                .map(|(name, json)| {
-                    let (_, name) = name.rsplit_once(':')?;
-                    Some(Evm {
-                        name: Arc::new(name.to_string()),
-                        abi: Arc::new(json.get("abi")?.to_string()),
-                        bin: Arc::new(json.get("bin")?.as_str()?.to_string()),
-                    })
-                })
-                .collect::<Option<Vec<Evm>>>()
-        })
-        .ok_or_else(|| anyhow!("incorrect json format"))
+    Ok(contract)
 }
 
 pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
@@ -158,4 +179,88 @@ fn sha_name(cont: &[u8]) -> String {
     let value_hash = hasher.finalize();
     let hash: [u8; 32] = value_hash.as_slice().try_into().expect("Wrong length");
     format!(".{}", base32::encode(base32::Alphabet::Crockford, &hash))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvmPack {
+    contract: Evm,
+    modules: Vec<Evm>,
+}
+
+impl EvmPack {
+    pub fn contract(&self) -> &Evm {
+        &self.contract
+    }
+
+    pub fn modules(&self) -> &Vec<Evm> {
+        &self.modules
+    }
+
+    pub fn abi(&self) -> Result<Abi> {
+        let abi = Abi::try_from(self.contract.abi.as_str())?;
+        Ok(abi)
+    }
+
+    pub fn abi_str(&self) -> &str {
+        self.contract.abi.as_str()
+    }
+
+    pub fn code(&self) -> Result<Vec<u8>> {
+        let mut result: Vec<u8> = self
+            .modules
+            .iter()
+            .map(|item| {
+                let bin = hex::decode(item.bin())?;
+                Ok(bin)
+            })
+            .collect::<Result<Vec<Vec<u8>>>>()?
+            .into_iter()
+            .flatten()
+            .collect();
+        let mut cont = hex::decode(self.contract.bin.as_str())?;
+        result.append(&mut cont);
+
+        Ok(result)
+    }
+
+    pub fn code_evm(&self) -> Result<Vec<u8>> {
+        let mut result: Vec<u8> = self
+            .modules
+            .iter()
+            .map(|item| {
+                let bin = hex::decode(item.bin())?;
+                evm_bytecode(bin)
+            })
+            .collect::<Result<Vec<Vec<u8>>>>()?
+            .into_iter()
+            .flatten()
+            .collect();
+        let mut cont = evm_bytecode(hex::decode(self.contract.bin.as_str())?)?;
+        result.append(&mut cont);
+
+        Ok(result)
+    }
+
+    pub fn name(&self) -> &str {
+        self.contract.name()
+    }
+}
+
+impl From<(Evm, Vec<Evm>)> for EvmPack {
+    fn from(data: (Evm, Vec<Evm>)) -> Self {
+        EvmPack {
+            contract: data.0,
+            modules: data.1,
+        }
+    }
+}
+
+fn evm_bytecode(mut bytecode: Vec<u8>) -> Result<Vec<u8>> {
+    remove_swarm_hash(&mut bytecode);
+    let blocks = BlockIter::new(InstructionIter::new(bytecode.clone()))
+        .map(|block| (BlockId::from(block.start), block))
+        .collect::<HashMap<_, _>>();
+    let (_, entry_point, _) = ctor::split(blocks)?;
+
+    Ok(bytecode[entry_point.0..].to_vec())
 }

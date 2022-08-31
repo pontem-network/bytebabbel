@@ -13,7 +13,7 @@ pub mod parse;
 
 use parse::{SolFile, SolTest};
 use test_infra::executor::{ExecutionResult, MoveExecutor};
-use test_infra::sol::Evm;
+use test_infra::sol::EvmPack;
 
 const TEST_NAME: &str = "sol";
 
@@ -24,7 +24,7 @@ lazy_static! {
 #[derive(Debug)]
 pub struct STest {
     prename: String,
-    contract: Evm,
+    contract: EvmPack,
     test: SolTest,
 }
 
@@ -34,7 +34,7 @@ impl STest {
             .into_iter()
             .map(|test| STest {
                 prename: file.name.clone(),
-                contract: file.evm.clone(),
+                contract: file.contract.clone(),
                 test,
             })
             .collect()
@@ -114,7 +114,8 @@ impl STest {
     fn vm_run(&self) -> Result<ExecutionResult> {
         let module_address = self.module_address();
 
-        let bytecode = make_move_module(&module_address, self.bin(), self.abi())?;
+        let bytecode =
+            make_move_module(&module_address, &hex::encode(self.bin()?), self.abi_str())?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
 
@@ -122,12 +123,12 @@ impl STest {
         vm.run(&func_address, &self.test.params)
     }
 
-    fn abi(&self) -> &str {
-        self.contract.abi()
+    fn abi_str(&self) -> &str {
+        self.contract.abi_str()
     }
 
-    fn bin(&self) -> &str {
-        self.contract.bin()
+    fn bin(&self) -> Result<Vec<u8>> {
+        self.contract.code()
     }
 }
 
