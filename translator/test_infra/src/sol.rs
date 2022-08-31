@@ -57,9 +57,8 @@ pub fn build_sol_by_path(path: &Path) -> Result<EvmPack> {
         let list_evm = json_output
             .get("contracts")
             .and_then(|item| item.as_object())
-            .and_then(|item| {
-                let result = item
-                    .iter()
+            .map(|item| {
+                item.iter()
                     .filter_map(|(name, json)| {
                         let (_, name) = name.rsplit_once(':')?;
 
@@ -81,8 +80,7 @@ pub fn build_sol_by_path(path: &Path) -> Result<EvmPack> {
                             bin: Arc::new(bin),
                         })
                     })
-                    .collect::<Vec<Evm>>();
-                Some(result)
+                    .collect::<Vec<Evm>>()
             })
             .ok_or_else(|| anyhow!("Couldn't find a contract. {path:?}"))?;
 
