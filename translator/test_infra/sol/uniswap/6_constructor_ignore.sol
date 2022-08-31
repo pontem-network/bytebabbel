@@ -4,26 +4,25 @@
 
 pragma solidity >=0.8.10;
 
-contract TestConstruct {
-    string public constant name = 'Uniswap V2';
-    bytes32 public DOMAIN_SEPARATOR;
+contract TestConst {
+    uint uval;
 
     constructor() {
-        uint chainId = 0;
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
-                keccak256(bytes(name)),
-                keccak256(bytes('1')),
-                chainId,
-                address(this)
-            )
-        );
+        uval = 0;
     }
 
-    // # get() 0x1
-    function get() public view returns (bytes32){
-        return DOMAIN_SEPARATOR;
+    // # get() 0
+    function get() public view returns (uint){
+        return uval;
     }
 
+    function set(uint a) public {
+        uval = a;
+    }
+
+    // # get_set(10) 10
+    function get_set(uint a) public returns (uint){
+        uval = a;
+        return uval;
+    }
 }
