@@ -1,5 +1,4 @@
 use anyhow::{bail, Error, Result};
-use evm::abi::Abi;
 use evm::bytecode::types::U256;
 use evm::transpile_program;
 use lazy_static::lazy_static;
@@ -14,7 +13,7 @@ pub mod parse;
 
 use parse::{SolFile, SolTest};
 use test_infra::executor::{ExecutionResult, MoveExecutor};
-use test_infra::sol::{Evm, EvmPack};
+use test_infra::sol::EvmPack;
 
 const TEST_NAME: &str = "sol";
 
@@ -122,10 +121,6 @@ impl STest {
 
         let func_address = format!("{module_address}::{}", &self.test.func);
         vm.run(&func_address, &self.test.params)
-    }
-
-    fn abi(&self) -> Result<Abi> {
-        self.contract.abi()
     }
 
     fn abi_str(&self) -> &str {

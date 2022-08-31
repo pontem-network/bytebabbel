@@ -1,13 +1,9 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use anyhow::{bail, Result};
 use primitive_types::{H160, U256};
 
-use evm::bytecode::block::{BlockId, BlockIter};
-use evm::bytecode::ops::InstructionIter;
-use evm::bytecode::pre_processing::ctor;
-use evm::bytecode::pre_processing::swarm::remove_swarm_hash;
 use evm_pack::backend::{MemoryBackend, MemoryVicinity};
 use evm_pack::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm_pack::{Config, Context, ExitReason, Runtime};
@@ -40,16 +36,6 @@ fn context() -> Result<Context> {
         // значение вызова, если оно не равно нулю, должно иметь подлежащий оплате
         apparent_value: U256::from(0u8),
     })
-}
-
-fn evm_bytecode(mut bytecode: Vec<u8>) -> Result<Vec<u8>> {
-    remove_swarm_hash(&mut bytecode);
-    let blocks = BlockIter::new(InstructionIter::new(bytecode.clone()))
-        .map(|block| (BlockId::from(block.start), block))
-        .collect::<HashMap<_, _>>();
-    let (_, entry_point, _) = ctor::split(blocks)?;
-
-    Ok(bytecode[entry_point.0..].to_vec())
 }
 
 struct REvm {
@@ -116,9 +102,8 @@ mod test {
     use evm::abi::call::ToCall;
     use evm::abi::inc_ret_param::value::conv::ParamValueToRustType;
     use evm::abi::inc_ret_param::value::ParamValue;
-    use evm::abi::Abi;
 
-    use crate::revm::{evm_bytecode, REvm};
+    use crate::revm::REvm;
     use crate::sol::{build_sol_by_path, EvmPack};
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
@@ -128,26 +113,11 @@ mod test {
             Mutex::new(build_sol_by_path(&PathBuf::from(TEST_SOL_FILE)).unwrap());
     }
 
-    struct SolData {
-        abi: Abi,
-        bin: Vec<u8>,
-    }
-
-    impl SolData {
-        pub fn bin_as_ref(&self) -> &Vec<u8> {
-            &self.bin
-        }
-
-        pub fn abi_as_ref(&self) -> &Abi {
-            &self.abi
-        }
-    }
-
     #[test]
     fn test_bool() {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code().unwrap();
+        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
@@ -180,8 +150,8 @@ mod test {
     #[test]
     fn test_num() {
         let sol = TESTFILE.lock().unwrap();
+        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
@@ -227,7 +197,7 @@ mod test {
     fn test_array() {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code().unwrap();
+        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);
@@ -314,7 +284,7 @@ mod test {
     fn test_bytes() {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code().unwrap();
+        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
         let mut vm = REvm::new().unwrap();
         vm.set_code(contract_bytes);

@@ -6,7 +6,7 @@ use std::{fmt, fs};
 use anyhow::{anyhow, bail, Result};
 
 use move_core_types::value::MoveValue;
-use test_infra::sol::{build_sol, build_sol_by_path, Evm, EvmPack};
+use test_infra::sol::{build_sol_by_path, EvmPack};
 
 const SOL_DIRECTORY: &str = "./sol";
 
