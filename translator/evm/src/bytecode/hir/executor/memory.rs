@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::hir::ir::var::{Var, VarId};
 use crate::Hir;
 
 #[derive(Debug, Clone)]
@@ -12,35 +12,28 @@ pub enum MemoryOp {
 }
 
 impl InstructionHandler for MemoryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
         match self {
             MemoryOp::MLoad => {
-                if let Some(addr) = ir.resolve_var(params[0]) {
-                    if let Some(val) = context.mem_load(addr) {
-                        ir.mem_load(addr, val);
-                        ExecutionResult::Output(vec![val])
-                    } else {
-                        todo!("memory load")
-                    }
-                } else {
-                    todo!("Unaligned memory access")
-                }
+                let addr = params[0];
+                let id = ir.create_var(Var::MLoad(addr));
+                ExecutionResult::Output(vec![id])
             }
             MemoryOp::MStore => {
+                let addr = params[0];
                 let val = params[1];
-                if let Some(addr) = ir.resolve_var(params[0]) {
-                    context.mem_store(addr, val);
-                    ir.mem_store(addr, val);
-                } else {
-                    todo!("Unaligned memory access")
-                }
+                ir.mstore(addr, val);
                 ExecutionResult::None
             }
             MemoryOp::MStore8 => {
-                todo!()
+                let addr = params[0];
+                let val = params[1];
+                ir.mstore8(addr, val);
+                ExecutionResult::None
             }
             MemoryOp::MSize => {
-                todo!()
+                let id = ir.create_var(Var::MSize);
+                ExecutionResult::Output(vec![id])
             }
         }
     }

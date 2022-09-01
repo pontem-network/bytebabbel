@@ -5,6 +5,11 @@ use anyhow::Error;
 
 #[derive(Debug)]
 pub enum Expression {
+    GetMem,
+    GetStore,
+    MLoad { memory: Variable, offset: Variable },
+    SLoad { storage: Variable, offset: Variable },
+    MSize { memory: Variable },
     Const(Value),
     Var(Variable),
     Param(LocalIndex, SType),

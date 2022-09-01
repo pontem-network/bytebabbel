@@ -2,7 +2,6 @@
 pub mod context;
 pub mod executor;
 pub mod ir;
-pub mod mem;
 pub mod optimization;
 pub mod stack;
 
@@ -14,7 +13,6 @@ use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
-use crate::bytecode::hir::stack::FRAME_SIZE;
 use crate::bytecode::types::{Function, U256};
 use crate::BlockId;
 use anyhow::{anyhow, bail, ensure, Error};
@@ -188,23 +186,7 @@ impl<'a> HirTranslator<'a> {
                 Ok(StopFlag::Stop)
             }
             BlockResult::Result { offset, len } => {
-                let offset = ir.resolve_var(offset);
-                let len = ir.resolve_var(len);
-
-                if let (Some(offset), Some(len)) = (offset, len) {
-                    let outputs = len / FRAME_SIZE;
-                    let mut res = vec![];
-                    for i in 0..outputs.as_usize() {
-                        let i = U256::from(i);
-                        let id = ctx
-                            .mem_load(offset + i * U256::from(FRAME_SIZE))
-                            .expect("mem load error");
-                        res.push(id);
-                    }
-                    ir.result(res);
-                } else {
-                    bail!("result var not found");
-                }
+                ir.result(offset, len);
                 Ok(StopFlag::Stop)
             }
             BlockResult::Abort(code) => {

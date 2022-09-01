@@ -1,5 +1,4 @@
 use crate::bytecode::hir::ir::var::VarId;
-use crate::bytecode::hir::mem::Memory;
 use crate::bytecode::hir::stack::Stack;
 use crate::bytecode::types::{Env, Function, U256};
 use crate::BlockId;
@@ -9,7 +8,6 @@ use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub struct Context {
     address: U256,
-    mem: Memory,
     stack: Stack,
     env: Rc<Env>,
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
@@ -20,7 +18,6 @@ impl Context {
     pub fn new(fun: Function, contract_address: U256) -> Context {
         Context {
             address: contract_address,
-            mem: Memory::default(),
             stack: Stack::default(),
             env: Rc::new(Env::new(fun)),
             loop_input: Default::default(),
@@ -42,14 +39,6 @@ impl Context {
 
     pub fn address(&self) -> U256 {
         self.address
-    }
-
-    pub fn mem_load(&mut self, offset: U256) -> Option<VarId> {
-        self.mem.static_load(offset)
-    }
-
-    pub fn mem_store(&mut self, offset: U256, val: VarId) {
-        self.mem.static_store(offset, val)
     }
 
     pub fn create_loop(&mut self, block_id: BlockId, break_br: BlockId) {

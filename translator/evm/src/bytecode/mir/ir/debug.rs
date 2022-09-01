@@ -97,6 +97,48 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::Continue(id) => {
             writeln!(buf, "{:width$}continue 'l{:?};", " ", id)?;
         }
+        Statement::MStore {
+            memory,
+            offset,
+            val,
+        } => {
+            writeln!(
+                buf,
+                "{:width$}{:?}.mem_store(var_{:?}, var_{:?});",
+                " ",
+                memory.index(),
+                offset.index(),
+                val.index()
+            )?;
+        }
+        Statement::MStore8 {
+            memory,
+            offset,
+            val,
+        } => {
+            writeln!(
+                buf,
+                "{:width$}{:?}.mem_store8(var_{:?}, var_{:?});",
+                " ",
+                memory.index(),
+                offset.index(),
+                val.index()
+            )?;
+        }
+        Statement::SStore {
+            storage,
+            offset,
+            val,
+        } => {
+            writeln!(
+                buf,
+                "{:width$}{:?}.state_store(var_{:?}, var_{:?});",
+                " ",
+                storage.index(),
+                offset.index(),
+                val.index()
+            )?;
+        }
     }
     Ok(())
 }
@@ -125,6 +167,26 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
                 writeln!(buf, ";")?;
             }
             write!(buf, "{:width$}}}", " ")?;
+        }
+        Expression::MLoad { memory, offset } => {
+            write!(
+                buf,
+                "var_{:?}.mem_load(var_{:?})",
+                memory.index(),
+                offset.index()
+            )?;
+        }
+        Expression::SLoad { storage, offset } => {
+            write!(buf, "var_{:?}.state_load(var_{:?})", storage, offset)?;
+        }
+        Expression::MSize { memory } => {
+            write!(buf, "var_{:?}.mem_len()", memory)?;
+        }
+        Expression::GetMem => {
+            write!(buf, "contract_memory()")?;
+        }
+        Expression::GetStore => {
+            write!(buf, "borrow_storage()")?;
         }
     }
     Ok(())

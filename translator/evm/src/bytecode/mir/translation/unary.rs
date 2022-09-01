@@ -6,7 +6,7 @@ use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 
 impl MirTranslator {
     pub(super) fn translate_unary_op(
@@ -17,8 +17,13 @@ impl MirTranslator {
     ) -> Result<(), Error> {
         let var = self.get_var(op)?;
         match var.s_type() {
-            SType::U128 => self.unary_with_u128(cmd, var, result),
+            SType::Number => self.unary_with_u128(cmd, var, result),
             SType::Bool => self.unary_with_bool(cmd, var, result),
+            _ => Err(anyhow!(
+                "Unary operation {:?} not supported for type {:?}",
+                cmd,
+                var.s_type()
+            )),
         }
     }
 
@@ -29,7 +34,7 @@ impl MirTranslator {
                 let ops = StackOpsBuilder::default()
                     .push_var(op)
                     .push_const(Value::U128(0))
-                    .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+                    .binary_op(Operation::Eq, SType::Number, SType::Bool)?
                     .build(SType::Bool)?;
                 self.mir.add_statement(Statement::CreateVar(result, ops));
             }

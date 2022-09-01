@@ -110,7 +110,7 @@ fn translate_shr(
     // } else {
     //     op1 >> op
     // }
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -118,10 +118,10 @@ fn translate_shr(
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
         .push_const(Value::U128(0))
-        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .push_var(op)
         .push_const(Value::U128(256))
-        .binary_op(Operation::Ge, SType::U128, SType::Bool)?
+        .binary_op(Operation::Ge, SType::Number, SType::Bool)?
         .binary_op(Operation::Or, SType::Bool, SType::Bool)?
         .build(SType::Bool)?;
 
@@ -146,7 +146,7 @@ fn translate_shl(
     // } else {
     //     op1 << op
     // }
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -154,10 +154,10 @@ fn translate_shl(
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
         .push_const(Value::U128(0))
-        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .push_var(op)
         .push_const(Value::U128(256))
-        .binary_op(Operation::Ge, SType::U128, SType::Bool)?
+        .binary_op(Operation::Ge, SType::Number, SType::Bool)?
         .binary_op(Operation::Or, SType::Bool, SType::Bool)?
         .build(SType::Bool)?;
 
@@ -187,7 +187,7 @@ fn translate_div(
             }
         }
     */
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -195,7 +195,7 @@ fn translate_div(
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
         .push_const(Value::U128(0))
-        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .build(SType::Bool)?;
 
     translator.mir.add_statement(Statement::IF {
@@ -225,7 +225,7 @@ fn translate_mod(
             }
         }
     */
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -233,7 +233,7 @@ fn translate_mod(
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
         .push_const(Value::U128(0))
-        .binary_op(Operation::Eq, SType::U128, SType::Bool)?
+        .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .build(SType::Bool)?;
 
     translator.mir.add_statement(Statement::IF {
@@ -279,7 +279,7 @@ fn translate_sub(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -287,7 +287,7 @@ fn translate_sub(
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
         .push_var(op)
-        .binary_op(Operation::Gt, SType::U128, SType::Bool)?
+        .binary_op(Operation::Gt, SType::Number, SType::Bool)?
         .build(SType::Bool)?;
 
     let true_br = StackOpsBuilder::default()
@@ -295,10 +295,10 @@ fn translate_sub(
         .push_const(Value::U128(1))
         .push_var(op1)
         .push_var(op)
-        .binary_op(Operation::Sub, SType::U128, SType::U128)?
-        .binary_op(Operation::Add, SType::U128, SType::U128)?
-        .binary_op(Operation::Sub, SType::U128, SType::U128)?
-        .build(SType::U128)?;
+        .binary_op(Operation::Sub, SType::Number, SType::Number)?
+        .binary_op(Operation::Add, SType::Number, SType::Number)?
+        .binary_op(Operation::Sub, SType::Number, SType::Number)?
+        .build(SType::Number)?;
 
     translator.mir.add_statement(Statement::IF {
         cnd,
@@ -315,7 +315,7 @@ fn plain_u128_ops(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let op = translator.cast_number(op)?;
     let op1 = translator.cast_number(op1)?;
@@ -340,25 +340,25 @@ fn translate_add(
     op1: Variable,
     result: VarId,
 ) -> Result<(), Error> {
-    let result = translator.map_var(result, SType::U128);
+    let result = translator.map_var(result, SType::Number);
 
     let cnd = StackOpsBuilder::default()
         .push_const(Value::U128(u128::MAX))
         .push_var(op1)
-        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .binary_op(Operation::Sub, SType::Number, SType::Number)?
         .push_var(op)
-        .binary_op(Operation::Lt, SType::U128, SType::Bool)?
+        .binary_op(Operation::Lt, SType::Number, SType::Bool)?
         .build(SType::Bool)?;
 
     let true_br = StackOpsBuilder::default()
         .push_var(op)
         .push_const(Value::U128(u128::MAX))
         .push_var(op1)
-        .binary_op(Operation::Sub, SType::U128, SType::U128)?
-        .binary_op(Operation::Sub, SType::U128, SType::U128)?
+        .binary_op(Operation::Sub, SType::Number, SType::Number)?
+        .binary_op(Operation::Sub, SType::Number, SType::Number)?
         .push_const(Value::U128(1))
-        .binary_op(Operation::Sub, SType::U128, SType::U128)?
-        .build(SType::U128)?;
+        .binary_op(Operation::Sub, SType::Number, SType::Number)?
+        .build(SType::Number)?;
 
     translator.mir.add_statement(Statement::IF {
         cnd,

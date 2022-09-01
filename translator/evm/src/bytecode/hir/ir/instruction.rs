@@ -1,5 +1,5 @@
 use crate::bytecode::hir::ir::var::VarId;
-use crate::{BlockId, U256};
+use crate::BlockId;
 
 #[derive(Debug, Clone)]
 pub enum Instruction {
@@ -8,8 +8,18 @@ pub enum Instruction {
         id: VarId,
         val: VarId,
     },
-    MemStore(U256, VarId),
-    MemLoad(U256, VarId),
+    MemStore8 {
+        addr: VarId,
+        var: VarId,
+    },
+    MemStore {
+        addr: VarId,
+        var: VarId,
+    },
+    SStore {
+        addr: VarId,
+        var: VarId,
+    },
     If {
         condition: VarId,
         true_branch: Vec<Instruction>,
@@ -28,5 +38,8 @@ pub enum Instruction {
     },
     Stop,
     Abort(u8),
-    Result(Vec<VarId>),
+    Result {
+        offset: VarId,
+        len: VarId,
+    },
 }

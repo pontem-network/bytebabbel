@@ -3696,6 +3696,7 @@ dependencies = [
  "anyhow",
  "move-binary-format",
  "move-bytecode-verifier",
+ "move-core-types",
 ]
 
 [[package]]
@@ -7556,13 +7557,18 @@ name = "test_infra"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aptos-aggregator",
+ "aptos-crypto",
  "aptos-gas",
+ "aptos-state-view",
+ "aptos-types",
  "aptos-vm",
  "base32",
  "bcs",
  "env_logger",
  "evm 0.1.0",
  "evm 0.35.0",
+ "framework",
  "hex",
  "lazy_static 1.4.0",
  "libtest-mimic",
@@ -7570,6 +7576,7 @@ dependencies = [
  "move-binary-format",
  "move-bytecode-source-map",
  "move-core-types",
+ "move-deps",
  "move-ir-types",
  "move-stdlib",
  "move-vm-runtime",

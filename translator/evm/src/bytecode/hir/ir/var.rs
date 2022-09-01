@@ -44,6 +44,9 @@ impl Vars {
                 let op3 = self.resolve_var(*op3)?;
                 Some(cmd.calc(op1, op2, op3))
             }
+            Some(Var::MLoad(_)) => None,
+            Some(Var::SLoad(_)) => None,
+            Some(Var::MSize) => None,
         }
     }
 
@@ -57,6 +60,9 @@ impl Vars {
 #[derive(Debug)]
 pub enum Var {
     Val(U256),
+    MLoad(VarId),
+    SLoad(VarId),
+    MSize,
     Param(u16),
     UnaryOp(UnaryOp, VarId),
     BinaryOp(BinaryOp, VarId, VarId),
