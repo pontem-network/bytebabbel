@@ -20,5 +20,6 @@ pub fn main() {
         .join("bytecode_modules")
         .join("template.mv");
 
-    fs::copy(module, project_dir.join("build").join("template.mv")).unwrap();
+    let template_path = PathBuf::from(project_dir.join("template.mv"));
+    fs::copy(module, template_path).unwrap();
 }

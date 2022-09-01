@@ -159,6 +159,7 @@ module self::template {
         assert!(sload(persist, 1) == 1, 0);
     }
 
+
     #[test]
     fun load_store_with_same_offset() {
         let memory = new_mem(1024);
