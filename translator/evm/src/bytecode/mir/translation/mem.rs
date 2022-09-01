@@ -13,8 +13,11 @@ impl MirTranslator {
     ) -> Result<(), Error> {
         let var = self.get_var(var_id)?;
         let addr = self.get_var(addr)?;
-        ensure!(var.s_type() == SType::Number, "Expected Number type");
-        ensure!(addr.s_type() == SType::Number, "Expected Number type");
+        let var = self.cast_number(var)?;
+        ensure!(
+            addr.s_type() == SType::Number,
+            "Expected Number type for memory address"
+        );
         self.mir.add_statement(Statement::MStore {
             memory: self.mem_var,
             offset: addr,
@@ -31,8 +34,12 @@ impl MirTranslator {
     ) -> Result<(), Error> {
         let var = self.get_var(var_id)?;
         let addr = self.get_var(addr)?;
-        ensure!(var.s_type() == SType::Number, "Expected Number type");
-        ensure!(addr.s_type() == SType::Number, "Expected Number type");
+        let var = self.cast_number(var)?;
+
+        ensure!(
+            addr.s_type() == SType::Number,
+            "Expected Number type for memory address"
+        );
         self.mir.add_statement(Statement::MStore8 {
             memory: self.mem_var,
             offset: addr,

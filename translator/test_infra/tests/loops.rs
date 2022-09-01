@@ -11,11 +11,12 @@ pub fn test_loops() {
     //const loop
     env_logger::init();
     let evm = build_sol(include_bytes!("../sol/types/simple.sol")).unwrap();
-    println!("{:?}", evm.bin());
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
     println!("run");
+
+    vm.run("0x1::Simple::init_store", "0x1").unwrap();
 
     let res = vm.run("0x1::Simple::f_bool", "true").unwrap();
     for (val, tp) in res.returns.iter() {

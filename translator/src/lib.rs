@@ -15,8 +15,8 @@ pub fn translate(
     _model: Math,
 ) -> Result<Vec<u8>, Error> {
     let program = transpile_program(name, bytecode, abi, U256::from(addr.as_slice()))?;
-    let mvir = MvIrTranslator::default();
-    let module = mvir.translate(addr, MAX_MEMORY, program)?;
+    let mvir = MvIrTranslator::new(addr, program.name());
+    let module = mvir.translate(MAX_MEMORY, program)?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;

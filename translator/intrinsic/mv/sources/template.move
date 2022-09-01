@@ -14,7 +14,7 @@ module self::template {
         limit: u64,
     }
 
-    fun new(limit: u64): Memory {
+    fun new_mem(limit: u64): Memory {
         assert!(limit > 0, ELENGTH);
         let data = vector::empty();
 
@@ -52,7 +52,7 @@ module self::template {
         return result
     }
 
-    fun mstore(mem: &mut Memory, position: u128, value: u128): u128 {
+    fun mstore(mem: &mut Memory, position: u128, value: u128) {
         resize_offset(mem, position, WORD_SIZE);
         let position = (position as u64);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
@@ -71,7 +71,6 @@ module self::template {
             *vector::borrow_mut(&mut mem.data, position + WORD_SIZE - 1 - offset) = byte;
             offset = offset + 1;
         };
-        return value
     }
 
     fun mstore8(mem: &mut Memory, position: u128, value: u128) {
@@ -119,7 +118,7 @@ module self::template {
         tbl: table::Table<u128, u128>,
     }
 
-    fun init_store(self: &signer) {
+    public(script) fun init_store(self: &signer) {
         let addr = signer::borrow_address(self);
         assert!(addr == &@self, 1);
         assert!(!exists<Persist>(@self), 1);
@@ -158,5 +157,74 @@ module self::template {
         assert!(sload(persist, 1) == 0, 0);
         sstore(persist, 1, 1);
         assert!(sload(persist, 1) == 1, 0);
+    }
+
+    #[test]
+    fun load_store_with_same_offset() {
+        let memory = new_mem(1024);
+
+        mstore(&mut memory, 0, 0x42);
+        let val = mload(&mut memory, 0);
+        assert!(val == 0x42, 0);
+        assert!(effective_len(&memory) == 16, 2);
+
+
+        mstore(&mut memory, 1, 340282366920938463463374607431768211455);
+        let val = mload(&mut memory, 1);
+        assert!(val == 340282366920938463463374607431768211455, 1);
+        assert!(effective_len(&memory) == 32, 2);
+    }
+
+    #[test]
+    fun load_store_loop() {
+        let memory = new_mem(2048);
+
+        let offset = 0;
+        while (offset < 1024) {
+            mstore(&mut memory, offset, offset);
+            offset = offset + 16;
+        };
+
+        let offset = 0;
+        while (offset < 1024) {
+            let val = mload(&mut memory, offset);
+            assert!(val == offset, 1);
+            offset = offset + 16;
+        };
+    }
+
+    #[test]
+    fun mem_shift() {
+        let memory = new_mem(1024);
+        mstore(&mut memory, 0, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+        let val = mload(&mut memory, 8);
+        assert!(val == 0xFFFFFFFFFFFFFFFF0000000000000000, 0);
+    }
+
+    #[test]
+    fun mem_store_8() {
+        let memory = new_mem(1024);
+
+        mstore8(&mut memory, 0, 0xAA);
+        let val = mload(&mut memory, 0);
+        assert!(val == 0xAA000000000000000000000000000000, 1);
+
+        mstore8(&mut memory, 1, 0xFF);
+        let val = mload(&mut memory, 0);
+        assert!(val == 0xAAFF0000000000000000000000000000, 2);
+
+        mstore8(&mut memory, 2, 0x11);
+        let val = mload(&mut memory, 0);
+        assert!(val == 0xAAFF1100000000000000000000000000, 3);
+
+        mstore8(&mut memory, 15, 0xCC);
+        let val = mload(&mut memory, 0);
+        assert!(val == 0xAAFF11000000000000000000000000CC, (val as u64));
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun init_zero_size() {
+        new_mem(0);
     }
 }

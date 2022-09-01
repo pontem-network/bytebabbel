@@ -39,7 +39,7 @@ impl MirTranslator {
         mir.add_statement(Statement::CreateVar(store_var, Expression::GetStore));
 
         let mem_var = variables.borrow_global(SType::Memory);
-        mir.add_statement(Statement::CreateVar(store_var, Expression::GetMem));
+        mir.add_statement(Statement::CreateVar(mem_var, Expression::GetMem));
 
         MirTranslator {
             fun,
@@ -179,6 +179,7 @@ impl MirTranslator {
                     addr.s_type() == SType::Number,
                     "address must be of type u128"
                 );
+                self.mapping.insert(id, result);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
                     Expression::MLoad {
@@ -189,6 +190,7 @@ impl MirTranslator {
             }
             Var::SLoad(addr) => {
                 let result = self.variables.borrow(SType::Number);
+                self.mapping.insert(id, result);
                 let addr = self.get_var(addr)?;
                 ensure!(
                     addr.s_type() == SType::Number,

@@ -118,6 +118,9 @@ impl STest {
         let bytecode = make_move_module(&module_address, self.bin(), self.abi())?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
+        //todo replace with constructor.
+        vm.run(&format!("{}::init_store", module_address), "0x1")
+            .unwrap();
 
         let func_address = format!("{module_address}::{}", &self.test.func);
         vm.run(&func_address, &self.test.params)
@@ -137,8 +140,8 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Result<Vec<u8>, Err
     let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
     let program = transpile_program(name, eth, abi, U256::from(addr.as_slice()))?;
-    let mvir = MvIrTranslator::default();
-    let module = mvir.translate(addr, MAX_MEMORY, program)?;
+    let mvir = MvIrTranslator::new(addr, program.name());
+    let module = mvir.translate(MAX_MEMORY, program)?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;

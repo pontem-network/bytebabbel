@@ -1,13 +1,35 @@
-use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
-    FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
+    Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
+    StructHandleIndex,
 };
 use move_binary_format::CompiledModule;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::CORE_CODE_ADDRESS;
 
-const TEMPLATE_MODULE: &[u8] = include_bytes!("../mv/build/intrinsic/bytecode_modules/template.mv");
+pub const TEMPLATE_MODULE: &[u8] =
+    include_bytes!("../mv/build/intrinsic/bytecode_modules/template.mv");
 
-pub fn template() -> CompiledModule {
-    CompiledModule::deserialize(TEMPLATE_MODULE).unwrap()
+pub const SELF_ADDRESS_INDEX: ConstantPoolIndex = ConstantPoolIndex(4);
+
+pub fn template(address: AccountAddress, name: &str) -> CompiledModule {
+    let mut module = CompiledModule::deserialize(TEMPLATE_MODULE).unwrap();
+    module.address_identifiers[0] = address;
+    module.identifiers[0] = Identifier::new(name).unwrap();
+    module.constant_pool[self_address_index().0 as usize] = Constant {
+        type_: SignatureToken::Address,
+        data: address.to_vec(),
+    };
+
+    if address == CORE_CODE_ADDRESS {
+        module.address_identifiers.remove(1);
+        for handle in &mut module.module_handles {
+            if handle.address.0 == 1 {
+                handle.address.0 = 0;
+            }
+        }
+    }
+    module
 }
 
 pub enum Mem {
@@ -19,21 +41,18 @@ pub enum Mem {
 }
 
 impl Mem {
-    pub fn token(module: &CompiledModule) -> SignatureToken {
-        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(find_struct_by_name(
-            module, "Memory",
-        ))))
+    pub fn token() -> SignatureToken {
+        SignatureToken::Struct(StructHandleIndex(0))
     }
 
-    pub fn func_handler(&self, module: &CompiledModule) -> FunctionHandleIndex {
-        let name = match self {
-            Mem::Store => "mstore",
-            Mem::Store8 => "mstore8",
-            Mem::Load => "mload",
-            Mem::Size => "effective_len",
-            Mem::New => "new",
-        };
-        find_function_by_name(module, name)
+    pub fn func_handler(&self) -> FunctionHandleIndex {
+        match self {
+            Mem::Store => FunctionHandleIndex(3),
+            Mem::Store8 => FunctionHandleIndex(4),
+            Mem::Load => FunctionHandleIndex(2),
+            Mem::Size => FunctionHandleIndex(0),
+            Mem::New => FunctionHandleIndex(5),
+        }
     }
 }
 
@@ -44,52 +63,23 @@ pub enum Storage {
 }
 
 impl Storage {
-    pub fn token(module: &CompiledModule) -> SignatureToken {
-        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(find_struct_by_name(
-            module, "Persist",
-        ))))
+    pub fn token() -> SignatureToken {
+        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(1))))
     }
 
-    pub fn instance(module: &CompiledModule) -> StructDefinitionIndex {
-        let id = find_struct_by_name(module, "Persist");
-        module
-            .struct_defs
-            .iter()
-            .enumerate()
-            .find(|(_, def)| def.struct_handle == id)
-            .map(|(id, _)| StructDefinitionIndex(id as u16))
-            .unwrap()
+    pub fn instance() -> StructDefinitionIndex {
+        StructDefinitionIndex(1)
     }
 
-    pub fn func_handler(&self, module: &CompiledModule) -> FunctionHandleIndex {
-        let name = match self {
-            Storage::Load => "sload",
-            Storage::Store => "sstore",
-            Storage::Create => "init_store",
-        };
-        find_function_by_name(module, name)
+    pub fn func_handler(&self) -> FunctionHandleIndex {
+        match self {
+            Storage::Load => FunctionHandleIndex(8),
+            Storage::Store => FunctionHandleIndex(9),
+            Storage::Create => FunctionHandleIndex(1),
+        }
     }
 }
 
-fn find_function_by_name(module: &CompiledModule, name: &str) -> FunctionHandleIndex {
-    module
-        .function_handles
-        .iter()
-        .enumerate()
-        .find(|(_, h)| module.identifier_at(h.name).as_str() == name)
-        .map(|(id, _)| FunctionHandleIndex(id as u16))
-        .unwrap()
-}
-
-fn find_struct_by_name(module: &CompiledModule, name: &str) -> StructHandleIndex {
-    module
-        .struct_handles
-        .iter()
-        .enumerate()
-        .find(|(_, h)| {
-            let res = &module.identifiers[h.name.0 as usize];
-            res.as_str() == name
-        })
-        .map(|(i, _)| StructHandleIndex(i as u16))
-        .unwrap()
+pub fn self_address_index() -> ConstantPoolIndex {
+    ConstantPoolIndex(4)
 }

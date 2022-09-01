@@ -1,15 +1,20 @@
 use crate::stdlib::publish_std;
-use anyhow::{ensure, Error, Result};
+use anyhow::{ensure, Result};
+use aptos_aggregator::transaction::ChangeSetExt;
+use aptos_crypto::HashValue;
 use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
-use aptos_vm::natives::{aptos_natives, configure_for_unit_test};
+use aptos_state_view::state_storage_usage::StateStorageUsage;
+use aptos_state_view::StateView;
+use aptos_types::state_store::state_key::StateKey;
+use aptos_types::write_set::WriteOp;
+use aptos_vm::data_cache::StorageAdapter;
+use aptos_vm::move_vm_ext::{MoveVmExt, SessionExt, SessionId};
+use aptos_vm::natives::configure_for_unit_test;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::{ChangeSet, Event, Op};
+use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::{ModuleId, StructTag};
-use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::value::MoveTypeLayout;
-use move_vm_runtime::move_vm::MoveVM;
-use move_vm_runtime::session::Session;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::OnceCell;
@@ -20,7 +25,8 @@ static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
 pub struct MoveExecutor {
     resolver: Resolver,
-    vm: MoveVM,
+    vm: MoveVmExt,
+    seq: u64,
 }
 
 impl MoveExecutor {
@@ -29,51 +35,74 @@ impl MoveExecutor {
             .get_or_init(|| {
                 let mut resolver = Resolver::default();
                 let vm = Self::create_vm();
-                let mut session = vm.new_session(&resolver);
+                let id = SessionId::Txn {
+                    sender: CORE_CODE_ADDRESS,
+                    sequence_number: 0,
+                    script_hash: vec![0; 32],
+                };
+                let adapter = StorageAdapter::new(&resolver);
+                let mut session = vm.new_session(&adapter, id);
                 publish_std(&mut session);
-                let (ds, _) = session.finish().unwrap();
-                resolver.apply(ds);
+                let output = session.finish().unwrap().into_change_set(&mut ()).unwrap();
+                resolver.apply(output);
                 resolver
             })
             .clone();
+
         MoveExecutor {
             resolver,
             vm: Self::create_vm(),
+            seq: 1,
         }
     }
 
-    fn create_vm() -> MoveVM {
+    fn create_vm() -> MoveVmExt {
         configure_for_unit_test();
-        let natives = aptos_natives(
+        MoveVmExt::new(
             NativeGasParameters::zeros(),
             AbstractValueSizeGasParameters::zeros(),
-        );
-
-        MoveVM::new(natives).unwrap()
+        )
+        .unwrap()
     }
 
     pub fn deploy(&mut self, addr: &str, module: Vec<u8>) {
-        let mut session = self.vm.new_session(&self.resolver);
+        let addr = AccountAddress::from_hex_literal(addr).unwrap();
+        let id = SessionId::Txn {
+            sender: addr,
+            sequence_number: self.seq,
+            script_hash: HashValue::sha3_256_of(&module).to_vec(),
+        };
+        self.seq += 1;
+
+        let adapter = StorageAdapter::new(&self.resolver);
+        let mut session = self.vm.new_session(&adapter, id);
         session
-            .publish_module(
-                module,
-                AccountAddress::from_hex_literal(addr).unwrap(),
-                &mut UnmeteredGasMeter,
-            )
+            .publish_module(module, addr, &mut UnmeteredGasMeter)
             .unwrap();
-        let (ds, _) = session.finish().unwrap();
-        self.resolver.apply(ds);
+        let output = session.finish().unwrap().into_change_set(&mut ()).unwrap();
+        self.resolver.apply(output);
     }
 
     pub fn run(&mut self, ident: &str, params: &str) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
-        let mut session = self.vm.new_session(&self.resolver);
+        let id = SessionId::Txn {
+            sender: *module_id.address(),
+            sequence_number: self.seq,
+            script_hash: HashValue::sha3_256_of(params.as_bytes()).to_vec(),
+        };
+        self.seq += 1;
+
+        let adapter = StorageAdapter::new(&self.resolver);
+        let mut session = self.vm.new_session(&adapter, id);
+
         let args = Self::prepare_args(params, &module_id, &ident, &session)?;
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
-        let (ds, events) = session.finish().unwrap();
-        self.resolver.apply(ds);
+        let result = session.finish().unwrap();
+        let events = result.events.clone();
+        let output = result.into_change_set(&mut ()).unwrap();
+        self.resolver.apply(output);
         Ok(ExecutionResult { returns, events })
     }
 
@@ -91,7 +120,7 @@ impl MoveExecutor {
         args: &str,
         module_id: &ModuleId,
         ident: &Identifier,
-        session: &Session<Resolver>,
+        session: &SessionExt<StorageAdapter<Resolver>>,
     ) -> Result<Vec<Vec<u8>>> {
         let fun = session.load_function(module_id, ident, &[])?;
         let arguments = args.split(',').collect::<Vec<_>>();
@@ -111,10 +140,15 @@ impl MoveExecutor {
                     Type::U8 => bcs::to_bytes(&val.parse::<u8>()?),
                     Type::U64 => bcs::to_bytes(&val.parse::<u64>()?),
                     Type::U128 => bcs::to_bytes(&val.parse::<u128>()?),
-                    Type::Address => bcs::to_bytes(&AccountAddress::from_hex_literal(val)?),
-                    Type::Signer => bcs::to_bytes(&AccountAddress::from_hex_literal(val)?),
+                    Type::Address | Type::Signer => {
+                        bcs::to_bytes(&AccountAddress::from_hex_literal(val)?)
+                    }
                     Type::Vector(tp) => match tp.as_ref() {
                         Type::U8 => bcs::to_bytes(&hex::decode(val)?),
+                        _ => unreachable!(),
+                    },
+                    Type::Reference(tp) => match tp.as_ref() {
+                        Type::Signer => bcs::to_bytes(&AccountAddress::from_hex_literal(val)?),
                         _ => unreachable!(),
                     },
                     _ => unreachable!(),
@@ -139,52 +173,46 @@ pub struct ExecutionResult {
 
 #[derive(Default, Clone)]
 struct Resolver {
-    modules: HashMap<ModuleId, Vec<u8>>,
-    resources: HashMap<(AccountAddress, StructTag), Vec<u8>>,
+    state_data: HashMap<StateKey, Vec<u8>>,
 }
 
 impl Resolver {
-    pub fn apply(&mut self, ds: ChangeSet) {
-        for (acc, name, module) in ds.modules() {
-            match module {
-                Op::New(module) | Op::Modify(module) => {
-                    self.modules
-                        .insert(ModuleId::new(acc, name.clone()), module.to_vec());
+    pub fn apply(&mut self, output: ChangeSetExt) {
+        for (state_key, write_op) in output.write_set() {
+            match write_op {
+                WriteOp::Modification(blob) | WriteOp::Creation(blob) => {
+                    self.set(state_key.clone(), blob.clone());
                 }
-                Op::Delete => {
-                    self.modules.remove(&ModuleId::new(acc, name.clone()));
-                }
-            }
-        }
-        for (acc, tag, res) in ds.resources() {
-            match res {
-                Op::New(res) | Op::Modify(res) => {
-                    self.resources.insert((acc, tag.clone()), res.to_vec());
-                }
-                Op::Delete => {
-                    self.resources.remove(&(acc, tag.clone()));
+                WriteOp::Deletion => {
+                    self.remove(state_key);
                 }
             }
         }
     }
-}
 
-impl ModuleResolver for Resolver {
-    type Error = Error;
+    pub fn set(&mut self, state_key: StateKey, data_blob: Vec<u8>) -> Option<Vec<u8>> {
+        self.state_data.insert(state_key, data_blob)
+    }
 
-    fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
-        Ok(self.modules.get(id).cloned())
+    pub fn remove(&mut self, state_key: &StateKey) -> Option<Vec<u8>> {
+        self.state_data.remove(state_key)
     }
 }
 
-impl ResourceResolver for Resolver {
-    type Error = Error;
+impl StateView for Resolver {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        Ok(self.state_data.get(state_key).cloned())
+    }
 
-    fn get_resource(
-        &self,
-        address: &AccountAddress,
-        typ: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
-        Ok(self.resources.get(&(*address, typ.clone())).cloned())
+    fn is_genesis(&self) -> bool {
+        self.state_data.is_empty()
+    }
+
+    fn get_usage(&self) -> Result<StateStorageUsage> {
+        let mut usage = StateStorageUsage::new_untracked();
+        for (k, v) in self.state_data.iter() {
+            usage.add_item(k.size() + v.len())
+        }
+        Ok(usage)
     }
 }

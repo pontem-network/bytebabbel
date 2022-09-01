@@ -28,9 +28,9 @@ pub struct MvIrTranslator {
     max_memory: u64,
 }
 
-impl Default for MvIrTranslator {
-    fn default() -> Self {
-        let template = template();
+impl MvIrTranslator {
+    pub fn new(address: AccountAddress, name: &str) -> MvIrTranslator {
+        let template = template(address, name);
         Self {
             sign_writer: SignatureWriter::new(&template.signatures),
             code: Default::default(),
@@ -38,16 +38,8 @@ impl Default for MvIrTranslator {
             max_memory: 0,
         }
     }
-}
 
-impl MvIrTranslator {
-    pub fn translate(
-        mut self,
-        address: AccountAddress,
-        max_memory: u64,
-        program: Program,
-    ) -> Result<Module, Error> {
-        let name = Identifier::new(program.name())?;
+    pub fn translate(mut self, max_memory: u64, program: Program) -> Result<Module, Error> {
         self.max_memory = max_memory;
         let funcs = program
             .public_functions()
@@ -55,13 +47,7 @@ impl MvIrTranslator {
             .map(|def| self.translate_func(def, &program))
             .collect::<Result<_, _>>()?;
 
-        Ok(Module::new(
-            address,
-            name,
-            funcs,
-            self.sign_writer.freeze(),
-            self.template,
-        ))
+        Ok(Module::new(funcs, self.sign_writer.freeze(), self.template))
     }
 
     fn translate_func(&mut self, def: FunDef, program: &Program) -> Result<Func, Error> {
@@ -101,8 +87,8 @@ impl MvIrTranslator {
             .map(|tp| match tp {
                 SType::Number => SignatureToken::U128,
                 SType::Bool => SignatureToken::Bool,
-                SType::Storage => Storage::token(&self.template),
-                SType::Memory => Mem::token(&self.template),
+                SType::Storage => Storage::token(),
+                SType::Memory => Mem::token(),
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -154,9 +140,9 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Mem::Store.func_handler(&self.template),
+                    Mem::Store.func_handler(),
                     &[
-                        CallOp::Var(*memory),
+                        CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
                         CallOp::Var(*val),
                     ],
@@ -168,9 +154,9 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Mem::Store8.func_handler(&self.template),
+                    Mem::Store8.func_handler(),
                     &[
-                        CallOp::Var(*memory),
+                        CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
                         CallOp::Var(*val),
                     ],
@@ -182,7 +168,7 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Storage::Store.func_handler(&self.template),
+                    Storage::Store.func_handler(),
                     &[
                         CallOp::Var(*storage),
                         CallOp::Var(*offset),
@@ -234,31 +220,31 @@ impl MvIrTranslator {
             }
             Expression::GetMem => {
                 self.code.call(
-                    Mem::New.func_handler(&self.template),
+                    Mem::New.func_handler(),
                     &[CallOp::ConstU64(self.max_memory)],
                 );
             }
             Expression::GetStore => {
                 self.code
-                    .write(Bytecode::MutBorrowGlobal(Storage::instance(&self.template)));
+                    .write(Bytecode::LdConst(intrinsic::self_address_index()));
+                self.code
+                    .write(Bytecode::MutBorrowGlobal(Storage::instance()));
             }
             Expression::MLoad { memory, offset } => {
                 self.code.call(
-                    Mem::Load.func_handler(&self.template),
-                    &[CallOp::Var(*memory), CallOp::Var(*offset)],
+                    Mem::Load.func_handler(),
+                    &[CallOp::MutBorrow(*memory), CallOp::Var(*offset)],
                 );
             }
             Expression::SLoad { storage, offset } => {
                 self.code.call(
-                    Storage::Load.func_handler(&self.template),
+                    Storage::Load.func_handler(),
                     &[CallOp::Var(*storage), CallOp::Var(*offset)],
                 );
             }
             Expression::MSize { memory } => {
-                self.code.call(
-                    Mem::Size.func_handler(&self.template),
-                    &[CallOp::Var(*memory)],
-                );
+                self.code
+                    .call(Mem::Size.func_handler(), &[CallOp::MutBorrow(*memory)]);
             }
         }
         Ok(())
