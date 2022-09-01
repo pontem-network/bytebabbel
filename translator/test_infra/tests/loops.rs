@@ -1,7 +1,7 @@
+use crate::testssol::env::executor::MoveExecutor;
+use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
 use move_core_types::value::MoveValue;
-use test_infra::executor::MoveExecutor;
-use test_infra::sol::build_sol;
 
 #[allow(dead_code)]
 mod testssol;

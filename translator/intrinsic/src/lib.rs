@@ -7,8 +7,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
 
-pub const TEMPLATE_MODULE: &[u8] =
-    include_bytes!("../mv/build/intrinsic/bytecode_modules/template.mv");
+pub const TEMPLATE_MODULE: &[u8] = include_bytes!("../mv/build/template.mv");
 
 pub const SELF_ADDRESS_INDEX: ConstantPoolIndex = ConstantPoolIndex(4);
 

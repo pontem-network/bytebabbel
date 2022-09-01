@@ -28,12 +28,11 @@ fn memory_vicinity() -> Result<MemoryVicinity> {
 
 fn context() -> Result<Context> {
     Ok(Context {
-        // Адрес исполнения.
+        // Execution address.
         address: "5cbdd86a2fa8dc4bddd8a8f69dba48572eec07fb".parse()?,
-        // Вызывающий EVM.
+        // The calling EVM.
         caller: "5cbdd86a2fa8dc4bddd8a8f69dba48572eec07fb".parse()?,
-        // Кажущаяся ценность EVM.
-        // значение вызова, если оно не равно нулю, должно иметь подлежащий оплате
+        // The apparent value of the EVM. call value, if non-zero, must have payable
         apparent_value: U256::from(0u8),
     })
 }
@@ -92,6 +91,7 @@ impl REvm {
     }
 }
 
+#[allow(unused_imports)]
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
@@ -99,12 +99,12 @@ mod test {
 
     use lazy_static::lazy_static;
 
+    use crate::testssol::env::revm::REvm;
+    use crate::testssol::env::sol::build_sol_by_path;
+    use crate::testssol::EvmPack;
     use evm::abi::call::ToCall;
     use evm::abi::inc_ret_param::value::conv::ParamValueToRustType;
     use evm::abi::inc_ret_param::value::ParamValue;
-
-    use crate::revm::REvm;
-    use crate::sol::{build_sol_by_path, EvmPack};
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
 

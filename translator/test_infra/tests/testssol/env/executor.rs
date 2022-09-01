@@ -1,4 +1,4 @@
-use crate::stdlib::publish_std;
+use crate::testssol::env::stdlib::publish_std;
 use anyhow::{ensure, Result};
 use aptos_aggregator::transaction::ChangeSetExt;
 use aptos_crypto::HashValue;

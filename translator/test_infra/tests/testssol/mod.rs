@@ -9,11 +9,12 @@ use regex::Regex;
 
 pub mod clog;
 pub mod color;
+pub mod env;
 pub mod parse;
 
+use crate::testssol::env::sol::EvmPack;
+use env::executor::{ExecutionResult, MoveExecutor};
 use parse::{SolFile, SolTest};
-use test_infra::executor::{ExecutionResult, MoveExecutor};
-use test_infra::sol::EvmPack;
 
 const TEST_NAME: &str = "sol";
 pub const MAX_MEMORY: u64 = 1024 * 32;
