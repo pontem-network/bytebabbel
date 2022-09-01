@@ -1,8 +1,9 @@
-use std::env;
 use std::path::PathBuf;
 use std::process::Command;
+use std::{env, fs};
 
 pub fn main() {
+    println!("cargo:rerun-if-changed=mv/sources/template.move");
     let project_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap().as_str()).join("mv");
 
     Command::new("aptos")
@@ -12,4 +13,13 @@ pub fn main() {
         .args(&["move", "compile"])
         .output()
         .unwrap();
+
+    let module = project_dir
+        .join("build")
+        .join("intrinsic")
+        .join("bytecode_modules")
+        .join("template.mv");
+
+    let template_path = PathBuf::from(project_dir.join("template.mv"));
+    fs::copy(module, template_path).unwrap();
 }

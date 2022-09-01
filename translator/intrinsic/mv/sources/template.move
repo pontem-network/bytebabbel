@@ -118,7 +118,7 @@ module self::template {
         tbl: table::Table<u128, u128>,
     }
 
-    public(script) fun init_store(self: &signer) {
+    public entry fun init_store(self: &signer) {
         let addr = signer::borrow_address(self);
         assert!(addr == &@self, 1);
         assert!(!exists<Persist>(@self), 1);
@@ -158,6 +158,7 @@ module self::template {
         sstore(persist, 1, 1);
         assert!(sload(persist, 1) == 1, 0);
     }
+
 
     #[test]
     fun load_store_with_same_offset() {
