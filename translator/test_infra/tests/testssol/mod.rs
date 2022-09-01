@@ -1,4 +1,5 @@
-use anyhow::{bail, Error, Result};
+use anyhow::{anyhow, bail, Error, Result};
+use evm::abi::call::ToCall;
 use evm::bytecode::types::U256;
 use evm::transpile_program;
 use lazy_static::lazy_static;
@@ -70,8 +71,7 @@ impl STest {
     }
 
     pub fn run(&self) -> Result<()> {
-        let result = self.vm_run();
-
+        // log
         let module_address = self.module_address();
         let test = &self.test;
         log::info!(
@@ -79,7 +79,12 @@ impl STest {
             wait = color::font_blue("WAIT")
         );
 
-        let result = match result {
+        // sol result
+        let result_evm = self.run_evm();
+        // move result
+        let result_mv = self.run_mv();
+
+        let return_value = match result_mv {
             Ok(result) => result,
             Err(err) => {
                 if test.result.is_panic() {
@@ -89,24 +94,46 @@ impl STest {
                 }
             }
         };
-        let result: Vec<MoveValue> = result
+
+        if test.result.is_panic() {
+            bail!("returned: {return_value:?}");
+        }
+
+        let expected = test.result.value().unwrap();
+        if expected != &return_value {
+            bail!("returned: {return_value:?}");
+        }
+
+        Ok(())
+    }
+
+    pub fn run_mv(&self) -> Result<Vec<MoveValue>> {
+        let result = self.vm_run().map_err(|err| anyhow!("{err}"))?;
+        let return_value: Vec<MoveValue> = result
             .returns
             .iter()
             .map(|(actual_val, actual_tp)| {
                 MoveValue::simple_deserialize(actual_val, actual_tp).unwrap()
             })
             .collect();
+        Ok(return_value)
+    }
 
-        if test.result.is_panic() {
-            bail!("returned: {result:?}");
-        }
+    pub fn run_evm(&self) -> Result<()> {
+        use test_infra::revm::REvm;
 
-        let expected = test.result.value().unwrap();
-        if expected != &result {
-            bail!("returned: {result:?}");
-        }
+        let abi = self.contract.abi()?;
+        let ent = abi
+            .by_name(&self.test.func)
+            .ok_or_else(|| anyhow!("function not found in abi"))?;
+        let mut callfn = ent.try_call()?;
+        callfn.parse_and_set_inputs(&self.test.params)?;
 
-        Ok(())
+        dbg!(&self.test.func);
+        // abi.by_name(self.test.func)
+        let evm = REvm::try_from(&self.contract)?;
+
+        todo!()
     }
 
     fn module_address(&self) -> String {

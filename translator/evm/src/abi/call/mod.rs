@@ -4,6 +4,7 @@ use crate::abi::call::encode::{
 use anyhow::{anyhow, bail, ensure, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
+use crate::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 use crate::abi::Entry;
 
@@ -53,6 +54,19 @@ impl<'a> CallFn<'a> {
 
         self.input[number_position] = Some(value);
 
+        Ok(self)
+    }
+
+    pub fn parse_and_set_inputs(&mut self, inputs: &str) -> Result<&mut Self> {
+        let params = fn_params_str_split(inputs)?;
+        let values = params
+            .into_iter()
+            .zip(self.inputs_types()?)
+            .map(|(arg, tp)| tp.set_value_str(arg))
+            .collect::<Result<Vec<_>>>()?;
+        for (pos, val) in values.into_iter().enumerate() {
+            self.input[pos] = Some(val);
+        }
         Ok(self)
     }
 
