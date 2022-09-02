@@ -120,7 +120,7 @@ impl STest {
     }
 
     pub fn run_evm(&self) -> Result<()> {
-        use test_infra::revm::REvm;
+        use crate::testssol::env::revm::REvm;
 
         let abi = self.contract.abi()?;
         let ent = abi
