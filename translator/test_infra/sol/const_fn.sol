@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 
 library ConstFn {
     // # const_fn_10 () 10_u128
-    function const_fn_10() public pure returns (uint) {
+    function const_fn_10() public pure returns (uint128) {
         return 10;
     }
 
     // # const_fn_426574676453456 () 426574676453456_u128
-    function const_fn_426574676453456() public pure returns (uint) {
+    function const_fn_426574676453456() public pure returns (uint128) {
         return 426574676453456;
     }
 
@@ -19,9 +19,9 @@ library ConstFn {
     }
 
     // # const_fn_90_plus_54 () 144_u128
-    function const_fn_90_plus_54() public pure returns (uint) {
-        uint a = 90;
-        uint b = 54;
+    function const_fn_90_plus_54() public pure returns (uint128) {
+        uint128 a = 90;
+        uint128 b = 54;
         return a + b;
     }
 

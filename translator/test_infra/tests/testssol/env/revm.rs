@@ -87,7 +87,14 @@ impl REvm {
             ExitReason::Error(status) => {
                 bail!("{status:?}")
             }
-            ExitReason::Succeed(_) | ExitReason::Revert(_) => Ok(rt.machine().return_value()),
+            ExitReason::Revert(status) => {
+                bail!("ExitReason::Revert  {status:?}")
+            }
+            ExitReason::Succeed(status) => {
+                // @todo
+                log::trace!("ExitReason::Succeed {status:?}");
+                Ok(rt.machine().return_value())
+            }
         }
     }
 }

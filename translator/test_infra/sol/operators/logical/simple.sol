@@ -5,38 +5,38 @@
 pragma solidity ^0.8.10;
 
 contract LogicalOperators {
-    // # greater_uint (6) true
-    // # greater_uint (5) false
-    // # greater_uint (4) false
-    function greater_uint(uint a) public pure returns (bool) {
+    // # greater_uint128 (6) true
+    // # greater_uint128 (5) false
+    // # greater_uint128 (4) false
+    function greater_uint(uint128 a) public pure returns (bool) {
         return a > 5;
     }
 
-    // # eq_greater_uint (6) true
-    // # eq_greater_uint (5) true
-    // # eq_greater_uint (4) false
-    function eq_greater_uint(uint a) public pure returns (bool) {
+    // # eq_greater_uint128 (6) true
+    // # eq_greater_uint128 (5) true
+    // # eq_greater_uint128 (4) false
+    function eq_greater_uint(uint128 a) public pure returns (bool) {
         return a >= 5;
     }
 
-    // # less_uint (6) false
-    // # less_uint (5) false
-    // # less_uint (4) true
-    function less_uint(uint a) public pure returns (bool) {
+    // # less_uint128 (6) false
+    // # less_uint128 (5) false
+    // # less_uint128 (4) true
+    function less_uint(uint128 a) public pure returns (bool) {
         return a < 5;
     }
 
-    // # eq_less_uint (6) false
-    // # eq_less_uint (5) true
-    // # eq_less_uint (4) true
-    function eq_less_uint(uint a) public pure returns (bool) {
+    // # eq_less_uint128 (6) false
+    // # eq_less_uint128 (5) true
+    // # eq_less_uint128 (4) true
+    function eq_less_uint(uint128 a) public pure returns (bool) {
         return a <= 5;
     }
 
-    // # equals_uint (6) false
-    // # equals_uint (5) true
-    // # equals_uint (4) false
-    function equals_uint(uint a) public pure returns (bool) {
+    // # equals_uint128 (6) false
+    // # equals_uint128 (5) true
+    // # equals_uint128 (4) false
+    function equals_uint(uint128 a) public pure returns (bool) {
         return a == 5;
     }
 
@@ -46,10 +46,10 @@ contract LogicalOperators {
         return a == true;
     }
 
-    // # not_equals_uint (6) true
-    // # not_equals_uint (5) false
-    // # not_equals_uint (4) true
-    function not_equals_uint(uint a) public pure returns (bool) {
+    // # not_equals_uint128 (6) true
+    // # not_equals_uint128 (5) false
+    // # not_equals_uint128 (4) true
+    function not_equals_uint(uint128 a) public pure returns (bool) {
         return a != 5;
     }
 

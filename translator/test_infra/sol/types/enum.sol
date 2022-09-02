@@ -9,17 +9,17 @@ contract Simple {
     ActionChoices constant defaultChoice = ActionChoices.GoStraight;
 
     // # f_default() 2
-    function f_default() public pure returns (uint){
-        return uint(defaultChoice);
+    function f_default() public pure returns (uint128){
+        return uint128(defaultChoice);
     }
 
     // # f_min() 0
-    function f_min() public pure returns (uint){
-        return uint(type(ActionChoices).min);
+    function f_min() public pure returns (uint128){
+        return uint128(type(ActionChoices).min);
     }
 
     // # f_max() 3
-    function f_max() public pure returns (uint){
-        return uint(type(ActionChoices).max);
+    function f_max() public pure returns (uint128){
+        return uint128(type(ActionChoices).max);
     }
 }

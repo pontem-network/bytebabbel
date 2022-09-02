@@ -5,16 +5,16 @@
 pragma solidity >=0.8.10;
 
 contract TestTypes {
-    uint public v_uint;
+    uint128 public v_uint128;
     uint8 public v_uint8;
     string public v_string;
     bytes32 public v_bytes32;
     address public v_address;
 
     // # get_set_uint(1) 1
-    function get_set_uint(uint value) public returns (uint){
-        v_uint = value;
-        return v_uint;
+    function get_set_uint(uint128 value) public returns (uint128){
+        v_uint128 = value;
+        return v_uint128;
     }
 
     // # get_set_uint8(1) 1

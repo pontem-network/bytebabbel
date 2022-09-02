@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Error, Result};
+use anyhow::{anyhow, bail, ensure, Error, Result};
 use evm::abi::call::ToCall;
 use evm::bytecode::types::U256;
 use evm::transpile_program;
@@ -7,12 +7,15 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;
 use mv::translator::MvIrTranslator;
 use regex::Regex;
+use std::fmt::Debug;
 
 pub mod clog;
 pub mod color;
+pub mod convert;
 pub mod env;
 pub mod parse;
 
+use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
 use parse::{SolFile, SolTest};
@@ -74,40 +77,21 @@ impl STest {
         // log
         let module_address = self.module_address();
         let test = &self.test;
+
+        // move result
+        let result_mv = return_val_to_string(self.run_mv());
+        // sol result
+        let result_evm = return_val_to_string(self.run_evm());
         log::info!(
-            "{wait}: {module_address}::{test:?}",
+            "{wait}: {module_address}::{test:?} {result_evm}",
             wait = color::font_blue("WAIT")
         );
-
-        // sol result
-        let result_evm = self.run_evm();
-        // move result
-        let result_mv = self.run_mv();
-
-        let return_value = match result_mv {
-            Ok(result) => result,
-            Err(err) => {
-                if test.result.is_panic() {
-                    return Ok(());
-                } else {
-                    bail!("{err:?}");
-                }
-            }
-        };
-
-        if test.result.is_panic() {
-            bail!("returned: {return_value:?}");
-        }
-
-        let expected = test.result.value().unwrap();
-        if expected != &return_value {
-            bail!("returned: {return_value:?}");
-        }
+        ensure!(result_evm == result_mv, "returned: {result_mv}",);
 
         Ok(())
     }
 
-    pub fn run_mv(&self) -> Result<Vec<MoveValue>> {
+    pub fn run_mv(&self) -> Result<String> {
         let result = self.vm_run().map_err(|err| anyhow!("{err}"))?;
         let return_value: Vec<MoveValue> = result
             .returns
@@ -116,10 +100,10 @@ impl STest {
                 MoveValue::simple_deserialize(actual_val, actual_tp).unwrap()
             })
             .collect();
-        Ok(return_value)
+        Ok(return_value.to_result_str())
     }
 
-    pub fn run_evm(&self) -> Result<()> {
+    pub fn run_evm(&self) -> Result<String> {
         use crate::testssol::env::revm::REvm;
 
         let abi = self.contract.abi()?;
@@ -127,13 +111,18 @@ impl STest {
             .by_name(&self.test.func)
             .ok_or_else(|| anyhow!("function not found in abi"))?;
         let mut callfn = ent.try_call()?;
-        callfn.parse_and_set_inputs(&self.test.params)?;
+        let tx = callfn.parse_and_set_inputs(&self.test.params)?.encode()?;
 
-        dbg!(&self.test.func);
-        // abi.by_name(self.test.func)
         let evm = REvm::try_from(&self.contract)?;
+        let result_bytes = evm.run_tx(tx)?;
+        // @todo
+        log::trace!("emv result_bytes: {result_bytes:?}");
 
-        todo!()
+        let return_value = callfn.decode_return(result_bytes)?.to_result_str();
+        // @todo
+        log::trace!("emv result_string: {return_value:?}");
+
+        Ok(format!("{return_value}"))
     }
 
     fn module_address(&self) -> String {
@@ -175,4 +164,14 @@ pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Result<Vec<u8>, Err
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;
     Ok(bytecode)
+}
+
+fn return_val_to_string(val: Result<String>) -> String {
+    match val {
+        Ok(val) => val,
+        Err(err) => {
+            log::trace!("{err}");
+            "!panic".to_string()
+        }
+    }
 }

@@ -126,7 +126,6 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
 pub struct SolTest {
     pub func: String,
     pub params: String,
-    pub result: SolTestResult,
 }
 
 impl TryFrom<&str> for SolTest {
@@ -141,18 +140,9 @@ impl TryFrom<&str> for SolTest {
             .ok_or(anyhow!("Function parameters not found: {}", instruction))?;
         let pre_result: Vec<&str> = part.split_whitespace().collect();
 
-        let result = if pre_result.contains(&"!panic") {
-            SolTestResult::Panic
-        } else if pre_result.is_empty() {
-            SolTestResult::Value(Vec::default())
-        } else {
-            SolTestResult::try_from(pre_result)?
-        };
-
         Ok(SolTest {
             func: name.trim().to_string(),
             params: params.trim().to_string(),
-            result,
         })
     }
 }
@@ -161,10 +151,9 @@ impl fmt::Debug for SolTest {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{name}({params}) {result:?}",
+            "{name}({params})",
             name = &self.func,
             params = &self.params,
-            result = &self.result
         )
     }
 }

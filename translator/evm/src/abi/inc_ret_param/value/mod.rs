@@ -1,7 +1,7 @@
 use crate::abi::inc_ret_param::types::ParamType;
 use anyhow::{bail, Result};
 use itertools::Itertools;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 
 // bytes,byte1,byte2,byte<N>.., address and array
 pub mod collection;
