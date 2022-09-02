@@ -128,13 +128,13 @@ impl<'a> CallFn<'a> {
             .map(|tp| {
                 if let Some(size) = tp.size_bytes() {
                     let size = size as usize;
-                    let result = decode_value(&value[start..start + size], tp, 0)?;
+                    let result = decode_value(&value[start..start + size], tp)?;
                     start += size;
                     return Ok(result);
                 }
 
                 let offset = encode::to_usize(&value[start..start + 32]);
-                let result = decode_value(&value[offset..], tp, 0)?;
+                let result = decode_value(&value[offset..], tp)?;
                 start += 32;
                 Ok(result)
             })

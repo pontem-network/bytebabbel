@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, ensure, Error, Result};
+use anyhow::{anyhow, ensure, Error, Result};
 use evm::abi::call::ToCall;
 use evm::bytecode::types::U256;
 use evm::transpile_program;

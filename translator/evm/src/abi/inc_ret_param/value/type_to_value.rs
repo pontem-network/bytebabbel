@@ -63,14 +63,14 @@ impl ParamType {
         match self {
             ParamType::Bool => self.set_value(value.parse::<bool>()?),
             ParamType::Int(size) => {
-                let value = value.split_once("i").map(|(v, _)| v).unwrap_or(value);
+                let value = value.split_once('i').map(|(v, _)| v).unwrap_or(value);
                 Ok(ParamValue::Int {
                     size: *size,
                     value: value.parse::<isize>()?,
                 })
             }
             ParamType::UInt(size) => {
-                let value = value.split_once("u").map(|(v, _)| v).unwrap_or(value);
+                let value = value.split_once('u').map(|(v, _)| v).unwrap_or(value);
                 Ok(ParamValue::UInt {
                     size: *size,
                     value: value.parse::<usize>()?,

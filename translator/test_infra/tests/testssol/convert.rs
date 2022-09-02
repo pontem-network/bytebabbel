@@ -11,17 +11,17 @@ impl ResultToString for ParamValue {
             ParamValue::Bool(value) => value.to_string(),
             ParamValue::Int { value, size } => format!("{value}i{size}"),
             ParamValue::UInt { value, size } => format!("{value}u{size}"),
-            ParamValue::Byte(value) => {
+            ParamValue::Byte(..) => {
                 todo!()
             }
-            ParamValue::Bytes(value) => {
+            ParamValue::Bytes(..) => {
                 todo!()
             }
-            ParamValue::Address(value) => {
+            ParamValue::Address(..) => {
                 todo!()
             }
-            ParamValue::String(value) => "string".to_string(),
-            ParamValue::Array(value) => {
+            ParamValue::String(value) => String::from_utf8(value.clone()).unwrap_or_default(),
+            ParamValue::Array(..) => {
                 todo!()
                 // if let Some(size) = size {
                 //     format!("{tp:?}[{size}]")
@@ -29,7 +29,7 @@ impl ResultToString for ParamValue {
                 //     format!("{tp:?}[]")
                 // }
             }
-            ParamValue::Custom { name, params } => {
+            ParamValue::Custom { .. } => {
                 todo!()
             }
         }
