@@ -18,7 +18,7 @@ library Simple {
     // # ignore_minus(340282366920938463463374607431768211455,340282366920938463463374607431768211455,0)
     // # ignore_minus(340282366920938463463374607431768211455,0,0)
     // # ignore_minus(340282366920938463463374607431768211455,1,1)
-    // # minus(0,0,1) !panic
+    // # ignore_minus(0,0,1) !panic
     function minus(uint128 a, uint128 b, uint128 c) public pure returns (uint128) {
         return a - b - c;
     }

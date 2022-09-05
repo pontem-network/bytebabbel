@@ -26,14 +26,14 @@ library MinusDevide {
 
     // # minusdevide_params(6)
     // # minusdevide_params(3)
-    // # minusdevide_params(2)
+    // # ignore_minusdevide_params(2)
     function minusdevide_params(uint128 a) public pure returns (uint128) {
         return a - 6 / 2;
     }
 
     // # minusdevide_params_2(6)
     // # minusdevide_params_2(3)
-    // # minusdevide_params_2(2)
+    // # ignore_minusdevide_params_2(2)
     function minusdevide_params_2(uint128 a) public pure returns (uint128) {
         uint128 b = 6;
         uint128 c = 2;

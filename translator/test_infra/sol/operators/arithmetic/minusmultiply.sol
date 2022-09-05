@@ -26,7 +26,7 @@ library MinusMultiply {
 
     // # minusmultiply_params_with_const(6)
     // # minusmultiply_params_with_const(7)
-    // # minusmultiply_params_with_const(0)
+    // # ignore_minusmultiply_params_with_const(0)
     function minusmultiply_params_with_const(uint128 a) public pure returns (uint128) {
         uint128 b = 2;
         uint128 c = 3;
