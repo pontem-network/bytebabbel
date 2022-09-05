@@ -25,7 +25,7 @@ module self::template {
         }
     }
 
-    fun effective_len(self: &Memory): u128 {
+    fun effective_len(self: &mut Memory): u128 {
         self.effective_len
     }
 
@@ -135,7 +135,7 @@ module self::template {
         table::add(&mut store.tbl, key, val);
     }
 
-    fun sload(store: &Persist, key: u128): u128 {
+    fun sload(store: &mut Persist, key: u128): u128 {
         if (table::contains(&store.tbl, key)) {
             *table::borrow(&store.tbl, key)
         } else {
@@ -167,13 +167,13 @@ module self::template {
         mstore(&mut memory, 0, 0x42);
         let val = mload(&mut memory, 0);
         assert!(val == 0x42, 0);
-        assert!(effective_len(&memory) == 16, 2);
+        assert!(effective_len(&mut memory) == 16, 2);
 
 
         mstore(&mut memory, 1, 340282366920938463463374607431768211455);
         let val = mload(&mut memory, 1);
         assert!(val == 340282366920938463463374607431768211455, 1);
-        assert!(effective_len(&memory) == 32, 2);
+        assert!(effective_len(&mut memory) == 32, 2);
     }
 
     #[test]
