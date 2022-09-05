@@ -82,9 +82,9 @@ fn compile_sol(path: &Path) -> Result<SolPaths> {
     log::debug!("tmp_dir: {tmp_folder:?}");
 
     let result = cli::new("solc")
-        .args(&[
+        .args([
             "-o",
-            tmp_folder.to_string_lossy().to_string().as_ref(),
+            &tmp_folder.to_string_lossy(),
             "--optimize-runs=0",
             "--abi",
             "--bin",

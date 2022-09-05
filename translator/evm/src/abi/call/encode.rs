@@ -106,7 +106,7 @@ pub fn encode_value(
     }
 }
 
-pub fn decode_value(value: &[u8], value_type: &ParamType, start: usize) -> Result<ParamValue> {
+pub fn decode_value(value: &[u8], value_type: &ParamType) -> Result<ParamValue> {
     match value_type {
         ParamType::Bool => {
             let b = value.last().ok_or_else(|| anyhow!("Value not passed"))?;
@@ -161,7 +161,7 @@ pub fn decode_value(value: &[u8], value_type: &ParamType, start: usize) -> Resul
                 let data = value
                     .chunks(sub_size)
                     .take(len)
-                    .map(|value| decode_value(value, sub_type, start))
+                    .map(|value| decode_value(value, sub_type))
                     .collect::<Result<Vec<ParamValue>>>()?;
 
                 return Ok(ParamValue::Array(data));
@@ -170,7 +170,7 @@ pub fn decode_value(value: &[u8], value_type: &ParamType, start: usize) -> Resul
             let result = (0..len)
                 .map(|index| {
                     let offset = to_usize(&value[32 * index..32 * (index + 1)]);
-                    decode_value(&value[offset..], sub_type, 0)
+                    decode_value(&value[offset..], sub_type)
                 })
                 .collect::<Result<Vec<ParamValue>>>()?;
 
@@ -325,7 +325,7 @@ mod test {
             ),
         ] {
             assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-            assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+            assert_eq!(decode_value(&enc, &tp).unwrap(), value);
         }
     }
 
@@ -337,14 +337,14 @@ mod test {
             .unwrap();
 
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         let tp = ParamType::Int(128);
         let value = { -69i128 }.to_param();
         let enc = hex::decode("000000000000000000000000000000000000000000000000ffffffffffffffbb")
             .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
     }
 
     #[test]
@@ -362,7 +362,7 @@ mod test {
             .unwrap();
 
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         // bytes("dove")
         // len + value
@@ -371,13 +371,13 @@ mod test {
         let enc = hex::decode("00000000000000000000000000000000000000000000000000000000000000046461766500000000000000000000000000000000000000000000000000000000")
             .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         let tp = ParamType::Bytes;
         let value = ParamValue::Bytes("Hello, world!".as_bytes().to_vec());
         let enc = hex::decode("000000000000000000000000000000000000000000000000000000000000000d48656c6c6f2c20776f726c642100000000000000000000000000000000000000").unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
     }
 
     #[test]
@@ -409,7 +409,7 @@ mod test {
         )
         .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         // Dynamic size
         let tp = ParamType::Array {
@@ -424,7 +424,7 @@ mod test {
         )
         .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         // uint32[]
         // uint32[1110, 1929]
@@ -449,7 +449,7 @@ mod test {
         )
         .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         let tp = ParamType::Array {
             size: Some(2),
@@ -457,7 +457,7 @@ mod test {
         };
         let enc = hex::decode("00000000000000000000000000000000000000000000000000000000000004560000000000000000000000000000000000000000000000000000000000000789").unwrap() ;
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         // g(uint[][],string[])
         // uint[][]
@@ -505,7 +505,7 @@ mod test {
         )
         .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
 
         // string[]
         // ["one", "two", "three"]
@@ -544,6 +544,6 @@ mod test {
         )
         .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp, 0).unwrap(), value);
+        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
     }
 }

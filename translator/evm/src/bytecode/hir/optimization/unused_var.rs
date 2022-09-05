@@ -366,6 +366,7 @@ impl<'r> ContextAnalyzer<'r> {
         }
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     fn resolve_ids(&self, var_id: &VarId, ir: &Hir, ids: &mut HashSet<VarId>) {
         ids.insert(*var_id);
         match ir.var(var_id) {

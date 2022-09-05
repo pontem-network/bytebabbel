@@ -6,7 +6,6 @@ use std::{fmt, fs};
 use anyhow::{anyhow, bail, Result};
 
 use crate::testssol::env::sol::{build_sol_by_path, EvmPack};
-use move_core_types::value::MoveValue;
 
 const SOL_DIRECTORY: &str = "./sol";
 
@@ -126,7 +125,6 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
 pub struct SolTest {
     pub func: String,
     pub params: String,
-    pub result: SolTestResult,
 }
 
 impl TryFrom<&str> for SolTest {
@@ -136,23 +134,13 @@ impl TryFrom<&str> for SolTest {
             "Function name and parameters not found: {}",
             instruction
         ))?;
-        let (params, part) = part
+        let (params, ..) = part
             .split_once(')')
             .ok_or(anyhow!("Function parameters not found: {}", instruction))?;
-        let pre_result: Vec<&str> = part.split_whitespace().collect();
-
-        let result = if pre_result.contains(&"!panic") {
-            SolTestResult::Panic
-        } else if pre_result.is_empty() {
-            SolTestResult::Value(Vec::default())
-        } else {
-            SolTestResult::try_from(pre_result)?
-        };
 
         Ok(SolTest {
             func: name.trim().to_string(),
             params: params.trim().to_string(),
-            result,
         })
     }
 }
@@ -161,84 +149,9 @@ impl fmt::Debug for SolTest {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{name}({params}) {result:?}",
+            "{name}({params})",
             name = &self.func,
             params = &self.params,
-            result = &self.result
         )
     }
-}
-
-#[derive(Clone)]
-pub enum SolTestResult {
-    Panic,
-    Value(Vec<MoveValue>),
-}
-
-impl SolTestResult {
-    pub fn is_panic(&self) -> bool {
-        matches!(self, SolTestResult::Panic)
-    }
-
-    pub fn value(&self) -> Result<&Vec<MoveValue>> {
-        match self {
-            SolTestResult::Value(v) => Ok(v),
-            _ => bail!("need the type SolFileTestResult::Value"),
-        }
-    }
-}
-
-impl fmt::Debug for SolTestResult {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let output = match self {
-            SolTestResult::Panic => "!panic".to_string(),
-            SolTestResult::Value(v) => format!("{v:?}"),
-        };
-        write!(f, "{output}")
-    }
-}
-
-impl TryFrom<Vec<&str>> for SolTestResult {
-    type Error = anyhow::Error;
-    fn try_from(value: Vec<&str>) -> std::result::Result<Self, Self::Error> {
-        let result = value
-            .into_iter()
-            .map(str_to_movevalue)
-            .collect::<Result<Vec<MoveValue>>>()?;
-        Ok(SolTestResult::Value(result))
-    }
-}
-
-fn str_to_movevalue(value: &str) -> Result<MoveValue> {
-    let result = match value {
-        "true" => MoveValue::Bool(true),
-        "false" => MoveValue::Bool(false),
-        s if s.ends_with("u8") => {
-            let v = s
-                .trim_end_matches("u8")
-                .trim_end_matches('_')
-                .parse::<u8>()?;
-            MoveValue::U8(v)
-        }
-        s if s.ends_with("u64") => {
-            let v = s
-                .trim_end_matches("u64")
-                .trim_end_matches('_')
-                .parse::<u64>()?;
-            MoveValue::U64(v)
-        }
-        s if s.ends_with("u128") => {
-            let v = s
-                .trim_end_matches("u128")
-                .trim_end_matches('_')
-                .parse::<u128>()?;
-            MoveValue::U128(v)
-        }
-        s if s.parse::<u128>().is_ok() => {
-            let v = s.parse::<u128>()?;
-            MoveValue::U128(v)
-        }
-        _ => bail!("Unknown type: {value}"),
-    };
-    Ok(result)
 }

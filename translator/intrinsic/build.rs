@@ -10,7 +10,7 @@ pub fn main() {
         .stderr(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
         .current_dir(&project_dir)
-        .args(&["move", "compile"])
+        .args(["move", "compile"])
         .output()
         .unwrap();
 

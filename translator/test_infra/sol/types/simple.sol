@@ -10,8 +10,8 @@ contract Simple {
         return a;
     }
 //
-//    // # f_uint (100_u256) 100_u256
-//    function f_uint(uint a) public pure returns (uint) {
+//    // # f_uint128 (100_u256) 100_u256
+//    function f_uint(uint128 a) public pure returns (uint128) {
 //        return a;
 //    }
 //

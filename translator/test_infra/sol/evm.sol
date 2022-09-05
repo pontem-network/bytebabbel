@@ -12,7 +12,7 @@ contract Demo {
         return val1 && val2;
     }
 
-    function with_uint(uint a) public pure returns (uint){
+    function with_uint(uint128 a) public pure returns (uint128){
         return a * a;
     }
 
@@ -24,7 +24,7 @@ contract Demo {
             a3 = a2;
         }
 
-        uint b3;
+        uint128 b3;
         if (b1 > b2) {
             b3 = b1;
         } else {

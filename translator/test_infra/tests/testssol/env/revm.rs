@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Error, Result};
 use primitive_types::{H160, U256};
 
+use crate::testssol::env::sol::EvmPack;
 use evm_pack::backend::{MemoryBackend, MemoryVicinity};
 use evm_pack::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm_pack::{Config, Context, ExitReason, Runtime};
@@ -37,7 +38,7 @@ fn context() -> Result<Context> {
     })
 }
 
-struct REvm {
+pub struct REvm {
     code: Rc<Vec<u8>>,
     config: Config,
     vicinity: MemoryVicinity,
@@ -86,14 +87,40 @@ impl REvm {
             ExitReason::Error(status) => {
                 bail!("{status:?}")
             }
-            ExitReason::Succeed(_) | ExitReason::Revert(_) => Ok(rt.machine().return_value()),
+            ExitReason::Revert(status) => {
+                bail!("ExitReason::Revert  {status:?}")
+            }
+            ExitReason::Succeed(status) => {
+                // @todo
+                log::trace!("ExitReason::Succeed {status:?}");
+                Ok(rt.machine().return_value())
+            }
         }
+    }
+}
+impl TryFrom<Vec<u8>> for REvm {
+    type Error = Error;
+
+    fn try_from(code: Vec<u8>) -> std::result::Result<Self, Self::Error> {
+        let mut evm = REvm::new()?;
+        evm.set_code(code);
+        Ok(evm)
+    }
+}
+
+impl TryFrom<&EvmPack> for REvm {
+    type Error = Error;
+
+    fn try_from(pack: &EvmPack) -> std::result::Result<Self, Self::Error> {
+        let code = pack.code_evm()?;
+        REvm::try_from(code)
     }
 }
 
 #[allow(unused_imports)]
 #[cfg(test)]
 mod test {
+    use std::ops::Deref;
     use std::path::PathBuf;
     use std::sync::Mutex;
 
@@ -117,10 +144,8 @@ mod test {
     fn test_bool() {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
-        let mut vm = REvm::new().unwrap();
-        vm.set_code(contract_bytes);
+        let vm = REvm::try_from(sol.deref()).unwrap();
 
         // without_params_bool
 
@@ -150,11 +175,9 @@ mod test {
     #[test]
     fn test_num() {
         let sol = TESTFILE.lock().unwrap();
-        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
         let abi = sol.abi().unwrap();
 
-        let mut vm = REvm::new().unwrap();
-        vm.set_code(contract_bytes);
+        let vm = REvm::try_from(sol.deref()).unwrap();
 
         // with_uint
 
@@ -197,10 +220,8 @@ mod test {
     fn test_array() {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
-        let mut vm = REvm::new().unwrap();
-        vm.set_code(contract_bytes);
+        let vm = REvm::try_from(sol.deref()).unwrap();
 
         // array_bool_3
 
@@ -284,10 +305,8 @@ mod test {
     fn test_bytes() {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
-        let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
-        let mut vm = REvm::new().unwrap();
-        vm.set_code(contract_bytes);
+        let vm = REvm::try_from(sol.deref()).unwrap();
 
         // array_bool_3
 

@@ -3,15 +3,15 @@
 pragma solidity ^0.8.0;
 
 library  Loop {
-//    function for_loop(uint i) public pure returns (uint) {
-//        uint val = 0;
-//        for (uint j = 0; j < i; j++) {
+//    function for_loop(uint128 i) public pure returns (uint128) {
+//        uint128 val = 0;
+//        for (uint128 j = 0; j < i; j++) {
 //            val += j * i;
 //        }
 //        return val;
 //    }
 
-//    function for_loop(uint n) public view returns(uint) {
+//    function for_loop(uint128 n) public view returns(uint128) {
 //        if (n <= 1) {
 //            return n;
 //        } else {
@@ -19,11 +19,11 @@ library  Loop {
 //        }
 //    }
 
-//    function for_loop(uint n) public pure returns(uint) {
-//        uint val = 0;
-//        uint bff = 0;
-//        for (uint i = 0; i < n; i++) {
-//            for (uint j = 0; j < n; j++) {
+//    function for_loop(uint128 n) public pure returns(uint128) {
+//        uint128 val = 0;
+//        uint128 bff = 0;
+//        for (uint128 i = 0; i < n; i++) {
+//            for (uint128 j = 0; j < n; j++) {
 //                val += i * j;
 //                bff += i + j;
 //            }
@@ -32,8 +32,8 @@ library  Loop {
 //        return val + bff;
 //    }
 
-    function for_loop(uint inc, uint limit) public pure returns (uint) {
-        uint result = 0;
+    function for_loop(uint128 inc, uint128 limit) public pure returns (uint128) {
+        uint128 result = 0;
         do {
             --limit;
             result += inc;
@@ -43,16 +43,16 @@ library  Loop {
         return result;
     }
 
-//    function for_loop(uint i) public pure returns (uint) {
-//        uint val = 1000;
-//        for (uint j = 0; j < 10; j++) {
+//    function for_loop(uint128 i) public pure returns (uint128) {
+//        uint128 val = 1000;
+//        for (uint128 j = 0; j < 10; j++) {
 //            if (j / 2 == 0) {
 //                break;
 //            }
 //            val += j;
 //        }
 //
-//        uint result = 0;
+//        uint128 result = 0;
 //        do {
 //            --i;
 //            result += i;
@@ -67,7 +67,7 @@ library  Loop {
 //        return val;
 //    }
 
-//    function for_loop(uint i) public pure returns (uint) {
+//    function for_loop(uint128 i) public pure returns (uint128) {
 //       if (i /2 == 0) {
 //           return i;
 //       } else {
@@ -75,8 +75,8 @@ library  Loop {
 //       }
 //    }
 
-//    function for_loop(uint i) public pure returns (uint) {
-//       uint val = 1000;
+//    function for_loop(uint128 i) public pure returns (uint128) {
+//       uint128 val = 1000;
 //        if (i != 0) {
 //           val += i;
 //       } else {

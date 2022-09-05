@@ -44,10 +44,9 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
-          toolchain: nightly
-          components: rustfmt, clippy
+          toolchain: stable
           override: true
+          components: rustfmt, clippy
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v1
@@ -70,7 +69,7 @@ jobs:
         shell: bash
 
       - name: Test
-        run: cargo +nightly test
+        run: cargo test
         shell: bash
 
       - name: Clippy
