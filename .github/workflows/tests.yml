@@ -45,7 +45,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: default
           components: rustfmt, clippy
           override: true
 
@@ -70,7 +70,7 @@ jobs:
         shell: bash
 
       - name: Test
-        run: cargo +nightly test
+        run: cargo test
         shell: bash
 
       - name: Clippy
