@@ -36,7 +36,7 @@ pub enum Value {
 impl From<U256> for Value {
     fn from(val: U256) -> Self {
         if val > U256::from(u128::MAX) {
-            Value::U128(u128::MAX)
+            Value::U128(val.low_u128())
         } else {
             Value::U128(val.as_u128())
         }
