@@ -8,12 +8,11 @@ mod testssol;
 
 #[test]
 pub fn test_store() {
-    env_logger::init();
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
-    println!("run");
+
     vm.run("0x1::load_store::init_store", "0x1").unwrap();
     let a = rand::random::<u128>();
     let b = rand::random::<u128>();
@@ -83,4 +82,60 @@ pub fn test_store() {
         MoveValue::Bool(c),
         MoveValue::simple_deserialize(&actual_c.0, &actual_c.1).unwrap()
     );
+
+    let actual_f = vm
+        .run("0x1::load_store::get_flag", "")
+        .unwrap()
+        .returns
+        .remove(0);
+    assert_eq!(
+        MoveValue::Bool(f),
+        MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
+    );
 }
+
+#[test]
+pub fn test_bool_store() {
+    let evm = build_sol(include_bytes!("../sol/store/bool_store.sol")).unwrap();
+    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+    let mut vm = MoveExecutor::new();
+    vm.deploy("0x1", bytecode);
+    vm.run("0x1::bool_store::init_store", "0x1").unwrap();
+    let actual_f = vm
+        .run("0x1::bool_store::load", "")
+        .unwrap()
+        .returns
+        .remove(0);
+    assert_eq!(
+        MoveValue::Bool(false),
+        MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
+    );
+
+    vm.run("0x1::bool_store::store", "true").unwrap();
+    let actual_f = vm
+        .run("0x1::bool_store::load", "")
+        .unwrap()
+        .returns
+        .remove(0);
+    assert_eq!(
+        MoveValue::Bool(true),
+        MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
+    );
+
+    vm.run("0x1::bool_store::store", "false").unwrap();
+    let actual_f = vm
+        .run("0x1::bool_store::load", "")
+        .unwrap()
+        .returns
+        .remove(0);
+    assert_eq!(
+        MoveValue::Bool(false),
+        MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
+    );
+}
+
+#[test]
+pub fn empty_constractor() {}
+
+#[test]
+pub fn constractor_with_data() {}
