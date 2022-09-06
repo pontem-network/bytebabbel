@@ -8,7 +8,7 @@ use crate::bytecode::hir::HirTranslator;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::{Function, U256};
-use crate::program::Program;
+use abi::api::PublicApi;
 use anyhow::Error;
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
@@ -16,11 +16,11 @@ pub use bytecode::ops::OpCode;
 use bytecode::pre_processing::ctor;
 use bytecode::pre_processing::swarm::remove_swarm_hash;
 use log::{log_enabled, trace};
+use program::Program;
 use std::collections::HashMap;
 
 pub mod abi;
 pub mod bytecode;
-pub mod function;
 pub mod program;
 
 pub fn transpile_program(
@@ -29,7 +29,8 @@ pub fn transpile_program(
     abi: &str,
     contract_addr: U256,
 ) -> Result<Program, Error> {
-    let abi = Abi::try_from(abi)?;
+    let api = PublicApi::new(Abi::try_from(abi)?)?;
+
     let blocks = BlockIter::new(InstructionIter::new(parse_bytecode(bytecode)?))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
@@ -46,6 +47,7 @@ pub fn transpile_program(
     let functions = abi
         .fun_hashes()
         .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
+        .filter(|(_, e)| !e.is_constructor())
         .map(|(h, entry)| {
             Function::try_from((h, entry))
                 .and_then(|f| translate_function(&hir, f, contract_addr))

@@ -1,6 +1,6 @@
+use crate::abi::api::{FunDef, PublicApi};
 use crate::abi::{Abi, FunHash};
 use crate::bytecode::block::{BlockId, InstructionBlock};
-use crate::function::{FunDef, PublicApi};
 use crate::Mir;
 use anyhow::Error;
 use itertools::Itertools;
@@ -9,24 +9,24 @@ use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     name: String,
+    constructor: Mir,
     functions_mir: HashMap<FunHash, Mir>,
-    ctor: Option<HashMap<BlockId, InstructionBlock>>,
-    functions: PublicApi,
+    api: PublicApi,
 }
 
 impl Program {
     pub fn new(
         name: &str,
+        constructor: Mir,
         functions_mir: HashMap<FunHash, Mir>,
-        ctor: Option<HashMap<BlockId, InstructionBlock>>,
         abi: Abi,
     ) -> Result<Program, Error> {
         let functions = PublicApi::new(abi)?;
         Ok(Program {
             name: name.to_string(),
+            constructor,
             functions_mir,
-            ctor,
-            functions,
+            api: functions,
         })
     }
 
@@ -35,7 +35,7 @@ impl Program {
     }
 
     pub fn public_functions(&self) -> Vec<FunDef> {
-        self.functions.function_definition().collect()
+        self.api.function_definition().collect()
     }
 
     pub fn function_mir(&self, hash: FunHash) -> Option<&Mir> {
@@ -46,11 +46,11 @@ impl Program {
 impl Debug for Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Program:{}", self.name)?;
-        if self.ctor.is_some() {
-            writeln!(f, "Ctor detected")?;
-        }
+        writeln!(f, "Functions:")?;
+        let output = self.debug_constructors()?;
+        writeln!(f, "{output}")?;
         writeln!(f)?;
-        for fun in self.functions.function_definition() {
+        for fun in self.api.function_definition() {
             let output = self.debug_fundef(&fun);
             write!(f, "{output}")?;
         }
@@ -60,6 +60,12 @@ impl Debug for Program {
 }
 
 impl Program {
+    pub fn debug_constructors(&self) -> String {
+        let mut output = String::new();
+
+        output
+    }
+
     pub fn debug_fundef(&self, fundef: &FunDef) -> String {
         let mut output = String::new();
         output += format!("public fun {} ", fundef.abi.signature()).as_str();
@@ -86,7 +92,7 @@ impl Program {
     }
 
     pub fn debug_fn_by_hash(&self, hash: FunHash) -> String {
-        self.functions
+        self.api
             .function_definition()
             .find(|item| item.hash == hash)
             .as_ref()

@@ -135,7 +135,12 @@ pub fn test_bool_store() {
 }
 
 #[test]
-pub fn empty_constractor() {}
+pub fn empty_constractor() {
+    env_logger::init();
+    let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
+    dbg!(&evm.bin());
+    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+}
 
 #[test]
 pub fn constractor_with_data() {}

@@ -3,13 +3,13 @@ use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, Error};
+use evm::abi::api::FunDef;
 use evm::bytecode::block::BlockId;
 use evm::bytecode::mir::ir::expression::{Expression, StackOp};
 use evm::bytecode::mir::ir::math::Operation;
 use evm::bytecode::mir::ir::statement::Statement;
 use evm::bytecode::mir::ir::types::SType;
 use evm::bytecode::mir::ir::Mir;
-use evm::function::FunDef;
 use evm::program::Program;
 use intrinsic::{template, Mem, Storage};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
@@ -44,6 +44,7 @@ impl MvIrTranslator {
         let funcs = program
             .public_functions()
             .into_iter()
+            .filter(|def| !def.abi.is_constructor())
             .map(|def| self.translate_func(def, &program))
             .collect::<Result<_, _>>()?;
 
