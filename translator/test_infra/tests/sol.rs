@@ -3,18 +3,18 @@ use libtest_mimic::{Arguments, Outcome, Test};
 
 mod testssol;
 
-use crate::testssol::clog::{log_init, CustLogger};
+use crate::testssol::clog::{my_log_init, CustLogger};
 use crate::testssol::STest;
 
-fn run_test(test: &STest) -> Result<()> {
+fn run_test(test_name: &str, test: &STest) -> Result<()> {
     test.run().map_err(|err| {
         log::error!("{err:?}");
-        anyhow!("{}", CustLogger::flush_and_get())
+        anyhow!("{}", CustLogger::flush_and_get_or_save(test_name))
     })
 }
 
 fn main() {
-    log_init();
+    my_log_init();
 
     let mut tests = STest::from_sol_dir()
         .unwrap()
@@ -22,8 +22,9 @@ fn main() {
         .enumerate()
         .map(|(index, data)| {
             let name = data.test_name(index);
+            let log_name = name.clone();
             let testfn: Box<dyn Fn() -> Outcome + Send + Sync> =
-                Box::new(move || match run_test(&data) {
+                Box::new(move || match run_test(&log_name, &data) {
                     Ok(()) => Outcome::Passed,
                     Err(err) => Outcome::Failed {
                         msg: Some(format!("{}", err)),
@@ -45,7 +46,7 @@ fn main() {
     let configs = Arguments::from_args();
 
     // Build logs
-    let error = CustLogger::flush_and_get();
+    let error = CustLogger::flush_and_get_or_save("pre_test");
     if !error.is_empty() {
         println!("{error}");
     }

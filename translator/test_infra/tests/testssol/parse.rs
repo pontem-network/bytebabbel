@@ -97,6 +97,7 @@ fn path_is_sol(path: &Path) -> bool {
 }
 
 fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
+    // Ignore
     if let Some(name) = sol_path.file_name() {
         let name = name.to_string_lossy();
         if name.starts_with("i_") || name.starts_with("l_") {

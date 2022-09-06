@@ -71,7 +71,6 @@ impl STest {
     }
 
     pub fn run(&self) -> Result<()> {
-        // log
         let module_address = self.module_address();
         let test = &self.test;
 
