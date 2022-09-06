@@ -1,9 +1,9 @@
 #![allow(clippy::assign_op_pattern)]
 #![allow(clippy::ptr_offset_with_cast)]
 
+use crate::abi::entries::{Entry, FunHash};
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::Param as AbiType;
-use crate::abi::{Entry, FunHash};
 use crate::bytecode::hir::stack::FRAME_SIZE;
 use anyhow::{bail, Error};
 use std::cmp::Ordering;

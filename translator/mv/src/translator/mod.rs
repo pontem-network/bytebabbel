@@ -3,7 +3,7 @@ use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, Error};
-use evm::abi::api::FunDef;
+use evm::abi::abi::FunDef;
 use evm::bytecode::block::BlockId;
 use evm::bytecode::mir::ir::expression::{Expression, StackOp};
 use evm::bytecode::mir::ir::math::Operation;

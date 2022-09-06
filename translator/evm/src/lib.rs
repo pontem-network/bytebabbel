@@ -1,6 +1,6 @@
 //! Simple EVM-bytecode disassembler.
 
-use crate::abi::{Abi, FunHash};
+use crate::abi::entries::AbiEntries;
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
@@ -8,7 +8,7 @@ use crate::bytecode::hir::HirTranslator;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::{Function, U256};
-use abi::api::PublicApi;
+use abi::abi::Abi;
 use anyhow::Error;
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
@@ -29,7 +29,7 @@ pub fn transpile_program(
     abi: &str,
     contract_addr: U256,
 ) -> Result<Program, Error> {
-    let api = PublicApi::new(Abi::try_from(abi)?)?;
+    let api = Abi::new(name, AbiEntries::try_from(abi)?)?;
 
     let blocks = BlockIter::new(InstructionIter::new(parse_bytecode(bytecode)?))
         .map(|block| (BlockId::from(block.start), block))
@@ -44,17 +44,18 @@ pub fn transpile_program(
     let contract_flow = FlowBuilder::new(&contract).make_flow();
     let hir = HirTranslator::new(&contract, contract_flow);
 
-    let functions = abi
-        .fun_hashes()
-        .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
-        .filter(|(_, e)| !e.is_constructor())
-        .map(|(h, entry)| {
-            Function::try_from((h, entry))
-                .and_then(|f| translate_function(&hir, f, contract_addr))
-                .map(|res| (h, res))
-        })
-        .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
-    Program::new(name, functions, ctor, abi)
+    // let functions = abi
+    //     .fun_hashes()
+    //     .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
+    //     .filter(|(_, e)| !e.is_constructor())
+    //     .map(|(h, entry)| {
+    //         Function::try_from((h, entry))
+    //             .and_then(|f| translate_function(&hir, f, contract_addr))
+    //             .map(|res| (h, res))
+    //     })
+    //     .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
+    // Program::new(name, functions, ctor, abi)
+    todo!()
 }
 
 pub fn translate_function(

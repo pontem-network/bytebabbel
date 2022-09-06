@@ -1,6 +1,5 @@
-use crate::abi::api::{FunDef, PublicApi};
-use crate::abi::{Abi, FunHash};
-use crate::bytecode::block::{BlockId, InstructionBlock};
+use crate::abi::abi::{Abi, FunDef};
+use crate::abi::entries::FunHash;
 use crate::Mir;
 use anyhow::Error;
 use itertools::Itertools;
@@ -11,7 +10,7 @@ pub struct Program {
     name: String,
     constructor: Mir,
     functions_mir: HashMap<FunHash, Mir>,
-    api: PublicApi,
+    abi: Abi,
 }
 
 impl Program {
@@ -21,12 +20,11 @@ impl Program {
         functions_mir: HashMap<FunHash, Mir>,
         abi: Abi,
     ) -> Result<Program, Error> {
-        let functions = PublicApi::new(abi)?;
         Ok(Program {
             name: name.to_string(),
             constructor,
             functions_mir,
-            api: functions,
+            abi,
         })
     }
 
@@ -35,7 +33,8 @@ impl Program {
     }
 
     pub fn public_functions(&self) -> Vec<FunDef> {
-        self.api.function_definition().collect()
+        //self.abi.function_definition().collect()
+        todo!()
     }
 
     pub fn function_mir(&self, hash: FunHash) -> Option<&Mir> {
@@ -47,15 +46,16 @@ impl Debug for Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Program:{}", self.name)?;
         writeln!(f, "Functions:")?;
-        let output = self.debug_constructors()?;
+        let output = self.debug_constructors();
         writeln!(f, "{output}")?;
         writeln!(f)?;
-        for fun in self.api.function_definition() {
-            let output = self.debug_fundef(&fun);
-            write!(f, "{output}")?;
-        }
-        writeln!(f)?;
-        Ok(())
+        todo!()
+        // for fun in self.abi.function_definition() {
+        //     let output = self.debug_fundef(&fun);
+        //     write!(f, "{output}")?;
+        // }
+        // writeln!(f)?;
+        // Ok(())
     }
 }
 
@@ -92,11 +92,12 @@ impl Program {
     }
 
     pub fn debug_fn_by_hash(&self, hash: FunHash) -> String {
-        self.api
-            .function_definition()
-            .find(|item| item.hash == hash)
-            .as_ref()
-            .map(|fun| self.debug_fundef(fun))
-            .unwrap_or_default()
+        // self.abi
+        //     .function_definition()
+        //     .find(|item| item.hash == hash)
+        //     .as_ref()
+        //     .map(|fun| self.debug_fundef(fun))
+        //     .unwrap_or_default()
+        todo!()
     }
 }
