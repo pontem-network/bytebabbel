@@ -5,6 +5,7 @@ use crate::abi::entries::Entry;
 use anyhow::{anyhow, bail, ensure, Result};
 
 use crate::abi::inc_ret_param::types::ParamType;
+use crate::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 
 pub mod encode;
@@ -53,6 +54,19 @@ impl<'a> CallFn<'a> {
 
         self.input[number_position] = Some(value);
 
+        Ok(self)
+    }
+
+    pub fn parse_and_set_inputs(&mut self, inputs: &str) -> Result<&mut Self> {
+        let params = fn_params_str_split(inputs)?;
+        let values = params
+            .into_iter()
+            .zip(self.inputs_types()?)
+            .map(|(arg, tp)| tp.set_value_str(arg))
+            .collect::<Result<Vec<_>>>()?;
+        for (pos, val) in values.into_iter().enumerate() {
+            self.input[pos] = Some(val);
+        }
         Ok(self)
     }
 
@@ -114,13 +128,13 @@ impl<'a> CallFn<'a> {
             .map(|tp| {
                 if let Some(size) = tp.size_bytes() {
                     let size = size as usize;
-                    let result = decode_value(&value[start..start + size], tp, 0)?;
+                    let result = decode_value(&value[start..start + size], tp)?;
                     start += size;
                     return Ok(result);
                 }
 
                 let offset = encode::to_usize(&value[start..start + 32]);
-                let result = decode_value(&value[offset..], tp, 0)?;
+                let result = decode_value(&value[offset..], tp)?;
                 start += 32;
                 Ok(result)
             })

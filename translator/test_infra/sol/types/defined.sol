@@ -4,7 +4,7 @@
 
 pragma solidity ^0.8.10;
 
-type DT is uint256;
+type DT is uint128;
 
 contract Simple {
     // # test_1(2) 2

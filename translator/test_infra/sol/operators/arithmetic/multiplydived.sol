@@ -3,8 +3,8 @@
 pragma solidity ^0.8.0;
 
 library MultiplyDevide {
-    // # multiplydevide_const_1() 1
-    function multiplydevide_const_1() public pure returns (uint) {
+    // # multiplydevide_const_1()
+    function multiplydevide_const_1() public pure returns (uint128) {
         return 1 * 2 / 2;
     }
 }

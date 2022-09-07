@@ -174,7 +174,7 @@ fn sha_name(cont: &[u8]) -> String {
     hasher.update(cont);
     let value_hash = hasher.finalize();
     let hash: [u8; 32] = value_hash.as_slice().try_into().expect("Wrong length");
-    format!(".{}", base32::encode(base32::Alphabet::Crockford, &hash))
+    format!(".c_{}", base32::encode(base32::Alphabet::Crockford, &hash))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

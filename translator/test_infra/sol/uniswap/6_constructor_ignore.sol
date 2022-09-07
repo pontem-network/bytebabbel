@@ -5,23 +5,23 @@
 pragma solidity >=0.8.10;
 
 contract TestConst {
-    uint uval;
+    uint128 uval;
 
     constructor() {
         uval = 0;
     }
 
     // # get() 0
-    function get() public view returns (uint){
+    function get() public view returns (uint128){
         return uval;
     }
 
-    function set(uint a) public {
+    function set(uint128 a) public {
         uval = a;
     }
 
     // # get_set(10) 10
-    function get_set(uint a) public returns (uint){
+    function get_set(uint128 a) public returns (uint128){
         uval = a;
         return uval;
     }

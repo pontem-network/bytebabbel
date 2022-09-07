@@ -6,9 +6,9 @@ pragma solidity ^0.8.10;
 
 contract Simple {
 
-    // # and_uint (20, 10) 0
-    // # and_uint (20, 20) 20
-    function and_uint(uint a, uint b) public pure returns (uint) {
+    // # and_uint128 (20, 10) 0
+    // # and_uint128 (20, 20) 20
+    function and_uint(uint128 a, uint128 b) public pure returns (uint128) {
         return a & b;
     }
 }

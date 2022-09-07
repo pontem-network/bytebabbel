@@ -1,12 +1,15 @@
 use std::ffi::OsStr;
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};
-use std::{fmt, fs};
+use std::{fmt, fs, usize};
 
 use anyhow::{anyhow, bail, Result};
+use evm::abi::inc_ret_param::types::ParamType;
+use evm::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
+use evm::abi::Abi;
+use rand::Rng;
 
 use crate::testssol::env::sol::{build_sol_by_path, EvmPack};
-use move_core_types::value::MoveValue;
 
 const SOL_DIRECTORY: &str = "./sol";
 
@@ -70,6 +73,7 @@ impl SolFile {
 
     fn inic_tests(&mut self) -> Result<()> {
         let content = fs::read_to_string(&self.sol_path)?;
+        let abi = self.contract.abi()?;
         self.tests = content
             .lines()
             .map(|line| line.trim())
@@ -77,7 +81,8 @@ impl SolFile {
             .map(|line| line.trim_start_matches("//").trim())
             .filter(|line| line.starts_with('#'))
             .map(|line| line.trim_start_matches('#').trim())
-            .filter_map(|line| SolTest::try_from(line).ok())
+            .filter_map(|line| SolTest::try_from_with_fuzzing(line, &abi).ok())
+            .flatten()
             .collect::<Vec<SolTest>>();
         Ok(())
     }
@@ -126,33 +131,22 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
 pub struct SolTest {
     pub func: String,
     pub params: String,
-    pub result: SolTestResult,
 }
 
 impl TryFrom<&str> for SolTest {
     type Error = anyhow::Error;
-    fn try_from(instruction: &str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(instruction: &str) -> Result<Self> {
         let (name, part) = instruction.split_once('(').ok_or(anyhow!(
             "Function name and parameters not found: {}",
             instruction
         ))?;
-        let (params, part) = part
+        let (params, ..) = part
             .split_once(')')
             .ok_or(anyhow!("Function parameters not found: {}", instruction))?;
-        let pre_result: Vec<&str> = part.split_whitespace().collect();
-
-        let result = if pre_result.contains(&"!panic") {
-            SolTestResult::Panic
-        } else if pre_result.is_empty() {
-            SolTestResult::Value(Vec::default())
-        } else {
-            SolTestResult::try_from(pre_result)?
-        };
 
         Ok(SolTest {
             func: name.trim().to_string(),
             params: params.trim().to_string(),
-            result,
         })
     }
 }
@@ -161,84 +155,175 @@ impl fmt::Debug for SolTest {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{name}({params}) {result:?}",
+            "{name}({params})",
             name = &self.func,
             params = &self.params,
-            result = &self.result
         )
     }
 }
 
-#[derive(Clone)]
-pub enum SolTestResult {
-    Panic,
-    Value(Vec<MoveValue>),
-}
-
-impl SolTestResult {
-    pub fn is_panic(&self) -> bool {
-        matches!(self, SolTestResult::Panic)
-    }
-
-    pub fn value(&self) -> Result<&Vec<MoveValue>> {
-        match self {
-            SolTestResult::Value(v) => Ok(v),
-            _ => bail!("need the type SolFileTestResult::Value"),
+impl SolTest {
+    pub fn try_from_with_fuzzing(instruction: &str, abi: &Abi) -> Result<Vec<SolTest>> {
+        let ins = SolTest::try_from(instruction)?;
+        let params = fn_params_str_split(&ins.params)?;
+        if params.is_empty() || !params.contains(&"*") {
+            return Ok(vec![ins]);
         }
-    }
-}
 
-impl fmt::Debug for SolTestResult {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let output = match self {
-            SolTestResult::Panic => "!panic".to_string(),
-            SolTestResult::Value(v) => format!("{v:?}"),
-        };
-        write!(f, "{output}")
-    }
-}
+        let call = abi
+            .by_name(&ins.func)
+            .ok_or_else(|| anyhow!("Not found fn {}", &ins.func))?;
+        let inputs = call
+            .inputs()
+            .ok_or_else(|| anyhow!("This function has no parameters {}", &ins.func))?;
 
-impl TryFrom<Vec<&str>> for SolTestResult {
-    type Error = anyhow::Error;
-    fn try_from(value: Vec<&str>) -> std::result::Result<Self, Self::Error> {
-        let result = value
+        let variants = params
+            .iter()
+            .zip(inputs)
+            .map(|(val, inp)| {
+                if val != &"*" {
+                    return vec![val.to_string()];
+                }
+
+                randparam_for_tp(&inp.tp)
+            })
+            .collect::<Vec<Vec<_>>>();
+
+        let mut fuzzing_params = Vec::default();
+        for variation_param in variants {
+            if fuzzing_params.is_empty() {
+                for param in variation_param {
+                    fuzzing_params.push(vec![param])
+                }
+                continue;
+            }
+            fuzzing_params = fuzzing_params
+                .into_iter()
+                .map(|row| {
+                    variation_param
+                        .iter()
+                        .map(|param| {
+                            let mut row_new = row.clone();
+                            row_new.push(param.clone());
+                            row_new
+                        })
+                        .collect::<Vec<Vec<String>>>()
+                })
+                .flatten()
+                .collect();
+        }
+
+        let tests: Vec<SolTest> = fuzzing_params
             .into_iter()
-            .map(str_to_movevalue)
-            .collect::<Result<Vec<MoveValue>>>()?;
-        Ok(SolTestResult::Value(result))
+            .map(|params| params.join(","))
+            .map(|param| {
+                let mut test = ins.clone();
+                test.params = param;
+                test
+            })
+            .collect();
+
+        Ok(tests)
     }
 }
 
-fn str_to_movevalue(value: &str) -> Result<MoveValue> {
-    let result = match value {
-        "true" => MoveValue::Bool(true),
-        "false" => MoveValue::Bool(false),
-        s if s.ends_with("u8") => {
-            let v = s
-                .trim_end_matches("u8")
-                .trim_end_matches('_')
-                .parse::<u8>()?;
-            MoveValue::U8(v)
+fn randparam_for_tp(tp: &ParamType) -> Vec<String> {
+    match tp {
+        ParamType::Bool => {
+            vec!["true".to_string(), "false".to_string()]
         }
-        s if s.ends_with("u64") => {
-            let v = s
-                .trim_end_matches("u64")
-                .trim_end_matches('_')
-                .parse::<u64>()?;
-            MoveValue::U64(v)
+        ParamType::Int(size) => {
+            let (min, max) = match size {
+                8 => (i8::MIN as isize, i8::MAX as isize),
+                16 => (i16::MIN as isize, i16::MAX as isize),
+                32 => (i32::MIN as isize, i32::MAX as isize),
+                64 => (i64::MIN as isize, i64::MAX as isize),
+                128 => (i128::MIN as isize, i128::MAX as isize),
+                _ => (isize::MIN, isize::MAX),
+            };
+
+            let mut result = vec![min.to_string(), max.to_string()];
+            for _ in 0..5 {
+                result.push(rand::thread_rng().gen_range(min..max).to_string());
+            }
+            result
         }
-        s if s.ends_with("u128") => {
-            let v = s
-                .trim_end_matches("u128")
-                .trim_end_matches('_')
-                .parse::<u128>()?;
-            MoveValue::U128(v)
+        ParamType::UInt(size) => {
+            let (min, max) = match size {
+                8 => (u8::MIN as usize, u8::MAX as usize),
+                16 => (u16::MIN as usize, u16::MAX as usize),
+                32 => (u32::MIN as usize, u32::MAX as usize),
+                64 => (u64::MIN as usize, u64::MAX as usize),
+                128 => (u128::MIN as usize, u128::MAX as usize),
+                _ => (usize::MIN, usize::MAX),
+            };
+
+            let mut result = vec![min.to_string(), max.to_string()];
+            for _ in 0..5 {
+                result.push(rand::thread_rng().gen_range(min..max).to_string());
+            }
+            result
         }
-        s if s.parse::<u128>().is_ok() => {
-            let v = s.parse::<u128>()?;
-            MoveValue::U128(v)
+        ParamType::Byte(size) => {
+            let mut result = Vec::default();
+
+            let mut val = (0..*size).map(|_| u8::MIN).collect::<Vec<u8>>();
+            result.push(format!("0x{}", hex::encode(&val)));
+
+            val = (0..*size).map(|_| u8::MAX).collect::<Vec<u8>>();
+            result.push(format!("0x{}", hex::encode(&val)));
+
+            for _ in 0..5 {
+                val = (0..*size)
+                    .map(|_| rand::thread_rng().gen_range(u8::MIN..u8::MAX))
+                    .collect::<Vec<u8>>();
+                result.push(format!("0x{}", hex::encode(&val)));
+            }
+
+            result
         }
-        _ => bail!("Unknown type: {value}"),
-    };
-    Ok(result)
+        ParamType::Address => randparam_for_tp(&ParamType::Byte(32)),
+        ParamType::Bytes => {
+            let mut result = Vec::default();
+            result.push("0x1".to_string());
+
+            let mut val = (0..33).map(|_| u8::MAX).collect::<Vec<u8>>();
+            result.push(format!("0x{}", hex::encode(&val)));
+
+            for _ in 0..5 {
+                let size = rand::thread_rng().gen_range(0..100);
+                val = (0..size)
+                    .map(|_| rand::thread_rng().gen_range(u8::MIN..u8::MAX))
+                    .collect::<Vec<u8>>();
+                result.push(format!("0x{}", hex::encode(&val)));
+            }
+
+            result
+        }
+        ParamType::String => {
+            let mut result = Vec::default();
+            result.push("0".to_string());
+
+            let mut val = (0..100).map(|_| "z").collect::<Vec<&str>>().join("");
+            result.push(format!("0x{}", hex::encode(&val)));
+
+            const CHARS: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            for _ in 0..5 {
+                let size = rand::thread_rng().gen_range(0..100);
+
+                val = (0..size)
+                    .map(|_| CHARS[rand::thread_rng().gen_range(0..CHARS.len())])
+                    .collect::<String>();
+                result.push(val);
+            }
+
+            result
+        }
+        ParamType::Array { .. } => {
+            todo!()
+        }
+        ParamType::Custom(_) => {
+            todo!()
+        }
+    }
 }
