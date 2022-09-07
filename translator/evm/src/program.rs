@@ -1,5 +1,6 @@
 use crate::abi::abi::Abi;
 use crate::abi::entries::FunHash;
+use crate::bytecode::types::Constructor;
 use crate::{Function, Mir};
 use anyhow::Error;
 use std::collections::HashMap;
@@ -41,6 +42,14 @@ impl Program {
 
     pub fn function_mir(&self, hash: FunHash) -> Option<&Mir> {
         self.functions_mir.get(&hash)
+    }
+
+    pub fn constructor_mir(&self) -> &Mir {
+        &self.constructor
+    }
+
+    pub fn constructor_def(&self) -> &Constructor {
+        self.abi.constructor()
     }
 }
 

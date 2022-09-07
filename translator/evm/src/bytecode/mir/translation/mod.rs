@@ -28,12 +28,17 @@ pub struct MirTranslator<'a> {
     pub(super) mir: Mir,
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
+    pub(super) is_constructor: bool,
 }
 
 impl<'a> MirTranslator<'a> {
-    pub fn new(fun: &'a Function) -> MirTranslator<'a> {
-        let mut variables = Variables::new(fun.input.len() as LocalIndex);
+    pub fn new(fun: &'a Function, is_constructor: bool) -> MirTranslator<'a> {
+        let mut variables = Variables::new(fun.input.iter().map(|t| SType::from(t)).collect());
         let mut mir = Mir::default();
+
+        if is_constructor {
+            mir.add_statement(Statement::InitStorage(variables.borrow_param(0)));
+        }
 
         let store_var = variables.borrow_global(SType::Storage);
         mir.add_statement(Statement::CreateVar(store_var, Expression::GetStore));
@@ -48,6 +53,7 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
+            is_constructor,
         }
     }
 

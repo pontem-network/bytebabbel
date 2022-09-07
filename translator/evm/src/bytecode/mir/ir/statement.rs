@@ -2,8 +2,9 @@ use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::translation::variables::Variable;
 use crate::BlockId;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
+    InitStorage(Variable),
     CreateVar(Variable, Expression),
     MStore {
         memory: Variable,

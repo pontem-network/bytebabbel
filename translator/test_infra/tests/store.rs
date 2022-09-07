@@ -8,12 +8,13 @@ mod testssol;
 
 #[test]
 pub fn test_store() {
+    env_logger::init();
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
 
-    vm.run("0x1::load_store::init_store", "0x1").unwrap();
+    vm.run("0x1::load_store::constructor", "0x1").unwrap();
     let a = rand::random::<u128>();
     let b = rand::random::<u128>();
     let c = rand::random::<bool>();
@@ -100,7 +101,7 @@ pub fn test_bool_store() {
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
-    vm.run("0x1::bool_store::init_store", "0x1").unwrap();
+    vm.run("0x1::bool_store::constructor", "0x1").unwrap();
     let actual_f = vm
         .run("0x1::bool_store::load", "")
         .unwrap()

@@ -3,7 +3,7 @@ use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     GetMem,
     GetStore,
@@ -17,12 +17,12 @@ pub enum Expression {
     StackOps(StackOps),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StackOps {
     pub vec: Vec<StackOp>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StackOp {
     PushConst(Value),
     PushVar(Variable),

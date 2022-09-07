@@ -7,6 +7,7 @@ pub fn map_signature(eth_types: &[EthType]) -> Vec<SignatureToken> {
         .map(|eth| match eth {
             EthType::U256 => SignatureToken::U128,
             EthType::Bool => SignatureToken::Bool,
+            EthType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
         })
         .collect()
 }

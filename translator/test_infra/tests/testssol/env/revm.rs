@@ -103,6 +103,7 @@ mod test {
     use crate::testssol::env::sol::build_sol_by_path;
     use crate::testssol::EvmPack;
     use evm::abi::call::ToCall;
+    use evm::abi::entries::AbiEntries;
     use evm::abi::inc_ret_param::value::conv::ParamValueToRustType;
     use evm::abi::inc_ret_param::value::ParamValue;
 
@@ -196,7 +197,7 @@ mod test {
     #[test]
     fn test_array() {
         let sol = TESTFILE.lock().unwrap();
-        let abi = sol.abi().unwrap();
+        let abi: AbiEntries = sol.abi().unwrap();
         let contract_bytes: Vec<u8> = sol.code_evm().unwrap();
 
         let mut vm = REvm::new().unwrap();

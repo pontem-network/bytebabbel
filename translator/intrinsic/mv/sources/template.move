@@ -118,7 +118,7 @@ module self::template {
         tbl: table::Table<u128, u128>,
     }
 
-    public entry fun init_store(self: &signer) {
+    fun init_store(self: &signer) {
         let addr = signer::borrow_address(self);
         assert!(addr == &@self, 1);
         assert!(!exists<Persist>(@self), 1);

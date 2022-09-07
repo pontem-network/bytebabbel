@@ -61,7 +61,7 @@ pub fn translate_function(
     contract_addr: U256,
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate_fun(fun, contract_addr)?;
-    let mir_translator = MirTranslator::new(&fun);
+    let mir_translator = MirTranslator::new(&fun, false);
     let mir = mir_translator.translate(hir)?;
     mir.print(&fun.name);
     Ok(mir)
@@ -99,7 +99,7 @@ pub fn translate_constructor(
     };
 
     let constructor = abi.constructor().into();
-    let mir_translator = MirTranslator::new(&constructor);
+    let mir_translator = MirTranslator::new(&constructor, true);
     let mir = mir_translator.translate(hir)?;
     mir.print("constructor");
     Ok((mir, block))

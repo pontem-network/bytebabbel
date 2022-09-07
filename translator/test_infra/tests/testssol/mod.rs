@@ -120,8 +120,7 @@ impl STest {
             make_move_module(&module_address, &hex::encode(self.bin()?), self.abi_str())?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
-        //todo replace with constructor.
-        vm.run(&format!("{}::init_store", module_address), "0x1")
+        vm.run(&format!("{}::constructor", module_address), "0x1")
             .unwrap();
 
         let func_address = format!("{module_address}::{}", &self.test.func);

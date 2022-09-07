@@ -8,6 +8,7 @@ pub enum SType {
     Memory,
     Number,
     Bool,
+    Address,
 }
 
 impl Display for SType {
@@ -20,6 +21,7 @@ impl Display for SType {
                 SType::Bool => "bool",
                 SType::Storage => "Storage",
                 SType::Memory => "Memory",
+                SType::Address => "Address",
             }
         )
     }
@@ -63,6 +65,7 @@ impl From<&EthType> for SType {
         match tp {
             EthType::U256 => SType::Number,
             EthType::Bool => SType::Bool,
+            EthType::Address => SType::Address,
         }
     }
 }

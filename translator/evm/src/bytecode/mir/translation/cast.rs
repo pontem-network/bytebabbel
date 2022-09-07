@@ -27,6 +27,9 @@ impl<'a> MirTranslator<'a> {
             }
             SType::Storage => Err(anyhow!("Storage type not supported for cast")),
             SType::Memory => Err(anyhow!("Memory type not supported for cast")),
+            SType::Address => {
+                todo!("Cast address to number")
+            }
         }
     }
 
@@ -56,6 +59,9 @@ impl<'a> MirTranslator<'a> {
             }
             SType::Storage => Err(anyhow!("Storage type not supported for cast")),
             SType::Memory => Err(anyhow!("Memory type not supported for cast")),
+            SType::Address => {
+                todo!()
+            }
         }
     }
 }

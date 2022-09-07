@@ -1,7 +1,8 @@
 use crate::abi::entries::{AbiEntries, Entry, FunHash};
+use crate::abi::inc_ret_param::Param;
 use crate::bytecode::types::{Constructor, EthType};
 use crate::Function;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use std::collections::HashMap;
 
 pub struct Abi {
@@ -22,20 +23,12 @@ impl Abi {
                             hash,
                             Function {
                                 name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
-                                input: fun
-                                    .inputs
-                                    .unwrap_or_default()
-                                    .into_iter()
-                                    .map(|param| EthType::try_from(&param))
-                                    .collect::<Result<Vec<_>, _>>()
+                                input: map_types(fun.inputs.unwrap_or_default())
+                                    .context("Input mapping")
                                     .unwrap(),
                                 hash,
-                                output: fun
-                                    .outputs
-                                    .unwrap_or_default()
-                                    .into_iter()
-                                    .map(|param| EthType::try_from(&param))
-                                    .collect::<Result<Vec<_>, _>>()
+                                output: map_types(fun.outputs.unwrap_or_default())
+                                    .context("Output mapping")
                                     .unwrap(),
                             },
                         );
@@ -44,15 +37,11 @@ impl Abi {
                         if constructor.is_some() {
                             panic!("Multiple constructors are not supported");
                         }
-                        constructor = Some(Constructor {
-                            inputs: fun
-                                .inputs
-                                .unwrap_or_default()
-                                .into_iter()
-                                .map(|param| EthType::try_from(&param))
-                                .collect::<Result<Vec<_>, _>>()
-                                .unwrap(),
-                        });
+                        let mut new_constructor = Constructor::default();
+                        new_constructor
+                            .input
+                            .extend(map_types(fun.inputs.unwrap_or_default()).unwrap());
+                        constructor = Some(new_constructor);
                     }
                     _ => {
                         todo!("unimplemented entry")
@@ -76,4 +65,11 @@ impl Abi {
     pub fn functions(&self) -> &HashMap<FunHash, Function> {
         &self.functions
     }
+}
+
+fn map_types(types: Vec<Param>) -> Result<Vec<EthType>, Error> {
+    types
+        .into_iter()
+        .map(|param| EthType::try_from(&param))
+        .collect()
 }

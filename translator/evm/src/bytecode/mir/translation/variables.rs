@@ -14,16 +14,18 @@ pub struct Inner {
     seq: LocalIndex,
     scopes: Vec<HashSet<Variable>>,
     list: Vec<SType>,
+    input: Vec<SType>,
 }
 
 impl Variables {
-    pub fn new(params_count: LocalIndex) -> Variables {
+    pub fn new(params: Vec<SType>) -> Variables {
         Variables {
             inner: Rc::new(RefCell::new(Inner {
                 locals: HashMap::new(),
-                seq: params_count,
+                seq: params.len() as LocalIndex,
                 scopes: Vec::new(),
                 list: vec![],
+                input: params,
             })),
         }
     }
@@ -40,6 +42,12 @@ impl Variables {
             vars.list.push(tp);
             Variable(idx, tp)
         }
+    }
+
+    pub fn borrow_param(&mut self, idx: LocalIndex) -> Variable {
+        let vars = self.inner.borrow();
+        let tp = vars.input[idx as usize];
+        Variable(idx, tp)
     }
 
     pub fn borrow(&mut self, tp: SType) -> Variable {

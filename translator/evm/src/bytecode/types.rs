@@ -46,7 +46,7 @@ impl From<&Function> for Env {
 impl From<&Constructor> for Env {
     fn from(fun: &Constructor) -> Self {
         Env {
-            call_data_size: U256::from(fun.inputs.len() * FRAME_SIZE + FUN_HASH_LEN),
+            call_data_size: U256::from(fun.input.len() * FRAME_SIZE + FUN_HASH_LEN),
             hash: FunHash::default(),
         }
     }
@@ -66,20 +66,22 @@ impl Display for Function {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct Constructor {
-    pub inputs: Vec<EthType>,
+    pub input: Vec<EthType>,
 }
 
-impl Constructor {
-    pub fn new(inputs: Vec<EthType>) -> Self {
-        Constructor { inputs }
+impl Default for Constructor {
+    fn default() -> Self {
+        Constructor {
+            input: vec![EthType::Address],
+        }
     }
 }
 
 impl Display for Constructor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "constructor({:?})", self.inputs)
+        write!(f, "constructor({:?})", self.input)
     }
 }
 
@@ -88,7 +90,7 @@ impl From<&Constructor> for Function {
         Function {
             hash: Default::default(),
             name: "constructor".to_string(),
-            input: c.inputs.clone(),
+            input: c.input.clone(),
             output: vec![],
         }
     }
@@ -98,6 +100,7 @@ impl From<&Constructor> for Function {
 pub enum EthType {
     U256,
     Bool,
+    Address,
 }
 
 impl<'a> TryFrom<&'a AbiType> for EthType {

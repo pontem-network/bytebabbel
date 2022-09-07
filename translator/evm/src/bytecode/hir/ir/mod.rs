@@ -68,8 +68,8 @@ impl Hir {
             .push(Instruction::Continue { loop_id, context })
     }
 
-    pub fn print(&self) {
-        print_ir(self);
+    pub fn print(&self, name: &str) {
+        print_ir(self, name);
     }
 
     pub fn swap_instruction(&mut self, mut instruction: Vec<Instruction>) -> Vec<Instruction> {

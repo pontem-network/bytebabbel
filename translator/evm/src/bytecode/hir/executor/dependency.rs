@@ -52,7 +52,8 @@ impl InstructionHandler for TxMeta {
                         buf[0..4].copy_from_slice(context.env().hash().as_ref().as_slice());
                         U256::from(buf)
                     } else {
-                        let index = (offset.as_usize() - 4) / FRAME_SIZE;
+                        let mut index = (offset.as_usize() - 4) / FRAME_SIZE;
+                        index += context.shift_eth_params() as usize;
                         let id = ir.create_var(Var::Param(index as u16));
                         return ExecutionResult::Output(vec![id]);
                     }

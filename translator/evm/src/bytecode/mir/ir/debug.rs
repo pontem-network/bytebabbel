@@ -13,6 +13,7 @@ pub fn print_ir(ir: &Mir, name: &str) {
         let mut buf = String::new();
         buf.push_str("\nIR for ");
         buf.push_str(name);
+        buf.push_str("\n");
         if let Err(err) = print_buf(ir, &mut buf, 0) {
             log::error!("Failed to print mir: {}", err);
         }
@@ -140,6 +141,9 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
                 offset.index(),
                 val.index()
             )?;
+        }
+        Statement::InitStorage(var) => {
+            writeln!(buf, "{:width$}init_storage(var_{:?});", " ", var.index(),)?;
         }
     }
     Ok(())

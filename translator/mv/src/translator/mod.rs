@@ -41,13 +41,35 @@ impl MvIrTranslator {
 
     pub fn translate(mut self, max_memory: u64, program: Program) -> Result<Module, Error> {
         self.max_memory = max_memory;
-        let funcs = program
+        let mut funcs = program
             .functions_hash()
             .into_iter()
             .map(|hash| self.translate_func(hash, &program))
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<Vec<_>, _>>()?;
+
+        funcs.push(self.translate_constructor(&program)?);
 
         Ok(Module::new(funcs, self.sign_writer.freeze(), self.template))
+    }
+
+    fn translate_constructor(&mut self, program: &Program) -> Result<Func, Error> {
+        let def = program.constructor_def();
+        let mut mir = program.constructor_mir().clone();
+
+        self.code.reset();
+        self.translate_statements(mir.statements())?;
+        let code = self.code.freeze()?;
+
+        let input = self.sign_writer.make_signature(map_signature(&def.input));
+        let output = self.sign_writer.make_signature(vec![]);
+        Ok(Func {
+            name: Identifier::new("constructor")?,
+            visibility: Visibility::Public,
+            input,
+            output,
+            locals: self.map_locals(&mir),
+            code,
+        })
     }
 
     fn translate_func(&mut self, hash: FunHash, program: &Program) -> Result<Func, Error> {
@@ -97,6 +119,7 @@ impl MvIrTranslator {
                 SType::Bool => SignatureToken::Bool,
                 SType::Storage => Storage::token(),
                 SType::Memory => Mem::token(),
+                SType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -183,6 +206,10 @@ impl MvIrTranslator {
                         CallOp::Var(*val),
                     ],
                 );
+            }
+            Statement::InitStorage(var) => {
+                self.code
+                    .call(Storage::Create.func_handler(), &[CallOp::Var(*var)]);
             }
         }
         Ok(())

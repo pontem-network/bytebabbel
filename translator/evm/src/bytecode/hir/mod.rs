@@ -40,20 +40,21 @@ impl<'a> HirTranslator<'a> {
         fun: &Constructor,
         contract_address: U256,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address);
+        let mut ctx = Context::new(Env::from(fun), contract_address, 1);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
-        ir.print();
+        ir.print("constructor");
         Ok(ir)
     }
 
     pub fn translate_fun(&self, fun: &Function, contract_address: U256) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address);
+        let mut ctx = Context::new(Env::from(fun), contract_address, 0);
         let mut ir = Hir::default();
+        // todo implicit param
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
-        ir.print();
+        ir.print(&fun.name);
         Ok(ir)
     }
 

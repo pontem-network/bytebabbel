@@ -9,7 +9,7 @@ pub mod math;
 pub mod statement;
 pub mod types;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Mir {
     locals: Vec<SType>,
     statements: Vec<Statement>,
