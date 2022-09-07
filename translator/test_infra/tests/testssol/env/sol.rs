@@ -5,12 +5,12 @@ use std::sync::Arc;
 use std::{fs, io};
 
 use anyhow::{anyhow, ensure, Error, Result};
-use evm::abi::entries::AbiEntries;
+use eth::abi::entries::AbiEntries;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Sha3_256};
 
-use evm::bytecode::pre_processing::swarm::remove_swarm_hash;
+use eth::bytecode::pre_processing::swarm::remove_swarm_hash;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evm {

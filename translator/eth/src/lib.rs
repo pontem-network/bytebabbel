@@ -1,6 +1,7 @@
 //! Simple EVM-bytecode disassembler.
 
 use crate::abi::entries::{AbiEntries, FunHash};
+use crate::abi::Abi;
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
@@ -9,7 +10,6 @@ use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::pre_processing::ctor;
 use crate::bytecode::types::{Function, U256};
-use abi::abi::Abi;
 use anyhow::{anyhow, Error};
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
@@ -66,7 +66,7 @@ pub fn translate_function(
     code_size: u128,
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
-    let mir_translator = MirTranslator::new(&fun, false);
+    let mir_translator = MirTranslator::new(fun, false);
     let mir = mir_translator.translate(hir)?;
     mir.print(&fun.name);
     Ok(mir)
@@ -90,7 +90,7 @@ pub fn translate_constructor(
     contract_addr: U256,
     code_size: u128,
 ) -> Result<(Mir, BlockId), Error> {
-    let contract_flow = FlowBuilder::new(&contract).make_flow();
+    let contract_flow = FlowBuilder::new(contract).make_flow();
     let hir = HirTranslator::new(&contract, contract_flow);
     let hir = hir.translate_constractor(abi.constructor(), contract_addr, code_size)?;
 

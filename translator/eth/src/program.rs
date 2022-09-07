@@ -1,7 +1,6 @@
-use crate::abi::abi::Abi;
 use crate::abi::entries::FunHash;
 use crate::bytecode::types::Constructor;
-use crate::{Function, Mir};
+use crate::{Abi, Function, Mir};
 use anyhow::Error;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -57,8 +56,8 @@ impl Debug for Program {
         let output = self.debug_constructors();
         writeln!(f, "{output}")?;
         writeln!(f)?;
-        for (_, fun) in self.abi.functions() {
-            let output = self.debug_fundef(&fun);
+        for fun in self.abi.functions().values() {
+            let output = self.debug_fundef(fun);
             write!(f, "{output}")?;
         }
         writeln!(f)?;

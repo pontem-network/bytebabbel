@@ -1,7 +1,7 @@
 use anyhow::{anyhow, ensure, Error, Result};
-use evm::abi::call::ToCall;
-use evm::bytecode::types::U256;
-use evm::transpile_program;
+use eth::abi::call::ToCall;
+use eth::bytecode::types::U256;
+use eth::transpile_program;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;

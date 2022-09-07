@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "translator/evm",
+    "translator/eth",
     "translator/mv",
     "translator/intrinsic",
     "translator",

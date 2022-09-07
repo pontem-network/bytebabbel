@@ -4,9 +4,9 @@ use std::path::{Path, PathBuf};
 use std::{fmt, fs, usize};
 
 use anyhow::{anyhow, bail, Result};
-use evm::abi::entries::AbiEntries;
-use evm::abi::inc_ret_param::types::ParamType;
-use evm::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
+use eth::abi::entries::AbiEntries;
+use eth::abi::inc_ret_param::types::ParamType;
+use eth::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
 use rand::Rng;
 
 use crate::testssol::env::sol::{build_sol_by_path, EvmPack};

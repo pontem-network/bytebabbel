@@ -1,6 +1,6 @@
-use evm::bytecode::instruction::Instruction;
-use evm::bytecode::ops::InstructionIter;
-use evm::{parse_bytecode, OpCode};
+use eth::bytecode::instruction::Instruction;
+use eth::bytecode::ops::InstructionIter;
+use eth::{parse_bytecode, OpCode};
 
 #[test]
 fn test_iter() {

@@ -2871,6 +2871,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "eth"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "hex",
+ "itertools",
+ "lazy_static 1.4.0",
+ "log",
+ "regex",
+ "serde 1.0.144",
+ "serde_json",
+ "sha3 0.10.4",
+ "uint",
+]
+
+[[package]]
 name = "ethbloom"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2939,22 +2955,6 @@ dependencies = [
  "serde 1.0.144",
  "storage-interface",
  "thiserror",
-]
-
-[[package]]
-name = "evm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "hex",
- "itertools",
- "lazy_static 1.4.0",
- "log",
- "regex",
- "serde 1.0.144",
- "serde_json",
- "sha3 0.10.4",
- "uint",
 ]
 
 [[package]]
@@ -6066,7 +6066,7 @@ name = "mv"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "evm 0.1.0",
+ "eth",
  "hex",
  "intrinsic",
  "itertools",
@@ -8739,8 +8739,8 @@ dependencies = [
  "base32",
  "bcs",
  "env_logger",
- "evm 0.1.0",
- "evm 0.35.0",
+ "eth",
+ "evm",
  "framework 0.1.0 (git+https://github.com/aptos-labs/aptos-core?rev=61d0d364b43ac0e911c6dc6969fc9e2a8b3e5d2a)",
  "hex",
  "lazy_static 1.4.0",
@@ -9124,7 +9124,7 @@ name = "translator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "evm 0.1.0",
+ "eth",
  "move-core-types 0.0.4 (git+https://github.com/move-language/move?rev=4cd47108661a5717486e4e90821a4a10f2710ea7)",
  "mv",
 ]

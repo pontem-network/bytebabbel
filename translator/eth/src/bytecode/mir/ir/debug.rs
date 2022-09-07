@@ -13,7 +13,7 @@ pub fn print_ir(ir: &Mir, name: &str) {
         let mut buf = String::new();
         buf.push_str("\nIR for ");
         buf.push_str(name);
-        buf.push_str("\n");
+        buf.push('\n');
         if let Err(err) = print_buf(ir, &mut buf, 0) {
             log::error!("Failed to print mir: {}", err);
         }

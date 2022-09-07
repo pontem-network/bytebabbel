@@ -32,7 +32,7 @@ pub struct MirTranslator<'a> {
 
 impl<'a> MirTranslator<'a> {
     pub fn new(fun: &'a Function, is_constructor: bool) -> MirTranslator<'a> {
-        let mut variables = Variables::new(fun.input.iter().map(|t| SType::from(t)).collect());
+        let mut variables = Variables::new(fun.input.iter().map(SType::from).collect());
         let mut mir = Mir::default();
 
         if is_constructor {

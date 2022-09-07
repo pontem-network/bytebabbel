@@ -1,6 +1,6 @@
 use crate::translator::writer::Writer;
-use evm::bytecode::mir::ir::math::Operation;
-use evm::bytecode::mir::ir::types::Value;
+use eth::bytecode::mir::ir::math::Operation;
+use eth::bytecode::mir::ir::types::Value;
 use move_binary_format::file_format::{Bytecode, LocalIndex};
 
 impl Writer {

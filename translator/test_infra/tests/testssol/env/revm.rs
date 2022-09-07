@@ -135,10 +135,10 @@ mod test {
     use crate::testssol::env::revm::REvm;
     use crate::testssol::env::sol::build_sol_by_path;
     use crate::testssol::EvmPack;
-    use evm::abi::call::ToCall;
-    use evm::abi::entries::AbiEntries;
-    use evm::abi::inc_ret_param::value::conv::ParamValueToRustType;
-    use evm::abi::inc_ret_param::value::ParamValue;
+    use eth::abi::call::ToCall;
+    use eth::abi::entries::AbiEntries;
+    use eth::abi::inc_ret_param::value::conv::ParamValueToRustType;
+    use eth::abi::inc_ret_param::value::ParamValue;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
 
