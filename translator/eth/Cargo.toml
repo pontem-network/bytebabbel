@@ -15,3 +15,4 @@ log = "0.4.17"
 # types
 lazy_static = "1.4"
 regex = "1.6"
+evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
