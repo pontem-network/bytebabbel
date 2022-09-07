@@ -7,6 +7,19 @@ use move_core_types::value::MoveValue;
 mod testssol;
 
 #[test]
+pub fn test() {
+    let evm = build_sol(include_bytes!("../sol/operators/logical/simple.sol")).unwrap();
+    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+    let mut vm = MoveExecutor::new();
+    vm.deploy("0x1", bytecode);
+    vm.run("0x1::LogicalOperators::constructor", "0x1").unwrap();
+    let result = vm
+        .run("0x1::LogicalOperators::or_bool", "false, false")
+        .unwrap();
+    println!("{:?}", result);
+}
+
+#[test]
 pub fn test_store() {
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
     let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();

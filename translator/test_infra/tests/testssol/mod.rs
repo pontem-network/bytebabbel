@@ -113,7 +113,8 @@ impl STest {
         let mut callfn = ent.try_call()?;
         let tx = callfn.parse_and_set_inputs(&self.test.params)?.encode()?;
 
-        let evm = REvm::try_from(&self.contract)?;
+        let mut evm = REvm::try_from(&self.contract)?;
+        evm.construct(vec![])?;
         let result_bytes = evm.run_tx(tx)?;
         // @todo
         log::trace!("emv result_bytes: {result_bytes:?}");
