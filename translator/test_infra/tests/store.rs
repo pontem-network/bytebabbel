@@ -146,18 +146,3 @@ pub fn test_bool_store() {
         MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
     );
 }
-
-#[test]
-pub fn empty_constractor() {
-    let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
-    println!("{:?}", evm.bin());
-    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
-    let mut vm = MoveExecutor::new();
-    vm.deploy("0x1", bytecode);
-    vm.run("0x1::empty::constructor", "0x1").unwrap();
-    let actual_f = vm.run("0x1::empty::get_val", "").unwrap().returns.remove(0);
-    assert_eq!(
-        MoveValue::U128(42),
-        MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
-    );
-}

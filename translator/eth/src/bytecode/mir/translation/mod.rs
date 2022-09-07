@@ -28,6 +28,7 @@ pub struct MirTranslator<'a> {
     pub(super) mir: Mir,
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
+    is_constructor: bool,
 }
 
 impl<'a> MirTranslator<'a> {
@@ -52,12 +53,18 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
+            is_constructor,
         }
     }
 
     pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
         let (mut vars, instructions, _) = hir.into_inner();
-        self.translate_instructions(&instructions, &mut vars)?;
+        if self.is_constructor {
+            // TODO: replace with static initialization
+            self.translate_ret_unit()?;
+        } else {
+            self.translate_instructions(&instructions, &mut vars)?;
+        }
         self.mir.set_locals(self.variables.locals());
         Ok(self.mir)
     }
