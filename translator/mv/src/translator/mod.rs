@@ -3,14 +3,14 @@ use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, Error};
-use evm::bytecode::block::BlockId;
-use evm::bytecode::mir::ir::expression::{Expression, StackOp};
-use evm::bytecode::mir::ir::math::Operation;
-use evm::bytecode::mir::ir::statement::Statement;
-use evm::bytecode::mir::ir::types::SType;
-use evm::bytecode::mir::ir::Mir;
-use evm::function::FunDef;
-use evm::program::Program;
+use eth::abi::entries::FunHash;
+use eth::bytecode::block::BlockId;
+use eth::bytecode::mir::ir::expression::{Expression, StackOp};
+use eth::bytecode::mir::ir::math::Operation;
+use eth::bytecode::mir::ir::statement::Statement;
+use eth::bytecode::mir::ir::types::SType;
+use eth::bytecode::mir::ir::Mir;
+use eth::program::Program;
 use intrinsic::{template, Mem, Storage};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
@@ -41,29 +41,59 @@ impl MvIrTranslator {
 
     pub fn translate(mut self, max_memory: u64, program: Program) -> Result<Module, Error> {
         self.max_memory = max_memory;
-        let funcs = program
-            .public_functions()
+        let mut funcs = program
+            .functions_hash()
             .into_iter()
-            .map(|def| self.translate_func(def, &program))
-            .collect::<Result<_, _>>()?;
+            .map(|hash| self.translate_func(hash, &program))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        funcs.push(self.translate_constructor(&program)?);
 
         Ok(Module::new(funcs, self.sign_writer.freeze(), self.template))
     }
 
-    fn translate_func(&mut self, def: FunDef, program: &Program) -> Result<Func, Error> {
-        let name = Identifier::new(def.abi.name().as_deref().unwrap_or("anonymous"))?;
+    fn translate_constructor(&mut self, program: &Program) -> Result<Func, Error> {
+        let def = program.constructor_def();
+        let mir = program.constructor_mir().clone();
+
+        self.code.reset();
+        self.translate_statements(mir.statements())?;
+        let code = self.code.freeze()?;
+
+        let input = self.sign_writer.make_signature(map_signature(&def.input));
+        let output = self.sign_writer.make_signature(vec![]);
+        Ok(Func {
+            name: Identifier::new("constructor")?,
+            visibility: Visibility::Public,
+            input,
+            output,
+            locals: self.map_locals(&mir),
+            code,
+        })
+    }
+
+    fn translate_func(&mut self, hash: FunHash, program: &Program) -> Result<Func, Error> {
+        let def = program.function_def(hash).ok_or_else(|| {
+            anyhow!(
+                "Function with hash {} not found in program {}",
+                hash,
+                program.name()
+            )
+        })?;
+        let mir = program.function_mir(hash).ok_or_else(|| {
+            anyhow!(
+                "Function with hash {} not found in program {}",
+                hash,
+                program.name()
+            )
+        })?;
+
+        let name = Identifier::new(def.name.clone())?;
         let visibility = Visibility::Public;
-        let input = self
-            .sign_writer
-            .make_signature(map_signature(def.abi.inputs().unwrap().as_slice()));
 
-        let output = self
-            .sign_writer
-            .make_signature(map_signature(def.abi.outputs().unwrap().as_slice()));
+        let input = self.sign_writer.make_signature(map_signature(&def.input));
 
-        let mir = program
-            .function_mir(def.hash)
-            .ok_or_else(|| anyhow!("Function {} not found", def.hash))?;
+        let output = self.sign_writer.make_signature(map_signature(&def.output));
 
         let locals = self.map_locals(mir);
         self.code.reset();
@@ -89,6 +119,7 @@ impl MvIrTranslator {
                 SType::Bool => SignatureToken::Bool,
                 SType::Storage => Storage::token(),
                 SType::Memory => Mem::token(),
+                SType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -175,6 +206,10 @@ impl MvIrTranslator {
                         CallOp::Var(*val),
                     ],
                 );
+            }
+            Statement::InitStorage(var) => {
+                self.code
+                    .call(Storage::Create.func_handler(), &[CallOp::Var(*var)]);
             }
         }
         Ok(())

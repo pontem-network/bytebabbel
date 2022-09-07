@@ -4,9 +4,9 @@ use std::path::{Path, PathBuf};
 use std::{fmt, fs, usize};
 
 use anyhow::{anyhow, bail, Result};
-use evm::abi::inc_ret_param::types::ParamType;
-use evm::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
-use evm::abi::Abi;
+use eth::abi::entries::AbiEntries;
+use eth::abi::inc_ret_param::types::ParamType;
+use eth::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
 use rand::Rng;
 
 use crate::testssol::env::sol::{build_sol_by_path, EvmPack};
@@ -163,7 +163,7 @@ impl fmt::Debug for SolTest {
 }
 
 impl SolTest {
-    pub fn try_from_with_fuzzing(instruction: &str, abi: &Abi) -> Result<Vec<SolTest>> {
+    pub fn try_from_with_fuzzing(instruction: &str, abi: &AbiEntries) -> Result<Vec<SolTest>> {
         let ins = SolTest::try_from(instruction)?;
         let params = fn_params_str_split(&ins.params)?;
         if params.is_empty() || !params.contains(&"*") {

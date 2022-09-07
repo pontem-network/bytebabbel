@@ -1,7 +1,7 @@
 use anyhow::{anyhow, ensure, Error, Result};
-use evm::abi::call::ToCall;
-use evm::bytecode::types::U256;
-use evm::transpile_program;
+use eth::abi::call::ToCall;
+use eth::bytecode::types::U256;
+use eth::transpile_program;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;
@@ -113,7 +113,8 @@ impl STest {
         let mut callfn = ent.try_call()?;
         let tx = callfn.parse_and_set_inputs(&self.test.params)?.encode()?;
 
-        let evm = REvm::try_from(&self.contract)?;
+        let mut evm = REvm::try_from(&self.contract)?;
+        evm.construct(vec![])?;
         let result_bytes = evm.run_tx(tx)?;
         // @todo
         log::trace!("emv result_bytes: {result_bytes:?}");
@@ -136,8 +137,7 @@ impl STest {
             make_move_module(&module_address, &hex::encode(self.bin()?), self.abi_str())?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
-        //todo replace with constructor.
-        vm.run(&format!("{}::init_store", module_address), "0x1")
+        vm.run(&format!("{}::constructor", module_address), "0x1")
             .unwrap();
 
         let func_address = format!("{module_address}::{}", &self.test.func);

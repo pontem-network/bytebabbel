@@ -14,7 +14,7 @@ uint = "0.9.3"
 log = "0.4.17"
 
 # local dependencies
-evm = {path = "../evm" }
+eth = {path = "../eth" }
 intrinsic = {path = "../intrinsic" }
 
 # move:

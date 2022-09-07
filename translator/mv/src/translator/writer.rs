@@ -1,6 +1,6 @@
 use anyhow::{bail, Error};
-use evm::bytecode::block::BlockId;
-use evm::bytecode::mir::translation::variables::Variable;
+use eth::bytecode::block::BlockId;
+use eth::bytecode::mir::translation::variables::Variable;
 use move_binary_format::file_format::{Bytecode, CodeOffset, FunctionHandleIndex};
 use std::collections::HashMap;
 use std::mem;

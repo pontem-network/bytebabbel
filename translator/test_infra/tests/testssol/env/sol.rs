@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
@@ -6,15 +5,12 @@ use std::sync::Arc;
 use std::{fs, io};
 
 use anyhow::{anyhow, ensure, Error, Result};
+use eth::abi::entries::AbiEntries;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Sha3_256};
 
-use evm::abi::Abi;
-use evm::bytecode::block::{BlockId, BlockIter};
-use evm::bytecode::ops::InstructionIter;
-use evm::bytecode::pre_processing::ctor;
-use evm::bytecode::pre_processing::swarm::remove_swarm_hash;
+use eth::bytecode::pre_processing::swarm::remove_swarm_hash;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evm {
@@ -196,8 +192,8 @@ impl EvmPack {
         &self.modules
     }
 
-    pub fn abi(&self) -> Result<Abi> {
-        let abi = Abi::try_from(self.contract.abi.as_str())?;
+    pub fn abi(&self) -> Result<AbiEntries> {
+        let abi = AbiEntries::try_from(self.contract.abi.as_str())?;
         Ok(abi)
     }
 
@@ -227,15 +223,12 @@ impl EvmPack {
         let mut result: Vec<u8> = self
             .modules
             .iter()
-            .map(|item| {
-                let bin = hex::decode(item.bin())?;
-                evm_bytecode(bin)
-            })
-            .collect::<Result<Vec<Vec<u8>>>>()?
+            .map(|item| evm_bytecode(hex::decode(item.bin()).unwrap()))
+            .collect::<Vec<Vec<u8>>>()
             .into_iter()
             .flatten()
             .collect();
-        let mut cont = evm_bytecode(hex::decode(self.contract.bin.as_str())?)?;
+        let mut cont = evm_bytecode(hex::decode(self.contract.bin.as_str())?);
         result.append(&mut cont);
 
         Ok(result)
@@ -255,12 +248,7 @@ impl From<(Evm, Vec<Evm>)> for EvmPack {
     }
 }
 
-fn evm_bytecode(mut bytecode: Vec<u8>) -> Result<Vec<u8>> {
+fn evm_bytecode(mut bytecode: Vec<u8>) -> Vec<u8> {
     remove_swarm_hash(&mut bytecode);
-    let blocks = BlockIter::new(InstructionIter::new(bytecode.clone()))
-        .map(|block| (BlockId::from(block.start), block))
-        .collect::<HashMap<_, _>>();
-    let (_, entry_point, _) = ctor::split(blocks)?;
-
-    Ok(bytecode[entry_point.0..].to_vec())
+    bytecode
 }
