@@ -1,8 +1,7 @@
-use crate::abi::abi::{Abi, FunDef};
+use crate::abi::abi::Abi;
 use crate::abi::entries::FunHash;
-use crate::Mir;
+use crate::{Function, Mir};
 use anyhow::Error;
-use itertools::Itertools;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -32,9 +31,12 @@ impl Program {
         &self.name
     }
 
-    pub fn public_functions(&self) -> Vec<FunDef> {
-        //self.abi.function_definition().collect()
-        todo!()
+    pub fn functions_hash(&self) -> impl Iterator<Item = FunHash> + '_ {
+        self.abi.functions().iter().map(|f| *f.0)
+    }
+
+    pub fn function_def(&self, hash: FunHash) -> Option<&Function> {
+        self.abi.functions().get(&hash)
     }
 
     pub fn function_mir(&self, hash: FunHash) -> Option<&Mir> {
@@ -49,37 +51,32 @@ impl Debug for Program {
         let output = self.debug_constructors();
         writeln!(f, "{output}")?;
         writeln!(f)?;
-        todo!()
-        // for fun in self.abi.function_definition() {
-        //     let output = self.debug_fundef(&fun);
-        //     write!(f, "{output}")?;
-        // }
-        // writeln!(f)?;
-        // Ok(())
+        for (_, fun) in self.abi.functions() {
+            let output = self.debug_fundef(&fun);
+            write!(f, "{output}")?;
+        }
+        writeln!(f)?;
+        Ok(())
     }
 }
 
 impl Program {
     pub fn debug_constructors(&self) -> String {
         let mut output = String::new();
-
+        output += format!("public fun {}", self.abi.constructor()).as_str();
+        output += " {";
+        output += "\n";
+        self.constructor.print_to_buffer(&mut output).unwrap();
+        output += "\n";
+        output += "}";
         output
     }
 
-    pub fn debug_fundef(&self, fundef: &FunDef) -> String {
+    pub fn debug_fundef(&self, fun: &Function) -> String {
         let mut output = String::new();
-        output += format!("public fun {} ", fundef.abi.signature()).as_str();
-        if let Some(outputs) = fundef.abi.function_data().and_then(|data| data.outputs()) {
-            if !outputs.is_empty() {
-                output += format!(
-                    "=> ({})",
-                    outputs.iter().map(|o| o.tp.to_string()).join(",")
-                )
-                .as_str();
-            }
-        }
+        output += format!("public fun {}", fun).as_str();
         output += " {";
-        if let Some(mir) = self.functions_mir.get(&fundef.hash) {
+        if let Some(mir) = self.functions_mir.get(&fun.hash) {
             output += "\n";
             mir.print_to_buffer(&mut output).unwrap();
             output += "\n";
@@ -89,15 +86,5 @@ impl Program {
         output += "}";
 
         output
-    }
-
-    pub fn debug_fn_by_hash(&self, hash: FunHash) -> String {
-        // self.abi
-        //     .function_definition()
-        //     .find(|item| item.hash == hash)
-        //     .as_ref()
-        //     .map(|fun| self.debug_fundef(fun))
-        //     .unwrap_or_default()
-        todo!()
     }
 }

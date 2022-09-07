@@ -1,36 +1,57 @@
 use crate::abi::entries::{AbiEntries, Entry, FunHash};
-use crate::abi::inc_ret_param::Param;
-use crate::abi::types::StateMutability;
+use crate::bytecode::types::{Constructor, EthType};
+use crate::Function;
 use anyhow::Error;
+use std::collections::HashMap;
 
 pub struct Abi {
     name: String,
     constructor: Constructor,
-    functions: Vec<Function>,
+    functions: HashMap<FunHash, Function>,
 }
 
 impl Abi {
     pub fn new(name: &str, abi: AbiEntries) -> Result<Abi, Error> {
         let (constructor, functions) = abi.entries.into_iter().fold(
-            (None, Vec::new()),
+            (None, HashMap::new()),
             |(mut constructor, mut functions), entry| {
                 let hash = FunHash::from(&entry);
                 match entry {
                     Entry::Function(fun) => {
-                        functions.push(Function {
-                            name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
+                        functions.insert(
                             hash,
-                            inputs: fun.inputs.unwrap_or_default(),
-                            outputs: fun.outputs.unwrap_or_default(),
-                            state_mutability: fun.state_mutability,
-                        });
+                            Function {
+                                name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
+                                input: fun
+                                    .inputs
+                                    .unwrap_or_default()
+                                    .into_iter()
+                                    .map(|param| EthType::try_from(&param))
+                                    .collect::<Result<Vec<_>, _>>()
+                                    .unwrap(),
+                                hash,
+                                output: fun
+                                    .outputs
+                                    .unwrap_or_default()
+                                    .into_iter()
+                                    .map(|param| EthType::try_from(&param))
+                                    .collect::<Result<Vec<_>, _>>()
+                                    .unwrap(),
+                            },
+                        );
                     }
                     Entry::Constructor(fun) => {
                         if constructor.is_some() {
                             panic!("Multiple constructors are not supported");
                         }
                         constructor = Some(Constructor {
-                            inputs: fun.inputs.unwrap_or_default(),
+                            inputs: fun
+                                .inputs
+                                .unwrap_or_default()
+                                .into_iter()
+                                .map(|param| EthType::try_from(&param))
+                                .collect::<Result<Vec<_>, _>>()
+                                .unwrap(),
                         });
                     }
                     _ => {
@@ -47,38 +68,12 @@ impl Abi {
             functions,
         })
     }
-}
 
-pub struct FunDef<'a> {
-    pub abi: &'a Entry,
-    pub hash: FunHash,
-}
-
-impl<'a> FunDef<'a> {
-    pub fn input_size(&self) -> usize {
-        self.hash.as_ref().len()
-            + self
-                .abi
-                .function_data()
-                .map(|data| {
-                    data.inputs
-                        .as_ref()
-                        .map(|inp| inp.iter().map(|input| input.size()).sum::<usize>())
-                        .unwrap_or_default()
-                })
-                .unwrap_or_default()
+    pub fn constructor(&self) -> &Constructor {
+        &self.constructor
     }
-}
 
-#[derive(Default)]
-pub struct Constructor {
-    pub inputs: Vec<Param>,
-}
-
-pub struct Function {
-    pub name: String,
-    pub hash: FunHash,
-    pub inputs: Vec<Param>,
-    pub outputs: Vec<Param>,
-    pub state_mutability: StateMutability,
+    pub fn functions(&self) -> &HashMap<FunHash, Function> {
+        &self.functions
+    }
 }

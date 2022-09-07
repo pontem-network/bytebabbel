@@ -4,7 +4,13 @@ contract empty {
     uint val;
 
     constructor() {
-        val = 100000000000;
+        if (true) {
+            val = 1;
+            return;
+        } else {
+            val = 2;
+            return;
+        }
     }
 
     function get_val() public view returns (uint256) {

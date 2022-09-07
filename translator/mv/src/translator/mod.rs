@@ -3,7 +3,7 @@ use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, Error};
-use evm::abi::abi::FunDef;
+use evm::abi::entries::FunHash;
 use evm::bytecode::block::BlockId;
 use evm::bytecode::mir::ir::expression::{Expression, StackOp};
 use evm::bytecode::mir::ir::math::Operation;
@@ -42,29 +42,36 @@ impl MvIrTranslator {
     pub fn translate(mut self, max_memory: u64, program: Program) -> Result<Module, Error> {
         self.max_memory = max_memory;
         let funcs = program
-            .public_functions()
+            .functions_hash()
             .into_iter()
-            .filter(|def| !def.abi.is_constructor())
-            .map(|def| self.translate_func(def, &program))
+            .map(|hash| self.translate_func(hash, &program))
             .collect::<Result<_, _>>()?;
 
         Ok(Module::new(funcs, self.sign_writer.freeze(), self.template))
     }
 
-    fn translate_func(&mut self, def: FunDef, program: &Program) -> Result<Func, Error> {
-        let name = Identifier::new(def.abi.name().as_deref().unwrap_or("anonymous"))?;
+    fn translate_func(&mut self, hash: FunHash, program: &Program) -> Result<Func, Error> {
+        let def = program.function_def(hash).ok_or_else(|| {
+            anyhow!(
+                "Function with hash {} not found in program {}",
+                hash,
+                program.name()
+            )
+        })?;
+        let mir = program.function_mir(hash).ok_or_else(|| {
+            anyhow!(
+                "Function with hash {} not found in program {}",
+                hash,
+                program.name()
+            )
+        })?;
+
+        let name = Identifier::new(def.name.clone())?;
         let visibility = Visibility::Public;
-        let input = self
-            .sign_writer
-            .make_signature(map_signature(def.abi.inputs().unwrap().as_slice()));
 
-        let output = self
-            .sign_writer
-            .make_signature(map_signature(def.abi.outputs().unwrap().as_slice()));
+        let input = self.sign_writer.make_signature(map_signature(&def.input));
 
-        let mir = program
-            .function_mir(def.hash)
-            .ok_or_else(|| anyhow!("Function {} not found", def.hash))?;
+        let output = self.sign_writer.make_signature(map_signature(&def.output));
 
         let locals = self.map_locals(mir);
         self.code.reset();

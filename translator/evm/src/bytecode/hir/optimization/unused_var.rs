@@ -107,6 +107,9 @@ impl UnusedVarClipper {
                         ir.map_var(id, val);
                     }
                 }
+                Instruction::CodeCopy(code) => {
+                    ir.code_copy(code);
+                }
             }
         }
         Ok(())
@@ -242,6 +245,7 @@ impl VarReachability {
                     self.mark_var_as_reachable(val);
                     self.mark_var_as_reachable(id);
                 }
+                Instruction::CodeCopy(_) => {}
             }
         }
     }
@@ -361,6 +365,9 @@ impl<'r> ContextAnalyzer<'r> {
                 Instruction::Result { offset, len } => {
                     self.push_to_context(loops, offset, ir);
                     self.push_to_context(loops, len, ir);
+                }
+                Instruction::CodeCopy(_) => {
+                    //no-op
                 }
             }
         }

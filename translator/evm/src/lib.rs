@@ -1,19 +1,20 @@
 //! Simple EVM-bytecode disassembler.
 
-use crate::abi::entries::AbiEntries;
+use crate::abi::entries::{AbiEntries, FunHash};
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
+use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
+use crate::bytecode::pre_processing::ctor;
 use crate::bytecode::types::{Function, U256};
 use abi::abi::Abi;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
-use bytecode::pre_processing::ctor;
 use bytecode::pre_processing::swarm::remove_swarm_hash;
 use log::{log_enabled, trace};
 use program::Program;
@@ -29,12 +30,14 @@ pub fn transpile_program(
     abi: &str,
     contract_addr: U256,
 ) -> Result<Program, Error> {
-    let api = Abi::new(name, AbiEntries::try_from(abi)?)?;
+    let abi = Abi::new(name, AbiEntries::try_from(abi)?)?;
 
     let blocks = BlockIter::new(InstructionIter::new(parse_bytecode(bytecode)?))
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
-    let (contract, entry_point, ctor) = ctor::split(blocks)?;
+
+    let (constructor, entry_point) = translate_constructor(&blocks, &abi, contract_addr)?;
+    let contract = ctor::replace(blocks, entry_point);
 
     if log_enabled!(log::Level::Trace) {
         trace!("Entry point: {}", entry_point);
@@ -44,29 +47,23 @@ pub fn transpile_program(
     let contract_flow = FlowBuilder::new(&contract).make_flow();
     let hir = HirTranslator::new(&contract, contract_flow);
 
-    // let functions = abi
-    //     .fun_hashes()
-    //     .filter_map(|h| abi.entry(&h).map(|e| (h, e)))
-    //     .filter(|(_, e)| !e.is_constructor())
-    //     .map(|(h, entry)| {
-    //         Function::try_from((h, entry))
-    //             .and_then(|f| translate_function(&hir, f, contract_addr))
-    //             .map(|res| (h, res))
-    //     })
-    //     .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
-    // Program::new(name, functions, ctor, abi)
-    todo!()
+    let functions = abi
+        .functions()
+        .iter()
+        .map(|(hash, fun)| translate_function(&hir, fun, contract_addr).map(|mir| (*hash, mir)))
+        .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
+    Program::new(name, constructor, functions, abi)
 }
 
 pub fn translate_function(
     hir_translator: &HirTranslator,
-    fun: Function,
+    fun: &Function,
     contract_addr: U256,
 ) -> Result<Mir, Error> {
-    let hir = hir_translator.translate(fun.clone(), contract_addr)?;
-    let mir_translator = MirTranslator::new(fun);
+    let hir = hir_translator.translate_fun(fun, contract_addr)?;
+    let mir_translator = MirTranslator::new(&fun);
     let mir = mir_translator.translate(hir)?;
-    mir.print();
+    mir.print(&fun.name);
     Ok(mir)
 }
 
@@ -80,4 +77,30 @@ pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {
     let mut bytecode = hex::decode(input)?;
     remove_swarm_hash(&mut bytecode);
     Ok(bytecode)
+}
+
+pub fn translate_constructor(
+    contract: &HashMap<BlockId, bytecode::block::InstructionBlock>,
+    abi: &Abi,
+    contract_addr: U256,
+) -> Result<(Mir, BlockId), Error> {
+    let contract_flow = FlowBuilder::new(&contract).make_flow();
+    let hir = HirTranslator::new(&contract, contract_flow);
+    let hir = hir.translate_constractor(abi.constructor(), contract_addr)?;
+
+    let inst = hir
+        .as_ref()
+        .last()
+        .ok_or_else(|| anyhow!("No constructor"))?;
+    let block = if let Instruction::CodeCopy(block) = inst {
+        *block
+    } else {
+        return Err(anyhow!("Expected CodeCopy at the end of constructor"));
+    };
+
+    let constructor = abi.constructor().into();
+    let mir_translator = MirTranslator::new(&constructor);
+    let mir = mir_translator.translate(hir)?;
+    mir.print("constructor");
+    Ok((mir, block))
 }

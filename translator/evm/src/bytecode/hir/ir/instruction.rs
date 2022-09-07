@@ -38,6 +38,7 @@ pub enum Instruction {
     },
     Stop,
     Abort(u8),
+    CodeCopy(BlockId),
     Result {
         offset: VarId,
         len: VarId,

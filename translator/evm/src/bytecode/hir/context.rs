@@ -1,6 +1,6 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
-use crate::bytecode::types::{Env, Function, U256};
+use crate::bytecode::types::{Env, U256};
 use crate::BlockId;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -15,11 +15,11 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(fun: Function, contract_address: U256) -> Context {
+    pub fn new(env: Env, contract_address: U256) -> Context {
         Context {
             address: contract_address,
             stack: Stack::default(),
-            env: Rc::new(Env::new(fun)),
+            env: Rc::new(env),
             loop_input: Default::default(),
             loop_stack_size: 0,
         }

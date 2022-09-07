@@ -4,7 +4,7 @@ use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
 use anyhow::{ensure, Error};
 
-impl MirTranslator {
+impl<'a> MirTranslator<'a> {
     pub(super) fn translate_mem_store(
         &mut self,
         addr: VarId,

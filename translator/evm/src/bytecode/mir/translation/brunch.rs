@@ -7,7 +7,7 @@ use crate::bytecode::mir::ir::Mir;
 use crate::{BlockId, MirTranslator};
 use anyhow::Error;
 
-impl MirTranslator {
+impl<'a> MirTranslator<'a> {
     pub fn translate_loop(
         &mut self,
         id: BlockId,

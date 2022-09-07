@@ -3,7 +3,7 @@ use crate::bytecode::hir::ir::var::VarId;
 use crate::MirTranslator;
 use anyhow::Error;
 
-impl MirTranslator {
+impl<'a> MirTranslator<'a> {
     pub(super) fn translate_ternary_op(
         &mut self,
         _cmd: TernaryOp,

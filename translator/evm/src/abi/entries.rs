@@ -13,6 +13,25 @@ pub struct AbiEntries {
     pub entries: Vec<Entry>,
 }
 
+impl AbiEntries {
+    // pub fn fun_hashes(&self) -> impl Iterator<Item = FunHash> + '_ {
+    //     self.entries
+    //         .iter()
+    //         .filter(|(_, abi)| abi.is_function())
+    //         .map(|(h, _)| *h)
+    // }
+
+    // pub fn entry(&self, hash: &FunHash) -> Option<&Entry> {
+    //     self.entries.get(hash)
+    // }
+
+    pub fn by_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'a Entry> {
+        self.entries
+            .iter()
+            .find(|item| item.name().as_deref() == Some(name))
+    }
+}
+
 impl<'de> serde::de::Deserialize<'de> for AbiEntries {
     fn deserialize<D>(des: D) -> Result<Self, D::Error>
     where
@@ -165,19 +184,21 @@ impl FunctionData {
     }
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Default)]
-pub struct FunHash([u8; 4]);
+pub const FUN_HASH_LEN: usize = 4;
 
-impl AsRef<[u8; 4]> for FunHash {
-    fn as_ref(&self) -> &[u8; 4] {
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Default)]
+pub struct FunHash([u8; FUN_HASH_LEN]);
+
+impl AsRef<[u8; FUN_HASH_LEN]> for FunHash {
+    fn as_ref(&self) -> &[u8; FUN_HASH_LEN] {
         &self.0
     }
 }
 
 impl From<&Entry> for FunHash {
     fn from(entry: &Entry) -> Self {
-        let mut result = [0u8; 4];
-        result.copy_from_slice(&Keccak256::digest(&entry.signature())[..4]);
+        let mut result = [0u8; FUN_HASH_LEN];
+        result.copy_from_slice(&Keccak256::digest(&entry.signature())[..FUN_HASH_LEN]);
         FunHash(result)
     }
 }
@@ -201,7 +222,6 @@ mod tests {
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::inc_ret_param::Param;
     use crate::abi::types::StateMutability;
-    use crate::abi::{Abi, Entry, FunctionData, Param};
 
     #[test]
     fn test_entry_deserialize_error() {

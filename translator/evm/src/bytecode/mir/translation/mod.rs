@@ -21,8 +21,8 @@ pub mod ternary;
 pub mod unary;
 pub mod variables;
 
-pub struct MirTranslator {
-    pub(super) fun: Function,
+pub struct MirTranslator<'a> {
+    pub(super) fun: &'a Function,
     pub(super) variables: Variables,
     pub(super) mapping: HashMap<VarId, Variable>,
     pub(super) mir: Mir,
@@ -30,8 +30,8 @@ pub struct MirTranslator {
     pub(super) store_var: Variable,
 }
 
-impl MirTranslator {
-    pub fn new(fun: Function) -> MirTranslator {
+impl<'a> MirTranslator<'a> {
+    pub fn new(fun: &'a Function) -> MirTranslator<'a> {
         let mut variables = Variables::new(fun.input.len() as LocalIndex);
         let mut mir = Mir::default();
 
@@ -131,6 +131,10 @@ impl MirTranslator {
                 } => {
                     self.translate_instructions(inst, vars)?;
                     self.mir.add_statement(Statement::Continue(*id));
+                }
+                Instruction::CodeCopy(_) => {
+                    // ¯\_(ツ)_/¯ CodeCopy used only in constructor. And when we see it, it means that we finished and should return.
+                    self.mir.add_statement(Statement::Result(vec![]));
                 }
             }
         }

@@ -121,6 +121,9 @@ fn print_instruction(
         Instruction::SStore { addr, var } => {
             write!(buf, "{:width$}store[{:?}] = {:?};", " ", addr, var)?;
         }
+        Instruction::CodeCopy(offset) => {
+            write!(buf, "{:width$}CodeCopy!({});", " ", offset)?;
+        }
     };
     writeln!(buf)?;
     Ok(())

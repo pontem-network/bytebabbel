@@ -8,7 +8,7 @@ use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 use anyhow::{anyhow, Error};
 
-impl MirTranslator {
+impl<'a> MirTranslator<'a> {
     pub(super) fn translate_unary_op(
         &mut self,
         cmd: UnaryOp,

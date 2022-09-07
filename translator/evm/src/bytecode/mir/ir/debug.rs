@@ -8,9 +8,11 @@ use log::log_enabled;
 use log::Level;
 use std::fmt::Write;
 
-pub fn print_ir(ir: &Mir) {
+pub fn print_ir(ir: &Mir, name: &str) {
     if log_enabled!(Level::Trace) {
         let mut buf = String::new();
+        buf.push_str("\nIR for ");
+        buf.push_str(name);
         if let Err(err) = print_buf(ir, &mut buf, 0) {
             log::error!("Failed to print mir: {}", err);
         }

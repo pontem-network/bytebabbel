@@ -41,8 +41,8 @@ impl Mir {
         self.locals = locals;
     }
 
-    pub fn print(&self) {
-        debug::print_ir(self);
+    pub fn print(&self, name: &str) {
+        debug::print_ir(self, name);
     }
 
     pub fn print_to_buffer(&self, buffer: &mut String) -> Result<(), Error> {

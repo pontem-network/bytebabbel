@@ -93,6 +93,10 @@ impl Hir {
         self.instructions.push(Instruction::Abort(code));
     }
 
+    pub fn code_copy(&mut self, id: BlockId) {
+        self.instructions.push(Instruction::CodeCopy(id));
+    }
+
     pub fn map_var(&mut self, id: VarId, val: VarId) {
         self.instructions.push(Instruction::MapVar { id, val });
     }

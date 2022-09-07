@@ -1,31 +1,54 @@
 #![allow(clippy::assign_op_pattern)]
 #![allow(clippy::ptr_offset_with_cast)]
 
-use crate::abi::entries::{Entry, FunHash};
+use crate::abi::entries::{FunHash, FUN_HASH_LEN};
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::Param as AbiType;
 use crate::bytecode::hir::stack::FRAME_SIZE;
 use anyhow::{bail, Error};
 use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 use std::ops::{Div, Rem};
 use uint::construct_uint;
 
 #[derive(Default, Debug)]
 pub struct Env {
-    fun: Function,
+    call_data_size: U256,
+    hash: FunHash,
 }
 
 impl Env {
-    pub fn new(fun: Function) -> Env {
-        Env { fun }
+    pub fn new(call_data_size: U256, hash: FunHash) -> Env {
+        Env {
+            call_data_size,
+            hash,
+        }
     }
 
     pub fn call_data_size(&self) -> U256 {
-        U256::from(self.fun.input.len() * FRAME_SIZE + self.fun.hash.as_ref().len())
+        self.call_data_size
     }
 
     pub fn hash(&self) -> FunHash {
-        self.fun.hash
+        self.hash
+    }
+}
+
+impl From<&Function> for Env {
+    fn from(fun: &Function) -> Self {
+        Env {
+            call_data_size: U256::from(fun.input.len() * FRAME_SIZE + FUN_HASH_LEN),
+            hash: fun.hash,
+        }
+    }
+}
+
+impl From<&Constructor> for Env {
+    fn from(fun: &Constructor) -> Self {
+        Env {
+            call_data_size: U256::from(fun.inputs.len() * FRAME_SIZE + FUN_HASH_LEN),
+            hash: FunHash::default(),
+        }
     }
 }
 
@@ -35,6 +58,40 @@ pub struct Function {
     pub name: String,
     pub input: Vec<EthType>,
     pub output: Vec<EthType>,
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}({:?}) -> ({:?})", self.name, self.input, self.output)
+    }
+}
+
+#[derive(Default)]
+pub struct Constructor {
+    pub inputs: Vec<EthType>,
+}
+
+impl Constructor {
+    pub fn new(inputs: Vec<EthType>) -> Self {
+        Constructor { inputs }
+    }
+}
+
+impl Display for Constructor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "constructor({:?})", self.inputs)
+    }
+}
+
+impl From<&Constructor> for Function {
+    fn from(c: &Constructor) -> Self {
+        Function {
+            hash: Default::default(),
+            name: "constructor".to_string(),
+            input: c.inputs.clone(),
+            output: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -51,27 +108,6 @@ impl<'a> TryFrom<&'a AbiType> for EthType {
             ParamType::Bool => EthType::Bool,
             ParamType::UInt(_) | ParamType::Int(_) => EthType::U256,
             _ => bail!("Unknown type: {}", value.tp.to_string()),
-        })
-    }
-}
-
-impl<'a> TryFrom<(FunHash, &'a Entry)> for Function {
-    type Error = Error;
-
-    fn try_from((hash, entry): (FunHash, &'a Entry)) -> Result<Self, Self::Error> {
-        Ok(Function {
-            hash,
-            name: entry.name().unwrap_or_default(),
-            input: entry.inputs().map_or(Ok(Vec::new()), |inp| {
-                inp.iter()
-                    .map(EthType::try_from)
-                    .collect::<Result<Vec<_>, _>>()
-            })?,
-            output: entry.outputs().map_or(Ok(Vec::new()), |out| {
-                out.iter()
-                    .map(EthType::try_from)
-                    .collect::<Result<Vec<_>, _>>()
-            })?,
         })
     }
 }

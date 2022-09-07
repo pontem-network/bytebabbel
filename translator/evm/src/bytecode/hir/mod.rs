@@ -13,11 +13,11 @@ use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
-use crate::bytecode::types::{Function, U256};
+use crate::bytecode::types::{Constructor, Env, Function, U256};
 use crate::BlockId;
 use anyhow::{anyhow, bail, ensure, Error};
 use std::collections::HashMap;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 
 pub struct HirTranslator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
@@ -35,8 +35,21 @@ impl<'a> HirTranslator<'a> {
         }
     }
 
-    pub fn translate(&self, fun: Function, contract_address: U256) -> Result<Hir, Error> {
-        let mut ctx = Context::new(fun, contract_address);
+    pub fn translate_constractor(
+        &self,
+        fun: &Constructor,
+        contract_address: U256,
+    ) -> Result<Hir, Error> {
+        let mut ctx = Context::new(Env::from(fun), contract_address);
+        let mut ir = Hir::default();
+        self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
+        let ir = IrOptimizer::optimize(ir)?;
+        ir.print();
+        Ok(ir)
+    }
+
+    pub fn translate_fun(&self, fun: &Function, contract_address: U256) -> Result<Hir, Error> {
+        let mut ctx = Context::new(Env::from(fun), contract_address);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
@@ -45,19 +58,20 @@ impl<'a> HirTranslator<'a> {
     }
 
     pub fn find_entry_points(&self) -> Result<Option<BlockId>, Error> {
-        let mut ctx = Context::new(Function::default(), U256::zero());
-        let mut ir = Hir::default();
-        let result = self.exec_flow(&self.contact_flow, &mut ir, &mut ctx);
-        match result {
-            Ok(_) => Ok(None),
-            Err(err) => {
-                if let Some(SpecialError::CodeCopy(block)) = err.downcast_ref::<SpecialError>() {
-                    Ok(Some(*block))
-                } else {
-                    Err(err)
-                }
-            }
-        }
+        // let mut ctx = Context::new(&Function::default(), U256::zero());
+        // let mut ir = Hir::default();
+        // let result = self.exec_flow(&self.contact_flow, &mut ir, &mut ctx);
+        // match result {
+        //     Ok(_) => Ok(None),
+        //     Err(err) => {
+        //         if let Some(SpecialError::CodeCopy(block)) = err.downcast_ref::<SpecialError>() {
+        //             Ok(Some(*block))
+        //         } else {
+        //             Err(err)
+        //         }
+        //     }
+        // }
+        todo!()
     }
 
     fn get_block(&self, block_id: &BlockId) -> Result<&InstructionBlock, Error> {
@@ -193,6 +207,10 @@ impl<'a> HirTranslator<'a> {
                 ir.abort(code);
                 Ok(StopFlag::Stop)
             }
+            BlockResult::CodeCopy(code) => {
+                ir.code_copy(code);
+                Ok(StopFlag::Stop)
+            }
         }
     }
 
@@ -249,7 +267,7 @@ impl<'a> HirTranslator<'a> {
             let res = inst.handle(params, ir, ctx);
             match res {
                 ExecutionResult::CodeCopy(offset) => {
-                    return Err(SpecialError::CodeCopy(offset).into());
+                    return Ok(BlockResult::CodeCopy(offset));
                 }
                 ExecutionResult::Abort(code) => {
                     return Ok(BlockResult::Abort(code));
@@ -313,18 +331,6 @@ pub enum BlockResult {
         offset: VarId,
         len: VarId,
     },
+    CodeCopy(BlockId),
     Abort(u8),
 }
-
-#[derive(Debug)]
-enum SpecialError {
-    CodeCopy(BlockId),
-}
-
-impl Display for SpecialError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for SpecialError {}
