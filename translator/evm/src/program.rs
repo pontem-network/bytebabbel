@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {
-    name: String,
     constructor: Mir,
     functions_mir: HashMap<FunHash, Mir>,
     abi: Abi,
@@ -15,13 +14,11 @@ pub struct Program {
 
 impl Program {
     pub fn new(
-        name: &str,
         constructor: Mir,
         functions_mir: HashMap<FunHash, Mir>,
         abi: Abi,
     ) -> Result<Program, Error> {
         Ok(Program {
-            name: name.to_string(),
             constructor,
             functions_mir,
             abi,
@@ -29,7 +26,7 @@ impl Program {
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        self.abi.name()
     }
 
     pub fn functions_hash(&self) -> impl Iterator<Item = FunHash> + '_ {
@@ -55,7 +52,7 @@ impl Program {
 
 impl Debug for Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Program:{}", self.name)?;
+        writeln!(f, "Program:{}", self.name())?;
         writeln!(f, "Functions:")?;
         let output = self.debug_constructors();
         writeln!(f, "{output}")?;

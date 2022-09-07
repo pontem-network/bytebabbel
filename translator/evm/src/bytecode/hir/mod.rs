@@ -39,8 +39,9 @@ impl<'a> HirTranslator<'a> {
         &self,
         fun: &Constructor,
         contract_address: U256,
+        code_size: u128,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, 1);
+        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, 1);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
@@ -48,31 +49,19 @@ impl<'a> HirTranslator<'a> {
         Ok(ir)
     }
 
-    pub fn translate_fun(&self, fun: &Function, contract_address: U256) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, 0);
+    pub fn translate_fun(
+        &self,
+        fun: &Function,
+        contract_address: U256,
+        code_size: u128,
+    ) -> Result<Hir, Error> {
+        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, 0);
         let mut ir = Hir::default();
         // todo implicit param
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
         ir.print(&fun.name);
         Ok(ir)
-    }
-
-    pub fn find_entry_points(&self) -> Result<Option<BlockId>, Error> {
-        // let mut ctx = Context::new(&Function::default(), U256::zero());
-        // let mut ir = Hir::default();
-        // let result = self.exec_flow(&self.contact_flow, &mut ir, &mut ctx);
-        // match result {
-        //     Ok(_) => Ok(None),
-        //     Err(err) => {
-        //         if let Some(SpecialError::CodeCopy(block)) = err.downcast_ref::<SpecialError>() {
-        //             Ok(Some(*block))
-        //         } else {
-        //             Err(err)
-        //         }
-        //     }
-        // }
-        todo!()
     }
 
     fn get_block(&self, block_id: &BlockId) -> Result<&InstructionBlock, Error> {
@@ -208,10 +197,6 @@ impl<'a> HirTranslator<'a> {
                 ir.abort(code);
                 Ok(StopFlag::Stop)
             }
-            BlockResult::CodeCopy(code) => {
-                ir.code_copy(code);
-                Ok(StopFlag::Stop)
-            }
         }
     }
 
@@ -267,9 +252,6 @@ impl<'a> HirTranslator<'a> {
             ensure!(pops == params.len(), "Invalid stake state.");
             let res = inst.handle(params, ir, ctx);
             match res {
-                ExecutionResult::CodeCopy(offset) => {
-                    return Ok(BlockResult::CodeCopy(offset));
-                }
                 ExecutionResult::Abort(code) => {
                     return Ok(BlockResult::Abort(code));
                 }
@@ -332,6 +314,5 @@ pub enum BlockResult {
         offset: VarId,
         len: VarId,
     },
-    CodeCopy(BlockId),
     Abort(u8),
 }

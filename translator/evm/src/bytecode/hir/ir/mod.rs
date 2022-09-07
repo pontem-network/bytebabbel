@@ -12,6 +12,7 @@ pub mod var;
 pub struct Hir {
     vars: Vars,
     instructions: Vec<Instruction>,
+    code_copy: Vec<BlockId>,
 }
 
 impl Hir {
@@ -94,7 +95,7 @@ impl Hir {
     }
 
     pub fn code_copy(&mut self, id: BlockId) {
-        self.instructions.push(Instruction::CodeCopy(id));
+        self.code_copy.push(id);
     }
 
     pub fn map_var(&mut self, id: VarId, val: VarId) {
@@ -105,8 +106,16 @@ impl Hir {
         self.instructions.push(Instruction::Result { offset, len });
     }
 
-    pub fn into_inner(self) -> (Vars, Vec<Instruction>) {
-        (self.vars, self.instructions)
+    pub fn into_inner(self) -> (Vars, Vec<Instruction>, Vec<BlockId>) {
+        (self.vars, self.instructions, self.code_copy)
+    }
+
+    pub fn get_code_copy(&self) -> &[BlockId] {
+        &self.code_copy
+    }
+
+    pub fn set_code_copy(&mut self, code_copy: Vec<BlockId>) {
+        self.code_copy = code_copy;
     }
 }
 

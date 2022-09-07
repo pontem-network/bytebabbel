@@ -54,7 +54,7 @@ impl MvIrTranslator {
 
     fn translate_constructor(&mut self, program: &Program) -> Result<Func, Error> {
         let def = program.constructor_def();
-        let mut mir = program.constructor_mir().clone();
+        let mir = program.constructor_mir().clone();
 
         self.code.reset();
         self.translate_statements(mir.statements())?;

@@ -65,6 +65,10 @@ impl Abi {
     pub fn functions(&self) -> &HashMap<FunHash, Function> {
         &self.functions
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 fn map_types(types: Vec<Param>) -> Result<Vec<EthType>, Error> {

@@ -28,7 +28,6 @@ pub struct MirTranslator<'a> {
     pub(super) mir: Mir,
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
-    pub(super) is_constructor: bool,
 }
 
 impl<'a> MirTranslator<'a> {
@@ -53,12 +52,11 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
-            is_constructor,
         }
     }
 
     pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
-        let (mut vars, instructions) = hir.into_inner();
+        let (mut vars, instructions, _) = hir.into_inner();
         self.translate_instructions(&instructions, &mut vars)?;
         self.mir.set_locals(self.variables.locals());
         Ok(self.mir)
@@ -137,10 +135,6 @@ impl<'a> MirTranslator<'a> {
                 } => {
                     self.translate_instructions(inst, vars)?;
                     self.mir.add_statement(Statement::Continue(*id));
-                }
-                Instruction::CodeCopy(_) => {
-                    // ¯\_(ツ)_/¯ CodeCopy used only in constructor. And when we see it, it means that we finished and should return.
-                    self.mir.add_statement(Statement::Result(vec![]));
                 }
             }
         }

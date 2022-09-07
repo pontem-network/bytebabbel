@@ -18,10 +18,11 @@ pub enum CodeOp {
 }
 
 impl InstructionHandler for CodeOp {
-    fn handle(&self, ops: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, ops: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         match self {
             CodeOp::CodeSize => {
-                todo!()
+                let id = ir.create_var(Var::Val(U256::from(ctx.code_size())));
+                ExecutionResult::Output(vec![id])
             }
             CodeOp::CallDataCopy => {
                 let id = ir.create_var(Var::Val(U256::from(42)));
@@ -29,7 +30,8 @@ impl InstructionHandler for CodeOp {
             }
             CodeOp::CodeCopy => {
                 let offset = ir.resolve_var(ops[1]).unwrap_or_default();
-                ExecutionResult::CodeCopy(BlockId::from(offset.as_usize()))
+                ir.code_copy(BlockId::from(offset.as_usize()));
+                ExecutionResult::Output(vec![])
             }
             CodeOp::ExtCodeSize => {
                 todo!()

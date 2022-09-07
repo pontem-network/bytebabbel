@@ -73,7 +73,7 @@ impl<'a> MirTranslator<'a> {
                 todo!()
             }
             BinaryOp::SLt => {
-                todo!()
+                translate_slt(self, op, op1, result)?;
             }
             BinaryOp::SGt => {
                 todo!()
@@ -169,6 +169,22 @@ fn translate_shl(
         )],
         false_br: vec![Statement::CreateVar(result, Operation::Shl.expr(op1, op))],
     });
+    Ok(())
+}
+
+fn translate_slt(
+    translator: &mut MirTranslator,
+    op: Variable,
+    op1: Variable,
+    result: VarId,
+) -> Result<(), Error> {
+    // todo signed comparison
+    let op = translator.cast_number(op)?;
+    let op1 = translator.cast_number(op1)?;
+    let result = translator.map_var(result, SType::Bool);
+    translator
+        .mir
+        .add_statement(Statement::CreateVar(result, Operation::Lt.expr(op, op1)));
     Ok(())
 }
 

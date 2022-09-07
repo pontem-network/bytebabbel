@@ -9,8 +9,10 @@ pub struct UnusedVarClipper;
 impl UnusedVarClipper {
     pub fn optimize(ir: Hir) -> Result<Hir, Error> {
         let analysis = ReachabilityAnalysis::calculate(&ir);
-        let (mut vars, instructions) = ir.into_inner();
+        let (mut vars, instructions, code_copy) = ir.into_inner();
         let mut ir = Hir::default();
+        ir.set_code_copy(code_copy);
+
         let mut id_mapping = HashMap::new();
         Self::optimize_instructions(instructions, &analysis, &mut id_mapping, &mut vars, &mut ir)?;
         Ok(ir)
@@ -106,9 +108,6 @@ impl UnusedVarClipper {
                         let val = Self::map_var_id(val, id_mapping)?;
                         ir.map_var(id, val);
                     }
-                }
-                Instruction::CodeCopy(code) => {
-                    ir.code_copy(code);
                 }
             }
         }
@@ -245,7 +244,6 @@ impl VarReachability {
                     self.mark_var_as_reachable(val);
                     self.mark_var_as_reachable(id);
                 }
-                Instruction::CodeCopy(_) => {}
             }
         }
     }
@@ -365,9 +363,6 @@ impl<'r> ContextAnalyzer<'r> {
                 Instruction::Result { offset, len } => {
                     self.push_to_context(loops, offset, ir);
                     self.push_to_context(loops, len, ir);
-                }
-                Instruction::CodeCopy(_) => {
-                    //no-op
                 }
             }
         }

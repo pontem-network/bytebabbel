@@ -55,6 +55,12 @@ impl REvm {
         })
     }
 
+    pub fn construct(&mut self, code: Vec<u8>) -> Result<()> {
+        let res = self.run_tx(code)?;
+        self.code = Rc::new(res);
+        Ok(())
+    }
+
     pub fn set_code(&mut self, code: Vec<u8>) -> &mut Self {
         self.code = Rc::new(code);
         self
@@ -178,7 +184,8 @@ mod test {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
 
-        let vm = REvm::try_from(sol.deref()).unwrap();
+        let mut vm = REvm::try_from(sol.deref()).unwrap();
+        vm.construct(vec![]).unwrap();
 
         // with_uint
 
@@ -220,10 +227,9 @@ mod test {
     #[test]
     fn test_array() {
         let sol = TESTFILE.lock().unwrap();
-        let abi = sol.abi().unwrap();
-
-        let vm = REvm::try_from(sol.deref()).unwrap();
-
+        let abi: AbiEntries = sol.abi().unwrap();
+        let mut vm = REvm::try_from(sol.deref()).unwrap();
+        vm.construct(vec![]).unwrap();
         // array_bool_3
 
         let fn_abi = abi.by_name("array_bool_3").unwrap();
@@ -307,7 +313,8 @@ mod test {
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
 
-        let vm = REvm::try_from(sol.deref()).unwrap();
+        let mut vm = REvm::try_from(sol.deref()).unwrap();
+        vm.construct(vec![]).unwrap();
 
         // array_bool_3
 

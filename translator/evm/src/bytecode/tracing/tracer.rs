@@ -89,7 +89,11 @@ impl<'a> Tracer<'a> {
         let mut loops: HashMap<BlockId, Loop> = HashMap::new();
         let mut breaks: HashMap<BlockId, BlockId> = HashMap::new();
         loop {
-            let block = self.blocks.get(&id).unwrap();
+            let block = self
+                .blocks
+                .get(&id)
+                .ok_or_else(|| format!("Block with id {} not found. Blocks: {:?}", id, self.blocks))
+                .unwrap();
 
             let res = self.executor.exec_block(block);
             match res {

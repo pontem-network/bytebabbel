@@ -4,13 +4,8 @@ contract empty {
     uint val;
 
     constructor() {
-        if (true) {
-            val = 1;
-            return;
-        } else {
-            val = 2;
-            return;
-        }
+        val = 42;
+        return;
     }
 
     function get_val() public view returns (uint256) {

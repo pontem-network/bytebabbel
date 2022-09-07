@@ -128,7 +128,6 @@ impl InstructionHandler for Instruction {
 }
 
 pub enum ExecutionResult {
-    CodeCopy(BlockId),
     Abort(u8),
     None,
     Output(Vec<VarId>),

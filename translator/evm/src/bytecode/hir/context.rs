@@ -13,10 +13,11 @@ pub struct Context {
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
     shift_eth_params: u8,
+    code_size: u128,
 }
 
 impl Context {
-    pub fn new(env: Env, contract_address: U256, shift_eth_params: u8) -> Context {
+    pub fn new(env: Env, contract_address: U256, code_size: u128, shift_eth_params: u8) -> Context {
         Context {
             address: contract_address,
             stack: Stack::default(),
@@ -24,6 +25,7 @@ impl Context {
             loop_input: Default::default(),
             loop_stack_size: 0,
             shift_eth_params,
+            code_size,
         }
     }
 
@@ -45,6 +47,10 @@ impl Context {
 
     pub fn address(&self) -> U256 {
         self.address
+    }
+
+    pub fn code_size(&self) -> u128 {
+        self.code_size
     }
 
     pub fn create_loop(&mut self, block_id: BlockId, break_br: BlockId) {
