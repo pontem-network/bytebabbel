@@ -41,16 +41,16 @@ pub enum Mem {
 
 impl Mem {
     pub fn token() -> SignatureToken {
-        SignatureToken::Struct(StructHandleIndex(0))
+        SignatureToken::Struct(StructHandleIndex(1))
     }
 
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Mem::Store => FunctionHandleIndex(4),
-            Mem::Store8 => FunctionHandleIndex(5),
-            Mem::Load => FunctionHandleIndex(3),
-            Mem::Size => FunctionHandleIndex(1),
-            Mem::New => FunctionHandleIndex(6),
+            Mem::Store => FunctionHandleIndex(13),
+            Mem::Store8 => FunctionHandleIndex(14),
+            Mem::Load => FunctionHandleIndex(12),
+            Mem::Size => FunctionHandleIndex(6),
+            Mem::New => FunctionHandleIndex(15),
         }
     }
 }
@@ -75,22 +75,69 @@ pub enum Storage {
 
 impl Storage {
     pub fn token() -> SignatureToken {
-        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(1))))
+        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(2))))
     }
 
     pub fn instance() -> StructDefinitionIndex {
-        StructDefinitionIndex(1)
+        StructDefinitionIndex(2)
     }
 
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Storage::Load => FunctionHandleIndex(9),
-            Storage::Store => FunctionHandleIndex(10),
-            Storage::Create => FunctionHandleIndex(2),
+            Storage::Load => FunctionHandleIndex(27),
+            Storage::Store => FunctionHandleIndex(29),
+            Storage::Create => FunctionHandleIndex(10),
         }
     }
 }
 
 pub fn self_address_index() -> ConstantPoolIndex {
-    ConstantPoolIndex(4)
+    ConstantPoolIndex(10)
+}
+
+pub enum Number {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    BitOr,
+    BitAnd,
+    Xor,
+    Shl,
+    Shr,
+    Lt,
+    Gt,
+    Le,
+    Ge,
+    Eq,
+    Neq,
+}
+
+impl Number {
+    pub fn token() -> SignatureToken {
+        SignatureToken::Struct(StructHandleIndex(3))
+    }
+
+    pub fn func_handler(&self) -> FunctionHandleIndex {
+        match self {
+            Number::Add => FunctionHandleIndex(20),
+            Number::Sub => FunctionHandleIndex(20),
+            Number::Mul => FunctionHandleIndex(19),
+            Number::Div => FunctionHandleIndex(4),
+            Number::Mod => FunctionHandleIndex(18),
+
+            Number::BitOr => FunctionHandleIndex(16),
+            Number::BitAnd => FunctionHandleIndex(17),
+            Number::Xor => FunctionHandleIndex(18),
+            Number::Shl => FunctionHandleIndex(19),
+            Number::Shr => FunctionHandleIndex(20),
+            Number::Lt => FunctionHandleIndex(21),
+            Number::Gt => FunctionHandleIndex(22),
+            Number::Le => FunctionHandleIndex(23),
+            Number::Ge => FunctionHandleIndex(24),
+            Number::Eq => FunctionHandleIndex(25),
+            Number::Neq => FunctionHandleIndex(26),
+        }
+    }
 }

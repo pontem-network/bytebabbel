@@ -1,4 +1,4 @@
-use intrinsic::{self_address_index, template, Cast, Mem, Storage};
+use intrinsic::{self_address_index, template, Cast, Mem, Number, Storage};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -43,7 +43,7 @@ pub fn test_template() {
 }
 
 #[test]
-pub fn test_intrinsic_signature_token() {
+pub fn test_intrinsic_signature_token_mem_store() {
     let address = AccountAddress::random();
 
     let template = template(address, "template_module");
@@ -105,6 +105,52 @@ pub fn test_intrinsic_signature_token() {
     );
 
     assert_eq!(self_address_index(), find_address_const(&template, address));
+}
+
+#[test]
+pub fn test_intrinsic_signature_token_number() {
+    let address = AccountAddress::random();
+    let template = template(address, "template_module");
+
+    assert_eq!(
+        Number::token(),
+        SignatureToken::Struct(find_struct_by_name(&template, "U256",))
+    );
+
+    assert_eq!(
+        Number::Add.func_handler(),
+        find_function_by_name(&template, "overflowing_add")
+    );
+
+    assert_eq!(
+        Number::Sub.func_handler(),
+        find_function_by_name(&template, "overflowing_sub")
+    );
+
+    assert_eq!(
+        Number::Mul.func_handler(),
+        find_function_by_name(&template, "overflowing_mul")
+    );
+
+    assert_eq!(
+        Number::Div.func_handler(),
+        find_function_by_name(&template, "div")
+    );
+
+    assert_eq!(
+        Number::Mod.func_handler(),
+        find_function_by_name(&template, "mod")
+    );
+
+    assert_eq!(
+        Number::BitAnd.func_handler(),
+        find_function_by_name(&template, "bitand")
+    );
+
+    assert_eq!(
+        Number::BitOr.func_handler(),
+        find_function_by_name(&template, "bitor")
+    );
 }
 
 fn find_function_by_name(module: &CompiledModule, name: &str) -> FunctionHandleIndex {
