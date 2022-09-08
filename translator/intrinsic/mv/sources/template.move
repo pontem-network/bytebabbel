@@ -1,8 +1,6 @@
 module self::template {
     // Memory.
     //=================================================================================================================
-    use std::vector;
-
     const ELENGTH: u64 = 0x1;
     const OUT_OF_MEMORY: u64 = 0x2;
     const INVALID_RANGE: u64 = 0x3;
@@ -18,7 +16,7 @@ module self::template {
 
     fun new_mem(limit: u64): Memory {
         assert!(limit > 0, ELENGTH);
-        let data = vector::empty();
+        let data = std::vector::empty();
 
         Memory {
             data,
@@ -38,14 +36,14 @@ module self::template {
         let position = (offset as u64);
 
         let offset = 0u64;
-        let data_len = vector::length(&mem.data);
+        let data_len = std::vector::length(&mem.data);
 
         while (offset < WORD_SIZE) {
             let global_offset = position + offset;
             if (global_offset >= data_len) {
                 break
             };
-            let byte = (*vector::borrow(&mem.data, global_offset) as u128);
+            let byte = (*std::vector::borrow(&mem.data, global_offset) as u128);
             let shift = (((WORD_SIZE -1 - offset) * 8) as u8);
             result = result | byte << shift;
             offset = offset + 1;
@@ -59,9 +57,9 @@ module self::template {
         let position = (position as u64);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
 
-        let data_len = vector::length(&mem.data);
+        let data_len = std::vector::length(&mem.data);
         while (data_len < ((position + WORD_SIZE) as u64)) {
-            vector::push_back(&mut mem.data, 0);
+            std::vector::push_back(&mut mem.data, 0);
             data_len = data_len + 1;
         };
 
@@ -70,7 +68,7 @@ module self::template {
             let shift = ((offset * 8) as u8);
             let shift = value >> shift;
             let byte = ((shift & 0xff) as u8);
-            *vector::borrow_mut(&mut mem.data, position + WORD_SIZE - 1 - offset) = byte;
+            *std::vector::borrow_mut(&mut mem.data, position + WORD_SIZE - 1 - offset) = byte;
             offset = offset + 1;
         };
     }
@@ -81,13 +79,13 @@ module self::template {
 
         let value = ((value & 0xff) as u8);
 
-        let data_len = vector::length(&mem.data);
+        let data_len = std::vector::length(&mem.data);
         while (data_len < ((position + 1) as u64)) {
-            vector::push_back(&mut mem.data, 0);
+            std::vector::push_back(&mut mem.data, 0);
             data_len = data_len + 1;
         };
 
-        *vector::borrow_mut(&mut mem.data, position) = value;
+        *std::vector::borrow_mut(&mut mem.data, position) = value;
     }
 
     fun resize_offset(mem: &mut Memory, offset: u128, len: u64) {
@@ -114,33 +112,30 @@ module self::template {
 
     // Storage.
     //=================================================================================================================
-    use aptos_std::table;
-    use std::signer;
-
     struct Persist has store, key {
-        tbl: table::Table<u128, u128>,
+        tbl: aptos_std::table::Table<u128, u128>,
     }
 
     fun init_store(self: &signer) {
-        let addr = signer::borrow_address(self);
+        let addr = std::signer::borrow_address(self);
         assert!(addr == &@self, 1);
         assert!(!exists<Persist>(@self), 1);
 
-        let store = Persist { tbl: table::new() };
+        let store = Persist { tbl: aptos_std::table::new() };
         move_to(self, store);
     }
 
     fun sstore(store: &mut Persist, key: u128, val: u128) {
-        if (table::contains(&mut store.tbl, key)) {
-            table::remove(&mut store.tbl, key);
+        if (aptos_std::table::contains(&mut store.tbl, key)) {
+            aptos_std::table::remove(&mut store.tbl, key);
         };
 
-        table::add(&mut store.tbl, key, val);
+        aptos_std::table::add(&mut store.tbl, key, val);
     }
 
     fun sload(store: &mut Persist, key: u128): u128 {
-        if (table::contains(&store.tbl, key)) {
-            *table::borrow(&store.tbl, key)
+        if (aptos_std::table::contains(&store.tbl, key)) {
+            *aptos_std::table::borrow(&store.tbl, key)
         } else {
             0
         }
@@ -230,5 +225,34 @@ module self::template {
     #[expected_failure(abort_code = 1)]
     fun init_zero_size() {
         new_mem(0);
+    }
+
+    // Cast
+    //=================================================================================================================
+    fun address_to_number(addr: &signer): u128 {
+        let encoded = std::bcs::to_bytes(addr);
+        let result = 0;
+
+        let offset = 16u64;
+        let len = 32u64;
+        while (offset < len) {
+            let byte = (*std::vector::borrow(&encoded, offset) as u128);
+            let shift = (((len -1 - offset) * 8) as u8);
+            result = result | byte << shift;
+            offset = offset + 1;
+        };
+
+        return result
+    }
+
+
+    #[test(self = @0x42)]
+    fun test_address_to_u128_1(self: &signer) {
+        assert!(address_to_number(self) == 0x42, 0);
+    }
+
+    #[test(self = @0x4213421342134213)]
+    fun test_address_to_u128_2(self: &signer) {
+        assert!(address_to_number(self) == 0x4213421342134213, 0);
     }
 }

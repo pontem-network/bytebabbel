@@ -13,7 +13,7 @@ use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
-use crate::bytecode::types::{Constructor, Env, Function};
+use crate::bytecode::types::{Env, Function};
 use crate::BlockId;
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
@@ -36,29 +36,14 @@ impl<'a> HirTranslator<'a> {
         }
     }
 
-    pub fn translate_constractor(
-        &self,
-        fun: &Constructor,
-        contract_address: U256,
-        code_size: u128,
-    ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, 1);
-        let mut ir = Hir::default();
-        self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
-        let ir = IrOptimizer::optimize(ir)?;
-        ir.print("constructor");
-        Ok(ir)
-    }
-
     pub fn translate_fun(
         &self,
         fun: &Function,
         contract_address: U256,
         code_size: u128,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, 0);
+        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, 1);
         let mut ir = Hir::default();
-        // todo implicit param
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
         ir.print(&fun.name);

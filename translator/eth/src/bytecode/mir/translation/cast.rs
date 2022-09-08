@@ -25,11 +25,16 @@ impl<'a> MirTranslator<'a> {
                 });
                 Ok(result)
             }
+            SType::Address => {
+                let result = self.variables.borrow(SType::Number);
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Expression::AddressToNumber(var),
+                ));
+                Ok(result)
+            }
             SType::Storage => Err(anyhow!("Storage type not supported for cast")),
             SType::Memory => Err(anyhow!("Memory type not supported for cast")),
-            SType::Address => {
-                todo!("Cast address to number")
-            }
         }
     }
 

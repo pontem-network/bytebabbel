@@ -12,7 +12,7 @@ use eth::bytecode::mir::ir::types::SType;
 use eth::bytecode::mir::ir::Mir;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
-use intrinsic::{template, Mem, Storage};
+use intrinsic::{template, Cast, Mem, Storage};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
@@ -282,6 +282,10 @@ impl MvIrTranslator {
             Expression::MSize { memory } => {
                 self.code
                     .call(Mem::Size.func_handler(), &[CallOp::MutBorrow(*memory)]);
+            }
+            Expression::AddressToNumber(addr) => {
+                self.code
+                    .call(Cast::AddressToNumber.func_handler(), &[CallOp::Var(*addr)]);
             }
         }
         Ok(())

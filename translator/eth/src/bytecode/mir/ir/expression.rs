@@ -15,6 +15,7 @@ pub enum Expression {
     Param(LocalIndex, SType),
     Operation(Operation, Variable, Variable),
     StackOps(StackOps),
+    AddressToNumber(Variable),
 }
 
 #[derive(Debug, Clone)]

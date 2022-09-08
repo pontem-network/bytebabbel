@@ -47,6 +47,7 @@ impl Vars {
             Some(Var::MLoad(_)) => None,
             Some(Var::SLoad(_)) => None,
             Some(Var::MSize) => None,
+            Some(Var::Signer) => None,
         }
     }
 
@@ -62,6 +63,7 @@ pub enum Var {
     Val(U256),
     MLoad(VarId),
     SLoad(VarId),
+    Signer,
     MSize,
     Param(u16),
     UnaryOp(UnaryOp, VarId),

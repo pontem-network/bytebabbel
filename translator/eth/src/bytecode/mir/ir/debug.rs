@@ -194,6 +194,9 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
         Expression::GetStore => {
             write!(buf, "borrow_storage()")?;
         }
+        Expression::AddressToNumber(var) => {
+            write!(buf, "var_{:?}.to_number()", var)?;
+        }
     }
     Ok(())
 }

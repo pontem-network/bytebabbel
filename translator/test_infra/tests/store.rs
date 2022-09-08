@@ -14,7 +14,7 @@ pub fn test_empty_constructor() {
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
     vm.run("0x1::empty::constructor", "0x1").unwrap();
-    let res = vm.run("0x1::empty::get_val", "").unwrap().returns;
+    let res = vm.run("0x1::empty::get_val", "0x1").unwrap().returns;
     assert_eq!(
         MoveValue::U128(42),
         MoveValue::simple_deserialize(&res[0].0, &res[0].1).unwrap()
@@ -39,7 +39,7 @@ pub fn test_constructor_with_data() {
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
         vm.run("0x1::with_data::constructor", "0x1").unwrap();
-        let res = vm.run("0x1::with_data::get_val", "").unwrap().returns;
+        let res = vm.run("0x1::with_data::get_val", "0x1").unwrap().returns;
         assert_eq!(
             MoveValue::U128(val),
             MoveValue::simple_deserialize(&res[0].0, &res[0].1).unwrap()
@@ -62,11 +62,11 @@ pub fn test_store() {
     let f = rand::random::<bool>();
     vm.run(
         "0x1::load_store::set_all",
-        &format!("{},{},{},{}", a, b, c, f),
+        &format!("0x1,{},{},{},{}", a, b, c, f),
     )
     .unwrap();
 
-    let res = vm.run("0x1::load_store::get_all", "").unwrap().returns;
+    let res = vm.run("0x1::load_store::get_all", "0x1").unwrap().returns;
 
     assert_eq!(
         MoveValue::U128(a),
@@ -90,13 +90,17 @@ pub fn test_store() {
     let c = rand::random::<bool>();
     let f = rand::random::<bool>();
 
-    vm.run("0x1::load_store::set_a", &a.to_string()).unwrap();
-    vm.run("0x1::load_store::set_b", &b.to_string()).unwrap();
-    vm.run("0x1::load_store::set_c", &c.to_string()).unwrap();
-    vm.run("0x1::load_store::set_f", &f.to_string()).unwrap();
+    vm.run("0x1::load_store::set_a", &format!("0x1, {}", a))
+        .unwrap();
+    vm.run("0x1::load_store::set_b", &format!("0x1, {}", b))
+        .unwrap();
+    vm.run("0x1::load_store::set_c", &format!("0x1, {}", c))
+        .unwrap();
+    vm.run("0x1::load_store::set_f", &format!("0x1, {}", f))
+        .unwrap();
 
     let actual_a = vm
-        .run("0x1::load_store::get_a", "")
+        .run("0x1::load_store::get_a", "0x1")
         .unwrap()
         .returns
         .remove(0);
@@ -106,7 +110,7 @@ pub fn test_store() {
     );
 
     let actual_b = vm
-        .run("0x1::load_store::get_b", "")
+        .run("0x1::load_store::get_b", "0x1")
         .unwrap()
         .returns
         .remove(0);
@@ -116,7 +120,7 @@ pub fn test_store() {
     );
 
     let actual_c = vm
-        .run("0x1::load_store::get_c", "")
+        .run("0x1::load_store::get_c", "0x1")
         .unwrap()
         .returns
         .remove(0);
@@ -126,7 +130,7 @@ pub fn test_store() {
     );
 
     let actual_f = vm
-        .run("0x1::load_store::get_flag", "")
+        .run("0x1::load_store::get_flag", "0x1")
         .unwrap()
         .returns
         .remove(0);
@@ -145,7 +149,7 @@ pub fn test_bool_store() {
     vm.deploy("0x1", bytecode);
     vm.run("0x1::bool_store::constructor", "0x1").unwrap();
     let actual_f = vm
-        .run("0x1::bool_store::load", "")
+        .run("0x1::bool_store::load", "0x1")
         .unwrap()
         .returns
         .remove(0);
@@ -154,9 +158,9 @@ pub fn test_bool_store() {
         MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
     );
 
-    vm.run("0x1::bool_store::store", "true").unwrap();
+    vm.run("0x1::bool_store::store", "0x1,true").unwrap();
     let actual_f = vm
-        .run("0x1::bool_store::load", "")
+        .run("0x1::bool_store::load", "0x1")
         .unwrap()
         .returns
         .remove(0);
@@ -165,9 +169,9 @@ pub fn test_bool_store() {
         MoveValue::simple_deserialize(&actual_f.0, &actual_f.1).unwrap()
     );
 
-    vm.run("0x1::bool_store::store", "false").unwrap();
+    vm.run("0x1::bool_store::store", "0x1,false").unwrap();
     let actual_f = vm
-        .run("0x1::bool_store::load", "")
+        .run("0x1::bool_store::load", "0x1")
         .unwrap()
         .returns
         .remove(0);
