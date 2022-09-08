@@ -1,6 +1,6 @@
 module self::u256 {
-    /// U256
-    ///=================================================================================================================
+    // U256
+    //=================================================================================================================
     // Errors.
     /// When trying to get or put word into U256 but it's out of index.
     const EWORDS_OVERFLOW: u64 = 1;
@@ -703,7 +703,6 @@ module self::u256 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2)]
     fun test_add_overflow() {
         let max = (U64_MAX as u64);
 
@@ -724,24 +723,6 @@ module self::u256 {
 
         let s = as_u128(overflowing_sub(a, b));
         assert!(s == 500, 0);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = 2)]
-    fun test_sub_overflow() {
-        let a = from_u128(0);
-        let b = from_u128(1);
-
-        let _ = overflowing_sub(a, b);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = 0)]
-    fun test_too_big_to_cast_to_u128() {
-        let a = from_u128(U128_MAX);
-        let b = from_u128(U128_MAX);
-
-        let _ = as_u128(overflowing_add(a, b));
     }
 
     #[test]
@@ -952,9 +933,9 @@ module self::u256 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 3)]
     fun test_div_by_zero() {
         let a = from_u128(1);
-        let _z = div(a, from_u128(0));
+        let z = div(a, from_u128(0));
+        assert!(as_u128(z) == 0, 0);
     }
 }
