@@ -11,7 +11,7 @@ eth = {path = "../eth" }
 move-bytecode-source-map = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
 move-ir-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
 #
-evm_pack = {package = "evm", version = "0.35.0"}
+evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
 anyhow = "1.0.58"
 rand = "0.8.5"

@@ -5,9 +5,9 @@ use anyhow::{bail, Error, Result};
 use primitive_types::{H160, U256};
 
 use crate::testssol::env::sol::EvmPack;
-use evm_pack::backend::{MemoryBackend, MemoryVicinity};
-use evm_pack::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
-use evm_pack::{Config, Context, ExitReason, Runtime};
+use evm::backend::{MemoryBackend, MemoryVicinity};
+use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use evm::{Config, Context, ExitReason, Runtime};
 
 fn memory_vicinity() -> Result<MemoryVicinity> {
     Ok(MemoryVicinity {
