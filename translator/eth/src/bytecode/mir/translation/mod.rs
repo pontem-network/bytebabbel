@@ -28,6 +28,7 @@ pub struct MirTranslator<'a> {
     pub(super) mir: Mir,
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
+    pub(super) signer_index: LocalIndex,
 }
 
 impl<'a> MirTranslator<'a> {
@@ -48,6 +49,7 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
+            signer_index: 0,
         }
     }
 
@@ -213,6 +215,11 @@ impl<'a> MirTranslator<'a> {
                         memory: self.mem_var,
                     },
                 ));
+            }
+            Var::Signer => {
+                let signer = self.variables.borrow_param(self.signer_index);
+                let result = self.cast_number(signer)?;
+                self.mapping.insert(id, result);
             }
         }
         Ok(())

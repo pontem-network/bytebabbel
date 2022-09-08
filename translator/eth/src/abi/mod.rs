@@ -23,11 +23,15 @@ impl Abi {
             .filter_map(|entry| {
                 let hash = FunHash::from(&entry);
                 if let Entry::Function(fun) = entry {
-                    let fun = Function {
-                        name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
-                        input: map_types(fun.inputs.unwrap_or_default())
+                    let mut input = vec![EthType::Address];
+                    input.extend(
+                        map_types(fun.inputs.unwrap_or_default())
                             .context("Input mapping")
                             .unwrap(),
+                    );
+                    let fun = Function {
+                        name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
+                        input,
                         hash,
                         output: map_types(fun.outputs.unwrap_or_default())
                             .context("Output mapping")

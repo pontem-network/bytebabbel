@@ -127,7 +127,8 @@ impl MoveExecutor {
 
         ensure!(
             (arguments.len() == fun.parameters.len())
-                || (args.is_empty() && fun.parameters.is_empty())
+                || (args.is_empty() && fun.parameters.is_empty()),
+            "Invalid number of arguments"
         );
 
         arguments

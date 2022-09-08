@@ -1,4 +1,4 @@
-use intrinsic::{self_address_index, template, Mem, Storage};
+use intrinsic::{self_address_index, template, Cast, Mem, Storage};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -97,6 +97,11 @@ pub fn test_intrinsic_signature_token() {
     assert_eq!(
         Storage::Create.func_handler(),
         find_function_by_name(&template, "init_store")
+    );
+
+    assert_eq!(
+        Cast::AddressToNumber.func_handler(),
+        find_function_by_name(&template, "address_to_number")
     );
 
     assert_eq!(self_address_index(), find_address_const(&template, address));

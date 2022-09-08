@@ -46,11 +46,23 @@ impl Mem {
 
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Mem::Store => FunctionHandleIndex(3),
-            Mem::Store8 => FunctionHandleIndex(4),
-            Mem::Load => FunctionHandleIndex(2),
-            Mem::Size => FunctionHandleIndex(0),
-            Mem::New => FunctionHandleIndex(5),
+            Mem::Store => FunctionHandleIndex(4),
+            Mem::Store8 => FunctionHandleIndex(5),
+            Mem::Load => FunctionHandleIndex(3),
+            Mem::Size => FunctionHandleIndex(1),
+            Mem::New => FunctionHandleIndex(6),
+        }
+    }
+}
+
+pub enum Cast {
+    AddressToNumber,
+}
+
+impl Cast {
+    pub fn func_handler(&self) -> FunctionHandleIndex {
+        match self {
+            Cast::AddressToNumber => FunctionHandleIndex(0),
         }
     }
 }
@@ -72,9 +84,9 @@ impl Storage {
 
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Storage::Load => FunctionHandleIndex(8),
-            Storage::Store => FunctionHandleIndex(9),
-            Storage::Create => FunctionHandleIndex(1),
+            Storage::Load => FunctionHandleIndex(9),
+            Storage::Store => FunctionHandleIndex(10),
+            Storage::Create => FunctionHandleIndex(2),
         }
     }
 }

@@ -162,6 +162,9 @@ fn print_ir_var(var: &Var, buf: &mut String, width: usize) -> Result<(), Error> 
         Var::MSize => {
             write!(buf, "{:width$}mem.len()", " ",)?;
         }
+        Var::Signer => {
+            write!(buf, "{:width$}signer", " ",)?;
+        }
     }
     Ok(())
 }

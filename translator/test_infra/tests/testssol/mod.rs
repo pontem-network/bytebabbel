@@ -145,7 +145,12 @@ impl STest {
             .unwrap();
 
         let func_address = format!("{module_address}::{}", &self.test.func);
-        vm.run(&func_address, &self.test.params)
+        let params = if self.test.params.is_empty() {
+            "0x1".to_string()
+        } else {
+            format!("0x1, {}", &self.test.params)
+        };
+        vm.run(&func_address, &params)
     }
 
     fn abi_str(&self) -> &str {

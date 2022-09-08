@@ -160,6 +160,7 @@ impl UnusedVarClipper {
                 Var::SLoad(addr)
             }
             Var::MSize => Var::MSize,
+            Var::Signer => Var::Signer,
         })
     }
 }
@@ -271,6 +272,7 @@ impl VarReachability {
                 self.push_var(var, &[*addr]);
             }
             Var::MSize => {}
+            Var::Signer => {}
         }
     }
 
@@ -393,6 +395,7 @@ impl<'r> ContextAnalyzer<'r> {
                 self.resolve_ids(addr, ir, ids);
             }
             Var::MSize => {}
+            Var::Signer => {}
         }
     }
 
