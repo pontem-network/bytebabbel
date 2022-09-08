@@ -7,12 +7,15 @@ use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use test_infra::init_log;
 
 #[allow(dead_code)]
 mod testssol;
 
 #[test]
 pub fn test_for_users() {
+    init_log();
+
     fn test(flags: Flags) {
         let evm = build_sol(include_bytes!("../sol/demo/users.sol")).unwrap();
         let bytecode = make_move_module(

@@ -1,12 +1,11 @@
+use std::fmt::Debug;
+
 use anyhow::{anyhow, ensure, Error, Result};
 use eth::abi::call::ToCall;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
-use std::fmt::Debug;
 
-pub mod clog;
-pub mod color;
 pub mod convert;
 pub mod env;
 pub mod parse;
@@ -16,6 +15,7 @@ use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::Flags;
 use parse::{SolFile, SolTest};
+use test_infra::color;
 use translator::translate;
 
 const TEST_NAME: &str = "sol";

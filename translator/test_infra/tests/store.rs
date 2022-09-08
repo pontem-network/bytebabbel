@@ -4,12 +4,16 @@ use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
 use eth::abi::entries::AbiEntries;
 use eth::Flags;
+use move_core_types::value::MoveValue;
+use test_infra::init_log;
 
 #[allow(dead_code)]
 mod testssol;
 
 #[test]
 pub fn test_empty_constructor() {
+    init_log();
+
     let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
@@ -32,6 +36,8 @@ pub fn test_empty_constructor() {
 
 #[test]
 pub fn test_constructor_with_data() {
+    init_log();
+
     let evm = build_sol(include_bytes!("../sol/constructors/with_data.sol")).unwrap();
 
     test(&evm, "1000, true", 1000);
@@ -61,6 +67,8 @@ pub fn test_constructor_with_data() {
 
 #[test]
 pub fn test_store() {
+    init_log();
+
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
@@ -139,7 +147,8 @@ pub fn test_store() {
 
 #[test]
 pub fn test_bool_store() {
-    env_logger::init();
+    init_log();
+
     let evm = build_sol(include_bytes!("../sol/store/bool_store.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),

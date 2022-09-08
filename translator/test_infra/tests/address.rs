@@ -1,16 +1,19 @@
+use eth::abi::entries::AbiEntries;
+use eth::Flags;
+use test_infra::init_log;
+
 use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
-use eth::abi::entries::AbiEntries;
-use eth::Flags;
 
 #[allow(dead_code)]
 mod testssol;
 
 #[test]
 pub fn test_address_support() {
-    env_logger::init();
+    init_log();
+
     let evm = build_sol(include_bytes!("../sol/demo/address_support.sol")).unwrap();
 
     let bytecode = make_move_module(
