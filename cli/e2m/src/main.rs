@@ -36,9 +36,8 @@ pub struct Args {
     )]
     profile_or_address: ProfileValue,
 
-    /// Math backend.
-    #[clap(long = "math", short = 'm', default_value = "u128", value_parser)]
-    math_backend: String,
+    #[clap(long = "args", short = 'a', default_value = "")]
+    init_args: String,
 
     /// deploying the module in aptos node
     #[clap(long = "deploy", short = 'd', value_parser)]

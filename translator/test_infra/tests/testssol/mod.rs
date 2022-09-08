@@ -1,11 +1,11 @@
 use anyhow::{anyhow, ensure, Error, Result};
 use eth::abi::call::ToCall;
-use eth::bytecode::types::U256;
 use eth::transpile_program;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::value::MoveValue;
 use mv::translator::MvIrTranslator;
+use primitive_types::U256;
 use regex::Regex;
 use std::fmt::Debug;
 
@@ -133,8 +133,12 @@ impl STest {
     fn vm_run(&self) -> Result<ExecutionResult> {
         let module_address = self.module_address();
 
-        let bytecode =
-            make_move_module(&module_address, &hex::encode(self.bin()?), self.abi_str())?;
+        let bytecode = make_move_module(
+            &module_address,
+            &hex::encode(self.bin()?),
+            "",
+            self.abi_str(),
+        )?;
         let mut vm = MoveExecutor::new();
         vm.deploy("0x1", bytecode);
         vm.run(&format!("{}::constructor", module_address), "0x1")
@@ -153,11 +157,16 @@ impl STest {
     }
 }
 
-pub fn make_move_module(name: &str, eth: &str, abi: &str) -> Result<Vec<u8>, Error> {
+pub fn make_move_module(
+    name: &str,
+    eth: &str,
+    init_args: &str,
+    abi: &str,
+) -> Result<Vec<u8>, Error> {
     let mut split = name.split("::");
     let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
-    let program = transpile_program(name, eth, abi, U256::from(addr.as_slice()))?;
+    let program = transpile_program(name, eth, init_args, abi, U256::from(addr.as_slice()))?;
     let mvir = MvIrTranslator::new(addr, program.name());
     let module = mvir.translate(MAX_MEMORY, program)?;
     let compiled_module = module.make_move_module()?;

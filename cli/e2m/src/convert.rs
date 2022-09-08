@@ -25,13 +25,12 @@ impl Args {
 
         let abi_content = fs::read_to_string(&paths.abi)?;
         let eth_content = fs::read_to_string(&paths.bin)?;
-
         let move_bytecode: Vec<u8> = translate(
             address,
             &module_name,
+            &self.init_args,
             &eth_content,
             &abi_content,
-            self.math_backend.parse()?,
         )?;
         fs::write(&output_path, move_bytecode)?;
 

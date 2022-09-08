@@ -1,7 +1,8 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::var::{Var, VarId};
-use crate::{BlockId, Hir, U256};
+use crate::{BlockId, Hir};
+use primitive_types::U256;
 
 pub enum CodeOp {
     CodeSize,

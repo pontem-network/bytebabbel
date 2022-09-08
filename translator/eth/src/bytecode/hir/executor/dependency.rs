@@ -2,7 +2,8 @@ use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::var::{Var, VarId};
 use crate::bytecode::hir::stack::FRAME_SIZE;
-use crate::{Hir, U256};
+use crate::Hir;
+use primitive_types::U256;
 
 pub struct Sha3;
 

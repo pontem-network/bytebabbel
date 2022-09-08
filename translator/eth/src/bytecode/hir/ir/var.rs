@@ -1,6 +1,6 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::types::U256;
 use anyhow::{anyhow, Error};
+use primitive_types::U256;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 

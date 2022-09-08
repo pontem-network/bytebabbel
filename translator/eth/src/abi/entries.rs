@@ -14,21 +14,14 @@ pub struct AbiEntries {
 }
 
 impl AbiEntries {
-    // pub fn fun_hashes(&self) -> impl Iterator<Item = FunHash> + '_ {
-    //     self.entries
-    //         .iter()
-    //         .filter(|(_, abi)| abi.is_function())
-    //         .map(|(h, _)| *h)
-    // }
-
-    // pub fn entry(&self, hash: &FunHash) -> Option<&Entry> {
-    //     self.entries.get(hash)
-    // }
-
-    pub fn by_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'a Entry> {
+    pub fn by_name(&self, name: &str) -> Option<&Entry> {
         self.entries
             .iter()
             .find(|item| item.name().as_deref() == Some(name))
+    }
+
+    pub fn constructor(&self) -> Option<&Entry> {
+        self.entries.iter().find(|item| item.is_constructor())
     }
 }
 
@@ -51,7 +44,7 @@ impl TryFrom<&str> for AbiEntries {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 #[serde(tag = "type")]
 pub enum Entry {
     // error InsufficientBalance(uint256 available, uint256 required);
@@ -162,7 +155,7 @@ impl Entry {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct FunctionData {
     // The name of the function
     pub name: Option<String>,

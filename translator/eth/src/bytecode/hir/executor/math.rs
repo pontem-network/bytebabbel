@@ -1,8 +1,11 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::var::{Var, VarId};
-use crate::bytecode::types::{I256, U512};
-use crate::{Hir, U256};
+use crate::Hir;
+use evm_core::eval::arithmetic;
+use evm_core::eval::bitwise;
+use evm_core::utils::I256;
+use primitive_types::U256;
 use std::ops::{Div, Rem};
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
@@ -128,26 +131,7 @@ impl BinaryOp {
                     b << a.as_usize()
                 }
             }
-            BinaryOp::Sar => {
-                let value = I256::from(b);
-                if value == I256::default() || a >= U256::from(256) {
-                    match value.0 {
-                        false => U256::zero(),
-                        true => I256(true, U256::one()).into(),
-                    }
-                } else {
-                    match value.0 {
-                        false => value.1 >> a.as_usize(),
-                        true => {
-                            let shifted = ((value.1.overflowing_sub(U256::one()).0)
-                                >> a.as_usize())
-                            .overflowing_add(U256::one())
-                            .0;
-                            I256(true, shifted).into()
-                        }
-                    }
-                }
-            }
+            BinaryOp::Sar => bitwise::sar(a, b),
             BinaryOp::Add => a.overflowing_add(b).0,
             BinaryOp::And => a & b,
             BinaryOp::Or => a | b,
@@ -264,24 +248,9 @@ impl InstructionHandler for TernaryOp {
 
 impl TernaryOp {
     pub fn calc(&self, op1: U256, op2: U256, op3: U256) -> U256 {
-        let op1 = U512::from(op1);
-        let op2 = U512::from(op2);
-        let op3 = U512::from(op3);
         match self {
-            TernaryOp::AddMod => {
-                if op3 == U512::zero() {
-                    U256::zero()
-                } else {
-                    U256::from((op1 + op2) % op3)
-                }
-            }
-            TernaryOp::MulMod => {
-                if op3 == U512::zero() {
-                    U256::zero()
-                } else {
-                    U256::from((op1 * op2) % op3)
-                }
-            }
+            TernaryOp::AddMod => arithmetic::addmod(op1, op2, op3),
+            TernaryOp::MulMod => arithmetic::mulmod(op1, op2, op3),
         }
     }
 }

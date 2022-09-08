@@ -28,17 +28,12 @@ pub struct MirTranslator<'a> {
     pub(super) mir: Mir,
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
-    is_constructor: bool,
 }
 
 impl<'a> MirTranslator<'a> {
-    pub fn new(fun: &'a Function, is_constructor: bool) -> MirTranslator<'a> {
+    pub fn new(fun: &'a Function) -> MirTranslator<'a> {
         let mut variables = Variables::new(fun.input.iter().map(SType::from).collect());
         let mut mir = Mir::default();
-
-        if is_constructor {
-            mir.add_statement(Statement::InitStorage(variables.borrow_param(0)));
-        }
 
         let store_var = variables.borrow_global(SType::Storage);
         mir.add_statement(Statement::CreateVar(store_var, Expression::GetStore));
@@ -53,18 +48,12 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
-            is_constructor,
         }
     }
 
     pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
         let (mut vars, instructions, _) = hir.into_inner();
-        if self.is_constructor {
-            // TODO: replace with static initialization
-            self.translate_ret_unit()?;
-        } else {
-            self.translate_instructions(&instructions, &mut vars)?;
-        }
+        self.translate_instructions(&instructions, &mut vars)?;
         self.mir.set_locals(self.variables.locals());
         Ok(self.mir)
     }
@@ -258,7 +247,7 @@ impl<'a> MirTranslator<'a> {
                 offset,
                 StackOpsBuilder::default()
                     .push_var(offset)
-                    .push_const(Value::U128(32))
+                    .push_const(Value::Number(32))
                     .binary_op(Operation::Add, SType::Number, SType::Number)?
                     .build(SType::Number)?,
             ));

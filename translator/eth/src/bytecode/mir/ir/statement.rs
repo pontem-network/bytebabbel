@@ -18,7 +18,7 @@ pub enum Statement {
     },
     SStore {
         storage: Variable,
-        offset: Variable,
+        key: Variable,
         val: Variable,
     },
     IF {

@@ -1,7 +1,8 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
-use crate::bytecode::types::{Env, U256};
+use crate::bytecode::types::Env;
 use crate::BlockId;
+use primitive_types::U256;
 use std::collections::HashMap;
 use std::rc::Rc;
 

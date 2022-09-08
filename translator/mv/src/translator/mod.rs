@@ -10,6 +10,7 @@ use eth::bytecode::mir::ir::math::Operation;
 use eth::bytecode::mir::ir::statement::Statement;
 use eth::bytecode::mir::ir::types::SType;
 use eth::bytecode::mir::ir::Mir;
+use eth::bytecode::types::EthType;
 use eth::program::Program;
 use intrinsic::{template, Mem, Storage};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
@@ -53,14 +54,15 @@ impl MvIrTranslator {
     }
 
     fn translate_constructor(&mut self, program: &Program) -> Result<Func, Error> {
-        let def = program.constructor_def();
         let mir = program.constructor_mir().clone();
 
         self.code.reset();
         self.translate_statements(mir.statements())?;
         let code = self.code.freeze()?;
 
-        let input = self.sign_writer.make_signature(map_signature(&def.input));
+        let input = self
+            .sign_writer
+            .make_signature(map_signature(&[EthType::Address]));
         let output = self.sign_writer.make_signature(vec![]);
         Ok(Func {
             name: Identifier::new("constructor")?,
@@ -195,7 +197,7 @@ impl MvIrTranslator {
             }
             Statement::SStore {
                 storage,
-                offset,
+                key: offset,
                 val,
             } => {
                 self.code.call(

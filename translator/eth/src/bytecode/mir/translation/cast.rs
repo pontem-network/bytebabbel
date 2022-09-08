@@ -16,11 +16,11 @@ impl<'a> MirTranslator<'a> {
                     cnd: var.expr(),
                     true_br: vec![Statement::CreateVar(
                         result,
-                        Expression::Const(Value::U128(1)),
+                        Expression::Const(Value::Number(1)),
                     )],
                     false_br: vec![Statement::CreateVar(
                         result,
-                        Expression::Const(Value::U128(0)),
+                        Expression::Const(Value::Number(0)),
                     )],
                 });
                 Ok(result)
@@ -39,7 +39,7 @@ impl<'a> MirTranslator<'a> {
             SType::Number => {
                 let result = self.variables.borrow(SType::Bool);
                 let cnd = StackOpsBuilder::default()
-                    .push_const(Value::U128(0))
+                    .push_const(Value::Number(0))
                     .push_var(var)
                     .binary_op(Operation::Neq, SType::Number, SType::Bool)?
                     .build(SType::Bool)?;

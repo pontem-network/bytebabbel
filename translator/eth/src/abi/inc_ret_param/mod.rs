@@ -5,7 +5,7 @@ pub mod types;
 pub mod value;
 
 /// Аn incoming or returned parameter in a function
-#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct Param {
     /// Variable name
     pub name: String,

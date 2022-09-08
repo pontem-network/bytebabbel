@@ -13,9 +13,10 @@ use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
-use crate::bytecode::types::{Constructor, Env, Function, U256};
+use crate::bytecode::types::{Constructor, Env, Function};
 use crate::BlockId;
 use anyhow::{anyhow, bail, ensure, Error};
+use primitive_types::U256;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
