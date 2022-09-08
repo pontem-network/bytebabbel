@@ -22,7 +22,7 @@ impl<'a> MirTranslator<'a> {
 
         self.mir.add_statement(Statement::SStore {
             storage: self.store_var,
-            offset: addr,
+            key: addr,
             val: var,
         });
         Ok(())

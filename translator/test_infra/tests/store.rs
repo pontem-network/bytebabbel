@@ -1,5 +1,5 @@
 use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::env::sol::build_sol;
+use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
 use move_core_types::value::MoveValue;
 
@@ -7,22 +7,51 @@ use move_core_types::value::MoveValue;
 mod testssol;
 
 #[test]
-pub fn test() {
-    let evm = build_sol(include_bytes!("../sol/operators/logical/simple.sol")).unwrap();
-    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+pub fn test_empty_constructor() {
+    let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
+    let bytecode =
+        make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
-    vm.run("0x1::LogicalOperators::constructor", "0x1").unwrap();
-    let result = vm
-        .run("0x1::LogicalOperators::or_bool", "false, false")
+    vm.run("0x1::empty::constructor", "0x1").unwrap();
+    let res = vm.run("0x1::empty::get_val", "").unwrap().returns;
+    assert_eq!(
+        MoveValue::U128(42),
+        MoveValue::simple_deserialize(&res[0].0, &res[0].1).unwrap()
+    );
+}
+
+#[test]
+pub fn test_constructor_with_data() {
+    let evm = build_sol(include_bytes!("../sol/constructors/with_data.sol")).unwrap();
+
+    test(&evm, "1000, true", 1000);
+    test(&evm, "1000, false", 42);
+
+    fn test(evm: &Evm, init_args: &str, val: u128) {
+        let bytecode = make_move_module(
+            &format!("0x1::{}", evm.name()),
+            evm.bin(),
+            init_args,
+            evm.abi(),
+        )
         .unwrap();
-    println!("{:?}", result);
+        let mut vm = MoveExecutor::new();
+        vm.deploy("0x1", bytecode);
+        vm.run("0x1::with_data::constructor", "0x1").unwrap();
+        let res = vm.run("0x1::with_data::get_val", "").unwrap().returns;
+        assert_eq!(
+            MoveValue::U128(val),
+            MoveValue::simple_deserialize(&res[0].0, &res[0].1).unwrap()
+        );
+    }
 }
 
 #[test]
 pub fn test_store() {
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
-    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+    let bytecode =
+        make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
 
@@ -110,7 +139,8 @@ pub fn test_store() {
 #[test]
 pub fn test_bool_store() {
     let evm = build_sol(include_bytes!("../sol/store/bool_store.sol")).unwrap();
-    let bytecode = make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), evm.abi()).unwrap();
+    let bytecode =
+        make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
     let mut vm = MoveExecutor::new();
     vm.deploy("0x1", bytecode);
     vm.run("0x1::bool_store::constructor", "0x1").unwrap();

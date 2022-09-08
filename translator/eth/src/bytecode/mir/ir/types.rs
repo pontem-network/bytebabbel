@@ -31,16 +31,16 @@ pub type LocalIndex = u8;
 
 #[derive(Debug, Clone)]
 pub enum Value {
-    U128(u128),
+    Number(u128),
     Bool(bool),
 }
 
 impl From<U256> for Value {
     fn from(val: U256) -> Self {
         if val > U256::from(u128::MAX) {
-            Value::U128(val.low_u128())
+            Value::Number(val.low_u128())
         } else {
-            Value::U128(val.as_u128())
+            Value::Number(val.as_u128())
         }
     }
 }
@@ -54,7 +54,7 @@ impl From<bool> for Value {
 impl Value {
     pub fn s_type(&self) -> SType {
         match self {
-            Value::U128(_) => SType::Number,
+            Value::Number(_) => SType::Number,
             Value::Bool(_) => SType::Bool,
         }
     }

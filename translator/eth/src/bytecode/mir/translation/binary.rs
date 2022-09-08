@@ -117,10 +117,10 @@ fn translate_shr(
 
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
-        .push_const(Value::U128(0))
+        .push_const(Value::Number(0))
         .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .push_var(op)
-        .push_const(Value::U128(256))
+        .push_const(Value::Number(256))
         .binary_op(Operation::Ge, SType::Number, SType::Bool)?
         .binary_op(Operation::Or, SType::Bool, SType::Bool)?
         .build(SType::Bool)?;
@@ -129,7 +129,7 @@ fn translate_shr(
         cnd,
         true_br: vec![Statement::CreateVar(
             result,
-            Expression::Const(Value::U128(0)),
+            Expression::Const(Value::Number(0)),
         )],
         false_br: vec![Statement::CreateVar(result, Operation::Shr.expr(op1, op))],
     });
@@ -153,10 +153,10 @@ fn translate_shl(
 
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
-        .push_const(Value::U128(0))
+        .push_const(Value::Number(0))
         .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .push_var(op)
-        .push_const(Value::U128(256))
+        .push_const(Value::Number(256))
         .binary_op(Operation::Ge, SType::Number, SType::Bool)?
         .binary_op(Operation::Or, SType::Bool, SType::Bool)?
         .build(SType::Bool)?;
@@ -165,7 +165,7 @@ fn translate_shl(
         cnd,
         true_br: vec![Statement::CreateVar(
             result,
-            Expression::Const(Value::U128(0)),
+            Expression::Const(Value::Number(0)),
         )],
         false_br: vec![Statement::CreateVar(result, Operation::Shl.expr(op1, op))],
     });
@@ -210,7 +210,7 @@ fn translate_div(
 
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
-        .push_const(Value::U128(0))
+        .push_const(Value::Number(0))
         .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .build(SType::Bool)?;
 
@@ -218,7 +218,7 @@ fn translate_div(
         cnd,
         true_br: vec![Statement::CreateVar(
             result,
-            Expression::Const(Value::U128(0)),
+            Expression::Const(Value::Number(0)),
         )],
         false_br: vec![Statement::CreateVar(result, Operation::Div.expr(op, op1))],
     });
@@ -248,7 +248,7 @@ fn translate_mod(
 
     let cnd = StackOpsBuilder::default()
         .push_var(op1)
-        .push_const(Value::U128(0))
+        .push_const(Value::Number(0))
         .binary_op(Operation::Eq, SType::Number, SType::Bool)?
         .build(SType::Bool)?;
 
@@ -256,7 +256,7 @@ fn translate_mod(
         cnd,
         true_br: vec![Statement::CreateVar(
             result,
-            Expression::Const(Value::U128(0)),
+            Expression::Const(Value::Number(0)),
         )],
         false_br: vec![Statement::CreateVar(result, Operation::Mod.expr(op, op1))],
     });
@@ -307,8 +307,8 @@ fn translate_sub(
         .build(SType::Bool)?;
 
     let true_br = StackOpsBuilder::default()
-        .push_const(Value::U128(u128::MAX))
-        .push_const(Value::U128(1))
+        .push_const(Value::Number(u128::MAX))
+        .push_const(Value::Number(1))
         .push_var(op1)
         .push_var(op)
         .binary_op(Operation::Sub, SType::Number, SType::Number)?
@@ -359,7 +359,7 @@ fn translate_add(
     let result = translator.map_var(result, SType::Number);
 
     let cnd = StackOpsBuilder::default()
-        .push_const(Value::U128(u128::MAX))
+        .push_const(Value::Number(u128::MAX))
         .push_var(op1)
         .binary_op(Operation::Sub, SType::Number, SType::Number)?
         .push_var(op)
@@ -368,11 +368,11 @@ fn translate_add(
 
     let true_br = StackOpsBuilder::default()
         .push_var(op)
-        .push_const(Value::U128(u128::MAX))
+        .push_const(Value::Number(u128::MAX))
         .push_var(op1)
         .binary_op(Operation::Sub, SType::Number, SType::Number)?
         .binary_op(Operation::Sub, SType::Number, SType::Number)?
-        .push_const(Value::U128(1))
+        .push_const(Value::Number(1))
         .binary_op(Operation::Sub, SType::Number, SType::Number)?
         .build(SType::Number)?;
 

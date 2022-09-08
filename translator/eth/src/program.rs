@@ -1,5 +1,4 @@
 use crate::abi::entries::FunHash;
-use crate::bytecode::types::Constructor;
 use crate::{Abi, Function, Mir};
 use anyhow::Error;
 use std::collections::HashMap;
@@ -43,10 +42,6 @@ impl Program {
     pub fn constructor_mir(&self) -> &Mir {
         &self.constructor
     }
-
-    pub fn constructor_def(&self) -> &Constructor {
-        self.abi.constructor()
-    }
 }
 
 impl Debug for Program {
@@ -68,7 +63,7 @@ impl Debug for Program {
 impl Program {
     pub fn debug_constructors(&self) -> String {
         let mut output = String::new();
-        output += format!("public fun {}", self.abi.constructor()).as_str();
+        output += "public fun constructor(addr)";
         output += " {";
         output += "\n";
         self.constructor.print_to_buffer(&mut output).unwrap();

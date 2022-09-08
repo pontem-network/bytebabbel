@@ -130,7 +130,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         }
         Statement::SStore {
             storage,
-            offset,
+            key: offset,
             val,
         } => {
             writeln!(
@@ -152,7 +152,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
 pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(), Error> {
     match expr {
         Expression::Const(val) => match val {
-            Value::U128(val) => write!(buf, "{}u128", val)?,
+            Value::Number(val) => write!(buf, "{}u128", val)?,
             Value::Bool(val) => write!(buf, "{}", val)?,
         },
         Expression::Var(val) => write!(buf, "var_{}", val.index())?,
@@ -201,7 +201,7 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
 fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Error> {
     match op {
         StackOp::PushConst(val) => match val {
-            Value::U128(val) => {
+            Value::Number(val) => {
                 write!(buf, "{:width$}push {:?}", " ", val)?;
             }
             Value::Bool(val) => {

@@ -33,7 +33,7 @@ impl<'a> MirTranslator<'a> {
             UnaryOp::IsZero => {
                 let ops = StackOpsBuilder::default()
                     .push_var(op)
-                    .push_const(Value::U128(0))
+                    .push_const(Value::Number(0))
                     .binary_op(Operation::Eq, SType::Number, SType::Bool)?
                     .build(SType::Bool)?;
                 self.mir.add_statement(Statement::CreateVar(result, ops));

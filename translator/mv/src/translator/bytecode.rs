@@ -6,7 +6,7 @@ use move_binary_format::file_format::{Bytecode, LocalIndex};
 impl Writer {
     pub fn push_val(&mut self, value: &Value) {
         let op_code = match value {
-            Value::U128(val) => Bytecode::LdU128(*val),
+            Value::Number(val) => Bytecode::LdU128(*val),
             Value::Bool(val) => {
                 if *val {
                     Bytecode::LdTrue
