@@ -1,55 +1,9 @@
-/// The implementation of large numbers written in Move language.
-/// Code derived from original work by Andrew Poelstra <apoelstra@wpsoftware.net>
-///
-/// Rust Bitcoin Library
-/// Written in 2014 by
-///	   Andrew Poelstra <apoelstra@wpsoftware.net>
-///
-/// To the extent possible under law, the author(s) have dedicated all
-/// copyright and related and neighboring rights to this software to
-/// the public domain worldwide. This software is distributed without
-/// any warranty.
-///
-/// Simplified impl by Parity Team - https://github.com/paritytech/parity-common/blob/master/uint/src/uint.rs
-///
-/// Features:
-///     * mul
-///     * div
-///     * add
-///     * sub
-///     * shift left
-///     * shift right
-///     * compare
-///     * if math overflows the contract crashes.
-///
-/// Would be nice to help with the following TODO list:
-/// * pow() , sqrt().
-/// * math funcs that don't abort on overflows, but just returns reminders.
-/// * Export of low_u128 (see original implementation).
-/// * Export of low_u64 (see original implementation).
-/// * Gas Optimisation:
-///     * We can optimize by replacing bytecode, as far as we know Move VM itself support slices, so probably
-///       we can try to replace parts works with (`v0`,`v1`,`v2`,`v3` etc) works.
-///     * More?
-/// * More tests (see current tests and TODOs i left):
-///     * u256_arithmetic_test - https://github.com/paritytech/bigint/blob/master/src/uint.rs#L1338
-///     * More from - https://github.com/paritytech/bigint/blob/master/src/uint.rs
-/// * Division:
-///     * Could be improved with div_mod_small (current version probably would took a lot of resources for small numbers).
-///     * Also could be improved with Knuth, TAOCP, Volume 2, section 4.3.1, Algorithm D (see link to Parity above).
-module u256::u256 {
+module self::u256 {
+    /// U256
+    ///=================================================================================================================
     // Errors.
-    /// When can't cast `U256` to `u128` (e.g. number too large).
-    const ECAST_OVERFLOW: u64 = 0;
-
     /// When trying to get or put word into U256 but it's out of index.
     const EWORDS_OVERFLOW: u64 = 1;
-
-    /// When math overflows.
-    const EOVERFLOW: u64 = 2;
-
-    /// When attempted to divide by zero.
-    const EDIV_BY_ZERO: u64 = 3;
 
     // Constants.
 
@@ -94,7 +48,6 @@ module u256::u256 {
         v7: u64,
     }
 
-    // Public functions.
     /// Adds two `U256` and returns sum.
     public fun overflowing_add(a: U256, b: U256): U256 {
         let ret = zero();
@@ -135,18 +88,11 @@ module u256::u256 {
 
     /// Convert `U256` to `u128` value if possible (otherwise it aborts).
     public fun as_u128(a: U256): u128 {
-        assert!(a.v2 == 0 && a.v3 == 0, ECAST_OVERFLOW);
         ((a.v1 as u128) << 64) + (a.v0 as u128)
     }
 
-    /// Convert `U256` to `u64` value if possible (otherwise it aborts).
-    public fun as_u64(a: U256): u64 {
-        assert!(a.v1 == 0 && a.v2 == 0 && a.v3 == 0, ECAST_OVERFLOW);
-        a.v0
-    }
-
     /// Compares two `U256` numbers.
-    public fun compare(a: &U256, b: &U256): u8 {
+    public fun compare(a: & U256, b: & U256): u8 {
         let i = WORDS;
         while (i > 0) {
             i = i - 1;
@@ -165,11 +111,6 @@ module u256::u256 {
         EQUAL
     }
 
-    /// Returns a `U256` from `u64` value.
-    public fun from_u64(val: u64): U256 {
-        from_u128((val as u128))
-    }
-
     /// Returns a `U256` from `u128` value.
     public fun from_u128(val: u128): U256 {
         let (a2, a1) = split_u128(val);
@@ -183,7 +124,7 @@ module u256::u256 {
     }
 
     /// Multiples two `U256`.
-    public fun mul(a: U256, b: U256): U256 {
+    public fun overflowing_mul(a: U256, b: U256): U256 {
         let ret = DU256 {
             v0: 0,
             v1: 0,
@@ -239,13 +180,12 @@ module u256::u256 {
             i = i + 1;
         };
 
-        let (r, overflow) = du256_to_u256(ret);
-        assert!(!overflow, EOVERFLOW);
+        let (r, _overflow) = du256_to_u256(ret);
         r
     }
 
     /// Subtracts two `U256`, returns result.
-    public fun sub(a: U256, b: U256): U256 {
+    public fun overflowing_sub(a: U256, b: U256): U256 {
         let ret = zero();
 
         let carry = 0u64;
@@ -256,8 +196,8 @@ module u256::u256 {
             let b1 = get(&b, i);
 
             if (carry != 0) {
-                let (res1, is_overflow1) = overflowing_sub(a1, b1);
-                let (res2, is_overflow2) = overflowing_sub(res1, carry);
+                let (res1, is_overflow1) = overflowing_sub_u64(a1, b1);
+                let (res2, is_overflow2) = overflowing_sub_u64(res1, carry);
                 put(&mut ret, i, res2);
 
                 carry = 0;
@@ -269,7 +209,7 @@ module u256::u256 {
                     carry = carry + 1;
                 }
             } else {
-                let (res, is_overflow) = overflowing_sub(a1, b1);
+                let (res, is_overflow) = overflowing_sub_u64(a1, b1);
                 put(&mut ret, i, res);
 
                 carry = 0;
@@ -280,8 +220,6 @@ module u256::u256 {
 
             i = i + 1;
         };
-
-        assert!(carry == 0, EOVERFLOW);
         ret
     }
 
@@ -292,9 +230,11 @@ module u256::u256 {
         let a_bits = bits(&a);
         let b_bits = bits(&b);
 
-        assert!(b_bits != 0, EDIV_BY_ZERO); // DIVIDE BY ZERO.
+        if (b_bits == 0) {
+            return ret
+        };
+
         if (a_bits < b_bits) {
-            // Immidiatelly return.
             return ret
         };
 
@@ -309,7 +249,7 @@ module u256::u256 {
                 let c = m | 1 << ((shift % 64) as u8);
                 put(&mut ret, index, c);
 
-                a = sub(a, b);
+                a = overflowing_sub(a, b);
             };
 
             b = shr(b, 1);
@@ -388,7 +328,7 @@ module u256::u256 {
 
     // Private functions.
     /// Get bits used to store `a`.
-    fun bits(a: &U256): u64 {
+    fun bits(a: & U256): u64 {
         let i = 1;
         while (i < WORDS) {
             let a1 = get(a, WORDS - i);
@@ -416,7 +356,7 @@ module u256::u256 {
             let bit = 32;
 
             while (bit >= 1) {
-                let b = (a1 >> (bit-1)) & 1;
+                let b = (a1 >> (bit - 1)) & 1;
                 if (b != 0) {
                     break
                 };
@@ -428,7 +368,7 @@ module u256::u256 {
         } else {
             let bit = 64;
             while (bit >= 1) {
-                let b = (a >> (bit-1)) & 1;
+                let b = (a >> (bit - 1)) & 1;
                 if (b != 0) {
                     break
                 };
@@ -459,7 +399,7 @@ module u256::u256 {
     /// Similar to Rust `overflowing_sub`.
     /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would occur.
     /// If an overflow would have occurred then the wrapped value is returned.
-    fun overflowing_sub(a: u64, b: u64): (u64, bool) {
+    fun overflowing_sub_u64(a: u64, b: u64): (u64, bool) {
         if (a < b) {
             let r = b - a;
             ((U64_MAX as u64) - r + 1, true)
@@ -477,7 +417,7 @@ module u256::u256 {
     }
 
     /// Get word from `a` by index `i`.
-    public fun get(a: &U256, i: u64): u64 {
+    public fun get(a: & U256, i: u64): u64 {
         if (i == 0) {
             a.v0
         } else if (i == 1) {
@@ -492,7 +432,7 @@ module u256::u256 {
     }
 
     /// Get word from `DU256` by index.
-    fun get_d(a: &DU256, i: u64): u64 {
+    fun get_d(a: & DU256, i: u64): u64 {
         if (i == 0) {
             a.v0
         } else if (i == 1) {
@@ -782,7 +722,7 @@ module u256::u256 {
         let a = from_u128(1000);
         let b = from_u128(500);
 
-        let s = as_u128(sub(a, b));
+        let s = as_u128(overflowing_sub(a, b));
         assert!(s == 500, 0);
     }
 
@@ -792,7 +732,7 @@ module u256::u256 {
         let a = from_u128(0);
         let b = from_u128(1);
 
-        let _ = sub(a, b);
+        let _ = overflowing_sub(a, b);
     }
 
     #[test]
@@ -825,15 +765,15 @@ module u256::u256 {
 
     #[test]
     fun test_overflowing_sub() {
-        let (n, z) = overflowing_sub(10, 5);
+        let (n, z) = overflowing_sub_u64(10, 5);
         assert!(n == 5, 0);
         assert!(!z, 1);
 
-        (n, z) = overflowing_sub(0, 1);
+        (n, z) = overflowing_sub_u64(0, 1);
         assert!(n == (U64_MAX as u64), 2);
         assert!(z, 3);
 
-        (n, z) = overflowing_sub(10, 10);
+        (n, z) = overflowing_sub_u64(10, 10);
         assert!(n == 0, 4);
         assert!(!z, 5);
     }
@@ -854,32 +794,31 @@ module u256::u256 {
         let a = from_u128(285);
         let b = from_u128(375);
 
-        let c = as_u128(mul(a, b));
+        let c = as_u128(overflowing_mul(a, b));
         assert!(c == 106875, 0);
 
         a = from_u128(0);
         b = from_u128(1);
 
-        c = as_u128(mul(a, b));
+        c = as_u128(overflowing_mul(a, b));
 
         assert!(c == 0, 1);
 
         a = from_u128(U64_MAX);
         b = from_u128(2);
 
-        c = as_u128(mul(a, b));
+        c = as_u128(overflowing_mul(a, b));
 
         assert!(c == 36893488147419103230, 2);
 
         a = from_u128(U128_MAX);
         b = from_u128(U128_MAX);
 
-        let z = mul(a, b);
+        let z = overflowing_mul(a, b);
         assert!(bits(&z) == 256, 3);
     }
 
     #[test]
-    #[expected_failure(abort_code = 2)]
     fun test_mul_overflow() {
         let max = (U64_MAX as u64);
 
@@ -890,7 +829,7 @@ module u256::u256 {
             v3: max,
         };
 
-        let _ = mul(a, from_u128(2));
+        let _ = overflowing_mul(a, from_u128(2));
     }
 
     #[test]
@@ -903,14 +842,6 @@ module u256::u256 {
         assert!(a.v1 == 0, 2);
         assert!(a.v2 == 0, 3);
         assert!(a.v3 == 0, 4);
-    }
-
-    #[test]
-    fun test_from_u64() {
-        let a = as_u128(from_u64(100));
-        assert!(a == 100, 0);
-
-        // TODO: more tests.
     }
 
     #[test]
@@ -965,7 +896,7 @@ module u256::u256 {
         a = bits(&from_u128(70000));
         assert!(a == 17, 5);
 
-        let b = from_u64(70000);
+        let b = from_u128(70000);
         let sh = shl(b, 100);
         assert!(bits(&sh) == 117, 6);
 
@@ -1021,21 +952,9 @@ module u256::u256 {
     }
 
     #[test]
-    #[expected_failure(abort_code=3)]
+    #[expected_failure(abort_code = 3)]
     fun test_div_by_zero() {
         let a = from_u128(1);
         let _z = div(a, from_u128(0));
-    }
-
-    #[test]
-    fun test_as_u64() {
-        let _ = as_u64(from_u64((U64_MAX as u64)));
-        let _ = as_u64(from_u128(1));
-    }
-
-    #[test]
-    #[expected_failure(abort_code=0)]
-    fun test_as_u64_overflow() {
-        let _ = as_u64(from_u128(U128_MAX));
     }
 }
