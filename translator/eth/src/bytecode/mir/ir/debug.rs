@@ -145,6 +145,27 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::InitStorage(var) => {
             writeln!(buf, "{:width$}init_storage(var_{:?});", " ", var.index(),)?;
         }
+        Statement::Log {
+            storage: _,
+            memory: _,
+            offset,
+            len,
+            topics,
+        } => {
+            let topics = topics
+                .iter()
+                .map(|t| format!("var_{:?}", t.index()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            writeln!(
+                buf,
+                "{:width$}log(mem[{}:+{}], {})",
+                " ",
+                offset.index(),
+                len.index(),
+                topics
+            )?;
+        }
     }
     Ok(())
 }
@@ -156,7 +177,6 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             Value::Bool(val) => write!(buf, "{}", val)?,
         },
         Expression::Var(val) => write!(buf, "var_{}", val.index())?,
-        Expression::Param(idx, _) => write!(buf, "param_{}", idx)?,
         Expression::Operation(cmd, op, op1) => {
             write!(
                 buf,
@@ -206,6 +226,26 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
                 buf,
                 "var_{:?}.mem_slice(var_{:?}, var_{:?})",
                 memory.index(),
+                offset.index(),
+                len.index()
+            )?;
+        }
+        Expression::BytesLen(bytes) => {
+            write!(buf, "var_{:?}.len()", bytes.index())?;
+        }
+        Expression::ReadNum { data, offset } => {
+            write!(
+                buf,
+                "var_{:?}.read_num(var_{:?})",
+                data.index(),
+                offset.index()
+            )?;
+        }
+        Expression::Hash { mem, offset, len } => {
+            write!(
+                buf,
+                "var_{:?}.hash(var_{:?}, var_{:?})",
+                mem.index(),
                 offset.index(),
                 len.index()
             )?;

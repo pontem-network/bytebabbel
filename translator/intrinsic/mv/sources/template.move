@@ -26,11 +26,19 @@ module self::template {
     }
 
     /// API
+    fun bytes_len(data: &vector<u8>): U256 {
+        let len = std::vector::length(data);
+        U256 {
+           v0: len, v1: 0, v2: 0, v3: 0
+        }
+    }
+
+    // API
     fun effective_len(self: &mut Memory): U256 {
         from_u128((self.effective_len as u128))
     }
 
-    /// API
+    // API
     fun mload(mem: &mut Memory, offset: U256): U256 {
         let position = as_u64(offset);
         resize_offset(mem, position, WORD_SIZE);
@@ -151,6 +159,20 @@ module self::template {
             };
         };
         return
+    }
+
+    #[test]
+    fun test_buff_len() {
+        let buff = std::vector::empty();
+        std::vector::push_back(&mut buff, 1);
+        std::vector::push_back(&mut buff, 2);
+        std::vector::push_back(&mut buff, 3);
+        std::vector::push_back(&mut buff, 4);
+        std::vector::push_back(&mut buff, 5);
+        std::vector::push_back(&mut buff, 6);
+        std::vector::push_back(&mut buff, 7);
+        let len = as_u128(bytes_len(&buff));
+        assert!(len == 7, 1);
     }
 
     #[test]

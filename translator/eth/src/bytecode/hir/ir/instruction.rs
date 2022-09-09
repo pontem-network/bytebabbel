@@ -20,6 +20,11 @@ pub enum Instruction {
         addr: VarId,
         var: VarId,
     },
+    Log {
+        offset: VarId,
+        len: VarId,
+        topics: Vec<VarId>,
+    },
     If {
         condition: VarId,
         true_branch: Vec<Instruction>,

@@ -34,6 +34,14 @@ impl Hir {
         self.instructions.push(Instruction::SStore { addr, var });
     }
 
+    pub fn log(&mut self, offset: VarId, len: VarId, topics: Vec<VarId>) {
+        self.instructions.push(Instruction::Log {
+            offset,
+            len,
+            topics,
+        });
+    }
+
     pub fn push_loop(
         &mut self,
         id: BlockId,

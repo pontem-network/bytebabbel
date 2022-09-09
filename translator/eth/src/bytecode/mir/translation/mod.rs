@@ -141,6 +141,26 @@ impl<'a> MirTranslator<'a> {
                     self.translate_instructions(inst, vars)?;
                     self.mir.add_statement(Statement::Continue(*id));
                 }
+                Instruction::Log {
+                    offset,
+                    len,
+                    topics,
+                } => {
+                    let topics = topics
+                        .iter()
+                        .map(|t| self.get_var(*t))
+                        .collect::<Result<Vec<_>, _>>()?;
+
+                    let offset = self.get_var(*offset)?;
+                    let len = self.get_var(*len)?;
+                    self.mir.add_statement(Statement::Log {
+                        storage: self.store_var,
+                        memory: self.mem_var,
+                        offset,
+                        len,
+                        topics,
+                    });
+                }
             }
         }
         Ok(())
@@ -208,9 +228,44 @@ impl<'a> MirTranslator<'a> {
                 let result = self.cast(signer, SType::Num)?;
                 self.mapping.insert(id, result);
             }
-            Eval::ArgsSize => {}
-            Eval::Args(_) => {}
-            Eval::Hash(_, _) => {}
+            Eval::ArgsSize => {
+                let result = self.variables.borrow(SType::Num);
+                let args = self.variables.borrow_param(self.args_index);
+                ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
+                self.mir
+                    .add_statement(Statement::CreateVar(result, Expression::BytesLen(args)));
+                self.mapping.insert(id, result);
+            }
+            Eval::Args(offset) => {
+                let result = self.variables.borrow(SType::Num);
+                let data = self.variables.borrow_param(self.args_index);
+                let offset = self.get_var(offset)?;
+                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
+                ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
+
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Expression::ReadNum { data, offset },
+                ));
+                self.mapping.insert(id, result);
+            }
+            Eval::Hash(offset, len) => {
+                let result = self.variables.borrow(SType::Num);
+
+                let offset = self.get_var(offset)?;
+                let len = self.get_var(len)?;
+                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
+                ensure!(len.s_type() == SType::Num, "len must be of type num");
+
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Expression::Hash {
+                        mem: self.mem_var,
+                        offset,
+                        len,
+                    },
+                ));
+            }
         }
         Ok(())
     }

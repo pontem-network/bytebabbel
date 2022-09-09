@@ -1,5 +1,5 @@
 use crate::bytecode::mir::ir::math::Operation;
-use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
+use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::{anyhow, ensure, Error};
 
@@ -25,10 +25,19 @@ pub enum Expression {
     },
     Const(Value),
     Var(Variable),
-    Param(LocalIndex, SType),
     Operation(Operation, Variable, Variable),
     StackOps(StackOps),
     Cast(Variable, Cast),
+    BytesLen(Variable),
+    ReadNum {
+        data: Variable,
+        offset: Variable,
+    },
+    Hash {
+        mem: Variable,
+        offset: Variable,
+        len: Variable,
+    },
 }
 
 #[derive(Debug, Clone)]

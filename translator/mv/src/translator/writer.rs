@@ -125,6 +125,9 @@ impl Writer {
                 CallOp::MutBorrow(var) => {
                     self.code.push(Bytecode::MutBorrowLoc(var.index()));
                 }
+                CallOp::Borrow(var) => {
+                    self.code.push(Bytecode::ImmBorrowLoc(var.index()));
+                }
             }
         }
         self.code.push(Bytecode::Call(fun.handler()));
@@ -134,5 +137,6 @@ impl Writer {
 pub enum CallOp {
     Var(Variable),
     MutBorrow(Variable),
+    Borrow(Variable),
     ConstU64(u64),
 }

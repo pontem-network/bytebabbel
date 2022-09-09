@@ -6,7 +6,11 @@ use crate::Hir;
 pub struct EventOp(pub usize);
 
 impl InstructionHandler for EventOp {
-    fn handle(&self, _: Vec<VarId>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
-        todo!()
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+        let offset = params[0];
+        let len = params[1];
+        let topics = params[2..].to_vec();
+        ir.log(offset, len, topics);
+        ExecutionResult::None
     }
 }

@@ -124,6 +124,17 @@ fn print_instruction(
         Instruction::SStore { addr, var } => {
             write!(buf, "{:width$}store[{:?}] = {:?};", " ", addr, var)?;
         }
+        Instruction::Log {
+            offset,
+            len,
+            topics,
+        } => {
+            write!(buf, "{:width$}log(mem[{:?}; {:?}], ", " ", offset, len)?;
+            for topic in topics {
+                write!(buf, "{:?}, ", topic)?;
+            }
+            write!(buf, ");")?;
+        }
     };
     writeln!(buf)?;
     Ok(())

@@ -109,6 +109,19 @@ impl UnusedVarClipper {
                         ir.map_var(id, val);
                     }
                 }
+                Instruction::Log {
+                    offset,
+                    len,
+                    topics,
+                } => {
+                    let offset = Self::map_var_id(offset, id_mapping)?;
+                    let len = Self::map_var_id(len, id_mapping)?;
+                    let topics = topics
+                        .into_iter()
+                        .map(|t| Self::map_var_id(t, id_mapping))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    ir.log(offset, len, topics);
+                }
             }
         }
         Ok(())
@@ -250,6 +263,22 @@ impl VarReachability {
                     self.mark_var_as_reachable(val);
                     self.mark_var_as_reachable(id);
                 }
+                Instruction::Log {
+                    offset,
+                    len,
+                    topics,
+                } => {
+                    self.insert_var(ir, offset);
+                    self.insert_var(ir, len);
+                    for topic in topics {
+                        self.insert_var(ir, topic);
+                    }
+                    self.mark_var_as_reachable(offset);
+                    self.mark_var_as_reachable(len);
+                    for topic in topics {
+                        self.mark_var_as_reachable(topic);
+                    }
+                }
             }
         }
     }
@@ -376,6 +405,17 @@ impl<'r> ContextAnalyzer<'r> {
                 Instruction::Result { offset, len } => {
                     self.push_to_context(loops, offset, ir);
                     self.push_to_context(loops, len, ir);
+                }
+                Instruction::Log {
+                    offset,
+                    len,
+                    topics,
+                } => {
+                    self.push_to_context(loops, offset, ir);
+                    self.push_to_context(loops, len, ir);
+                    for topic in topics {
+                        self.push_to_context(loops, topic, ir);
+                    }
                 }
             }
         }

@@ -2,7 +2,7 @@ use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, bail, Error};
 use eth::abi::entries::FunHash;
 use eth::bytecode::block::BlockId;
 use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp};
@@ -214,6 +214,15 @@ impl MvIrTranslator {
             Statement::InitStorage(var) => {
                 self.code.call(Persist::Create, &[CallOp::Var(*var)]);
             }
+            Statement::Log {
+                storage,
+                memory,
+                offset,
+                len,
+                topics,
+            } => {
+                self.translate_log(*storage, *memory, *offset, *len, topics)?;
+            }
         }
         Ok(())
     }
@@ -245,9 +254,6 @@ impl MvIrTranslator {
             }
             Expression::Var(var) => {
                 self.code.ld_var(var.index());
-            }
-            Expression::Param(idx, _) => {
-                self.code.ld_var(*idx);
             }
             Expression::Operation(cmd, op, op1) => self.translate_operation(*cmd, op, op1),
             Expression::StackOps(ops) => {
@@ -312,6 +318,25 @@ impl MvIrTranslator {
                 );
             }
             Expression::Cast(var, cast) => self.translate_cast(var, cast)?,
+            Expression::BytesLen(bytes) => {
+                self.code.call(Mem::BytesLen, &[CallOp::Borrow(*bytes)]);
+            }
+            Expression::ReadNum { data, offset } => {
+                self.code.call(
+                    Num::FromBytes,
+                    &[CallOp::Borrow(*data), CallOp::Var(*offset)],
+                );
+            }
+            Expression::Hash { mem, offset, len } => {
+                self.code.call(
+                    Mem::Hash,
+                    &[
+                        CallOp::MutBorrow(*mem),
+                        CallOp::Var(*offset),
+                        CallOp::Var(*len),
+                    ],
+                );
+            }
         }
         Ok(())
     }
@@ -378,6 +403,50 @@ impl MvIrTranslator {
                 self.code.call(Num::ToBool, &[CallOp::Var(*var)]);
             }
         }
+        Ok(())
+    }
+
+    fn translate_log(
+        &mut self,
+        storage: Variable,
+        memory: Variable,
+        offset: Variable,
+        len: Variable,
+        topics: &[Variable],
+    ) -> Result<(), Error> {
+        let mut args = vec![
+            CallOp::Var(storage),
+            CallOp::MutBorrow(memory),
+            CallOp::Var(offset),
+            CallOp::Var(len),
+        ];
+        let fun = match topics.len() {
+            0 => Persist::Log0,
+            1 => {
+                args.push(CallOp::Var(topics[0]));
+                Persist::Log1
+            }
+            2 => {
+                args.push(CallOp::Var(topics[0]));
+                args.push(CallOp::Var(topics[1]));
+                Persist::Log2
+            }
+            3 => {
+                args.push(CallOp::Var(topics[0]));
+                args.push(CallOp::Var(topics[1]));
+                args.push(CallOp::Var(topics[2]));
+                Persist::Log3
+            }
+            4 => {
+                args.push(CallOp::Var(topics[0]));
+                args.push(CallOp::Var(topics[1]));
+                args.push(CallOp::Var(topics[2]));
+                args.push(CallOp::Var(topics[3]));
+                Persist::Log4
+            }
+            _ => bail!("too many topics"),
+        };
+        self.code.call(fun, &args);
         Ok(())
     }
 
