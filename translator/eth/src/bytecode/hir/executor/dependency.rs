@@ -40,7 +40,7 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => U256::zero(),
             TxMeta::Origin => U256::zero(),
@@ -51,11 +51,27 @@ impl InstructionHandler for TxMeta {
             TxMeta::CallValue => U256::zero(),
             TxMeta::CallDataLoad => {
                 let offset = params[0];
+                if ctx.is_static_analysis_enable() {
+                    ctx.disable_static_analysis();
+                    if let Some(offset) = ir.resolve_var(offset) {
+                        if offset.is_zero() {
+                            let mut buf = [0u8; 32];
+                            buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
+                            let id = ir.create_var(Eval::Val(U256::from(buf)));
+                            return ExecutionResult::Output(vec![id]);
+                        }
+                    }
+                }
+
                 let id = ir.create_var(Eval::Args(offset));
                 return ExecutionResult::Output(vec![id]);
             }
             TxMeta::CallDataSize => {
-                let id = ir.create_var(Eval::ArgsSize);
+                let id = if ctx.is_static_analysis_enable() {
+                    ir.create_var(Eval::Val(U256::from(4)))
+                } else {
+                    ir.create_var(Eval::ArgsSize)
+                };
                 return ExecutionResult::Output(vec![id]);
             }
             TxMeta::Blockhash => U256::zero(),

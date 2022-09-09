@@ -173,7 +173,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
 pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(), Error> {
     match expr {
         Expression::Const(val) => match val {
-            Value::Number(val) => write!(buf, "{}u128", val)?,
+            Value::Number(val) => write!(buf, "{}", val)?,
             Value::Bool(val) => write!(buf, "{}", val)?,
         },
         Expression::Var(val) => write!(buf, "var_{}", val.index())?,

@@ -18,7 +18,7 @@ impl Display for SType {
             f,
             "{}",
             match self {
-                SType::Num => "u128",
+                SType::Num => "num",
                 SType::Bool => "bool",
                 SType::Storage => "Storage",
                 SType::Memory => "Memory",

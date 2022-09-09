@@ -190,7 +190,7 @@ impl<'a> MirTranslator<'a> {
             Eval::MLoad(addr) => {
                 let result = self.variables.borrow(SType::Num);
                 let addr = self.get_var(addr)?;
-                ensure!(addr.s_type() == SType::Num, "address must be of type u128");
+                ensure!(addr.s_type() == SType::Num, "address must be of type num");
                 self.mapping.insert(id, result);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
@@ -204,7 +204,7 @@ impl<'a> MirTranslator<'a> {
                 let result = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, result);
                 let addr = self.get_var(addr)?;
-                ensure!(addr.s_type() == SType::Num, "address must be of type u128");
+                ensure!(addr.s_type() == SType::Num, "address must be of type num");
 
                 self.mir.add_statement(Statement::CreateVar(
                     result,

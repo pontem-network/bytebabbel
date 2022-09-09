@@ -13,6 +13,7 @@ pub struct Context {
     env: Rc<Env>,
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
+    static_analysis: bool,
     code_size: u128,
 }
 
@@ -24,8 +25,17 @@ impl Context {
             env: Rc::new(env),
             loop_input: Default::default(),
             loop_stack_size: 0,
+            static_analysis: true,
             code_size,
         }
+    }
+
+    pub fn disable_static_analysis(&mut self) {
+        self.static_analysis = false;
+    }
+
+    pub fn is_static_analysis_enable(&self) -> bool {
+        self.static_analysis
     }
 
     pub fn pop_stack(&mut self, pops: usize) -> Vec<VarId> {
