@@ -116,11 +116,9 @@ impl STest {
         let mut evm = REvm::try_from(&self.contract)?;
         evm.construct(vec![])?;
         let result_bytes = evm.run_tx(tx)?;
-        // @todo
         log::trace!("emv result_bytes: {result_bytes:?}");
 
         let return_value = callfn.decode_return(result_bytes)?.to_result_str();
-        // @todo
         log::trace!("emv result_string: {return_value:?}");
 
         Ok(format!("{return_value}"))

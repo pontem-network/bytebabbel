@@ -1,6 +1,6 @@
 [package]
 name = "e2m"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = [
     "Maxim Vladimirov <maxim@pontem.network>",
@@ -11,15 +11,11 @@ keywords = ["solidity", "sol", "move", "translator"]
 description = "Converting the file solidity (abi + bin or sol) to binary code move"
 
 [dependencies]
-clap = { version = "3.1.8", features = ["derive"] }
+clap = { version = "3.2.11", features = ["derive"] }
 anyhow = "1.0.58"
-sha2 = { version = "0.10", default-features = false }
-base32 = "0.4"
 log = "0.4"
 env_logger = "0.9.0"
 tempfile = "3.3"
-tokio = { version = "1.21", features = ["full"] }
-serde_json = "1.0.82"
 serde_yaml = "0.8.24"
 #
 move-core-types = { git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675" , features = ["address32"] }
@@ -30,9 +26,33 @@ translator = { path = "../../translator" }
 # It is necessary to monitor the relevance. At the moment, this particular client is working with devnet
 # You need to download a working client from https://github.com/aptos-labs/aptos-core/releases
 #   test it and find out the commit using "aptos info".
+
+bcs = {version = "0.1.3", optional = true }
+sha2 = { version = "0.9.3", optional = true }
+hex = { version = "0.4", optional = true }
+tokio = { version = "1.21", features = ["full"], optional = true }
+serde_json = { version = "1.0.82", optional = true }
+
 aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
 aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
 aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
+cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
+
+move-binary-format = {git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675", optional = true }
 
 [features]
-deploy = ["aptos", "aptos-vm", "aptos-types"]
+deploy = [
+    "bcs",
+    "sha2",
+    "hex",
+    "tokio",
+    "serde_json",
+
+    "aptos",
+    "aptos-vm",
+    "aptos-types",
+    "framework",
+    "cached-packages",
+    "move-binary-format",
+]
