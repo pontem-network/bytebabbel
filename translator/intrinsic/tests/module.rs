@@ -1,5 +1,5 @@
 use enum_iterator::all;
-use intrinsic::{self_address_index, template, Mem, Num, Storage};
+use intrinsic::{self_address_index, template, Function, Mem, Num, Storage};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -80,7 +80,7 @@ pub fn test_intrinsic_signature_token() {
     let template = template(address, "template_module");
 
     let diff: Vec<Mem> = all::<Mem>()
-        .filter(|mem| find_function_by_name(&template, mem.name()) != mem.func_handler())
+        .filter(|mem| find_function_by_name(&template, mem.name()) != mem.handler())
         .collect();
 
     for mem in &diff {
@@ -95,7 +95,7 @@ pub fn test_intrinsic_signature_token() {
     }
 
     let diff: Vec<Storage> = all::<Storage>()
-        .filter(|store| find_function_by_name(&template, store.name()) != store.func_handler())
+        .filter(|store| find_function_by_name(&template, store.name()) != store.handler())
         .collect();
 
     for store in &diff {
@@ -110,7 +110,7 @@ pub fn test_intrinsic_signature_token() {
     }
 
     let diff: Vec<Num> = all::<Num>()
-        .filter(|num| find_function_by_name(&template, num.name()) != num.func_handler())
+        .filter(|num| find_function_by_name(&template, num.name()) != num.handler())
         .collect();
 
     for num in &diff {

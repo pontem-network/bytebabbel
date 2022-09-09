@@ -194,8 +194,21 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
         Expression::GetStore => {
             write!(buf, "borrow_storage()")?;
         }
-        Expression::AddressToNumber(var) => {
-            write!(buf, "var_{:?}.to_number()", var)?;
+        Expression::Cast(var, cast) => {
+            write!(buf, "var_{:?} as {:?}", var.index(), cast.to())?;
+        }
+        Expression::MSlice {
+            memory,
+            offset,
+            len,
+        } => {
+            write!(
+                buf,
+                "var_{:?}.mem_slice(var_{:?}, var_{:?})",
+                memory.index(),
+                offset.index(),
+                len.index()
+            )?;
         }
     }
     Ok(())
@@ -203,22 +216,17 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
 
 fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Error> {
     match op {
-        StackOp::PushConst(val) => match val {
-            Value::Number(val) => {
-                write!(buf, "{:width$}push {:?}", " ", val)?;
-            }
-            Value::Bool(val) => {
-                write!(buf, "{:width$}push {:?}", " ", val)?;
-            }
-        },
-        StackOp::PushVar(val) => {
+        StackOp::PushBoolVar(val) => {
             write!(buf, "{:width$}push var_{}", " ", val.index())?;
-        }
-        StackOp::BinaryOp(val) => {
-            write!(buf, "{:width$}{:?}", " ", val)?;
         }
         StackOp::Not => {
             write!(buf, "{:width$}!", " ")?;
+        }
+        StackOp::PushBool(val) => {
+            write!(buf, "{:width$}push {}", " ", val)?;
+        }
+        StackOp::Eq => {
+            write!(buf, "{:width$}eq", " ")?;
         }
     }
     Ok(())
@@ -236,16 +244,20 @@ impl Operation {
             Operation::Gt => ">",
             Operation::Shr => ">>",
             Operation::Shl => "<<",
-            Operation::And => "&",
-            Operation::Or => "|",
-            Operation::Xor => "^",
+            Operation::BitXor => "^",
             Operation::BitOr => "|",
             Operation::BitAnd => "&",
-            Operation::Not => "!",
             Operation::Eq => "==",
-            Operation::Neq => "!=",
-            Operation::Le => "<=",
-            Operation::Ge => ">=",
+            Operation::Sar => "sar",
+            Operation::Byte => "byte",
+            Operation::SDiv => "sdiv",
+            Operation::SLt => "slt",
+            Operation::SGt => "sgt",
+            Operation::SMod => "smod",
+            Operation::Exp => "exp",
+            Operation::SignExtend => "signextend",
+            Operation::IsZero => " == 0",
+            Operation::BitNot => "!",
         }
     }
 }

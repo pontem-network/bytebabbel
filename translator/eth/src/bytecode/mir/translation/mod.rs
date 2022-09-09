@@ -1,12 +1,10 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
-use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
-use crate::bytecode::mir::ir::math::Operation;
+use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
-use crate::bytecode::types::EthType;
 use crate::{Function, Hir};
 use anyhow::{anyhow, ensure, Error};
 use std::collections::HashMap;
@@ -152,7 +150,7 @@ impl<'a> MirTranslator<'a> {
         let var = vars.take(id)?;
         match var {
             Eval::Val(val) => {
-                let var = self.variables.borrow(SType::Number);
+                let var = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, var);
 
                 self.mir.add_statement(Statement::CreateVar(
@@ -170,12 +168,9 @@ impl<'a> MirTranslator<'a> {
                 self.translate_ternary_op(cmd, op1, op2, op3, id)?;
             }
             Eval::MLoad(addr) => {
-                let result = self.variables.borrow(SType::Number);
+                let result = self.variables.borrow(SType::Num);
                 let addr = self.get_var(addr)?;
-                ensure!(
-                    addr.s_type() == SType::Number,
-                    "address must be of type u128"
-                );
+                ensure!(addr.s_type() == SType::Num, "address must be of type u128");
                 self.mapping.insert(id, result);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
@@ -186,13 +181,10 @@ impl<'a> MirTranslator<'a> {
                 ));
             }
             Eval::SLoad(addr) => {
-                let result = self.variables.borrow(SType::Number);
+                let result = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, result);
                 let addr = self.get_var(addr)?;
-                ensure!(
-                    addr.s_type() == SType::Number,
-                    "address must be of type u128"
-                );
+                ensure!(addr.s_type() == SType::Num, "address must be of type u128");
 
                 self.mir.add_statement(Statement::CreateVar(
                     result,
@@ -203,7 +195,7 @@ impl<'a> MirTranslator<'a> {
                 ));
             }
             Eval::MSize => {
-                let result = self.variables.borrow(SType::Number);
+                let result = self.variables.borrow(SType::Num);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
                     Expression::MSize {
@@ -213,7 +205,7 @@ impl<'a> MirTranslator<'a> {
             }
             Eval::Signer => {
                 let signer = self.variables.borrow_param(self.signer_index);
-                let result = self.cast_number(signer)?;
+                let result = self.cast(signer, SType::Num)?;
                 self.mapping.insert(id, result);
             }
             Eval::ArgsSize => {}
@@ -236,34 +228,20 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_ret(&mut self, offset: VarId, _: VarId) -> Result<(), Error> {
-        let mut vars = Vec::with_capacity(self.fun.output.len());
+    fn translate_ret(&mut self, offset: VarId, len: VarId) -> Result<(), Error> {
         let offset = self.get_var(offset)?;
-        for output in self.fun.output.clone() {
-            let var = self.variables.borrow(SType::Number);
-            self.mir.add_statement(Statement::CreateVar(
-                var,
-                Expression::MLoad {
-                    memory: self.mem_var,
-                    offset,
-                },
-            ));
-            self.mir.add_statement(Statement::CreateVar(
+        let len = self.get_var(len)?;
+        let result = self.variables.borrow(SType::Bytes);
+        self.mir.add_statement(Statement::CreateVar(
+            result,
+            Expression::MSlice {
+                memory: self.mem_var,
                 offset,
-                StackOpsBuilder::default()
-                    .push_var(offset)
-                    .push_const(Value::Number(32))
-                    .binary_op(Operation::Add, SType::Number, SType::Number)?
-                    .build(SType::Number)?,
-            ));
+                len,
+            },
+        ));
 
-            if let EthType::Bool = output {
-                vars.push(self.cast_bool(var)?);
-            } else {
-                vars.push(var);
-            }
-        }
-        self.mir.add_statement(Statement::Result(vars));
+        self.mir.add_statement(Statement::Result(vec![result]));
         Ok(())
     }
 }

@@ -3,7 +3,7 @@ use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::mir::ir::expression::StackOpsBuilder;
 use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
-use crate::bytecode::mir::ir::types::{SType, Value};
+use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 use anyhow::{anyhow, Error};
@@ -17,7 +17,7 @@ impl<'a> MirTranslator<'a> {
     ) -> Result<(), Error> {
         let var = self.get_var(op)?;
         match var.s_type() {
-            SType::Number => self.unary_with_u128(cmd, var, result),
+            SType::Num => self.unary_with_num(cmd, var, result),
             SType::Bool => self.unary_with_bool(cmd, var, result),
             _ => Err(anyhow!(
                 "Unary operation {:?} not supported for type {:?}",
@@ -27,18 +27,17 @@ impl<'a> MirTranslator<'a> {
         }
     }
 
-    fn unary_with_u128(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
+    fn unary_with_num(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
         let result = self.map_var(result, SType::Bool);
         match cmd {
-            UnaryOp::IsZero => {
-                let ops = StackOpsBuilder::default()
-                    .push_var(op)
-                    .push_const(Value::Number(0))
-                    .binary_op(Operation::Eq, SType::Number, SType::Bool)?
-                    .build(SType::Bool)?;
-                self.mir.add_statement(Statement::CreateVar(result, ops));
-            }
-            UnaryOp::Not => {}
+            UnaryOp::IsZero => self.mir.add_statement(Statement::CreateVar(
+                result,
+                Operation::IsZero.expr(op, Variable::none()),
+            )),
+            UnaryOp::Not => self.mir.add_statement(Statement::CreateVar(
+                result,
+                Operation::BitNot.expr(op, Variable::none()),
+            )),
         }
         Ok(())
     }
@@ -48,15 +47,15 @@ impl<'a> MirTranslator<'a> {
         match cmd {
             UnaryOp::IsZero => {
                 let ops = StackOpsBuilder::default()
-                    .push_var(op)
-                    .push_const(Value::from(false))
-                    .binary_op(Operation::Eq, SType::Bool, SType::Bool)?
+                    .push_bool(op)?
+                    .push_const_bool(false)
+                    .eq()?
                     .build(SType::Bool)?;
                 self.mir.add_statement(Statement::CreateVar(result, ops));
             }
             UnaryOp::Not => {
                 let ops = StackOpsBuilder::default()
-                    .push_var(op)
+                    .push_bool(op)?
                     .not()?
                     .build(SType::Bool)?;
                 self.mir.add_statement(Statement::CreateVar(result, ops));

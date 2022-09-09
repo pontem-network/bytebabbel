@@ -1,72 +1,20 @@
-use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
-use crate::bytecode::mir::ir::math::Operation;
+use crate::bytecode::mir::ir::expression::{Cast, Expression};
 use crate::bytecode::mir::ir::statement::Statement;
-use crate::bytecode::mir::ir::types::{SType, Value};
+use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 
 impl<'a> MirTranslator<'a> {
-    pub fn cast_number(&mut self, var: Variable) -> Result<Variable, Error> {
-        match var.s_type() {
-            SType::Number => Ok(var),
-            SType::Bool => {
-                let result = self.variables.borrow(SType::Number);
-                self.mir.add_statement(Statement::IF {
-                    cnd: var.expr(),
-                    true_br: vec![Statement::CreateVar(
-                        result,
-                        Expression::Const(Value::Number(1)),
-                    )],
-                    false_br: vec![Statement::CreateVar(
-                        result,
-                        Expression::Const(Value::Number(0)),
-                    )],
-                });
-                Ok(result)
-            }
-            SType::Address => {
-                let result = self.variables.borrow(SType::Number);
-                self.mir.add_statement(Statement::CreateVar(
-                    result,
-                    Expression::AddressToNumber(var),
-                ));
-                Ok(result)
-            }
-            SType::Storage => Err(anyhow!("Storage type not supported for cast")),
-            SType::Memory => Err(anyhow!("Memory type not supported for cast")),
+    pub fn cast(&mut self, from: Variable, to: SType) -> Result<Variable, Error> {
+        if from.s_type() == to {
+            return Ok(from);
         }
-    }
 
-    pub fn cast_bool(&mut self, var: Variable) -> Result<Variable, Error> {
-        match var.s_type() {
-            SType::Bool => Ok(var),
-            SType::Number => {
-                let result = self.variables.borrow(SType::Bool);
-                let cnd = StackOpsBuilder::default()
-                    .push_const(Value::Number(0))
-                    .push_var(var)
-                    .binary_op(Operation::Neq, SType::Number, SType::Bool)?
-                    .build(SType::Bool)?;
-
-                self.mir.add_statement(Statement::IF {
-                    cnd,
-                    true_br: vec![Statement::CreateVar(
-                        result,
-                        Expression::Const(Value::Bool(true)),
-                    )],
-                    false_br: vec![Statement::CreateVar(
-                        result,
-                        Expression::Const(Value::Bool(false)),
-                    )],
-                });
-                Ok(result)
-            }
-            SType::Storage => Err(anyhow!("Storage type not supported for cast")),
-            SType::Memory => Err(anyhow!("Memory type not supported for cast")),
-            SType::Address => {
-                todo!()
-            }
-        }
+        let cast = Cast::make(from.s_type(), to)?;
+        let var = self.variables.borrow_global(to);
+        self.mir
+            .add_statement(Statement::CreateVar(var, Expression::Cast(from, cast)));
+        Ok(var)
     }
 }

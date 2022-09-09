@@ -1,54 +1,56 @@
+use crate::bytecode::hir::executor::math::BinaryOp;
+
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Operation {
-    /// Add the 2 u64 at the top of the stack and pushes the result on the stack.
-    /// The operation aborts the transaction in case of overflow.
-    Add,
-    /// Subtract the 2 u64 at the top of the stack and pushes the result on the stack.
-    /// The operation aborts the transaction in case of underflow.
-    Sub,
-    /// Multiply the 2 u64 at the top of the stack and pushes the result on the stack.
-    /// The operation aborts the transaction in case of overflow.
-    Mul,
-    /// Perform a modulo operation on the 2 u64 at the top of the stack and pushes the
-    /// result on the stack.
-    Mod,
-    /// Divide the 2 u64 at the top of the stack and pushes the result on the stack.
-    /// The operation aborts the transaction in case of "divide by 0".
-    Div,
-    /// Bitwise OR the 2 u64 at the top of the stack and pushes the result on the stack.
-    BitOr,
-    /// Bitwise AND the 2 u64 at the top of the stack and pushes the result on the stack.
-    BitAnd,
-    /// Bitwise XOR the 2 u64 at the top of the stack and pushes the result on the stack.
-    Xor,
-    /// Logical OR the 2 bool at the top of the stack and pushes the result on the stack.
-    Or,
-    /// Logical AND the 2 bool at the top of the stack and pushes the result on the stack.
-    And,
-    /// Logical NOT the bool at the top of the stack and pushes the result on the stack.
-    Not,
-    /// Compare for equality the 2 value at the top of the stack and pushes the
-    /// result on the stack.
-    /// The values on the stack must have `Drop` as they will be consumed and destroyed.
     Eq,
-    /// Compare for inequality the 2 value at the top of the stack and pushes the
-    /// result on the stack.
-    /// The values on the stack must have `Drop` as they will be consumed and destroyed.
-    Neq,
-    /// Perform a "less than" operation of the 2 u64 at the top of the stack and pushes the
-    /// result on the stack.
     Lt,
-    /// Perform a "greater than" operation of the 2 u64 at the top of the stack and pushes the
-    /// result on the stack.
     Gt,
-    /// Perform a "less than or equal" operation of the 2 u64 at the top of the stack and pushes
-    /// the result on the stack.
-    Le,
-    /// Perform a "greater than or equal" than operation of the 2 u64 at the top of the stack
-    /// and pushes the result on the stack.
-    Ge,
-    /// Shift the (second top value) left (top value) bits and pushes the result on the stack.
-    Shl,
-    /// Shift the (second top value) right (top value) bits and pushes the result on the stack.
     Shr,
+    Shl,
+    Sar,
+    Add,
+    BitAnd,
+    BitOr,
+    BitXor,
+    Mul,
+    Sub,
+    Div,
+    Byte,
+    Mod,
+    SDiv,
+    SLt,
+    SGt,
+    SMod,
+    Exp,
+    SignExtend,
+    IsZero,
+    BitNot,
+}
+
+impl From<BinaryOp> for Operation {
+    fn from(op: BinaryOp) -> Self {
+        match op {
+            BinaryOp::EQ => Operation::Eq,
+            BinaryOp::Lt => Operation::Lt,
+            BinaryOp::Gt => Operation::Gt,
+            BinaryOp::Shr => Operation::Shr,
+            BinaryOp::Shl => Operation::Shl,
+            BinaryOp::Sar => Operation::Sar,
+            BinaryOp::Add => Operation::Add,
+            BinaryOp::And => Operation::BitAnd,
+            BinaryOp::Or => Operation::BitOr,
+            BinaryOp::Xor => Operation::BitXor,
+            BinaryOp::Mul => Operation::Mul,
+            BinaryOp::Sub => Operation::Sub,
+            BinaryOp::Div => Operation::Div,
+            BinaryOp::Byte => Operation::Byte,
+            BinaryOp::Mod => Operation::Mod,
+            BinaryOp::SDiv => Operation::SDiv,
+            BinaryOp::SLt => Operation::SLt,
+            BinaryOp::SGt => Operation::SGt,
+            BinaryOp::SMod => Operation::SMod,
+            BinaryOp::Exp => Operation::Exp,
+            BinaryOp::SignExtend => Operation::SignExtend,
+        }
+    }
 }

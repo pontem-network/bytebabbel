@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 pub enum SType {
     Storage,
     Memory,
-    Number,
+    Num,
     Bool,
     Address,
     Bytes,
@@ -18,7 +18,7 @@ impl Display for SType {
             f,
             "{}",
             match self {
-                SType::Number => "u128",
+                SType::Num => "u128",
                 SType::Bool => "bool",
                 SType::Storage => "Storage",
                 SType::Memory => "Memory",
@@ -52,7 +52,7 @@ impl From<bool> for Value {
 impl Value {
     pub fn s_type(&self) -> SType {
         match self {
-            Value::Number(_) => SType::Number,
+            Value::Number(_) => SType::Num,
             Value::Bool(_) => SType::Bool,
         }
     }
@@ -61,7 +61,7 @@ impl Value {
 impl From<&EthType> for SType {
     fn from(tp: &EthType) -> Self {
         match tp {
-            EthType::U256 => SType::Number,
+            EthType::U256 => SType::Num,
             EthType::Bool => SType::Bool,
             EthType::Address => SType::Address,
         }

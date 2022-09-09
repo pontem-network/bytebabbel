@@ -47,6 +47,9 @@ impl Vars {
             Some(Eval::SLoad(_)) => None,
             Some(Eval::MSize) => None,
             Some(Eval::Signer) => None,
+            Some(Eval::ArgsSize) => None,
+            Some(Eval::Args(_)) => None,
+            Some(Eval::Hash(_, _)) => None,
         }
     }
 

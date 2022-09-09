@@ -1,7 +1,8 @@
 use anyhow::{bail, Error};
 use eth::bytecode::block::BlockId;
 use eth::bytecode::mir::translation::variables::Variable;
-use move_binary_format::file_format::{Bytecode, CodeOffset, FunctionHandleIndex};
+use intrinsic::Function;
+use move_binary_format::file_format::{Bytecode, CodeOffset};
 use std::collections::HashMap;
 use std::mem;
 
@@ -112,7 +113,7 @@ impl Writer {
         self.code.get(pc as usize)
     }
 
-    pub fn call(&mut self, fun: FunctionHandleIndex, args: &[CallOp]) {
+    pub fn call(&mut self, fun: impl Function, args: &[CallOp]) {
         for arg in args {
             match arg {
                 CallOp::Var(var) => {
@@ -126,7 +127,7 @@ impl Writer {
                 }
             }
         }
-        self.code.push(Bytecode::Call(fun));
+        self.code.push(Bytecode::Call(fun.handler()));
     }
 }
 

@@ -110,7 +110,7 @@ module self::template {
     }
 
     // API
-    fun hash(mem: &mut Memory, position: U256, length: U256): U256 {
+    fun mslice(mem: &mut Memory, position: U256, length: U256): vector<u8> {
         let position = as_u64(position);
         let length = as_u64(length);
         let data_len = std::vector::length(&mem.data);
@@ -126,7 +126,12 @@ module self::template {
             };
             offset = offset + 1;
         };
+        slice
+    }
 
+    // API
+    fun hash(mem: &mut Memory, position: U256, length: U256): U256 {
+        let slice = mslice(mem, position, length);
         let res = std::hash::sha3_256(slice);
         from_bytes(&res, 0)
     }
@@ -276,15 +281,23 @@ module self::template {
     //=================================================================================================================
     struct Persist has store, key {
         tbl: aptos_std::table::Table<U256, U256>,
+        events: aptos_std::event::EventHandle<Event>,
     }
 
     // API
-    fun init_store(self: &signer) {
-        let addr = std::signer::borrow_address(self);
-        assert!(addr == &@self, 1);
+    fun init_contract(self: &signer) {
+        let addr = std::signer::address_of(self);
+        assert!(addr == @self, 1);
         assert!(!exists<Persist>(@self), 1);
 
-        let store = Persist { tbl: aptos_std::table::new() };
+        if (!aptos_framework::account::exists_at(addr)) {
+            aptos_framework::aptos_account::create_account(addr);
+        };
+
+        let store = Persist {
+            tbl: aptos_std::table::new(),
+            events: aptos_framework::account::new_event_handle(self),
+        };
         move_to(self, store);
     }
 
@@ -308,20 +321,74 @@ module self::template {
 
     #[test]
     #[expected_failure]
-    public fun use_before_init() acquires Persist {
+    fun use_before_init() acquires Persist {
         let persist = borrow_global_mut<Persist>(@self);
         sstore(persist, from_u128(1), from_u128(1));
     }
 
     #[test(owner = @0x42)]
-    public fun load_store_test(owner: &signer) acquires Persist {
-        init_store(owner);
+    fun load_store_test(owner: &signer) acquires Persist {
+        init_contract(owner);
         let persist = borrow_global_mut<Persist>(@self);
         assert!(as_u128(sload(persist, from_u128(1))) == 0, 0);
         sstore(persist, from_u128(1), from_u128(1));
         assert!(as_u128(sload(persist, from_u128(1))) == 1, 0);
     }
 
+    // Events
+    //==========================================================================
+    struct Event has store, drop {
+        data: vector<u8>,
+        topics: vector<U256>,
+    }
+
+    // API
+    fun log0(persist: &mut Persist, mem: &mut Memory, offset: U256, len: U256) {
+        let data = mslice(mem, offset, len);
+        let event = Event { data, topics: std::vector::empty() };
+        aptos_std::event::emit_event<Event>(&mut persist.events, event);
+    }
+
+    // API
+    fun log1(persist: &mut Persist, mem: &mut Memory, offset: U256, len: U256, topic: U256) {
+        let data = mslice(mem, offset, len);
+        let topics = std::vector::singleton(topic);
+        let event = Event { data, topics };
+        aptos_std::event::emit_event<Event>(&mut persist.events, event);
+    }
+
+    // API
+    fun log2(persist: &mut Persist, mem: &mut Memory, offset: U256, len: U256, topic1: U256, topic2: U256) {
+        let data = mslice(mem, offset, len);
+        let topics = std::vector::empty();
+        std::vector::push_back(&mut topics, topic1);
+        std::vector::push_back(&mut topics, topic2);
+        let event = Event { data, topics };
+        aptos_std::event::emit_event<Event>(&mut persist.events, event);
+    }
+
+    // API
+    fun log3(persist: &mut Persist, mem: &mut Memory, offset: U256, len: U256, topic1: U256, topic2: U256, topic3: U256) {
+        let data = mslice(mem, offset, len);
+        let topics = std::vector::empty();
+        std::vector::push_back(&mut topics, topic1);
+        std::vector::push_back(&mut topics, topic2);
+        std::vector::push_back(&mut topics, topic3);
+        let event = Event { data, topics };
+        aptos_std::event::emit_event<Event>(&mut persist.events, event);
+    }
+
+    // API
+    fun log4(persist: &mut Persist, mem: &mut Memory, offset: U256, len: U256, topic1: U256, topic2: U256, topic3: U256, topic4: U256) {
+        let data = mslice(mem, offset, len);
+        let topics = std::vector::empty();
+        std::vector::push_back(&mut topics, topic1);
+        std::vector::push_back(&mut topics, topic2);
+        std::vector::push_back(&mut topics, topic3);
+        std::vector::push_back(&mut topics, topic4);
+        let event = Event { data, topics };
+        aptos_std::event::emit_event<Event>(&mut persist.events, event);
+    }
 
     // U256
     //=================================================================================================================
@@ -804,15 +871,9 @@ module self::template {
         return shl_u8(a, (shift as u8))
     }
 
+    // API
     fun is_zero(a: U256): bool {
-        let i = 0;
-        while (i < WORDS) {
-            if (get(&a, i) != 0) {
-                return false
-            };
-            i = i + 1;
-        };
-        true
+        a.v0 == 0 && a.v1 == 0 && a.v2 == 0 && a.v3 == 0
     }
 
     /// Returns `U256` equals to zero.
@@ -1021,6 +1082,15 @@ module self::template {
             v1: read_u64(bytes, offset + 16),
             v2: read_u64(bytes, offset + 8),
             v3: read_u64(bytes, offset + 0),
+        }
+    }
+
+    fun from_u64s(v0: u64, v1: u64, v2: u64, v3: u64): U256 {
+        return U256 {
+            v0,
+            v1,
+            v2,
+            v3,
         }
     }
 

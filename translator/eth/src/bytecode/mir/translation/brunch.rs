@@ -24,11 +24,11 @@ impl<'a> MirTranslator<'a> {
         let loop_br = self.mir.swap(before);
 
         let cnd = self.get_var(condition)?;
-        let cnd = self.cast_bool(cnd)?;
+        let cnd = self.cast(cnd, SType::Bool)?;
         let cnd = if is_true_br_loop {
             // true branch
             StackOpsBuilder::default()
-                .push_var(cnd)
+                .push_bool(cnd)?
                 .not()?
                 .build(SType::Bool)?
         } else {
@@ -61,7 +61,7 @@ impl<'a> MirTranslator<'a> {
         self.translate_instructions(false_br, vars)?;
         let false_br = self.mir.swap(before);
 
-        let cnd = self.cast_bool(cnd)?;
+        let cnd = self.cast(cnd, SType::Bool)?;
         self.mir.add_statement(Statement::IF {
             cnd: Expression::Var(cnd),
             true_br: true_br.into_inner(),
