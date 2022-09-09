@@ -9,7 +9,7 @@ module self::template {
 
     struct Memory has copy, drop, store {
         data: vector<u8>,
-        effective_len: u128,
+        effective_len: u64,
         limit: u64,
     }
 
@@ -27,14 +27,14 @@ module self::template {
 
     /// API
     fun effective_len(self: &mut Memory): U256 {
-        from_u128(self.effective_len)
+        from_u128((self.effective_len as u128))
     }
 
+    /// API
     fun mload(mem: &mut Memory, offset: U256): U256 {
-        let offset = as_u128(offset);
-        resize_offset(mem, offset, WORD_SIZE);
+        let position = as_u64(offset);
+        resize_offset(mem, position, WORD_SIZE);
 
-        let position = (offset as u64);
         let data_len = std::vector::length(&mem.data);
 
         let (v3, v2) = split_u128(mload_u128(mem, position, data_len));
@@ -48,10 +48,8 @@ module self::template {
         }
     }
 
-    fun mload_u128(mem: &mut Memory, offset: u64, data_len: u64): u128 {
+    fun mload_u128(mem: &mut Memory, position: u64, data_len: u64): u128 {
         let result = 0;
-
-        let position = (offset as u64);
         let offset = 0u64;
         while (offset < 16) {
             let global_offset = position + offset;
@@ -69,9 +67,8 @@ module self::template {
 
     // API
     fun mstore(mem: &mut Memory, position: U256, value: U256) {
-        let position = as_u128(position);
+        let position = as_u64(position);
         resize_offset(mem, position, WORD_SIZE);
-        let position = (position as u64);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
 
         let data_len = std::vector::length(&mem.data);
@@ -98,9 +95,8 @@ module self::template {
 
     // API
     fun mstore8(mem: &mut Memory, position: U256, value: U256) {
-        let position = as_u128(position);
+        let position = as_u64(position);
         resize_offset(mem, position, 1);
-        let position = (position as u64);
 
         let value = ((get(&value, 0) & 0xff) as u8);
 
@@ -113,25 +109,43 @@ module self::template {
         *std::vector::borrow_mut(&mut mem.data, position) = value;
     }
 
-    fun resize_offset(mem: &mut Memory, offset: u128, len: u64) {
+    // API
+    fun hash(mem: &mut Memory, position: U256, length: U256): U256 {
+        let position = as_u64(position);
+        let length = as_u64(length);
+        let data_len = std::vector::length(&mem.data);
+
+        let offset = 0u64;
+        let slice = std::vector::empty();
+        while (offset < length) {
+            let global_offset = position + offset;
+            if (global_offset >= data_len) {
+                std::vector::push_back(&mut slice, 0);
+            } else {
+                std::vector::push_back(&mut slice, *std::vector::borrow(&mem.data, global_offset));
+            };
+            offset = offset + 1;
+        };
+
+        let res = std::hash::sha3_256(slice);
+        from_bytes(&res, 0)
+    }
+
+    fun resize_offset(mem: &mut Memory, offset: u64, len: u64) {
         if (len == 0) {
             return
         };
 
-        let end = offset + (len as u128);
+        let end = offset + len;
 
         if (end > mem.effective_len) {
-            mem.effective_len = next_multiple_of_word(end);
+            if (end % WORD_SIZE == 0) {
+                mem.effective_len = end;
+            } else {
+                mem.effective_len = end + (WORD_SIZE - (end % WORD_SIZE));
+            };
         };
         return
-    }
-
-    fun next_multiple_of_word(x: u128): u128 {
-        let word_size = (WORD_SIZE as u128);
-        if (x % word_size == 0) {
-            return x
-        };
-        return x + (word_size - (x % word_size))
     }
 
     #[test]
@@ -219,6 +233,37 @@ module self::template {
         let val = mload(&mut memory, from_u128(0));
         let expected = from_address(v5);
         assert!(eq(&val, &expected), 5);
+    }
+
+    #[test(
+        s1 = @0x6261be5de65349dedcf98dad3041f331b4a397546079ef17542df4fbbf359787,
+        s2 = @0x81dbecc6aee62dfb2250aeca0ca406d6dc61788004aaf116fa9c2c61d00a5897,
+        hash_1 = @0xb039179a8a4ce2c252aa6f2f25798251c19b75fc1508d9d511a191e0487d64a7,
+        hash_2 = @0xcc636d0dc01c94023106c1459b926e17d25572e9cbf154ec7489c6264e83ec7d,
+        hash_3 = @0x1cdfbfb2fdbcc015c6c45e292d5927b775f9d6595a0c9d3ff9c029e1fe2ff7f3,
+        hash_4 = @0x5129046912a39ba87d481c3c8d8cd626cbfba7f089c9879d853d40ab63ab3775,
+        hash_5 = @0xc1545e05e6777d834652396ad104e7e971a78d084a9b9df34f7a16fd493bf2b0,
+    )]
+    fun test_hash(s1: &signer, s2: &signer, hash_1: &signer, hash_2: &signer, hash_3: &signer, hash_4: &signer, hash_5: &signer) {
+        let memory = new_mem(1024);
+
+        mstore(&mut memory, from_u128(0), from_address(s1));
+        mstore(&mut memory, from_u128(32), from_address(s2));
+
+        let resp = hash(&mut memory, from_u128(0), from_u128(1));
+        assert!(eq(&resp, &from_address(hash_1)), 1);
+
+        let resp = hash(&mut memory, from_u128(0), from_u128(32));
+        assert!(eq(&resp, &from_address(hash_2)), 2);
+
+        let resp = hash(&mut memory, from_u128(0), from_u128(64));
+        assert!(eq(&resp, &from_address(hash_3)), 3);
+
+        let resp = hash(&mut memory, from_u128(0), from_u128(70));
+        assert!(eq(&resp, &from_address(hash_4)), 4);
+
+        let resp = hash(&mut memory, from_u128(64), from_u128(6));
+        assert!(eq(&resp, &from_address(hash_5)), 5);
     }
 
     #[test]
@@ -370,6 +415,10 @@ module self::template {
         ((a.v1 as u128) << 64) + (a.v0 as u128)
     }
 
+    fun as_u64(a: U256): u64 {
+        a.v0
+    }
+
     /// Compares two `U256` numbers.
     fun compare(a: &U256, b: &U256): u8 {
         let i = WORDS;
@@ -393,7 +442,6 @@ module self::template {
     /// Returns a `U256` from `u128` value.
     fun from_u128(val: u128): U256 {
         let (a2, a1) = split_u128(val);
-
         U256 {
             v0: a1,
             v1: a2,
