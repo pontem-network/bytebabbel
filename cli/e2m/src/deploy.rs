@@ -55,8 +55,6 @@ impl Args {
         let size = bcs::serialized_size(&payload)?;
         println!("package size {} bytes", size);
 
-        dbg!(&txn_options);
-
         let fut = txn_options.submit_transaction(payload, None);
         let result = wait(fut).map(aptos::common::types::TransactionSummary::from)?;
 
