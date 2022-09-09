@@ -1,11 +1,16 @@
 use crate::testssol::env::stdlib::publish_std;
+use std::collections::HashMap;
+use std::str::FromStr;
+
 use anyhow::{ensure, Result};
+use once_cell::sync::OnceCell;
+
 use aptos_aggregator::transaction::ChangeSetExt;
 use aptos_crypto::HashValue;
 use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
-use aptos_state_view::state_storage_usage::StateStorageUsage;
 use aptos_state_view::StateView;
 use aptos_types::state_store::state_key::StateKey;
+use aptos_types::state_store::state_storage_usage::StateStorageUsage;
 use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
 use aptos_vm::move_vm_ext::{MoveVmExt, SessionExt, SessionId};
@@ -17,9 +22,6 @@ use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::value::MoveTypeLayout;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
-use once_cell::sync::OnceCell;
-use std::collections::HashMap;
-use std::str::FromStr;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
