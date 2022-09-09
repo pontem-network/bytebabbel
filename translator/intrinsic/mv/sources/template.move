@@ -765,7 +765,6 @@ module self::template {
         return shr_u8(a, (shift as u8))
     }
 
-
     /// Shift left `a` by `shift`.
     fun shl_u8(a: U256, shift: u8): U256 {
         let ret = zero();
@@ -1015,6 +1014,7 @@ module self::template {
         from_bytes(&encoded, 0)
     }
 
+    // API
     fun from_bytes(bytes: &vector<u8>, offset: u64): U256 {
         return U256 {
             v0: read_u64(bytes, offset + 24),
@@ -1022,6 +1022,46 @@ module self::template {
             v2: read_u64(bytes, offset + 8),
             v3: read_u64(bytes, offset + 0),
         }
+    }
+
+    // API
+    fun from_bool(b: bool): U256 {
+        if (b) {
+            U256 {
+                v0: 1,
+                v1: 0,
+                v2: 0,
+                v3: 0,
+            }
+        } else {
+            U256 {
+                v0: 0,
+                v1: 0,
+                v2: 0,
+                v3: 0,
+            }
+        }
+    }
+
+    // API
+    fun to_bool(a: U256): bool {
+        if (a.v0 == 0 && a.v1 == 0 && a.v2 == 0 && a.v3 == 0) {
+            false
+        } else {
+            true
+        }
+    }
+
+    fun read_u64(bytes: &vector<u8>, offset: u64): u64 {
+        let result = 0u64;
+        let i = 0u64;
+        while (i < 8) {
+            let byte = (*std::vector::borrow(bytes, offset + i) as u64);
+            let shift = (((7 - i) * 8) as u8);
+            result = result | byte << shift;
+            i = i + 1;
+        };
+        return result
     }
 
     fun to_bytes(a: &U256): vector<u8> {
@@ -1062,18 +1102,6 @@ module self::template {
         *std::vector::borrow_mut(vec, offset + 7) = ((a & 0xFF) as u8);
     }
 
-    fun read_u64(bytes: &vector<u8>, offset: u64): u64 {
-        let result = 0u64;
-        let i = 0u64;
-        while (i < 8) {
-            let byte = (*std::vector::borrow(bytes, offset + i) as u64);
-            let shift = (((7 - i) * 8) as u8);
-            result = result | byte << shift;
-            i = i + 1;
-        };
-        return result
-    }
-
     #[test(self = @0x42)]
     fun test_address_to_u128_1(self: &signer) {
         assert!(from_address(self) == from_u128(0x42), 0);
@@ -1104,6 +1132,12 @@ module self::template {
         assert!(from_bytes(&bytes, 0) == addr, (val as u64));
         write(&addr, &mut bytes, 0);
         assert!(from_bytes(&bytes, 0) == addr, 1);
+    }
+
+    #[test]
+    fun test_from_bool() {
+        assert!(from_bool(true) == from_u128(1), 0);
+        assert!(from_bool(false) == from_u128(0), 0);
     }
 
     // Tests.

@@ -1,3 +1,4 @@
+use enum_iterator::Sequence;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
     StructHandleIndex,
@@ -31,12 +32,14 @@ pub fn template(address: AccountAddress, name: &str) -> CompiledModule {
     module
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Mem {
+    New,
+    Size,
+    Load,
     Store,
     Store8,
-    Load,
-    Size,
-    New,
+    Hash,
 }
 
 impl Mem {
@@ -44,33 +47,34 @@ impl Mem {
         SignatureToken::Struct(StructHandleIndex(1))
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::New => "new_mem",
+            Self::Size => "effective_len",
+            Self::Load => "mload",
+            Self::Store => "mstore",
+            Self::Store8 => "mstore8",
+            Self::Hash => "hash",
+        }
+    }
+
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Mem::Store => FunctionHandleIndex(13),
-            Mem::Store8 => FunctionHandleIndex(14),
-            Mem::Load => FunctionHandleIndex(12),
-            Mem::Size => FunctionHandleIndex(6),
-            Mem::New => FunctionHandleIndex(15),
+            Mem::New => FunctionHandleIndex(33),
+            Mem::Size => FunctionHandleIndex(11),
+            Mem::Load => FunctionHandleIndex(27),
+            Mem::Store => FunctionHandleIndex(30),
+            Mem::Store8 => FunctionHandleIndex(31),
+            Mem::Hash => FunctionHandleIndex(21),
         }
     }
 }
 
-pub enum Cast {
-    AddressToNumber,
-}
-
-impl Cast {
-    pub fn func_handler(&self) -> FunctionHandleIndex {
-        match self {
-            Cast::AddressToNumber => FunctionHandleIndex(0),
-        }
-    }
-}
-
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Storage {
-    Load,
-    Store,
     Create,
+    Store,
+    Load,
 }
 
 impl Storage {
@@ -82,11 +86,19 @@ impl Storage {
         StructDefinitionIndex(2)
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Create => "init_store",
+            Self::Store => "sstore",
+            Self::Load => "sload",
+        }
+    }
+
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Storage::Load => FunctionHandleIndex(27),
-            Storage::Store => FunctionHandleIndex(29),
-            Storage::Create => FunctionHandleIndex(10),
+            Storage::Create => FunctionHandleIndex(22),
+            Storage::Store => FunctionHandleIndex(49),
+            Storage::Load => FunctionHandleIndex(47),
         }
     }
 }
@@ -95,7 +107,8 @@ pub fn self_address_index() -> ConstantPoolIndex {
     ConstantPoolIndex(10)
 }
 
-pub enum Number {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
+pub enum Num {
     Add,
     Sub,
     Mul,
@@ -114,36 +127,68 @@ pub enum Number {
     Neq,
     BitNot,
     Byte,
+    FromAddress,
+    FromBytes,
+    FromBool,
+    ToBool,
 }
 
-impl Number {
+impl Num {
     pub fn token() -> SignatureToken {
         SignatureToken::Struct(StructHandleIndex(3))
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Add => "overflowing_add",
+            Self::Sub => "overflowing_sub",
+            Self::Mul => "overflowing_mul",
+            Self::Div => "div",
+            Self::Mod => "mod",
+            Self::BitOr => "bitor",
+            Self::BitAnd => "bitand",
+            Self::Xor => "bitxor",
+            Self::Shl => "shl",
+            Self::Shr => "shr",
+            Self::Lt => "lt",
+            Self::Gt => "gt",
+            Self::Le => "le",
+            Self::Ge => "ge",
+            Self::Eq => "eq",
+            Self::Neq => "ne",
+            Self::BitNot => "bitnot",
+            Self::Byte => "byte",
+            Self::FromAddress => "from_address",
+            Self::FromBytes => "from_bytes",
+            Self::FromBool => "from_bool",
+            Self::ToBool => "to_bool",
+        }
+    }
+
     pub fn func_handler(&self) -> FunctionHandleIndex {
         match self {
-            Number::Add => FunctionHandleIndex(20),
-            Number::Sub => FunctionHandleIndex(20),
-            Number::Mul => FunctionHandleIndex(19),
-            Number::Div => FunctionHandleIndex(4),
-            Number::Mod => FunctionHandleIndex(18),
-
-            Number::BitOr => FunctionHandleIndex(16),
-            Number::BitAnd => FunctionHandleIndex(17),
-            Number::Xor => FunctionHandleIndex(18),
-
-            Number::Shl => FunctionHandleIndex(19),
-            Number::Shr => FunctionHandleIndex(20),
-
-            Number::Lt => FunctionHandleIndex(21),
-            Number::Gt => FunctionHandleIndex(22),
-            Number::Le => FunctionHandleIndex(23),
-            Number::Ge => FunctionHandleIndex(24),
-
-            Number::Eq => FunctionHandleIndex(25),
-            Number::Neq => FunctionHandleIndex(26),
-            Number::BitNot => FunctionHandleIndex(5),
+            Num::Add => FunctionHandleIndex(34),
+            Num::Sub => FunctionHandleIndex(37),
+            Num::Mul => FunctionHandleIndex(36),
+            Num::Div => FunctionHandleIndex(9),
+            Num::Mod => FunctionHandleIndex(29),
+            Num::BitOr => FunctionHandleIndex(4),
+            Num::BitAnd => FunctionHandleIndex(2),
+            Num::Xor => FunctionHandleIndex(6),
+            Num::Shl => FunctionHandleIndex(43),
+            Num::Shr => FunctionHandleIndex(45),
+            Num::Lt => FunctionHandleIndex(26),
+            Num::Gt => FunctionHandleIndex(20),
+            Num::Le => FunctionHandleIndex(24),
+            Num::Ge => FunctionHandleIndex(17),
+            Num::Eq => FunctionHandleIndex(12),
+            Num::Neq => FunctionHandleIndex(32),
+            Num::BitNot => FunctionHandleIndex(3),
+            Num::Byte => FunctionHandleIndex(7),
+            Num::FromAddress => FunctionHandleIndex(13),
+            Num::FromBytes => FunctionHandleIndex(15),
+            Num::FromBool => FunctionHandleIndex(14),
+            Num::ToBool => FunctionHandleIndex(50),
         }
     }
 }

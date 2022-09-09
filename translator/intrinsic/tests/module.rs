@@ -1,4 +1,5 @@
-use intrinsic::{self_address_index, template, Cast, Mem, Number, Storage};
+use enum_iterator::all;
+use intrinsic::{self_address_index, template, Mem, Num, Storage};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -65,92 +66,63 @@ pub fn test_intrinsic_signature_token_mem_store() {
         SignatureToken::Struct(find_struct_by_name(&template, "Memory"))
     );
 
-    assert_eq!(
-        Mem::New.func_handler(),
-        find_function_by_name(&template, "new_mem")
-    );
-    assert_eq!(
-        Mem::Store.func_handler(),
-        find_function_by_name(&template, "mstore")
-    );
-    assert_eq!(
-        Mem::Store8.func_handler(),
-        find_function_by_name(&template, "mstore8")
-    );
-    assert_eq!(
-        Mem::Load.func_handler(),
-        find_function_by_name(&template, "mload")
-    );
-    assert_eq!(
-        Mem::Size.func_handler(),
-        find_function_by_name(&template, "effective_len")
-    );
-
-    assert_eq!(
-        Storage::Store.func_handler(),
-        find_function_by_name(&template, "sstore")
-    );
-    assert_eq!(
-        Storage::Load.func_handler(),
-        find_function_by_name(&template, "sload")
-    );
-    assert_eq!(
-        Storage::Create.func_handler(),
-        find_function_by_name(&template, "init_store")
-    );
-
-    assert_eq!(
-        Cast::AddressToNumber.func_handler(),
-        find_function_by_name(&template, "address_to_number")
-    );
-
     assert_eq!(self_address_index(), find_address_const(&template, address));
+
+    assert_eq!(
+        Num::token(),
+        SignatureToken::Struct(find_struct_by_name(&template, "U256"))
+    );
 }
 
 #[test]
-pub fn test_intrinsic_signature_token_number() {
+pub fn test_intrinsic_signature_token() {
     let address = AccountAddress::random();
     let template = template(address, "template_module");
 
-    assert_eq!(
-        Number::token(),
-        SignatureToken::Struct(find_struct_by_name(&template, "U256",))
-    );
+    let diff: Vec<Mem> = all::<Mem>()
+        .filter(|mem| find_function_by_name(&template, mem.name()) != mem.func_handler())
+        .collect();
 
-    assert_eq!(
-        Number::Add.func_handler(),
-        find_function_by_name(&template, "overflowing_add")
-    );
+    for mem in &diff {
+        println!(
+            "{} -> {:?}",
+            mem.name(),
+            find_function_by_name(&template, mem.name())
+        );
+    }
+    if !diff.is_empty() {
+        panic!("Some functions are not found");
+    }
 
-    assert_eq!(
-        Number::Sub.func_handler(),
-        find_function_by_name(&template, "overflowing_sub")
-    );
+    let diff: Vec<Storage> = all::<Storage>()
+        .filter(|store| find_function_by_name(&template, store.name()) != store.func_handler())
+        .collect();
 
-    assert_eq!(
-        Number::Mul.func_handler(),
-        find_function_by_name(&template, "overflowing_mul")
-    );
+    for store in &diff {
+        println!(
+            "{} -> {:?}",
+            store.name(),
+            find_function_by_name(&template, store.name())
+        );
+    }
+    if !diff.is_empty() {
+        panic!("Some functions are not found");
+    }
 
-    assert_eq!(
-        Number::Div.func_handler(),
-        find_function_by_name(&template, "div")
-    );
+    let diff: Vec<Num> = all::<Num>()
+        .filter(|num| find_function_by_name(&template, num.name()) != num.func_handler())
+        .collect();
 
-    assert_eq!(
-        Number::Mod.func_handler(),
-        find_function_by_name(&template, "mod")
-    );
-
-    assert_eq!(
-        Number::BitAnd.func_handler(),
-        find_function_by_name(&template, "bitand")
-    );
-
-    assert_eq!(
-        Number::BitOr.func_handler(),
-        find_function_by_name(&template, "bitor")
-    );
+    for num in &diff {
+        println!(
+            "{} -> {:?}",
+            num.name(),
+            find_function_by_name(&template, num.name())
+        );
+    }
+    if !diff.is_empty() {
+        panic!("Some functions are not found");
+    }
 }
 
 fn find_function_by_name(module: &CompiledModule, name: &str) -> FunctionHandleIndex {
