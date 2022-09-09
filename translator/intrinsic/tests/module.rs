@@ -1,5 +1,5 @@
 use enum_iterator::all;
-use intrinsic::{self_address_index, template, Function, Mem, Num, Storage};
+use intrinsic::{self_address_index, template, Function, Mem, Num, Persist};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -54,9 +54,9 @@ pub fn test_intrinsic_signature_token_mem_store() {
         ModuleId::new(address, Identifier::new("template_module").unwrap())
     );
 
-    assert_eq!(Storage::instance(), find_def(&template, "Persist"));
+    assert_eq!(Persist::instance(), find_def(&template, "Persist"));
     assert_eq!(
-        Storage::token(),
+        Persist::token(),
         SignatureToken::MutableReference(Box::new(SignatureToken::Struct(find_struct_by_name(
             &template, "Persist",
         ))))
@@ -94,7 +94,7 @@ pub fn test_intrinsic_signature_token() {
         panic!("Some functions are not found");
     }
 
-    let diff: Vec<Storage> = all::<Storage>()
+    let diff: Vec<Persist> = all::<Persist>()
         .filter(|store| find_function_by_name(&template, store.name()) != store.handler())
         .collect();
 

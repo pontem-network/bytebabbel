@@ -50,7 +50,7 @@ pub enum Mem {
 
 impl Mem {
     pub fn token() -> SignatureToken {
-        SignatureToken::Struct(StructHandleIndex(1))
+        SignatureToken::Struct(StructHandleIndex(2))
     }
 }
 
@@ -69,48 +69,63 @@ impl Function for Mem {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Mem::New => FunctionHandleIndex(35),
+            Mem::New => FunctionHandleIndex(40),
             Mem::Size => FunctionHandleIndex(11),
-            Mem::Load => FunctionHandleIndex(28),
-            Mem::Store => FunctionHandleIndex(32),
-            Mem::Store8 => FunctionHandleIndex(33),
+            Mem::Load => FunctionHandleIndex(33),
+            Mem::Store => FunctionHandleIndex(37),
+            Mem::Store8 => FunctionHandleIndex(38),
             Mem::Hash => FunctionHandleIndex(22),
-            Mem::Slice => FunctionHandleIndex(31),
+            Mem::Slice => FunctionHandleIndex(36),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
-pub enum Storage {
+pub enum Persist {
     Create,
     Store,
     Load,
+    Log0,
+    Log1,
+    Log2,
+    Log3,
+    Log4,
 }
 
-impl Storage {
+impl Persist {
     pub fn token() -> SignatureToken {
-        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(2))))
+        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(3))))
     }
 
     pub fn instance() -> StructDefinitionIndex {
-        StructDefinitionIndex(2)
+        StructDefinitionIndex(3)
     }
 }
 
-impl Function for Storage {
+impl Function for Persist {
     fn name(&self) -> &'static str {
         match self {
             Self::Create => "init_contract",
             Self::Store => "sstore",
             Self::Load => "sload",
+            Self::Log0 => "log0",
+            Self::Log1 => "log1",
+            Self::Log2 => "log2",
+            Self::Log3 => "log3",
+            Self::Log4 => "log4",
         }
     }
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Storage::Create => FunctionHandleIndex(23),
-            Storage::Store => FunctionHandleIndex(51),
-            Storage::Load => FunctionHandleIndex(49),
+            Persist::Create => FunctionHandleIndex(23),
+            Persist::Store => FunctionHandleIndex(56),
+            Persist::Load => FunctionHandleIndex(54),
+            Persist::Log0 => FunctionHandleIndex(27),
+            Persist::Log1 => FunctionHandleIndex(28),
+            Persist::Log2 => FunctionHandleIndex(29),
+            Persist::Log3 => FunctionHandleIndex(30),
+            Persist::Log4 => FunctionHandleIndex(31),
         }
     }
 }
@@ -149,7 +164,7 @@ pub enum Num {
 
 impl Num {
     pub fn token() -> SignatureToken {
-        SignatureToken::Struct(StructHandleIndex(3))
+        SignatureToken::Struct(StructHandleIndex(4))
     }
 }
 
@@ -185,28 +200,28 @@ impl Function for Num {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Num::Add => FunctionHandleIndex(36),
-            Num::Sub => FunctionHandleIndex(39),
-            Num::Mul => FunctionHandleIndex(38),
+            Num::Add => FunctionHandleIndex(41),
+            Num::Sub => FunctionHandleIndex(44),
+            Num::Mul => FunctionHandleIndex(43),
             Num::Div => FunctionHandleIndex(9),
-            Num::Mod => FunctionHandleIndex(30),
+            Num::Mod => FunctionHandleIndex(35),
             Num::BitOr => FunctionHandleIndex(4),
             Num::BitAnd => FunctionHandleIndex(2),
             Num::BitXor => FunctionHandleIndex(6),
-            Num::Shl => FunctionHandleIndex(45),
-            Num::Shr => FunctionHandleIndex(47),
-            Num::Lt => FunctionHandleIndex(27),
+            Num::Shl => FunctionHandleIndex(50),
+            Num::Shr => FunctionHandleIndex(52),
+            Num::Lt => FunctionHandleIndex(32),
             Num::Gt => FunctionHandleIndex(21),
             Num::Le => FunctionHandleIndex(25),
             Num::Ge => FunctionHandleIndex(18),
             Num::Eq => FunctionHandleIndex(12),
-            Num::Neq => FunctionHandleIndex(34),
+            Num::Neq => FunctionHandleIndex(39),
             Num::BitNot => FunctionHandleIndex(3),
             Num::Byte => FunctionHandleIndex(7),
             Num::FromAddress => FunctionHandleIndex(13),
             Num::FromBytes => FunctionHandleIndex(15),
             Num::FromBool => FunctionHandleIndex(14),
-            Num::ToBool => FunctionHandleIndex(52),
+            Num::ToBool => FunctionHandleIndex(57),
             Num::FromU64s => FunctionHandleIndex(17),
             Num::IsZero => FunctionHandleIndex(24),
         }

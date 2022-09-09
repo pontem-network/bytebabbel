@@ -1,5 +1,5 @@
 use anyhow::Error;
-use intrinsic::Storage;
+use intrinsic::Persist;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
@@ -46,7 +46,7 @@ impl Func {
             function: index,
             visibility: self.visibility,
             is_entry: true,
-            acquires_global_resources: vec![Storage::instance()],
+            acquires_global_resources: vec![Persist::instance()],
             code: Some(CodeUnit {
                 locals: self.locals,
                 code: mem::take(&mut self.code),

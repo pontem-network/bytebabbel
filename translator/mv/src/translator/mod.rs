@@ -13,7 +13,7 @@ use eth::bytecode::mir::ir::Mir;
 use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
-use intrinsic::{template, Mem, Num, Storage};
+use intrinsic::{template, Mem, Num, Persist};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
@@ -120,7 +120,7 @@ impl MvIrTranslator {
             .map(|tp| match tp {
                 SType::Num => SignatureToken::U128,
                 SType::Bool => SignatureToken::Bool,
-                SType::Storage => Storage::token(),
+                SType::Storage => Persist::token(),
                 SType::Memory => Mem::token(),
                 SType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
                 SType::Bytes => SignatureToken::Vector(Box::new(SignatureToken::U8)),
@@ -203,7 +203,7 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Storage::Store,
+                    Persist::Store,
                     &[
                         CallOp::Var(*storage),
                         CallOp::Var(*offset),
@@ -212,7 +212,7 @@ impl MvIrTranslator {
                 );
             }
             Statement::InitStorage(var) => {
-                self.code.call(Storage::Create, &[CallOp::Var(*var)]);
+                self.code.call(Persist::Create, &[CallOp::Var(*var)]);
             }
         }
         Ok(())
@@ -280,7 +280,7 @@ impl MvIrTranslator {
                 self.code
                     .write(Bytecode::LdConst(intrinsic::self_address_index()));
                 self.code
-                    .write(Bytecode::MutBorrowGlobal(Storage::instance()));
+                    .write(Bytecode::MutBorrowGlobal(Persist::instance()));
             }
             Expression::MLoad { memory, offset } => {
                 self.code.call(
@@ -290,7 +290,7 @@ impl MvIrTranslator {
             }
             Expression::SLoad { storage, offset } => {
                 self.code.call(
-                    Storage::Load,
+                    Persist::Load,
                     &[CallOp::Var(*storage), CallOp::Var(*offset)],
                 );
             }
