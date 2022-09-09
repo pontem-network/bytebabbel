@@ -7,3 +7,7 @@ members = [
     "translator/test_infra",
     "cli/e2m",
 ]
+
+[build]
+rustflags = ["--cfg", "tokio_unstable"]
+rustdocflags = ["--cfg", "tokio_unstable"]
