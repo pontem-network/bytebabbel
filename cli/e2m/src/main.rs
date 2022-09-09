@@ -47,14 +47,14 @@ pub struct Args {
 
 impl Args {
     pub fn execute(&self) -> Result<String> {
-        let output_path = self.convert()?;
+        let result = self.convert()?;
 
         #[cfg(feature = "deploy")]
         if self.deploy {
-            return self.publish(&output_path);
+            return self.publish(&result);
         }
 
-        Ok(output_path.to_string_lossy().to_string())
+        Ok(result.output_path.to_string_lossy().to_string())
     }
 }
 

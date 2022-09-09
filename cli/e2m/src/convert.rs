@@ -4,12 +4,13 @@ use std::path::{Path, PathBuf};
 use std::process::Command as cli;
 
 use anyhow::{anyhow, bail, Result};
+use move_core_types::account_address::AccountAddress;
 
 use crate::Args;
 use translator::translate;
 
 impl Args {
-    pub fn convert(&self) -> Result<PathBuf> {
+    pub fn convert(&self) -> Result<ResultConvert> {
         let paths = path_to_abibin(&self.path)?;
         let output_path = self.output_path.clone().unwrap_or_else(|| {
             let filename = path_to_filename(&paths.abi).unwrap();
@@ -36,7 +37,11 @@ impl Args {
 
         paths.delete_tmp_dir();
 
-        Ok(output_path)
+        Ok(ResultConvert {
+            output_path,
+            module_name,
+            address,
+        })
     }
 }
 
@@ -197,4 +202,10 @@ impl SolPaths {
             log::debug!("Temporary directory deleted");
         }
     }
+}
+
+pub struct ResultConvert {
+    pub output_path: PathBuf,
+    pub module_name: String,
+    pub address: AccountAddress,
 }
