@@ -112,6 +112,8 @@ pub enum Number {
     Ge,
     Eq,
     Neq,
+    BitNot,
+    Byte,
 }
 
 impl Number {
@@ -130,14 +132,18 @@ impl Number {
             Number::BitOr => FunctionHandleIndex(16),
             Number::BitAnd => FunctionHandleIndex(17),
             Number::Xor => FunctionHandleIndex(18),
+
             Number::Shl => FunctionHandleIndex(19),
             Number::Shr => FunctionHandleIndex(20),
+
             Number::Lt => FunctionHandleIndex(21),
             Number::Gt => FunctionHandleIndex(22),
             Number::Le => FunctionHandleIndex(23),
             Number::Ge => FunctionHandleIndex(24),
+
             Number::Eq => FunctionHandleIndex(25),
             Number::Neq => FunctionHandleIndex(26),
+            Number::BitNot => FunctionHandleIndex(5),
         }
     }
 }

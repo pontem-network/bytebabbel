@@ -5,8 +5,7 @@ module self::template {
     const OUT_OF_MEMORY: u64 = 0x2;
     const INVALID_RANGE: u64 = 0x3;
 
-    // todo replace with 32 bit
-    const WORD_SIZE: u64 = 16;
+    const WORD_SIZE: u64 = 32;
 
     struct Memory has copy, drop, store {
         data: vector<u8>,
@@ -14,6 +13,7 @@ module self::template {
         limit: u64,
     }
 
+    // API
     fun new_mem(limit: u64): Memory {
         assert!(limit > 0, ELENGTH);
         let data = std::vector::empty();
@@ -25,26 +25,41 @@ module self::template {
         }
     }
 
-    fun effective_len(self: &mut Memory): u128 {
-        self.effective_len
+    /// API
+    fun effective_len(self: &mut Memory): U256 {
+        from_u128(self.effective_len)
     }
 
-    fun mload(mem: &mut Memory, offset: u128): u128 {
+    fun mload(mem: &mut Memory, offset: U256): U256 {
+        let offset = as_u128(offset);
         resize_offset(mem, offset, WORD_SIZE);
+
+        let position = (offset as u64);
+        let data_len = std::vector::length(&mem.data);
+
+        let (v3, v2) = split_u128(mload_u128(mem, position, data_len));
+        let (v1, v0) = split_u128(mload_u128(mem, position + 16, data_len));
+
+        return U256 {
+            v0,
+            v1,
+            v2,
+            v3,
+        }
+    }
+
+    fun mload_u128(mem: &mut Memory, offset: u64, data_len: u64): u128 {
         let result = 0;
 
         let position = (offset as u64);
-
         let offset = 0u64;
-        let data_len = std::vector::length(&mem.data);
-
-        while (offset < WORD_SIZE) {
+        while (offset < 16) {
             let global_offset = position + offset;
             if (global_offset >= data_len) {
                 break
             };
             let byte = (*std::vector::borrow(&mem.data, global_offset) as u128);
-            let shift = (((WORD_SIZE -1 - offset) * 8) as u8);
+            let shift = (((15 - offset) * 8) as u8);
             result = result | byte << shift;
             offset = offset + 1;
         };
@@ -52,32 +67,42 @@ module self::template {
         return result
     }
 
-    fun mstore(mem: &mut Memory, position: u128, value: u128) {
+    // API
+    fun mstore(mem: &mut Memory, position: U256, value: U256) {
+        let position = as_u128(position);
         resize_offset(mem, position, WORD_SIZE);
         let position = (position as u64);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
 
         let data_len = std::vector::length(&mem.data);
-        while (data_len < ((position + WORD_SIZE) as u64)) {
-            std::vector::push_back(&mut mem.data, 0);
-            data_len = data_len + 1;
-        };
-
-        let offset = 0u64;
-        while (offset < WORD_SIZE) {
-            let shift = ((offset * 8) as u8);
-            let shift = value >> shift;
-            let byte = ((shift & 0xff) as u8);
-            *std::vector::borrow_mut(&mut mem.data, position + WORD_SIZE - 1 - offset) = byte;
-            offset = offset + 1;
+        let byte_offset = 0u64;
+        let word = 4;
+        while (word > 0) {
+            word = word - 1;
+            let w = get(&value, word);
+            let byte = 0u64;
+            while (byte < 8) {
+                let shift = (((7 - byte) * 8) as u8);
+                let val = (((w >> shift) & 0xFF) as u8);
+                let global_offset = position + byte_offset;
+                if (global_offset >= data_len) {
+                    std::vector::push_back(&mut mem.data, val);
+                } else {
+                    *std::vector::borrow_mut(&mut mem.data, global_offset) = val;
+                };
+                byte = byte + 1;
+                byte_offset = byte_offset + 1;
+            };
         };
     }
 
-    fun mstore8(mem: &mut Memory, position: u128, value: u128) {
+    // API
+    fun mstore8(mem: &mut Memory, position: U256, value: U256) {
+        let position = as_u128(position);
         resize_offset(mem, position, 1);
         let position = (position as u64);
 
-        let value = ((value & 0xff) as u8);
+        let value = ((get(&value, 0) & 0xff) as u8);
 
         let data_len = std::vector::length(&mem.data);
         while (data_len < ((position + 1) as u64)) {
@@ -106,16 +131,109 @@ module self::template {
         if (x % word_size == 0) {
             return x
         };
-
         return x + (word_size - (x % word_size))
+    }
+
+    #[test]
+    fun load_store_with_same_offset() {
+        let memory = new_mem(1024);
+
+        mstore(&mut memory, from_u128(0), from_u128(0x42));
+        let val = mload(&mut memory, from_u128(0));
+        assert!(as_u128(val) == 0x42, (as_u128(val) as u64));
+        assert!(as_u128(effective_len(&mut memory)) == 32, 2);
+
+
+        mstore(&mut memory, from_u128(1), from_u128(340282366920938463463374607431768211455));
+        let val = mload(&mut memory, from_u128(1));
+        assert!(val == from_u128(340282366920938463463374607431768211455), 1);
+        assert!(as_u128(effective_len(&mut memory)) == 64, 2);
+    }
+
+    #[test]
+    fun load_store_loop() {
+        let memory = new_mem(2048);
+
+        let offset = 0;
+        while (offset < 1024) {
+            mstore(&mut memory, from_u128(offset), from_u128(offset));
+            offset = offset + 32;
+        };
+
+        let offset = 0;
+        while (offset < 1024) {
+            let val = mload(&mut memory, from_u128(offset));
+            assert!(as_u128(val) == offset, 1);
+            offset = offset + 32;
+        };
+    }
+
+    #[test]
+    fun mem_shift() {
+        let memory = new_mem(1024);
+        mstore(&mut memory, from_u128(0), from_u128(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF));
+        let val = mload(&mut memory, from_u128(8));
+        assert!(as_u128(val) == 0xFFFFFFFFFFFFFFFF0000000000000000, 0);
+    }
+
+    #[test(
+        v1 = @0xAA00000000000000000000000000000000000000000000000000000000000000,
+        v2 = @0xAAFF000000000000000000000000000000000000000000000000000000000000,
+        v3 = @0xAAFF110000000000000000000000000000000000000000000000000000000000,
+        v4 = @0xAAFF110000000022110000000000000000000000000000000000000000000000,
+        v5 = @0xAAFF110000000022110000000000003344000000000000556600000000000077,
+    )]
+    fun mem_store_8(v1: &signer, v2: &signer, v3: &signer, v4: &signer, v5: &signer) {
+        let memory = new_mem(1024);
+
+        mstore8(&mut memory, from_u128(0), from_u128(0xAA));
+        let val = mload(&mut memory, from_u128(0));
+        let expected = from_address(v1);
+        assert!(eq(&val, &expected), 1);
+
+        let val = mload(&mut memory, from_u128(1));
+        assert!(eq(&val, &zero()), 1);
+
+        mstore8(&mut memory, from_u128(1), from_u128(0xFF));
+        let val = mload(&mut memory, from_u128(0));
+        let expected = from_address(v2);
+        assert!(eq(&val, &expected), 2);
+
+        mstore8(&mut memory, from_u128(2), from_u128(0x11));
+        let val = mload(&mut memory, from_u128(0));
+        let expected = from_address(v3);
+        assert!(eq(&val, &expected), 3);
+
+        mstore8(&mut memory, from_u128(8), from_u128(0x11));
+        mstore8(&mut memory, from_u128(7), from_u128(0x22));
+        let val = mload(&mut memory, from_u128(0));
+        let expected = from_address(v4);
+        assert!(eq(&val, &expected), 4);
+
+        mstore8(&mut memory, from_u128(15), from_u128(0x33));
+        mstore8(&mut memory, from_u128(16), from_u128(0x44));
+        mstore8(&mut memory, from_u128(23), from_u128(0x55));
+        mstore8(&mut memory, from_u128(24), from_u128(0x66));
+        mstore8(&mut memory, from_u128(31), from_u128(0x77));
+
+        let val = mload(&mut memory, from_u128(0));
+        let expected = from_address(v5);
+        assert!(eq(&val, &expected), 5);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun init_zero_size() {
+        new_mem(0);
     }
 
     // Storage.
     //=================================================================================================================
     struct Persist has store, key {
-        tbl: aptos_std::table::Table<u128, u128>,
+        tbl: aptos_std::table::Table<U256, U256>,
     }
 
+    // API
     fun init_store(self: &signer) {
         let addr = std::signer::borrow_address(self);
         assert!(addr == &@self, 1);
@@ -125,7 +243,8 @@ module self::template {
         move_to(self, store);
     }
 
-    fun sstore(store: &mut Persist, key: u128, val: u128) {
+    // API
+    fun sstore(store: &mut Persist, key: U256, val: U256) {
         if (aptos_std::table::contains(&mut store.tbl, key)) {
             aptos_std::table::remove(&mut store.tbl, key);
         };
@@ -133,11 +252,12 @@ module self::template {
         aptos_std::table::add(&mut store.tbl, key, val);
     }
 
-    fun sload(store: &mut Persist, key: u128): u128 {
+    // API
+    fun sload(store: &mut Persist, key: U256): U256 {
         if (aptos_std::table::contains(&store.tbl, key)) {
             *aptos_std::table::borrow(&store.tbl, key)
         } else {
-            0
+            zero()
         }
     }
 
@@ -145,114 +265,18 @@ module self::template {
     #[expected_failure]
     public fun use_before_init() acquires Persist {
         let persist = borrow_global_mut<Persist>(@self);
-        sstore(persist, 1, 1);
+        sstore(persist, from_u128(1), from_u128(1));
     }
 
     #[test(owner = @0x42)]
     public fun load_store_test(owner: &signer) acquires Persist {
         init_store(owner);
         let persist = borrow_global_mut<Persist>(@self);
-        assert!(sload(persist, 1) == 0, 0);
-        sstore(persist, 1, 1);
-        assert!(sload(persist, 1) == 1, 0);
+        assert!(as_u128(sload(persist, from_u128(1))) == 0, 0);
+        sstore(persist, from_u128(1), from_u128(1));
+        assert!(as_u128(sload(persist, from_u128(1))) == 1, 0);
     }
 
-    #[test]
-    fun load_store_with_same_offset() {
-        let memory = new_mem(1024);
-
-        mstore(&mut memory, 0, 0x42);
-        let val = mload(&mut memory, 0);
-        assert!(val == 0x42, 0);
-        assert!(effective_len(&mut memory) == 16, 2);
-
-
-        mstore(&mut memory, 1, 340282366920938463463374607431768211455);
-        let val = mload(&mut memory, 1);
-        assert!(val == 340282366920938463463374607431768211455, 1);
-        assert!(effective_len(&mut memory) == 32, 2);
-    }
-
-    #[test]
-    fun load_store_loop() {
-        let memory = new_mem(2048);
-
-        let offset = 0;
-        while (offset < 1024) {
-            mstore(&mut memory, offset, offset);
-            offset = offset + 16;
-        };
-
-        let offset = 0;
-        while (offset < 1024) {
-            let val = mload(&mut memory, offset);
-            assert!(val == offset, 1);
-            offset = offset + 16;
-        };
-    }
-
-    #[test]
-    fun mem_shift() {
-        let memory = new_mem(1024);
-        mstore(&mut memory, 0, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
-        let val = mload(&mut memory, 8);
-        assert!(val == 0xFFFFFFFFFFFFFFFF0000000000000000, 0);
-    }
-
-    #[test]
-    fun mem_store_8() {
-        let memory = new_mem(1024);
-
-        mstore8(&mut memory, 0, 0xAA);
-        let val = mload(&mut memory, 0);
-        assert!(val == 0xAA000000000000000000000000000000, 1);
-
-        mstore8(&mut memory, 1, 0xFF);
-        let val = mload(&mut memory, 0);
-        assert!(val == 0xAAFF0000000000000000000000000000, 2);
-
-        mstore8(&mut memory, 2, 0x11);
-        let val = mload(&mut memory, 0);
-        assert!(val == 0xAAFF1100000000000000000000000000, 3);
-
-        mstore8(&mut memory, 15, 0xCC);
-        let val = mload(&mut memory, 0);
-        assert!(val == 0xAAFF11000000000000000000000000CC, (val as u64));
-    }
-
-    #[test]
-    #[expected_failure(abort_code = 1)]
-    fun init_zero_size() {
-        new_mem(0);
-    }
-
-    // Cast
-    //=================================================================================================================
-    fun address_to_number(addr: &signer): u128 {
-        let encoded = std::bcs::to_bytes(addr);
-        let result = 0;
-
-        let offset = 16u64;
-        let len = 32u64;
-        while (offset < len) {
-            let byte = (*std::vector::borrow(&encoded, offset) as u128);
-            let shift = (((len -1 - offset) * 8) as u8);
-            result = result | byte << shift;
-            offset = offset + 1;
-        };
-
-        return result
-    }
-
-    #[test(self = @0x42)]
-    fun test_address_to_u128_1(self: &signer) {
-        assert!(address_to_number(self) == 0x42, 0);
-    }
-
-    #[test(self = @0x4213421342134213)]
-    fun test_address_to_u128_2(self: &signer) {
-        assert!(address_to_number(self) == 0x4213421342134213, 0);
-    }
 
     // U256
     //=================================================================================================================
@@ -302,6 +326,7 @@ module self::template {
         v7: u64,
     }
 
+    // API
     /// Adds two `U256` and returns sum.
     fun overflowing_add(a: U256, b: U256): U256 {
         let ret = zero();
@@ -346,7 +371,7 @@ module self::template {
     }
 
     /// Compares two `U256` numbers.
-    fun compare(a: & U256, b: & U256): u8 {
+    fun compare(a: &U256, b: &U256): u8 {
         let i = WORDS;
         while (i > 0) {
             i = i - 1;
@@ -377,6 +402,7 @@ module self::template {
         }
     }
 
+    // API
     /// Multiples two `U256`.
     fun overflowing_mul(a: U256, b: U256): U256 {
         let ret = DU256 {
@@ -438,6 +464,7 @@ module self::template {
         r
     }
 
+    // API
     /// Subtracts two `U256`, returns result.
     fun overflowing_sub(a: U256, b: U256): U256 {
         let ret = zero();
@@ -477,6 +504,54 @@ module self::template {
         ret
     }
 
+    // API
+    fun lt(a: &U256, b: &U256): bool {
+        compare(a, b) == LESS_THAN
+    }
+
+    // API
+    fun le(a: &U256, b: &U256): bool {
+        compare(a, b) != GREATER_THAN
+    }
+
+    // API
+    fun gt(a: &U256, b: &U256): bool {
+        compare(a, b) == GREATER_THAN
+    }
+
+    // API
+    fun ge(a: &U256, b: &U256): bool {
+        compare(a, b) != LESS_THAN
+    }
+
+    // API
+    fun eq(a: &U256, b: &U256): bool {
+        compare(a, b) == EQUAL
+    }
+
+    // API
+    fun ne(a: &U256, b: &U256): bool {
+        compare(a, b) != EQUAL
+    }
+
+    // API
+    fun bitnot(a: U256): U256 {
+        let ret = zero();
+        let i = 0;
+        while (i < WORDS) {
+            put(&mut ret, i, get(&a, i) ^ 0xFFFFFFFFFFFFFFFF);
+            i = i + 1;
+        };
+        ret
+    }
+
+    // API
+    fun byte(i: U256, x: U256): U256 {
+        let shift = 248 - as_u128(i) * 8;
+        bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
+    }
+
+    // API
     /// Divide `a` by `b`.
     fun div(a: U256, b: U256): U256 {
         let ret = zero();
@@ -493,7 +568,7 @@ module self::template {
         };
 
         let shift = a_bits - b_bits;
-        b = shl(b, (shift as u8));
+        b = shl_u8(b, (shift as u8));
 
         loop {
             let cmp = compare(&a, &b);
@@ -506,7 +581,7 @@ module self::template {
                 a = overflowing_sub(a, b);
             };
 
-            b = shr(b, 1);
+            b = shr_u8(b, 1);
             if (shift == 0) {
                 break
             };
@@ -517,6 +592,7 @@ module self::template {
         ret
     }
 
+    // API
     /// Mod `a` by `b`.
     fun mod(a: U256, b: U256): U256 {
         let ret = zero();
@@ -533,7 +609,7 @@ module self::template {
         };
 
         let shift = a_bits - b_bits;
-        b = shl(b, (shift as u8));
+        b = shl_u8(b, (shift as u8));
 
         loop {
             let cmp = compare(&a, &b);
@@ -541,7 +617,7 @@ module self::template {
                 a = overflowing_sub(a, b);
             };
 
-            b = shr(b, 1);
+            b = shr_u8(b, 1);
             if (shift == 0) {
                 break
             };
@@ -552,6 +628,7 @@ module self::template {
         a
     }
 
+    // API
     /// Binary or `a` by `b`.
     fun bitor(a: U256, b: U256): U256 {
         let ret = zero();
@@ -568,6 +645,7 @@ module self::template {
         ret
     }
 
+    // API
     /// Binary and `a` by `b`.
     fun bitand(a: U256, b: U256): U256 {
         let ret = zero();
@@ -584,8 +662,25 @@ module self::template {
         ret
     }
 
+    // API
+    /// Binary xor `a` by `b`.
+    fun bitxor(a: U256, b: U256): U256 {
+        let ret = zero();
+
+        let i = 0;
+        while (i < WORDS) {
+            let a1 = get(&a, i);
+            let b1 = get(&b, i);
+            put(&mut ret, i, a1 ^ b1);
+
+            i = i + 1;
+        };
+
+        ret
+    }
+
     /// Shift right `a`  by `shift`.
-    fun shr(a: U256, shift: u8): U256 {
+    fun shr_u8(a: U256, shift: u8): U256 {
         let ret = zero();
 
         let word_shift = (shift as u64) / 64;
@@ -610,8 +705,21 @@ module self::template {
         ret
     }
 
+    // API
+    fun shr(a: U256, shift: U256): U256 {
+        let ret = zero();
+        let shift = as_u128(shift);
+
+        if (is_zero(a) || shift >= 256) {
+            return ret
+        };
+
+        return shr_u8(a, (shift as u8))
+    }
+
+
     /// Shift left `a` by `shift`.
-    fun shl(a: U256, shift: u8): U256 {
+    fun shl_u8(a: U256, shift: u8): U256 {
         let ret = zero();
 
         let word_shift = (shift as u64) / 64;
@@ -635,6 +743,29 @@ module self::template {
         };
 
         ret
+    }
+
+    // API
+    fun shl(a: U256, shift: U256): U256 {
+        let ret = zero();
+        let shift = as_u128(shift);
+
+        if (is_zero(a) || shift >= 256) {
+            return ret
+        };
+
+        return shl_u8(a, (shift as u8))
+    }
+
+    fun is_zero(a: U256): bool {
+        let i = 0;
+        while (i < WORDS) {
+            if (get(&a, i) != 0) {
+                return false
+            };
+            i = i + 1;
+        };
+        true
     }
 
     /// Returns `U256` equals to zero.
@@ -738,7 +869,7 @@ module self::template {
     }
 
     /// Get word from `a` by index `i`.
-    fun get(a: & U256, i: u64): u64 {
+    fun get(a: &U256, i: u64): u64 {
         if (i == 0) {
             a.v0
         } else if (i == 1) {
@@ -828,6 +959,103 @@ module self::template {
         };
 
         (b, overflow)
+    }
+
+    // API
+    fun from_address(addr: &signer): U256 {
+        let encoded = std::bcs::to_bytes(addr);
+        from_bytes(&encoded, 0)
+    }
+
+    fun from_bytes(bytes: &vector<u8>, offset: u64): U256 {
+        return U256 {
+            v0: read_u64(bytes, offset + 24),
+            v1: read_u64(bytes, offset + 16),
+            v2: read_u64(bytes, offset + 8),
+            v3: read_u64(bytes, offset + 0),
+        }
+    }
+
+    fun to_bytes(a: &U256): vector<u8> {
+        let bytes = std::vector::empty<u8>();
+        to_bytes_u64(a.v3, &mut bytes);
+        to_bytes_u64(a.v2, &mut bytes);
+        to_bytes_u64(a.v1, &mut bytes);
+        to_bytes_u64(a.v0, &mut bytes);
+        bytes
+    }
+
+    fun to_bytes_u64(a: u64, bytes: &mut vector<u8>) {
+        std::vector::push_back(bytes, (((a >> 56) & 0xFF) as u8));
+        std::vector::push_back(bytes, (((a >> 48) & 0xFF) as u8));
+        std::vector::push_back(bytes, (((a >> 40) & 0xFF) as u8));
+        std::vector::push_back(bytes, (((a >> 32) & 0xFF) as u8));
+        std::vector::push_back(bytes, (((a >> 24) & 0xFF) as u8));
+        std::vector::push_back(bytes, (((a >> 16) & 0xFF) as u8));
+        std::vector::push_back(bytes, (((a >> 8) & 0xFF) as u8));
+        std::vector::push_back(bytes, ((a & 0xFF) as u8));
+    }
+
+    fun write(a: &U256, vec: &mut vector<u8>, offset: u64) {
+        write_u64(a.v3, vec, offset);
+        write_u64(a.v2, vec, offset + 8);
+        write_u64(a.v1, vec, offset + 16);
+        write_u64(a.v0, vec, offset + 24);
+    }
+
+    fun write_u64(a: u64, vec: &mut vector<u8>, offset: u64) {
+        *std::vector::borrow_mut(vec, offset + 0) = (((a >> 56) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 1) = (((a >> 48) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 2) = (((a >> 40) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 3) = (((a >> 32) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 4) = (((a >> 24) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 5) = (((a >> 16) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 6) = (((a >> 8) & 0xFF) as u8);
+        *std::vector::borrow_mut(vec, offset + 7) = ((a & 0xFF) as u8);
+    }
+
+    fun read_u64(bytes: &vector<u8>, offset: u64): u64 {
+        let result = 0u64;
+        let i = 0u64;
+        while (i < 8) {
+            let byte = (*std::vector::borrow(bytes, offset + i) as u64);
+            let shift = (((7 - i) * 8) as u8);
+            result = result | byte << shift;
+            i = i + 1;
+        };
+        return result
+    }
+
+    #[test(self = @0x42)]
+    fun test_address_to_u128_1(self: &signer) {
+        assert!(from_address(self) == from_u128(0x42), 0);
+        let addr = from_address(self);
+        let bytes = to_bytes(&addr);
+        let val = *std::vector::borrow(&bytes, 7);
+        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        write(&addr, &mut bytes, 0);
+        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+    }
+
+    #[test(self = @0x4213421342134213)]
+    fun test_address_to_u128_2(self: &signer) {
+        assert!(from_address(self) == from_u128(0x4213421342134213), 0);
+        let addr = from_address(self);
+        let bytes = to_bytes(&addr);
+        let val = *std::vector::borrow(&bytes, 7);
+        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        write(&addr, &mut bytes, 0);
+        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+    }
+
+    #[test(self = @0xffeeddccbbaa99887766554433221100f0e0d0c0b0a090807060504030201000)]
+    fun test_encode_decode(self: &signer) {
+        let addr = from_address(self);
+        let bytes = to_bytes(&addr);
+        let val = *std::vector::borrow(&bytes, 7);
+        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        write(&addr, &mut bytes, 0);
+        assert!(from_bytes(&bytes, 0) == addr, 1);
     }
 
     // Tests.
@@ -1199,34 +1427,30 @@ module self::template {
         assert!(a == 17, 5);
 
         let b = from_u128(70000);
-        let sh = shl(b, 100);
+        let sh = shl_u8(b, 100);
         assert!(bits(&sh) == 117, 6);
 
-        let sh = shl(sh, 100);
+        let sh = shl_u8(sh, 100);
         assert!(bits(&sh) == 217, 7);
 
-        let sh = shl(sh, 100);
+        let sh = shl_u8(sh, 100);
         assert!(bits(&sh) == 0, 8);
     }
 
     #[test]
     fun test_shift_left() {
         let a = from_u128(100);
-        let b = shl(a, 2);
+        let b = shl_u8(a, 2);
 
         assert!(as_u128(b) == 400, 0);
-
-        // TODO: more shift left tests.
     }
 
     #[test]
     fun test_shift_right() {
         let a = from_u128(100);
-        let b = shr(a, 2);
+        let b = shr_u8(a, 2);
 
         assert!(as_u128(b) == 25, 0);
-
-        // TODO: more shift right tests.
     }
 
     #[test]
@@ -1307,5 +1531,18 @@ module self::template {
         let b = from_u128(0x0f0f0f0f0f0f0f0fu128);
         let c = bitand(a, b);
         assert!(as_u128(c) == 0x0f0f0f0f0f0f0f0fu128, 1);
+    }
+
+    #[test]
+    fun test_xor() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = bitxor(a, b);
+        assert!(as_u128(c) == 1, 0);
+
+        let a = from_u128(0x0f0f0f0f0f0f0f0fu128);
+        let b = from_u128(0xf0f0f0f0f0f0f0f0u128);
+        let c = bitxor(a, b);
+        assert!(as_u128(c) == 0xffffffffffffffffu128, 1);
     }
 }
