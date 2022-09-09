@@ -9,5 +9,9 @@ pub fn test_move_intrinsic() {
         .args(&["move", "test"])
         .output()
         .unwrap();
-    assert!(out.status.success());
+    assert!(
+        out.status.success(),
+        "[ERROR] {}",
+        String::from_utf8(out.stderr).unwrap()
+    );
 }
