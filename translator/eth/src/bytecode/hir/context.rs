@@ -13,25 +13,19 @@ pub struct Context {
     env: Rc<Env>,
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
-    shift_eth_params: u8,
     code_size: u128,
 }
 
 impl Context {
-    pub fn new(env: Env, contract_address: U256, code_size: u128, shift_eth_params: u8) -> Context {
+    pub fn new(env: Env, contract_address: U256, code_size: u128) -> Context {
         Context {
             address: contract_address,
             stack: Stack::default(),
             env: Rc::new(env),
             loop_input: Default::default(),
             loop_stack_size: 0,
-            shift_eth_params,
             code_size,
         }
-    }
-
-    pub fn shift_eth_params(&self) -> u8 {
-        self.shift_eth_params
     }
 
     pub fn pop_stack(&mut self, pops: usize) -> Vec<VarId> {

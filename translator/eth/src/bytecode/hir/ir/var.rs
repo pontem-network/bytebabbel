@@ -6,52 +6,51 @@ use std::fmt::{Debug, Formatter};
 
 #[derive(Default, Debug)]
 pub struct Vars {
-    inner: HashMap<VarId, Var>,
+    inner: HashMap<VarId, Eval>,
 }
 
 impl Vars {
-    pub fn create(&mut self, var: Var) -> VarId {
+    pub fn create(&mut self, var: Eval) -> VarId {
         let id = VarId(self.inner.len() as u64);
         self.inner.insert(id, var);
         id
     }
 
-    pub fn set_val(&mut self, id: VarId, var: Var) {
+    pub fn set_val(&mut self, id: VarId, var: Eval) {
         self.inner.insert(id, var);
     }
 
-    pub fn get(&self, id: &VarId) -> &Var {
+    pub fn get(&self, id: &VarId) -> &Eval {
         self.inner.get(id).unwrap()
     }
 
     pub fn resolve_var(&self, id: VarId) -> Option<U256> {
         match self.inner.get(&id) {
-            Some(Var::Val(val)) => Some(*val),
+            Some(Eval::Val(val)) => Some(*val),
             None => None,
-            Some(Var::Param(_)) => None,
-            Some(Var::UnaryOp(cmd, op)) => {
+            Some(Eval::UnaryOp(cmd, op)) => {
                 let val = self.resolve_var(*op)?;
                 Some(cmd.calc(val))
             }
-            Some(Var::BinaryOp(cmd, op1, op2)) => {
+            Some(Eval::BinaryOp(cmd, op1, op2)) => {
                 let op1 = self.resolve_var(*op1)?;
                 let op2 = self.resolve_var(*op2)?;
                 Some(cmd.calc(op1, op2))
             }
-            Some(Var::TernaryOp(cmd, op1, op2, op3)) => {
+            Some(Eval::TernaryOp(cmd, op1, op2, op3)) => {
                 let op1 = self.resolve_var(*op1)?;
                 let op2 = self.resolve_var(*op2)?;
                 let op3 = self.resolve_var(*op3)?;
                 Some(cmd.calc(op1, op2, op3))
             }
-            Some(Var::MLoad(_)) => None,
-            Some(Var::SLoad(_)) => None,
-            Some(Var::MSize) => None,
-            Some(Var::Signer) => None,
+            Some(Eval::MLoad(_)) => None,
+            Some(Eval::SLoad(_)) => None,
+            Some(Eval::MSize) => None,
+            Some(Eval::Signer) => None,
         }
     }
 
-    pub fn take(&mut self, id: VarId) -> Result<Var, Error> {
+    pub fn take(&mut self, id: VarId) -> Result<Eval, Error> {
         self.inner
             .remove(&id)
             .ok_or_else(|| anyhow!("VarId not found: {:?}", id))
@@ -59,16 +58,18 @@ impl Vars {
 }
 
 #[derive(Debug)]
-pub enum Var {
+pub enum Eval {
     Val(U256),
     MLoad(VarId),
     SLoad(VarId),
     Signer,
     MSize,
-    Param(u16),
+    ArgsSize,
+    Args(VarId),
     UnaryOp(UnaryOp, VarId),
     BinaryOp(BinaryOp, VarId, VarId),
     TernaryOp(TernaryOp, VarId, VarId, VarId),
+    Hash(VarId, VarId),
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Default)]

@@ -1,5 +1,5 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Var, VarId, Vars};
+use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
 use crate::{BlockId, Hir};
 use anyhow::{anyhow, Error};
 use std::collections::{HashMap, HashSet};
@@ -135,32 +135,37 @@ impl UnusedVarClipper {
             .ok_or_else(|| anyhow!("{:?} is not found", id))
     }
 
-    fn map_var(var: Var, id_mapping: &HashMap<VarId, VarId>) -> Result<Var, Error> {
+    fn map_var(var: Eval, id_mapping: &HashMap<VarId, VarId>) -> Result<Eval, Error> {
         Ok(match var {
-            Var::Val(val) => Var::Val(val),
-            Var::Param(param) => Var::Param(param),
-            Var::UnaryOp(cmd, op) => Var::UnaryOp(cmd, Self::map_var_id(op, id_mapping)?),
-            Var::BinaryOp(cmd, op1, op2) => Var::BinaryOp(
+            Eval::Val(val) => Eval::Val(val),
+            Eval::UnaryOp(cmd, op) => Eval::UnaryOp(cmd, Self::map_var_id(op, id_mapping)?),
+            Eval::BinaryOp(cmd, op1, op2) => Eval::BinaryOp(
                 cmd,
                 Self::map_var_id(op1, id_mapping)?,
                 Self::map_var_id(op2, id_mapping)?,
             ),
-            Var::TernaryOp(cmd, op1, op2, op3) => Var::TernaryOp(
+            Eval::TernaryOp(cmd, op1, op2, op3) => Eval::TernaryOp(
                 cmd,
                 Self::map_var_id(op1, id_mapping)?,
                 Self::map_var_id(op2, id_mapping)?,
                 Self::map_var_id(op3, id_mapping)?,
             ),
-            Var::MLoad(addr) => {
+            Eval::MLoad(addr) => {
                 let addr = Self::map_var_id(addr, id_mapping)?;
-                Var::MLoad(addr)
+                Eval::MLoad(addr)
             }
-            Var::SLoad(addr) => {
+            Eval::SLoad(addr) => {
                 let addr = Self::map_var_id(addr, id_mapping)?;
-                Var::SLoad(addr)
+                Eval::SLoad(addr)
             }
-            Var::MSize => Var::MSize,
-            Var::Signer => Var::Signer,
+            Eval::MSize => Eval::MSize,
+            Eval::Signer => Eval::Signer,
+            Eval::ArgsSize => Eval::ArgsSize,
+            Eval::Args(arg) => Eval::Args(Self::map_var_id(arg, id_mapping)?),
+            Eval::Hash(addr, len) => Eval::Hash(
+                Self::map_var_id(addr, id_mapping)?,
+                Self::map_var_id(len, id_mapping)?,
+            ),
         })
     }
 }
@@ -251,28 +256,34 @@ impl VarReachability {
 
     fn insert_var(&mut self, ir: &Hir, var: &VarId) {
         match ir.var(var) {
-            Var::Val(_) => {
+            Eval::Val(_) => {
                 self.push_var(var, &[]);
             }
-            Var::Param(_) => {}
-            Var::UnaryOp(_, op) => {
+            Eval::UnaryOp(_, op) => {
                 self.push_var(var, &[*op]);
             }
-            Var::BinaryOp(_, op1, op2) => {
+            Eval::BinaryOp(_, op1, op2) => {
                 self.push_var(var, &[*op1, *op2]);
             }
 
-            Var::TernaryOp(_, op1, op2, op3) => {
+            Eval::TernaryOp(_, op1, op2, op3) => {
                 self.push_var(var, &[*op1, *op2, *op3]);
             }
-            Var::MLoad(addr) => {
+            Eval::MLoad(addr) => {
                 self.push_var(var, &[*addr]);
             }
-            Var::SLoad(addr) => {
+            Eval::SLoad(addr) => {
                 self.push_var(var, &[*addr]);
             }
-            Var::MSize => {}
-            Var::Signer => {}
+            Eval::MSize => {}
+            Eval::Signer => {}
+            Eval::ArgsSize => {}
+            Eval::Args(var_1) => {
+                self.push_var(var, &[*var_1]);
+            }
+            Eval::Hash(var_1, var_2) => {
+                self.push_var(var, &[*var_1, *var_2]);
+            }
         }
     }
 
@@ -374,28 +385,35 @@ impl<'r> ContextAnalyzer<'r> {
     fn resolve_ids(&self, var_id: &VarId, ir: &Hir, ids: &mut HashSet<VarId>) {
         ids.insert(*var_id);
         match ir.var(var_id) {
-            Var::Val(_) => {}
-            Var::Param(_) => {}
-            Var::UnaryOp(_, op) => {
+            Eval::Val(_) => {}
+            Eval::UnaryOp(_, op) => {
                 self.resolve_ids(op, ir, ids);
             }
-            Var::BinaryOp(_, op1, op2) => {
+            Eval::BinaryOp(_, op1, op2) => {
                 self.resolve_ids(op1, ir, ids);
                 self.resolve_ids(op2, ir, ids);
             }
-            Var::TernaryOp(_, op1, op2, op3) => {
+            Eval::TernaryOp(_, op1, op2, op3) => {
                 self.resolve_ids(op1, ir, ids);
                 self.resolve_ids(op2, ir, ids);
                 self.resolve_ids(op3, ir, ids);
             }
-            Var::MLoad(addr) => {
+            Eval::MLoad(addr) => {
                 self.resolve_ids(addr, ir, ids);
             }
-            Var::SLoad(addr) => {
+            Eval::SLoad(addr) => {
                 self.resolve_ids(addr, ir, ids);
             }
-            Var::MSize => {}
-            Var::Signer => {}
+            Eval::MSize => {}
+            Eval::Signer => {}
+            Eval::ArgsSize => {}
+            Eval::Args(var) => {
+                self.resolve_ids(var, ir, ids);
+            }
+            Eval::Hash(addr, len) => {
+                self.resolve_ids(addr, ir, ids);
+                self.resolve_ids(len, ir, ids);
+            }
         }
     }
 

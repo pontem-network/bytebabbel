@@ -1,5 +1,5 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Var, VarId, Vars};
+use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
 use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
@@ -29,11 +29,19 @@ pub struct MirTranslator<'a> {
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
     pub(super) signer_index: LocalIndex,
+    pub(super) args_index: LocalIndex,
 }
 
 impl<'a> MirTranslator<'a> {
     pub fn new(fun: &'a Function) -> MirTranslator<'a> {
-        let mut variables = Variables::new(fun.input.iter().map(SType::from).collect());
+        // Now we use static parameters signer and args
+        // Signer = 0
+        // Args = 1
+        // todo Replace with dynamic parameters
+        let signer = (0, SType::Address);
+        let args = (1, SType::Bytes);
+
+        let mut variables = Variables::new(vec![signer.1, args.1]);
         let mut mir = Mir::default();
 
         let store_var = variables.borrow_global(SType::Storage);
@@ -49,7 +57,8 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
-            signer_index: 0,
+            signer_index: signer.0,
+            args_index: args.0,
         }
     }
 
@@ -142,7 +151,7 @@ impl<'a> MirTranslator<'a> {
     fn translate_set_var(&mut self, id: VarId, vars: &mut Vars) -> Result<(), Error> {
         let var = vars.take(id)?;
         match var {
-            Var::Val(val) => {
+            Eval::Val(val) => {
                 let var = self.variables.borrow(SType::Number);
                 self.mapping.insert(id, var);
 
@@ -151,30 +160,16 @@ impl<'a> MirTranslator<'a> {
                     Expression::Const(Value::from(val)),
                 ));
             }
-            Var::Param(param_id) => {
-                let param = self
-                    .fun
-                    .input
-                    .get(param_id as usize)
-                    .ok_or_else(|| anyhow!("parameter index out of bounds"))?;
-                let tp = SType::from(param);
-                let var = self.variables.borrow(tp);
-                self.mapping.insert(id, var);
-                self.mir.add_statement(Statement::CreateVar(
-                    var,
-                    Expression::Param(param_id as LocalIndex, tp),
-                ));
-            }
-            Var::UnaryOp(cmd, op) => {
+            Eval::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
             }
-            Var::BinaryOp(cmd, op1, op2) => {
+            Eval::BinaryOp(cmd, op1, op2) => {
                 self.translate_binary_op(cmd, op1, op2, id)?;
             }
-            Var::TernaryOp(cmd, op1, op2, op3) => {
+            Eval::TernaryOp(cmd, op1, op2, op3) => {
                 self.translate_ternary_op(cmd, op1, op2, op3, id)?;
             }
-            Var::MLoad(addr) => {
+            Eval::MLoad(addr) => {
                 let result = self.variables.borrow(SType::Number);
                 let addr = self.get_var(addr)?;
                 ensure!(
@@ -190,7 +185,7 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Var::SLoad(addr) => {
+            Eval::SLoad(addr) => {
                 let result = self.variables.borrow(SType::Number);
                 self.mapping.insert(id, result);
                 let addr = self.get_var(addr)?;
@@ -207,7 +202,7 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Var::MSize => {
+            Eval::MSize => {
                 let result = self.variables.borrow(SType::Number);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
@@ -216,11 +211,14 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Var::Signer => {
+            Eval::Signer => {
                 let signer = self.variables.borrow_param(self.signer_index);
                 let result = self.cast_number(signer)?;
                 self.mapping.insert(id, result);
             }
+            Eval::ArgsSize => {}
+            Eval::Args(_) => {}
+            Eval::Hash(_, _) => {}
         }
         Ok(())
     }

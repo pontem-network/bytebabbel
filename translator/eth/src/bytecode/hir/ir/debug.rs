@@ -1,6 +1,6 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, UnaryOp};
 use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::Var;
+use crate::bytecode::hir::ir::var::Eval;
 use crate::Hir;
 use anyhow::Error;
 use log::log_enabled;
@@ -129,41 +129,47 @@ fn print_instruction(
     Ok(())
 }
 
-fn print_ir_var(var: &Var, buf: &mut String, width: usize) -> Result<(), Error> {
+fn print_ir_var(var: &Eval, buf: &mut String, width: usize) -> Result<(), Error> {
     match var {
-        Var::Val(val) => {
+        Eval::Val(val) => {
             write!(buf, "{:width$}{:?}", " ", val)?;
         }
-        Var::Param(param) => {
-            write!(buf, "{:width$}param_{:?}", " ", param)?;
-        }
-        Var::UnaryOp(cmd, op1) => {
+        Eval::UnaryOp(cmd, op1) => {
             match cmd {
                 UnaryOp::IsZero => write!(buf, "{:width$}{:?} == 0", " ", op1)?,
                 UnaryOp::Not => write!(buf, "{:width$}!{:?}", " ", op1)?,
             };
         }
-        Var::BinaryOp(cmd, op1, op2) => {
+        Eval::BinaryOp(cmd, op1, op2) => {
             write!(buf, "{:width$}{:?} {} {:?}", " ", op1, cmd.sign(), op2)?;
         }
-        Var::TernaryOp(cmd, op1, op2, op3) => {
+        Eval::TernaryOp(cmd, op1, op2, op3) => {
             write!(
                 buf,
                 "{:width$}{:?}({:?}, {:?}, {:?})",
                 " ", cmd, op1, op2, op3
             )?;
         }
-        Var::MLoad(addr) => {
+        Eval::MLoad(addr) => {
             write!(buf, "{:width$}mem[{:?}]", " ", addr)?;
         }
-        Var::SLoad(addr) => {
+        Eval::SLoad(addr) => {
             write!(buf, "{:width$}store[{:?}]", " ", addr)?;
         }
-        Var::MSize => {
+        Eval::MSize => {
             write!(buf, "{:width$}mem.len()", " ",)?;
         }
-        Var::Signer => {
+        Eval::Signer => {
             write!(buf, "{:width$}signer", " ",)?;
+        }
+        Eval::ArgsSize => {
+            write!(buf, "{:width$}args.len()", " ",)?;
+        }
+        Eval::Args(offset) => {
+            write!(buf, "{:width$}args[{:?}]", " ", offset)?;
+        }
+        Eval::Hash(offset, len) => {
+            write!(buf, "{:width$}hash(memory({:?}, {:?}))", " ", offset, len)?;
         }
     }
     Ok(())

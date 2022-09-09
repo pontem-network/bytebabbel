@@ -1,6 +1,6 @@
 use crate::bytecode::hir::ir::debug::print_ir;
 use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Var, VarId, Vars};
+use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
 use crate::{BlockId, U256};
 use std::mem;
 
@@ -16,7 +16,7 @@ pub struct Hir {
 }
 
 impl Hir {
-    pub fn create_var(&mut self, var: Var) -> VarId {
+    pub fn create_var(&mut self, var: Eval) -> VarId {
         let id = self.vars.create(var);
         self.instructions.push(Instruction::SetVar(id));
         id
@@ -82,7 +82,7 @@ impl Hir {
         self.vars.resolve_var(id)
     }
 
-    pub fn var(&self, id: &VarId) -> &Var {
+    pub fn var(&self, id: &VarId) -> &Eval {
         self.vars.get(id)
     }
 

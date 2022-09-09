@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Var, VarId};
+use crate::bytecode::hir::ir::var::{Eval, VarId};
 use crate::Hir;
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
@@ -34,11 +34,11 @@ impl InstructionHandler for UnaryOp {
         if !ctx.is_in_loop() {
             let param = ir.resolve_var(params[0]);
             if let Some(param) = param {
-                let id = ir.create_var(Var::Val(self.calc(param)));
+                let id = ir.create_var(Eval::Val(self.calc(param)));
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Var::UnaryOp(*self, params[0]));
+        let id = ir.create_var(Eval::UnaryOp(*self, params[0]));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -78,17 +78,17 @@ impl InstructionHandler for BinaryOp {
                 let b = ir.resolve_var(b);
                 if let (Some(a), Some(b)) = (a, b) {
                     let res = self.calc(a, b);
-                    let id = ir.create_var(Var::Val(res));
+                    let id = ir.create_var(Eval::Val(res));
                     return ExecutionResult::Output(vec![id]);
                 }
             }
             if self == &BinaryOp::EQ && a == b {
-                let id = ir.create_var(Var::Val(U256::one()));
+                let id = ir.create_var(Eval::Val(U256::one()));
                 return ExecutionResult::Output(vec![id]);
             }
         }
 
-        let id = ir.create_var(Var::BinaryOp(*self, a, b));
+        let id = ir.create_var(Eval::BinaryOp(*self, a, b));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -237,11 +237,11 @@ impl InstructionHandler for TernaryOp {
             let op3 = ir.resolve_var(op3);
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
-                let id = ir.create_var(Var::Val(res));
+                let id = ir.create_var(Eval::Val(res));
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Var::TernaryOp(self.clone(), op1, op2, op3));
+        let id = ir.create_var(Eval::TernaryOp(self.clone(), op1, op2, op3));
         ExecutionResult::Output(vec![id])
     }
 }

@@ -42,7 +42,7 @@ impl<'a> HirTranslator<'a> {
         contract_address: U256,
         code_size: u128,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, 1);
+        let mut ctx = Context::new(Env::from(fun), contract_address, code_size);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;

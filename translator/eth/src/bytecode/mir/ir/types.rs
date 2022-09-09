@@ -9,6 +9,7 @@ pub enum SType {
     Number,
     Bool,
     Address,
+    Bytes,
 }
 
 impl Display for SType {
@@ -22,6 +23,7 @@ impl Display for SType {
                 SType::Storage => "Storage",
                 SType::Memory => "Memory",
                 SType::Address => "Address",
+                SType::Bytes => "vector<u8>",
             }
         )
     }
@@ -31,17 +33,13 @@ pub type LocalIndex = u8;
 
 #[derive(Debug, Clone)]
 pub enum Value {
-    Number(u128),
+    Number(U256),
     Bool(bool),
 }
 
 impl From<U256> for Value {
     fn from(val: U256) -> Self {
-        if val > U256::from(u128::MAX) {
-            Value::Number(val.low_u128())
-        } else {
-            Value::Number(val.as_u128())
-        }
+        Value::Number(val)
     }
 }
 

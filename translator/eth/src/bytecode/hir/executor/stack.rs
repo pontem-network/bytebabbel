@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Var, VarId};
+use crate::bytecode::hir::ir::var::{Eval, VarId};
 use crate::{Hir, U256};
 
 pub enum StackOp {
@@ -14,7 +14,7 @@ impl InstructionHandler for StackOp {
     fn handle(&self, mut params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
         match self {
             StackOp::Push(val) => {
-                let id = ir.create_var(Var::Val(U256::from(val.as_slice())));
+                let id = ir.create_var(Eval::Val(U256::from(val.as_slice())));
                 ExecutionResult::Output(vec![id])
             }
             StackOp::Dup(_) => {
