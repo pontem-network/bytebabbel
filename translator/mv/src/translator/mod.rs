@@ -212,7 +212,7 @@ impl MvIrTranslator {
                 );
             }
             Statement::InitStorage(var) => {
-                self.code.call(Persist::Create, &[CallOp::Var(*var)]);
+                self.code.call(Persist::InitContract, &[CallOp::Var(*var)]);
             }
             Statement::Log {
                 storage,
@@ -461,19 +461,19 @@ impl MvIrTranslator {
             Operation::Gt => self.code.call(Num::Gt, &ops),
             Operation::Shr => self.code.call(Num::Shr, &ops),
             Operation::Shl => self.code.call(Num::Shl, &ops),
-            Operation::Sar => todo!(),
+            Operation::Sar => self.code.call(Num::Sar, &ops),
             Operation::BitAnd => self.code.call(Num::BitAnd, &ops),
             Operation::BitOr => self.code.call(Num::BitOr, &ops),
             Operation::BitXor => self.code.call(Num::BitXor, &ops),
             Operation::Div => self.code.call(Num::Div, &ops),
             Operation::Byte => self.code.call(Num::Byte, &ops),
             Operation::Mod => self.code.call(Num::Mod, &ops),
-            Operation::SDiv => todo!(),
-            Operation::SLt => todo!(),
-            Operation::SGt => todo!(),
-            Operation::SMod => todo!(),
-            Operation::Exp => todo!(),
-            Operation::SignExtend => todo!(),
+            Operation::SDiv => self.code.call(Num::SDiv, &ops),
+            Operation::SLt => self.code.call(Num::SLt, &ops),
+            Operation::SGt => self.code.call(Num::SGt, &ops),
+            Operation::SMod => self.code.call(Num::SMod, &ops),
+            Operation::Exp => self.code.call(Num::Exp, &ops),
+            Operation::SignExtend => self.code.call(Num::SignExtend, &ops),
             Operation::IsZero => self.code.call(Num::IsZero, &ops),
             Operation::BitNot => self.code.call(Num::BitNot, &ops),
         }

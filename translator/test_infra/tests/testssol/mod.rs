@@ -121,7 +121,7 @@ impl STest {
     }
 
     fn module_address(&self) -> String {
-        format!("0x1::{}", &self.contract.name())
+        format!("0x42::{}", &self.contract.name())
     }
 
     fn vm_run(&self) -> Result<ExecutionResult> {
@@ -134,12 +134,12 @@ impl STest {
             self.abi_str(),
         )?;
         let mut vm = MoveExecutor::new(self.contract.abi()?.clone());
-        vm.deploy("0x1", bytecode);
-        vm.run(&format!("{}::constructor", module_address), "0x1", None)
+        vm.deploy("0x42", bytecode);
+        vm.run(&format!("{}::constructor", module_address), "0x42", None)
             .unwrap();
 
         let func_address = format!("{module_address}::{}", &self.test.func);
-        vm.run(&func_address, "0x1", Some(&self.test.params))
+        vm.run(&func_address, "0x42", Some(&self.test.params))
     }
 
     fn abi_str(&self) -> &str {

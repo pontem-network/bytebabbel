@@ -285,7 +285,7 @@ fn randparam_for_tp(tp: &ParamType) -> Vec<String> {
         ParamType::Address => randparam_for_tp(&ParamType::Byte(32)),
         ParamType::Bytes => {
             let mut result = Vec::default();
-            result.push("0x1".to_string());
+            result.push("0x42".to_string());
 
             let mut val = (0..33).map(|_| u8::MAX).collect::<Vec<u8>>();
             result.push(format!("0x{}", hex::encode(&val)));

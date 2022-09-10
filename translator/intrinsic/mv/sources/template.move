@@ -230,26 +230,26 @@ module self::template {
         mstore8(&mut memory, from_u128(0), from_u128(0xAA));
         let val = mload(&mut memory, from_u128(0));
         let expected = from_address(v1);
-        assert!(eq(&val, &expected), 1);
+        assert!(eq(val, expected), 1);
 
         let val = mload(&mut memory, from_u128(1));
-        assert!(eq(&val, &zero()), 1);
+        assert!(eq(val, zero()), 1);
 
         mstore8(&mut memory, from_u128(1), from_u128(0xFF));
         let val = mload(&mut memory, from_u128(0));
         let expected = from_address(v2);
-        assert!(eq(&val, &expected), 2);
+        assert!(eq(val, expected), 2);
 
         mstore8(&mut memory, from_u128(2), from_u128(0x11));
         let val = mload(&mut memory, from_u128(0));
         let expected = from_address(v3);
-        assert!(eq(&val, &expected), 3);
+        assert!(eq(val, expected), 3);
 
         mstore8(&mut memory, from_u128(8), from_u128(0x11));
         mstore8(&mut memory, from_u128(7), from_u128(0x22));
         let val = mload(&mut memory, from_u128(0));
         let expected = from_address(v4);
-        assert!(eq(&val, &expected), 4);
+        assert!(eq(val, expected), 4);
 
         mstore8(&mut memory, from_u128(15), from_u128(0x33));
         mstore8(&mut memory, from_u128(16), from_u128(0x44));
@@ -259,7 +259,7 @@ module self::template {
 
         let val = mload(&mut memory, from_u128(0));
         let expected = from_address(v5);
-        assert!(eq(&val, &expected), 5);
+        assert!(eq(val, expected), 5);
     }
 
     #[test(
@@ -278,19 +278,19 @@ module self::template {
         mstore(&mut memory, from_u128(32), from_address(s2));
 
         let resp = hash(&mut memory, from_u128(0), from_u128(1));
-        assert!(eq(&resp, &from_address(hash_1)), 1);
+        assert!(eq(resp, from_address(hash_1)), 1);
 
         let resp = hash(&mut memory, from_u128(0), from_u128(32));
-        assert!(eq(&resp, &from_address(hash_2)), 2);
+        assert!(eq(resp, from_address(hash_2)), 2);
 
         let resp = hash(&mut memory, from_u128(0), from_u128(64));
-        assert!(eq(&resp, &from_address(hash_3)), 3);
+        assert!(eq(resp, from_address(hash_3)), 3);
 
         let resp = hash(&mut memory, from_u128(0), from_u128(70));
-        assert!(eq(&resp, &from_address(hash_4)), 4);
+        assert!(eq(resp, from_address(hash_4)), 4);
 
         let resp = hash(&mut memory, from_u128(64), from_u128(6));
-        assert!(eq(&resp, &from_address(hash_5)), 5);
+        assert!(eq(resp, from_address(hash_5)), 5);
     }
 
     #[test]
@@ -727,6 +727,139 @@ module self::template {
         };
 
         ret
+    }
+
+
+    // API
+    /// Divide `a` by `b` with sign.
+    /// todo check this)
+    fun sdiv(a: U256, b: U256): U256 {
+        let a_neg = is_negative(&a);
+        let b_neg = is_negative(&b);
+
+        let a = if (a_neg) { bitnot(a) } else { a };
+        let b = if (b_neg) { bitnot(b) } else { b };
+
+        let ret = div(a, b);
+
+        if (a_neg != b_neg) {
+            bitnot(ret)
+        } else {
+            ret
+        }
+    }
+
+    // API
+    /// Signed lt.
+    /// todo check this)
+    fun slt(a: U256, b: U256): bool {
+        let a_neg = is_negative(&a);
+        let b_neg = is_negative(&b);
+
+        if (a_neg && !b_neg) {
+            return true
+        };
+
+        if (!a_neg && b_neg) {
+            return false
+        };
+
+        if (a_neg && b_neg) {
+            return gt(a, b)
+        };
+
+        lt(a, b)
+    }
+
+    // API
+    /// Signed gt.
+    /// todo check this)
+    fun sgt(a: U256, b: U256): bool {
+        let a_neg = is_negative(&a);
+        let b_neg = is_negative(&b);
+
+        if (a_neg && !b_neg) {
+            return false
+        };
+
+        if (!a_neg && b_neg) {
+            return true
+        };
+
+        if (a_neg && b_neg) {
+            return lt(a, b)
+        };
+
+        gt(a, b)
+    }
+
+    // API
+    /// Signed mod.
+    /// todo check this)
+    fun smod(a: U256, b: U256): U256 {
+        let a_neg = is_negative(&a);
+        let b_neg = is_negative(&b);
+
+        let a = if (a_neg) { bitnot(a) } else { a };
+        let b = if (b_neg) { bitnot(b) } else { b };
+
+        let ret = mod(a, b);
+
+        if (a_neg) {
+            bitnot(ret)
+        } else {
+            ret
+        }
+    }
+
+    // API
+    /// Exponentiation.
+    /// todo check this)
+    /// todo use DU256 for intermediate calculations
+    fun exp(a: U256, b: U256): U256 {
+        let ret = one();
+        let i = 0;
+        while (i < WORDS) {
+            let b1 = get(&b, i);
+            let j = 0;
+            while (j < 64) {
+                if ((b1 & (1 << j)) != 0) {
+                    ret = overflowing_mul(ret, a);
+                };
+                a = overflowing_mul(a, a);
+                j = j + 1;
+            };
+            i = i + 1;
+        };
+        ret
+    }
+
+    // API
+    /// Signed exponentiation.
+    fun sexp(a: U256, b: U256): U256 {
+        // todo replace with signed exp
+        exp(a, b)
+    }
+
+    // API
+    /// Signed shift right.
+    fun sar(a: U256, b: U256): U256 {
+        // todo repalce with signed shift right
+        shr(a, b)
+    }
+
+    fun one(): U256 {
+        U256 {
+            v0: 1,
+            v1: 0,
+            v2: 0,
+            v3: 0,
+        }
+    }
+
+    fun is_negative(a: &U256): bool {
+        let msb = get(a, WORDS - 1);
+        msb & 0x8000000000000000 != 0
     }
 
     // API
@@ -1274,6 +1407,14 @@ module self::template {
     }
 
     #[test]
+    fun test_exp() {
+        let a = from_u128(2);
+        let b = from_u128(3);
+        let c = exp(a, b);
+        assert!(c == from_u128(8), 0);
+    }
+
+    #[test]
     fun test_put_d() {
         let a = DU256 {
             v0: 1,
@@ -1391,6 +1532,12 @@ module self::template {
 
         put(&mut a, 2, 0);
         assert!(get(&a, 2) == 0, 4);
+    }
+
+    #[test]
+    fun test_one() {
+        let a = one();
+        assert!(eq(a, from_u128(1)), 0);
     }
 
     #[test]
