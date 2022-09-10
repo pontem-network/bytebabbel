@@ -28,21 +28,24 @@ pub struct MvIrTranslator {
     code: Writer,
     template: CompiledModule,
     max_memory: u64,
+    program: Option<Program>,
 }
 
 impl MvIrTranslator {
-    pub fn new(address: AccountAddress, name: &str) -> MvIrTranslator {
-        let template = template(address, name);
+    pub fn new(address: AccountAddress, max_memory: u64, program: Program) -> MvIrTranslator {
+        let template = template(address, program.name(), program.identifiers());
         Self {
             sign_writer: SignatureWriter::new(&template.signatures),
             code: Default::default(),
             template,
-            max_memory: 0,
+            max_memory,
+            program: Some(program),
         }
     }
 
-    pub fn translate(mut self, max_memory: u64, program: Program) -> Result<Module, Error> {
-        self.max_memory = max_memory;
+    pub fn translate(mut self) -> Result<Module, Error> {
+        let program = self.program.take().unwrap();
+
         let mut funcs = program
             .functions_hash()
             .into_iter()

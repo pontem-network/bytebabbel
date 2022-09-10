@@ -10,17 +10,31 @@ use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
+use std::collections::HashSet;
 
 #[test]
 pub fn test_template_verification() {
     let address = AccountAddress::random();
-    let template = template(address, "template_module");
+
+    let template = template(
+        address,
+        "template_module",
+        &["div".to_string(), "mod".to_string()]
+            .into_iter()
+            .collect::<HashSet<_>>(),
+    );
     CodeUnitVerifier::verify_module(&VerifierConfig::default(), &template).unwrap();
 }
 
 #[test]
 pub fn test_template_verification_core() {
-    let template = template(CORE_CODE_ADDRESS, "template_module");
+    let template = template(
+        CORE_CODE_ADDRESS,
+        "template_module",
+        &["sstore".to_string(), "mod".to_string()]
+            .into_iter()
+            .collect(),
+    );
     CodeUnitVerifier::verify_module(&VerifierConfig::default(), &template).unwrap();
 }
 
@@ -47,7 +61,7 @@ pub fn test_template() {
 pub fn test_intrinsic_signature_token_mem_store() {
     let address = AccountAddress::random();
 
-    let template = template(address, "template_module");
+    let template = template(address, "template_module", &HashSet::new());
 
     assert_eq!(
         template.self_id(),
@@ -77,7 +91,7 @@ pub fn test_intrinsic_signature_token_mem_store() {
 #[test]
 pub fn test_intrinsic_signature_token() {
     let address = AccountAddress::random();
-    let template = template(address, "template_module");
+    let template = template(address, "template_module", &HashSet::new());
 
     let diff: Vec<Mem> = all::<Mem>()
         .filter(|mem| find_function_by_name(&template, mem.name()) != mem.handler())

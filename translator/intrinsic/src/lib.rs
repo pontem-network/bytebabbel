@@ -7,12 +7,17 @@ use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
+use std::collections::HashSet;
 
 pub const TEMPLATE_MODULE: &[u8] = include_bytes!("../mv/template.mv");
 
 pub const SELF_ADDRESS_INDEX: ConstantPoolIndex = ConstantPoolIndex(4);
 
-pub fn template(address: AccountAddress, name: &str) -> CompiledModule {
+pub fn template(
+    address: AccountAddress,
+    name: &str,
+    reserved_identifiers: &HashSet<String>,
+) -> CompiledModule {
     let mut module = CompiledModule::deserialize(TEMPLATE_MODULE).unwrap();
     module.address_identifiers[0] = address;
     module.identifiers[0] = Identifier::new(name).unwrap();
@@ -29,6 +34,13 @@ pub fn template(address: AccountAddress, name: &str) -> CompiledModule {
             }
         }
     }
+
+    for ident in &mut module.identifiers {
+        if reserved_identifiers.contains(ident.as_str()) {
+            *ident = Identifier::new(format!("{}{}", ident, rand::random::<u16>())).unwrap();
+        }
+    }
+
     module
 }
 

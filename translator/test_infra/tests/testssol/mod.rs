@@ -161,8 +161,8 @@ pub fn make_move_module(
     let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
     let program = transpile_program(name, eth, init_args, abi, U256::from(addr.as_slice()))?;
-    let mvir = MvIrTranslator::new(addr, program.name());
-    let module = mvir.translate(MAX_MEMORY, program)?;
+    let mvir = MvIrTranslator::new(addr, MAX_MEMORY, program);
+    let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;

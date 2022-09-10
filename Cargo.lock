@@ -3777,6 +3777,7 @@ dependencies = [
  "move-binary-format 0.0.3 (git+https://github.com/move-language/move?rev=4bdf8d3e76ffaab5c83eda2fa55dfe136c380675)",
  "move-bytecode-verifier",
  "move-core-types 0.0.4 (git+https://github.com/move-language/move?rev=4bdf8d3e76ffaab5c83eda2fa55dfe136c380675)",
+ "rand 0.8.5",
 ]
 
 [[package]]

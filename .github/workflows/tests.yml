@@ -33,13 +33,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-#      - name: Cache
-#        uses: actions/cache@v3
-#        with:
-#          path: |
-#            ~/.solc
-#            ~/.aptos
-#          key: ${{ runner.os }}-compile
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.solc
+            ~/.aptos
+          key: ${{ runner.os }}-compile
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -48,8 +48,8 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-#      - name: Restore Rust cache
-#        uses: Swatinem/rust-cache@v1
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v1
 
       - name: Solc latest version
         uses: pontem-network/get-solc@master

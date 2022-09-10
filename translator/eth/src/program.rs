@@ -1,7 +1,7 @@
 use crate::abi::entries::FunHash;
 use crate::{Function, Mir, MoveAbi};
 use anyhow::Error;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {
@@ -25,6 +25,10 @@ impl Program {
 
     pub fn name(&self) -> &str {
         self.abi.name()
+    }
+
+    pub fn identifiers(&self) -> &HashSet<String> {
+        self.abi.identifiers()
     }
 
     pub fn functions_hash(&self) -> impl Iterator<Item = FunHash> + '_ {
