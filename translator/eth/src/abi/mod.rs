@@ -4,19 +4,18 @@ pub mod inc_ret_param;
 pub mod types;
 
 use crate::abi::entries::{AbiEntries, Entry, FunHash};
-use crate::abi::inc_ret_param::Param;
 use crate::bytecode::types::EthType;
 use crate::Function;
-use anyhow::{Context, Error};
+use anyhow::Error;
 use std::collections::HashMap;
 
-pub struct Abi {
+pub struct MoveAbi {
     name: String,
     functions: HashMap<FunHash, Function>,
 }
 
-impl Abi {
-    pub fn new(name: &str, abi: AbiEntries) -> Result<Abi, Error> {
+impl MoveAbi {
+    pub fn new(name: &str, abi: AbiEntries) -> Result<MoveAbi, Error> {
         let functions = abi
             .entries
             .into_iter()
@@ -47,7 +46,7 @@ impl Abi {
             })
             .collect();
 
-        Ok(Abi {
+        Ok(MoveAbi {
             name: name.to_string(),
             functions,
         })
@@ -60,11 +59,4 @@ impl Abi {
     pub fn name(&self) -> &str {
         &self.name
     }
-}
-
-fn map_types(types: Vec<Param>) -> Result<Vec<EthType>, Error> {
-    types
-        .into_iter()
-        .map(|param| EthType::try_from(&param))
-        .collect()
 }

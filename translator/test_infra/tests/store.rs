@@ -1,6 +1,7 @@
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
+use eth::abi::entries::AbiEntries;
 use move_core_types::value::MoveValue;
 
 #[allow(dead_code)]
@@ -11,7 +12,7 @@ pub fn test_empty_constructor() {
     let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
     let bytecode =
         make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
-    let mut vm = MoveExecutor::new();
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
     vm.deploy("0x1", bytecode);
     vm.run("0x1::empty::constructor", "0x1").unwrap();
     let res = vm.run("0x1::empty::get_val", "0x1").unwrap().returns;
@@ -36,7 +37,7 @@ pub fn test_constructor_with_data() {
             evm.abi(),
         )
         .unwrap();
-        let mut vm = MoveExecutor::new();
+        let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
         vm.deploy("0x1", bytecode);
         vm.run("0x1::with_data::constructor", "0x1").unwrap();
         let res = vm.run("0x1::with_data::get_val", "0x1").unwrap().returns;
@@ -52,7 +53,7 @@ pub fn test_store() {
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
     let bytecode =
         make_move_module(&format!("0x1::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
-    let mut vm = MoveExecutor::new();
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
     vm.deploy("0x1", bytecode);
 
     vm.run("0x1::load_store::constructor", "0x1").unwrap();

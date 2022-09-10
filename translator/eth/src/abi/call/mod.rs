@@ -70,11 +70,10 @@ impl<'a> CallFn<'a> {
         Ok(self)
     }
 
-    pub fn encode(&self) -> Result<Vec<u8>> {
+    pub fn encode(&self, func_hex: bool) -> Result<Vec<u8>> {
         self.are_all_inputs_filled()?;
 
         let input_types = self.inputs_types()?;
-        let method_id = self.entry.hash_hex();
 
         if self.input.iter().any(|item| item.is_none()) {
             bail!("Not all parameters were filled in");
@@ -111,9 +110,13 @@ impl<'a> CallFn<'a> {
         }
         params.append(&mut ds);
 
-        let mut result = hex::decode(method_id)?;
-        result.append(&mut params);
-        Ok(result)
+        if func_hex {
+            let mut result = hex::decode(self.entry.hash_hex())?;
+            result.append(&mut params);
+            Ok(result)
+        } else {
+            Ok(params)
+        }
     }
 
     pub fn decode_return(&self, value: Vec<u8>) -> Result<Vec<ParamValue>> {

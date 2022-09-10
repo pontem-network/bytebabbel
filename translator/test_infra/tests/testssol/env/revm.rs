@@ -158,7 +158,7 @@ mod test {
 
         let fn_abi = abi.by_name("without_params_bool").unwrap();
         let call = fn_abi.try_call().unwrap();
-        let tx = call.encode().unwrap();
+        let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].to_bool().unwrap(), true);
@@ -172,7 +172,7 @@ mod test {
             .unwrap()
             .set_input(1, true)
             .unwrap()
-            .encode()
+            .encode(true)
             .unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
@@ -192,12 +192,12 @@ mod test {
         let fn_abi = abi.by_name("with_uint").unwrap();
         let mut call = fn_abi.try_call().unwrap();
 
-        let tx = call.set_input(0, 2usize).unwrap().encode().unwrap();
+        let tx = call.set_input(0, 2usize).unwrap().encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].to_isize().unwrap(), 4);
 
-        let tx = call.set_input(0, 4u8).unwrap().encode().unwrap();
+        let tx = call.set_input(0, 4u8).unwrap().encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].to_isize().unwrap(), 16);
@@ -216,7 +216,7 @@ mod test {
             .unwrap()
             .set_input(3, 4u64)
             .unwrap()
-            .encode()
+            .encode(true)
             .unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 2);
@@ -235,7 +235,7 @@ mod test {
         let fn_abi = abi.by_name("array_bool_3").unwrap();
         let call = fn_abi.try_call().unwrap();
 
-        let tx = call.encode().unwrap();
+        let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
 
@@ -253,7 +253,7 @@ mod test {
         let fn_abi = abi.by_name("array_bool_dyn").unwrap();
         let call = fn_abi.try_call().unwrap();
 
-        let tx = call.encode().unwrap();
+        let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(
@@ -271,7 +271,7 @@ mod test {
         let fn_abi = abi.by_name("array_bool_dyn2").unwrap();
         let call = fn_abi.try_call().unwrap();
 
-        let tx = call.encode().unwrap();
+        let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(
@@ -287,7 +287,7 @@ mod test {
         let fn_abi = abi.by_name("array_bool_dyn3").unwrap();
         let call = fn_abi.try_call().unwrap();
 
-        let tx = call.encode().unwrap();
+        let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 2);
         assert_eq!(
@@ -321,7 +321,7 @@ mod test {
         let fn_abi = abi.by_name("byte_tuple").unwrap();
         let call = fn_abi.try_call().unwrap();
 
-        let tx = call.encode().unwrap();
+        let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
 
         assert_eq!(

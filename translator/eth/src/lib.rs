@@ -1,7 +1,7 @@
 //! Simple EVM-bytecode disassembler.
 
 use crate::abi::entries::{AbiEntries, FunHash};
-use crate::abi::Abi;
+use crate::abi::MoveAbi;
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
@@ -40,7 +40,7 @@ pub fn transpile_program(
     }
     let contract_code_len = contract_code.len();
 
-    let abi = Abi::new(name, AbiEntries::try_from(abi)?)?;
+    let abi = MoveAbi::new(name, AbiEntries::try_from(abi)?)?;
 
     let contract = BlockIter::new(InstructionIter::new(contract_code))
         .map(|block| (BlockId::from(block.start), block))

@@ -4,11 +4,8 @@ use crate::mv_ir::func::Func;
 use anyhow::{anyhow, Error};
 use log::log_enabled;
 use log::Level;
-use move_binary_format::access::ModuleAccess;
 use move_binary_format::binary_views::BinaryIndexedView;
-use move_binary_format::file_format::{
-    FieldHandleIndex, FunctionDefinitionIndex, FunctionHandleIndex, Signature,
-};
+use move_binary_format::file_format::Signature;
 use move_binary_format::CompiledModule;
 use move_bytecode_source_map::mapping::SourceMapping;
 use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};

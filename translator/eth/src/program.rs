@@ -1,5 +1,5 @@
 use crate::abi::entries::FunHash;
-use crate::{Abi, Function, Mir};
+use crate::{Function, Mir, MoveAbi};
 use anyhow::Error;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -7,14 +7,14 @@ use std::fmt::{Debug, Formatter};
 pub struct Program {
     constructor: Mir,
     functions_mir: HashMap<FunHash, Mir>,
-    abi: Abi,
+    abi: MoveAbi,
 }
 
 impl Program {
     pub fn new(
         constructor: Mir,
         functions_mir: HashMap<FunHash, Mir>,
-        abi: Abi,
+        abi: MoveAbi,
     ) -> Result<Program, Error> {
         Ok(Program {
             constructor,

@@ -92,7 +92,7 @@ fn vicinity() -> MemoryVicinity {
 fn encode_params(abi: &AbiEntries, args_str: &str) -> Result<Vec<u8>, Error> {
     Ok(if let Some(constructor) = abi.constructor() {
         let mut call = constructor.try_call()?;
-        call.parse_and_set_inputs(args_str)?.encode()?
+        call.parse_and_set_inputs(args_str)?.encode(true)?
     } else {
         vec![]
     })
