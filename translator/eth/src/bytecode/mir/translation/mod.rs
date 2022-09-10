@@ -1,14 +1,13 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Var, VarId, Vars};
-use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
-use crate::bytecode::mir::ir::math::Operation;
+use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
+use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
-use crate::bytecode::types::EthType;
 use crate::{Function, Hir};
 use anyhow::{anyhow, ensure, Error};
+use primitive_types::U256;
 use std::collections::HashMap;
 
 pub mod binary;
@@ -29,11 +28,19 @@ pub struct MirTranslator<'a> {
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
     pub(super) signer_index: LocalIndex,
+    pub(super) args_index: LocalIndex,
 }
 
 impl<'a> MirTranslator<'a> {
     pub fn new(fun: &'a Function) -> MirTranslator<'a> {
-        let mut variables = Variables::new(fun.input.iter().map(SType::from).collect());
+        // Now we use static parameters signer and args
+        // Signer = 0
+        // Args = 1
+        // todo Replace with dynamic parameters
+        let signer = (0, SType::Address);
+        let args = (1, SType::Bytes);
+
+        let mut variables = Variables::new(vec![signer.1, args.1]);
         let mut mir = Mir::default();
 
         let store_var = variables.borrow_global(SType::Storage);
@@ -49,7 +56,8 @@ impl<'a> MirTranslator<'a> {
             mir,
             mem_var,
             store_var,
-            signer_index: 0,
+            signer_index: signer.0,
+            args_index: args.0,
         }
     }
 
@@ -110,7 +118,7 @@ impl<'a> MirTranslator<'a> {
                     )?;
                 }
                 Instruction::Stop => {
-                    if !self.fun.output.is_empty() {
+                    if !self.fun.eth_output.is_empty() {
                         self.mir.add_statement(Statement::Abort(u8::MAX));
                     } else {
                         self.translate_ret_unit()?;
@@ -134,6 +142,26 @@ impl<'a> MirTranslator<'a> {
                     self.translate_instructions(inst, vars)?;
                     self.mir.add_statement(Statement::Continue(*id));
                 }
+                Instruction::Log {
+                    offset,
+                    len,
+                    topics,
+                } => {
+                    let topics = topics
+                        .iter()
+                        .map(|t| self.get_var(*t))
+                        .collect::<Result<Vec<_>, _>>()?;
+
+                    let offset = self.get_var(*offset)?;
+                    let len = self.get_var(*len)?;
+                    self.mir.add_statement(Statement::Log {
+                        storage: self.store_var,
+                        memory: self.mem_var,
+                        offset,
+                        len,
+                        topics,
+                    });
+                }
             }
         }
         Ok(())
@@ -142,8 +170,8 @@ impl<'a> MirTranslator<'a> {
     fn translate_set_var(&mut self, id: VarId, vars: &mut Vars) -> Result<(), Error> {
         let var = vars.take(id)?;
         match var {
-            Var::Val(val) => {
-                let var = self.variables.borrow(SType::Number);
+            Eval::Val(val) => {
+                let var = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, var);
 
                 self.mir.add_statement(Statement::CreateVar(
@@ -151,36 +179,19 @@ impl<'a> MirTranslator<'a> {
                     Expression::Const(Value::from(val)),
                 ));
             }
-            Var::Param(param_id) => {
-                let param = self
-                    .fun
-                    .input
-                    .get(param_id as usize)
-                    .ok_or_else(|| anyhow!("parameter index out of bounds"))?;
-                let tp = SType::from(param);
-                let var = self.variables.borrow(tp);
-                self.mapping.insert(id, var);
-                self.mir.add_statement(Statement::CreateVar(
-                    var,
-                    Expression::Param(param_id as LocalIndex, tp),
-                ));
-            }
-            Var::UnaryOp(cmd, op) => {
+            Eval::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
             }
-            Var::BinaryOp(cmd, op1, op2) => {
+            Eval::BinaryOp(cmd, op1, op2) => {
                 self.translate_binary_op(cmd, op1, op2, id)?;
             }
-            Var::TernaryOp(cmd, op1, op2, op3) => {
+            Eval::TernaryOp(cmd, op1, op2, op3) => {
                 self.translate_ternary_op(cmd, op1, op2, op3, id)?;
             }
-            Var::MLoad(addr) => {
-                let result = self.variables.borrow(SType::Number);
+            Eval::MLoad(addr) => {
+                let result = self.variables.borrow(SType::Num);
                 let addr = self.get_var(addr)?;
-                ensure!(
-                    addr.s_type() == SType::Number,
-                    "address must be of type u128"
-                );
+                ensure!(addr.s_type() == SType::Num, "address must be of type num");
                 self.mapping.insert(id, result);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
@@ -190,14 +201,11 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Var::SLoad(addr) => {
-                let result = self.variables.borrow(SType::Number);
+            Eval::SLoad(addr) => {
+                let result = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, result);
                 let addr = self.get_var(addr)?;
-                ensure!(
-                    addr.s_type() == SType::Number,
-                    "address must be of type u128"
-                );
+                ensure!(addr.s_type() == SType::Num, "address must be of type num");
 
                 self.mir.add_statement(Statement::CreateVar(
                     result,
@@ -207,8 +215,8 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Var::MSize => {
-                let result = self.variables.borrow(SType::Number);
+            Eval::MSize => {
+                let result = self.variables.borrow(SType::Num);
                 self.mir.add_statement(Statement::CreateVar(
                     result,
                     Expression::MSize {
@@ -216,10 +224,48 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Var::Signer => {
+            Eval::Signer => {
                 let signer = self.variables.borrow_param(self.signer_index);
-                let result = self.cast_number(signer)?;
+                let result = self.cast(signer, SType::Num)?;
                 self.mapping.insert(id, result);
+            }
+            Eval::ArgsSize => {
+                let result = self.variables.borrow(SType::Num);
+                let args = self.variables.borrow_param(self.args_index);
+                ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
+                self.mir
+                    .add_statement(Statement::CreateVar(result, Expression::BytesLen(args)));
+                self.mapping.insert(id, result);
+            }
+            Eval::Args(offset) => {
+                let result = self.variables.borrow(SType::Num);
+                let data = self.variables.borrow_param(self.args_index);
+                let offset = self.get_var(offset)?;
+                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
+                ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
+
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Expression::ReadNum { data, offset },
+                ));
+                self.mapping.insert(id, result);
+            }
+            Eval::Hash(offset, len) => {
+                let result = self.variables.borrow(SType::Num);
+
+                let offset = self.get_var(offset)?;
+                let len = self.get_var(len)?;
+                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
+                ensure!(len.s_type() == SType::Num, "len must be of type num");
+
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Expression::Hash {
+                        mem: self.mem_var,
+                        offset,
+                        len,
+                    },
+                ));
             }
         }
         Ok(())
@@ -234,38 +280,38 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn translate_ret_unit(&mut self) -> Result<(), Error> {
-        self.mir.add_statement(Statement::Result(vec![]));
+        let unit = self.variables.borrow(SType::Bytes);
+        let len = self.variables.borrow(SType::Num);
+        self.mir.add_statement(Statement::CreateVar(
+            len,
+            Expression::Const(Value::from(U256::zero())),
+        ));
+        self.mir.add_statement(Statement::CreateVar(
+            unit,
+            Expression::MSlice {
+                memory: self.mem_var,
+                offset: len,
+                len,
+            },
+        ));
+        self.mir.add_statement(Statement::Result(vec![unit]));
         Ok(())
     }
 
-    fn translate_ret(&mut self, offset: VarId, _: VarId) -> Result<(), Error> {
-        let mut vars = Vec::with_capacity(self.fun.output.len());
+    fn translate_ret(&mut self, offset: VarId, len: VarId) -> Result<(), Error> {
         let offset = self.get_var(offset)?;
-        for output in self.fun.output.clone() {
-            let var = self.variables.borrow(SType::Number);
-            self.mir.add_statement(Statement::CreateVar(
-                var,
-                Expression::MLoad {
-                    memory: self.mem_var,
-                    offset,
-                },
-            ));
-            self.mir.add_statement(Statement::CreateVar(
+        let len = self.get_var(len)?;
+        let result = self.variables.borrow(SType::Bytes);
+        self.mir.add_statement(Statement::CreateVar(
+            result,
+            Expression::MSlice {
+                memory: self.mem_var,
                 offset,
-                StackOpsBuilder::default()
-                    .push_var(offset)
-                    .push_const(Value::Number(32))
-                    .binary_op(Operation::Add, SType::Number, SType::Number)?
-                    .build(SType::Number)?,
-            ));
+                len,
+            },
+        ));
 
-            if let EthType::Bool = output {
-                vars.push(self.cast_bool(var)?);
-            } else {
-                vars.push(var);
-            }
-        }
-        self.mir.add_statement(Statement::Result(vars));
+        self.mir.add_statement(Statement::Result(vec![result]));
         Ok(())
     }
 }

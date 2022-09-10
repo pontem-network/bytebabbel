@@ -3,6 +3,8 @@ use anyhow::{bail, ensure, Result};
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::collection::{TryParamAddress, TryParamBytes};
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
+use evm_core::utils::I256;
+use primitive_types::U256;
 
 impl ParamType {
     pub fn set_value<T>(&self, value: T) -> Result<ParamValue>
@@ -64,16 +66,19 @@ impl ParamType {
             ParamType::Bool => self.set_value(value.parse::<bool>()?),
             ParamType::Int(size) => {
                 let value = value.split_once('i').map(|(v, _)| v).unwrap_or(value);
-                Ok(ParamValue::Int {
-                    size: *size,
-                    value: value.parse::<isize>()?,
-                })
+                let value = if let Some(val) = value.strip_prefix('-') {
+                    I256::from(U256::from_dec_str(val)?) / I256::minus_one()
+                } else {
+                    I256::from(U256::from_dec_str(value)?)
+                };
+
+                Ok(ParamValue::Int { size: *size, value })
             }
             ParamType::UInt(size) => {
                 let value = value.split_once('u').map(|(v, _)| v).unwrap_or(value);
                 Ok(ParamValue::UInt {
                     size: *size,
-                    value: value.parse::<usize>()?,
+                    value: U256::from_dec_str(value)?,
                 })
             }
             ParamType::Array { size, tp } => {
@@ -170,6 +175,8 @@ mod test {
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
     use crate::abi::inc_ret_param::value::ParamValue;
+    use evm_core::utils::I256;
+    use primitive_types::U256;
 
     #[test]
     fn type_set_value_bool() {
@@ -185,7 +192,10 @@ mod test {
 
         assert_eq!(
             tp.set_value(1i8).unwrap(),
-            ParamValue::Int { size: 8, value: 1 }
+            ParamValue::Int {
+                size: 8,
+                value: I256::from(U256::from(1)),
+            }
         );
         assert!(tp.set_value(1isize).is_err());
         assert!(tp.set_value(true).is_err());
@@ -195,21 +205,21 @@ mod test {
             tp.set_value(1i8).unwrap(),
             ParamValue::Int {
                 size: 128,
-                value: 1
+                value: I256::from(U256::from(1)),
             }
         );
         assert_eq!(
             tp.set_value(2i128).unwrap(),
             ParamValue::Int {
                 size: 128,
-                value: 2
+                value: I256::from(U256::from(2)),
             }
         );
         assert_eq!(
             tp.set_value(3isize).unwrap(),
             ParamValue::Int {
                 size: 128,
-                value: 3
+                value: I256::from(U256::from(3)),
             }
         );
 
@@ -218,21 +228,21 @@ mod test {
             tp.set_value(1i8).unwrap(),
             ParamValue::Int {
                 size: 256,
-                value: 1
+                value: I256::from(U256::from(1)),
             }
         );
         assert_eq!(
             tp.set_value(2i128).unwrap(),
             ParamValue::Int {
                 size: 256,
-                value: 2
+                value: I256::from(U256::from(2)),
             }
         );
         assert_eq!(
             tp.set_value(3isize).unwrap(),
             ParamValue::Int {
                 size: 256,
-                value: 3
+                value: I256::from(U256::from(3)),
             }
         );
     }
@@ -243,7 +253,10 @@ mod test {
 
         assert_eq!(
             tp.set_value(1u8).unwrap(),
-            ParamValue::UInt { size: 8, value: 1 }
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(1)
+            }
         );
         assert!(tp.set_value(1isize).is_err());
         assert!(tp.set_value(true).is_err());
@@ -253,21 +266,21 @@ mod test {
             tp.set_value(1u8).unwrap(),
             ParamValue::UInt {
                 size: 128,
-                value: 1
+                value: U256::from(1),
             }
         );
         assert_eq!(
             tp.set_value(2u128).unwrap(),
             ParamValue::UInt {
                 size: 128,
-                value: 2
+                value: U256::from(2)
             }
         );
         assert_eq!(
             tp.set_value(3usize).unwrap(),
             ParamValue::UInt {
                 size: 128,
-                value: 3
+                value: U256::from(3),
             }
         );
 
@@ -276,21 +289,21 @@ mod test {
             tp.set_value(1u8).unwrap(),
             ParamValue::UInt {
                 size: 256,
-                value: 1
+                value: U256::from(1)
             }
         );
         assert_eq!(
             tp.set_value(2u128).unwrap(),
             ParamValue::UInt {
                 size: 256,
-                value: 2
+                value: U256::from(2)
             }
         );
         assert_eq!(
             tp.set_value(3usize).unwrap(),
             ParamValue::UInt {
                 size: 256,
-                value: 3
+                value: U256::from(3),
             }
         );
     }
@@ -313,8 +326,14 @@ mod test {
             tp: Box::new(ParamType::UInt(8)),
         };
         let result = ParamValue::Array(vec![
-            ParamValue::UInt { size: 8, value: 1 },
-            ParamValue::UInt { size: 8, value: 2 },
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(1),
+            },
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(2),
+            },
         ]);
         assert_eq!(tp.set_value([1u8, 2]).unwrap(), result);
         assert_eq!(tp.set_value(vec![1u8, 2]).unwrap(), result);
@@ -328,7 +347,7 @@ mod test {
         };
         let result = ParamValue::Array(vec![ParamValue::UInt {
             size: 256,
-            value: 1,
+            value: U256::from(1),
         }]);
         assert_eq!(tp.set_value([1usize]).unwrap(), result);
         assert!(tp.set_value([1]).is_err());
@@ -343,12 +362,24 @@ mod test {
 
         let result = ParamValue::Array(vec![
             ParamValue::Array(vec![
-                ParamValue::Int { size: 8, value: 1 },
-                ParamValue::Int { size: 8, value: 2 },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(1)),
+                },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(2)),
+                },
             ]),
             ParamValue::Array(vec![
-                ParamValue::Int { size: 8, value: 3 },
-                ParamValue::Int { size: 8, value: 4 },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(3)),
+                },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(4)),
+                },
             ]),
         ]);
         assert_eq!(tp.set_value([[1i8, 2], [3, 4]]).unwrap(), result);
@@ -420,11 +451,17 @@ mod test {
 
         assert_eq!(
             tp.set_value_str("1").unwrap(),
-            ParamValue::Int { size: 8, value: 1 }
+            ParamValue::Int {
+                size: 8,
+                value: I256::from(U256::from(1)),
+            }
         );
         assert_eq!(
             tp.set_value_str("1i8").unwrap(),
-            ParamValue::Int { size: 8, value: 1 }
+            ParamValue::Int {
+                size: 8,
+                value: I256::from(U256::from(1)),
+            }
         );
         assert!(tp.set_value_str("true").is_err());
 
@@ -433,7 +470,7 @@ mod test {
             tp.set_value_str("3isize").unwrap(),
             ParamValue::Int {
                 size: 128,
-                value: 3
+                value: I256::from(U256::from(3)),
             }
         );
 
@@ -442,7 +479,7 @@ mod test {
             tp.set_value_str("3isize").unwrap(),
             ParamValue::Int {
                 size: 256,
-                value: 3
+                value: I256::from(U256::from(3)),
             }
         );
     }
@@ -453,11 +490,17 @@ mod test {
 
         assert_eq!(
             tp.set_value_str("1").unwrap(),
-            ParamValue::UInt { size: 8, value: 1 }
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(1)
+            }
         );
         assert_eq!(
             tp.set_value_str("1u8").unwrap(),
-            ParamValue::UInt { size: 8, value: 1 }
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(1)
+            }
         );
         assert!(tp.set_value_str("true").is_err());
 
@@ -466,7 +509,7 @@ mod test {
             tp.set_value_str("2u128").unwrap(),
             ParamValue::UInt {
                 size: 128,
-                value: 2
+                value: U256::from(2)
             }
         );
 
@@ -475,7 +518,7 @@ mod test {
             tp.set_value_str("3usize").unwrap(),
             ParamValue::UInt {
                 size: 256,
-                value: 3
+                value: U256::from(3)
             }
         );
     }
@@ -500,8 +543,14 @@ mod test {
             tp: Box::new(ParamType::UInt(8)),
         };
         let result = ParamValue::Array(vec![
-            ParamValue::UInt { size: 8, value: 1 },
-            ParamValue::UInt { size: 8, value: 2 },
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(1),
+            },
+            ParamValue::UInt {
+                size: 8,
+                value: U256::from(2),
+            },
         ]);
         assert_eq!(tp.set_value_str("[1u8, 2]").unwrap(), result);
         assert_eq!(tp.set_value_str("[1, 2]").unwrap(), result);
@@ -512,7 +561,7 @@ mod test {
         };
         let result = ParamValue::Array(vec![ParamValue::UInt {
             size: 256,
-            value: 1,
+            value: U256::from(1),
         }]);
         assert_eq!(tp.set_value_str("[1usize]").unwrap(), result);
         assert_eq!(tp.set_value_str("[1]").unwrap(), result);
@@ -527,12 +576,24 @@ mod test {
 
         let result = ParamValue::Array(vec![
             ParamValue::Array(vec![
-                ParamValue::Int { size: 8, value: 1 },
-                ParamValue::Int { size: 8, value: 2 },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(1)),
+                },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(2)),
+                },
             ]),
             ParamValue::Array(vec![
-                ParamValue::Int { size: 8, value: 3 },
-                ParamValue::Int { size: 8, value: 4 },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(3)),
+                },
+                ParamValue::Int {
+                    size: 8,
+                    value: I256::from(U256::from(4)),
+                },
             ]),
         ]);
         assert_eq!(tp.set_value_str("[[1i8, 2], [3, 4]]").unwrap(), result);

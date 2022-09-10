@@ -176,6 +176,10 @@ impl Drop for Scope {
 pub struct Variable(LocalIndex, SType);
 
 impl Variable {
+    pub fn none() -> Variable {
+        Variable(0, SType::Address)
+    }
+
     pub fn s_type(&self) -> SType {
         self.1
     }

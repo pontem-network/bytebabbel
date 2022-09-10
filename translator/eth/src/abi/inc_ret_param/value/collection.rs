@@ -1,6 +1,7 @@
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 use anyhow::{anyhow, bail, ensure, Result};
+use primitive_types::U256;
 
 // =================================================================================================
 // Array
@@ -62,8 +63,8 @@ where
         };
         v.into_iter()
             .map(|v| match v {
-                ParamValue::Int { value, .. } => Ok(value as u8),
-                ParamValue::UInt { value, .. } => Ok(value as u8),
+                ParamValue::Int { value, .. } => Ok(U256::from(value).as_usize() as u8),
+                ParamValue::UInt { value, .. } => Ok(value.as_usize() as u8),
                 _ => Err(anyhow!("Expected [u8;N]")),
             })
             .collect::<Result<Vec<u8>>>()
@@ -238,6 +239,8 @@ impl TryParamAddress for Vec<u8> {
 mod test {
     use crate::abi::inc_ret_param::value::collection::{TryParamAddress, TryParamBytes};
     use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
+    use evm_core::utils::I256;
+    use primitive_types::U256;
 
     #[test]
     fn test_to_param_bytes() {
@@ -311,34 +314,61 @@ mod test {
     fn try_as_param_array() {
         assert_eq!(
             vec![1u16].to_param(),
-            ParamValue::Array(vec![ParamValue::UInt { size: 16, value: 1 }])
+            ParamValue::Array(vec![ParamValue::UInt {
+                size: 16,
+                value: U256::from(1)
+            }])
         );
         assert_eq!(
             [1i32].as_slice().to_param(),
-            ParamValue::Array(vec![ParamValue::Int { size: 32, value: 1 }])
+            ParamValue::Array(vec![ParamValue::Int {
+                size: 32,
+                value: I256::from(U256::from(1)),
+            }])
         );
         assert_eq!(
             [1u64].to_param(),
-            ParamValue::Array(vec![ParamValue::UInt { size: 64, value: 1 }])
+            ParamValue::Array(vec![ParamValue::UInt {
+                size: 64,
+                value: U256::from(1)
+            }])
         );
 
         assert_eq!(
             [1u8, 2].to_param(),
             ParamValue::Array(vec![
-                ParamValue::UInt { size: 8, value: 1 },
-                ParamValue::UInt { size: 8, value: 2 }
+                ParamValue::UInt {
+                    size: 8,
+                    value: U256::from(1)
+                },
+                ParamValue::UInt {
+                    size: 8,
+                    value: U256::from(2)
+                }
             ])
         );
         assert_eq!(
             [[1i8, 2], [3, 4]].to_param(),
             ParamValue::Array(vec![
                 ParamValue::Array(vec![
-                    ParamValue::Int { size: 8, value: 1 },
-                    ParamValue::Int { size: 8, value: 2 }
+                    ParamValue::Int {
+                        size: 8,
+                        value: I256::from(U256::from(1)),
+                    },
+                    ParamValue::Int {
+                        size: 8,
+                        value: I256::from(U256::from(2))
+                    }
                 ]),
                 ParamValue::Array(vec![
-                    ParamValue::Int { size: 8, value: 3 },
-                    ParamValue::Int { size: 8, value: 4 }
+                    ParamValue::Int {
+                        size: 8,
+                        value: I256::from(U256::from(3)),
+                    },
+                    ParamValue::Int {
+                        size: 8,
+                        value: I256::from(U256::from(4)),
+                    }
                 ])
             ])
         );
@@ -346,8 +376,14 @@ mod test {
         assert_eq!(
             vec![vec![1u8], vec![2]].to_param(),
             ParamValue::Array(vec![
-                ParamValue::Array(vec![ParamValue::UInt { size: 8, value: 1 },]),
-                ParamValue::Array(vec![ParamValue::UInt { size: 8, value: 2 },])
+                ParamValue::Array(vec![ParamValue::UInt {
+                    size: 8,
+                    value: U256::from(1)
+                },]),
+                ParamValue::Array(vec![ParamValue::UInt {
+                    size: 8,
+                    value: U256::from(2)
+                },])
             ])
         );
         assert!(vec![vec![1u8], vec![2, 3]].try_to_param_array().is_err());

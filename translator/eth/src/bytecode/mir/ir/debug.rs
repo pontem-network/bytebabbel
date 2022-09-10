@@ -145,6 +145,27 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::InitStorage(var) => {
             writeln!(buf, "{:width$}init_storage(var_{:?});", " ", var.index(),)?;
         }
+        Statement::Log {
+            storage: _,
+            memory: _,
+            offset,
+            len,
+            topics,
+        } => {
+            let topics = topics
+                .iter()
+                .map(|t| format!("var_{:?}", t.index()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            writeln!(
+                buf,
+                "{:width$}log(mem[{}:+{}], {})",
+                " ",
+                offset.index(),
+                len.index(),
+                topics
+            )?;
+        }
     }
     Ok(())
 }
@@ -152,11 +173,10 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
 pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(), Error> {
     match expr {
         Expression::Const(val) => match val {
-            Value::Number(val) => write!(buf, "{}u128", val)?,
+            Value::Number(val) => write!(buf, "{}", val)?,
             Value::Bool(val) => write!(buf, "{}", val)?,
         },
         Expression::Var(val) => write!(buf, "var_{}", val.index())?,
-        Expression::Param(idx, _) => write!(buf, "param_{}", idx)?,
         Expression::Operation(cmd, op, op1) => {
             write!(
                 buf,
@@ -183,10 +203,15 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             )?;
         }
         Expression::SLoad { storage, offset } => {
-            write!(buf, "var_{:?}.state_load(var_{:?})", storage, offset)?;
+            write!(
+                buf,
+                "var_{:?}.state_load(var_{:?})",
+                storage.index(),
+                offset.index()
+            )?;
         }
         Expression::MSize { memory } => {
-            write!(buf, "var_{:?}.mem_len()", memory)?;
+            write!(buf, "var_{:?}.mem_len()", memory.index())?;
         }
         Expression::GetMem => {
             write!(buf, "contract_memory()")?;
@@ -194,8 +219,41 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
         Expression::GetStore => {
             write!(buf, "borrow_storage()")?;
         }
-        Expression::AddressToNumber(var) => {
-            write!(buf, "var_{:?}.to_number()", var)?;
+        Expression::Cast(var, cast) => {
+            write!(buf, "var_{:?} as {:?}", var.index(), cast.to())?;
+        }
+        Expression::MSlice {
+            memory,
+            offset,
+            len,
+        } => {
+            write!(
+                buf,
+                "var_{:?}.mem_slice(var_{:?}, var_{:?})",
+                memory.index(),
+                offset.index(),
+                len.index()
+            )?;
+        }
+        Expression::BytesLen(bytes) => {
+            write!(buf, "var_{:?}.len()", bytes.index())?;
+        }
+        Expression::ReadNum { data, offset } => {
+            write!(
+                buf,
+                "var_{:?}.read_num(var_{:?})",
+                data.index(),
+                offset.index()
+            )?;
+        }
+        Expression::Hash { mem, offset, len } => {
+            write!(
+                buf,
+                "var_{:?}.hash(var_{:?}, var_{:?})",
+                mem.index(),
+                offset.index(),
+                len.index()
+            )?;
         }
     }
     Ok(())
@@ -203,22 +261,17 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
 
 fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Error> {
     match op {
-        StackOp::PushConst(val) => match val {
-            Value::Number(val) => {
-                write!(buf, "{:width$}push {:?}", " ", val)?;
-            }
-            Value::Bool(val) => {
-                write!(buf, "{:width$}push {:?}", " ", val)?;
-            }
-        },
-        StackOp::PushVar(val) => {
+        StackOp::PushBoolVar(val) => {
             write!(buf, "{:width$}push var_{}", " ", val.index())?;
-        }
-        StackOp::BinaryOp(val) => {
-            write!(buf, "{:width$}{:?}", " ", val)?;
         }
         StackOp::Not => {
             write!(buf, "{:width$}!", " ")?;
+        }
+        StackOp::PushBool(val) => {
+            write!(buf, "{:width$}push {}", " ", val)?;
+        }
+        StackOp::Eq => {
+            write!(buf, "{:width$}eq", " ")?;
         }
     }
     Ok(())
@@ -236,16 +289,20 @@ impl Operation {
             Operation::Gt => ">",
             Operation::Shr => ">>",
             Operation::Shl => "<<",
-            Operation::And => "&",
-            Operation::Or => "|",
-            Operation::Xor => "^",
+            Operation::BitXor => "^",
             Operation::BitOr => "|",
             Operation::BitAnd => "&",
-            Operation::Not => "!",
             Operation::Eq => "==",
-            Operation::Neq => "!=",
-            Operation::Le => "<=",
-            Operation::Ge => ">=",
+            Operation::Sar => "sar",
+            Operation::Byte => "byte",
+            Operation::SDiv => "sdiv",
+            Operation::SLt => "slt",
+            Operation::SGt => "sgt",
+            Operation::SMod => "smod",
+            Operation::Exp => "exp",
+            Operation::SignExtend => "signextend",
+            Operation::IsZero => " == 0",
+            Operation::BitNot => "!",
         }
     }
 }

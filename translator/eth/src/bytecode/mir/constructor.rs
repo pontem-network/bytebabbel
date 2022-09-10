@@ -13,8 +13,8 @@ pub fn make_constructor(store: HashMap<U256, U256>) -> Mir {
     let store_var = variables.borrow_global(SType::Storage);
     mir.add_statement(Statement::CreateVar(store_var, Expression::GetStore));
 
-    let key_var = variables.borrow_global(SType::Number);
-    let value_var = variables.borrow_global(SType::Number);
+    let key_var = variables.borrow_global(SType::Num);
+    let value_var = variables.borrow_global(SType::Num);
     for (key, value) in store {
         mir.add_statement(Statement::CreateVar(
             key_var,

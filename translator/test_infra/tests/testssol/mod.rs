@@ -3,7 +3,6 @@ use eth::abi::call::ToCall;
 use eth::transpile_program;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::value::MoveValue;
 use mv::translator::MvIrTranslator;
 use primitive_types::U256;
 use regex::Regex;
@@ -93,14 +92,7 @@ impl STest {
 
     pub fn run_mv(&self) -> Result<String> {
         let result = self.vm_run().map_err(|err| anyhow!("{err}"))?;
-        let return_value: Vec<MoveValue> = result
-            .returns
-            .iter()
-            .map(|(actual_val, actual_tp)| {
-                MoveValue::simple_deserialize(actual_val, actual_tp).unwrap()
-            })
-            .collect();
-        Ok(return_value.to_result_str())
+        Ok(result.returns.to_result_str())
     }
 
     pub fn run_evm(&self) -> Result<String> {
@@ -111,7 +103,9 @@ impl STest {
             .by_name(&self.test.func)
             .ok_or_else(|| anyhow!("function not found in abi"))?;
         let mut callfn = ent.try_call()?;
-        let tx = callfn.parse_and_set_inputs(&self.test.params)?.encode()?;
+        let tx = callfn
+            .parse_and_set_inputs(&self.test.params)?
+            .encode(true)?;
 
         let mut evm = REvm::try_from(&self.contract)?;
         evm.construct(vec![])?;
@@ -125,7 +119,7 @@ impl STest {
     }
 
     fn module_address(&self) -> String {
-        format!("0x1::{}", &self.contract.name())
+        format!("0x42::{}", &self.contract.name())
     }
 
     fn vm_run(&self) -> Result<ExecutionResult> {
@@ -137,18 +131,13 @@ impl STest {
             "",
             self.abi_str(),
         )?;
-        let mut vm = MoveExecutor::new();
-        vm.deploy("0x1", bytecode);
-        vm.run(&format!("{}::constructor", module_address), "0x1")
+        let mut vm = MoveExecutor::new(self.contract.abi()?.clone());
+        vm.deploy("0x42", bytecode);
+        vm.run(&format!("{}::constructor", module_address), "0x42", None)
             .unwrap();
 
         let func_address = format!("{module_address}::{}", &self.test.func);
-        let params = if self.test.params.is_empty() {
-            "0x1".to_string()
-        } else {
-            format!("0x1, {}", &self.test.params)
-        };
-        vm.run(&func_address, &params)
+        vm.run(&func_address, "0x42", Some(&self.test.params))
     }
 
     fn abi_str(&self) -> &str {
@@ -170,8 +159,8 @@ pub fn make_move_module(
     let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
     let program = transpile_program(name, eth, init_args, abi, U256::from(addr.as_slice()))?;
-    let mvir = MvIrTranslator::new(addr, program.name());
-    let module = mvir.translate(MAX_MEMORY, program)?;
+    let mvir = MvIrTranslator::new(addr, MAX_MEMORY, program);
+    let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;

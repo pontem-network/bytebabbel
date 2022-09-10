@@ -1,7 +1,8 @@
 use anyhow::{bail, Error};
 use eth::bytecode::block::BlockId;
 use eth::bytecode::mir::translation::variables::Variable;
-use move_binary_format::file_format::{Bytecode, CodeOffset, FunctionHandleIndex};
+use intrinsic::Function;
+use move_binary_format::file_format::{Bytecode, CodeOffset};
 use std::collections::HashMap;
 use std::mem;
 
@@ -112,7 +113,7 @@ impl Writer {
         self.code.get(pc as usize)
     }
 
-    pub fn call(&mut self, fun: FunctionHandleIndex, args: &[CallOp]) {
+    pub fn call(&mut self, fun: impl Function, args: &[CallOp]) {
         for arg in args {
             match arg {
                 CallOp::Var(var) => {
@@ -124,14 +125,19 @@ impl Writer {
                 CallOp::MutBorrow(var) => {
                     self.code.push(Bytecode::MutBorrowLoc(var.index()));
                 }
+                CallOp::Borrow(var) => {
+                    self.code.push(Bytecode::ImmBorrowLoc(var.index()));
+                }
             }
         }
-        self.code.push(Bytecode::Call(fun));
+        self.code.push(Bytecode::Call(fun.handler()));
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum CallOp {
     Var(Variable),
     MutBorrow(Variable),
+    Borrow(Variable),
     ConstU64(u64),
 }

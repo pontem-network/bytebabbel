@@ -34,7 +34,6 @@ impl Module {
         for func in self.funcs {
             func.write_function(&mut module)?;
         }
-
         module.signatures = self.signatures;
 
         print_move_module(&module);

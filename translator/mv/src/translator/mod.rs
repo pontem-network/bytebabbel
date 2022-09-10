@@ -2,17 +2,18 @@ use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, bail, Error};
 use eth::abi::entries::FunHash;
 use eth::bytecode::block::BlockId;
-use eth::bytecode::mir::ir::expression::{Expression, StackOp};
+use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp};
 use eth::bytecode::mir::ir::math::Operation;
 use eth::bytecode::mir::ir::statement::Statement;
-use eth::bytecode::mir::ir::types::SType;
+use eth::bytecode::mir::ir::types::{SType, Value};
 use eth::bytecode::mir::ir::Mir;
+use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
-use intrinsic::{template, Cast, Mem, Storage};
+use intrinsic::{template, Mem, Num, Persist};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
@@ -27,21 +28,24 @@ pub struct MvIrTranslator {
     code: Writer,
     template: CompiledModule,
     max_memory: u64,
+    program: Option<Program>,
 }
 
 impl MvIrTranslator {
-    pub fn new(address: AccountAddress, name: &str) -> MvIrTranslator {
-        let template = template(address, name);
+    pub fn new(address: AccountAddress, max_memory: u64, program: Program) -> MvIrTranslator {
+        let template = template(address, program.name(), program.identifiers());
         Self {
             sign_writer: SignatureWriter::new(&template.signatures),
             code: Default::default(),
             template,
-            max_memory: 0,
+            max_memory,
+            program: Some(program),
         }
     }
 
-    pub fn translate(mut self, max_memory: u64, program: Program) -> Result<Module, Error> {
-        self.max_memory = max_memory;
+    pub fn translate(mut self) -> Result<Module, Error> {
+        let program = self.program.take().unwrap();
+
         let mut funcs = program
             .functions_hash()
             .into_iter()
@@ -93,9 +97,13 @@ impl MvIrTranslator {
         let name = Identifier::new(def.name.clone())?;
         let visibility = Visibility::Public;
 
-        let input = self.sign_writer.make_signature(map_signature(&def.input));
+        let input = self
+            .sign_writer
+            .make_signature(map_signature(&def.move_input));
 
-        let output = self.sign_writer.make_signature(map_signature(&def.output));
+        let output = self
+            .sign_writer
+            .make_signature(map_signature(&def.move_output));
 
         let locals = self.map_locals(mir);
         self.code.reset();
@@ -117,11 +125,12 @@ impl MvIrTranslator {
             .locals()
             .iter()
             .map(|tp| match tp {
-                SType::Number => SignatureToken::U128,
+                SType::Num => Num::token(),
                 SType::Bool => SignatureToken::Bool,
-                SType::Storage => Storage::token(),
+                SType::Storage => Persist::token(),
                 SType::Memory => Mem::token(),
                 SType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
+                SType::Bytes => SignatureToken::Vector(Box::new(SignatureToken::U8)),
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -173,7 +182,7 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Mem::Store.func_handler(),
+                    Mem::Store,
                     &[
                         CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
@@ -187,7 +196,7 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Mem::Store8.func_handler(),
+                    Mem::Store8,
                     &[
                         CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
@@ -201,7 +210,7 @@ impl MvIrTranslator {
                 val,
             } => {
                 self.code.call(
-                    Storage::Store.func_handler(),
+                    Persist::Store,
                     &[
                         CallOp::Var(*storage),
                         CallOp::Var(*offset),
@@ -210,8 +219,16 @@ impl MvIrTranslator {
                 );
             }
             Statement::InitStorage(var) => {
-                self.code
-                    .call(Storage::Create.func_handler(), &[CallOp::Var(*var)]);
+                self.code.call(Persist::InitContract, &[CallOp::Var(*var)]);
+            }
+            Statement::Log {
+                storage,
+                memory,
+                offset,
+                len,
+                topics,
+            } => {
+                self.translate_log(*storage, *memory, *offset, *len, topics)?;
             }
         }
         Ok(())
@@ -220,72 +237,113 @@ impl MvIrTranslator {
     fn translate_expr(&mut self, exp: &Expression) -> Result<(), Error> {
         match exp {
             Expression::Const(val) => {
-                self.code.push_val(val);
+                match val {
+                    Value::Number(val) => {
+                        let parts = val.0;
+                        self.code.call(
+                            Num::FromU64s,
+                            &[
+                                CallOp::ConstU64(parts[0]),
+                                CallOp::ConstU64(parts[1]),
+                                CallOp::ConstU64(parts[2]),
+                                CallOp::ConstU64(parts[3]),
+                            ],
+                        );
+                    }
+                    Value::Bool(val) => {
+                        if *val {
+                            self.code.write(Bytecode::LdTrue);
+                        } else {
+                            self.code.write(Bytecode::LdFalse);
+                        }
+                    }
+                };
             }
             Expression::Var(var) => {
                 self.code.ld_var(var.index());
             }
-            Expression::Param(idx, _) => {
-                self.code.ld_var(*idx);
-            }
-            Expression::Operation(cmd, op, op1) => {
-                if *cmd == Operation::Not {
-                    self.code.ld_var(op.index());
-                } else {
-                    self.code.ld_var(op.index());
-                    self.code.ld_var(op1.index());
-                }
-                self.code.op(*cmd);
-            }
+            Expression::Operation(cmd, op, op1) => self.translate_operation(*cmd, op, op1),
             Expression::StackOps(ops) => {
                 for op in &ops.vec {
                     match op {
-                        StackOp::PushConst(val) => {
-                            self.code.push_val(val);
-                        }
-                        StackOp::PushVar(var) => {
+                        StackOp::PushBoolVar(var) => {
                             self.code.ld_var(var.index());
                         }
-                        StackOp::BinaryOp(op) => {
-                            self.code.op(*op);
-                        }
                         StackOp::Not => {
-                            self.code.op(Operation::Not);
+                            self.code.write(Bytecode::Not);
+                        }
+                        StackOp::PushBool(val) => {
+                            if *val {
+                                self.code.write(Bytecode::LdTrue);
+                            } else {
+                                self.code.write(Bytecode::LdFalse);
+                            }
+                        }
+                        StackOp::Eq => {
+                            self.code.write(Bytecode::Eq);
                         }
                     }
                 }
             }
             Expression::GetMem => {
-                self.code.call(
-                    Mem::New.func_handler(),
-                    &[CallOp::ConstU64(self.max_memory)],
-                );
+                self.code
+                    .call(Mem::New, &[CallOp::ConstU64(self.max_memory)]);
             }
             Expression::GetStore => {
                 self.code
                     .write(Bytecode::LdConst(intrinsic::self_address_index()));
                 self.code
-                    .write(Bytecode::MutBorrowGlobal(Storage::instance()));
+                    .write(Bytecode::MutBorrowGlobal(Persist::instance()));
             }
             Expression::MLoad { memory, offset } => {
                 self.code.call(
-                    Mem::Load.func_handler(),
+                    Mem::Load,
                     &[CallOp::MutBorrow(*memory), CallOp::Var(*offset)],
                 );
             }
             Expression::SLoad { storage, offset } => {
                 self.code.call(
-                    Storage::Load.func_handler(),
+                    Persist::Load,
                     &[CallOp::Var(*storage), CallOp::Var(*offset)],
                 );
             }
             Expression::MSize { memory } => {
-                self.code
-                    .call(Mem::Size.func_handler(), &[CallOp::MutBorrow(*memory)]);
+                self.code.call(Mem::Size, &[CallOp::MutBorrow(*memory)]);
             }
-            Expression::AddressToNumber(addr) => {
+            Expression::MSlice {
+                memory,
+                offset,
+                len,
+            } => {
+                self.code.call(
+                    Mem::Slice,
+                    &[
+                        CallOp::MutBorrow(*memory),
+                        CallOp::Var(*offset),
+                        CallOp::Var(*len),
+                    ],
+                );
+            }
+            Expression::Cast(var, cast) => self.translate_cast(var, cast)?,
+            Expression::BytesLen(bytes) => {
                 self.code
-                    .call(Cast::AddressToNumber.func_handler(), &[CallOp::Var(*addr)]);
+                    .call(Mem::RequestBufferLen, &[CallOp::Borrow(*bytes)]);
+            }
+            Expression::ReadNum { data, offset } => {
+                self.code.call(
+                    Mem::ReadRequestBuffer,
+                    &[CallOp::Borrow(*data), CallOp::Var(*offset)],
+                );
+            }
+            Expression::Hash { mem, offset, len } => {
+                self.code.call(
+                    Mem::Hash,
+                    &[
+                        CallOp::MutBorrow(*mem),
+                        CallOp::Var(*offset),
+                        CallOp::Var(*len),
+                    ],
+                );
             }
         }
         Ok(())
@@ -339,5 +397,93 @@ impl MvIrTranslator {
             .write(Bytecode::BrTrue(self.code.pc() + loop_br.pc() + 1));
         self.code.extend(loop_br)?;
         Ok(())
+    }
+
+    fn translate_cast(&mut self, var: &Variable, cast: &Cast) -> Result<(), Error> {
+        match cast {
+            Cast::BoolToNum => self.code.call(Num::FromBool, &[CallOp::Var(*var)]),
+            Cast::AddressToNum => self.code.call(Num::FromAddress, &[CallOp::Var(*var)]),
+            Cast::BytesToNum => {
+                self.code
+                    .call(Num::FromBytes, &[CallOp::Var(*var), CallOp::ConstU64(0)]);
+            }
+            Cast::NumToBool => {
+                self.code.call(Num::ToBool, &[CallOp::Var(*var)]);
+            }
+        }
+        Ok(())
+    }
+
+    fn translate_log(
+        &mut self,
+        storage: Variable,
+        memory: Variable,
+        offset: Variable,
+        len: Variable,
+        topics: &[Variable],
+    ) -> Result<(), Error> {
+        let mut args = vec![
+            CallOp::Var(storage),
+            CallOp::MutBorrow(memory),
+            CallOp::Var(offset),
+            CallOp::Var(len),
+        ];
+        let fun = match topics.len() {
+            0 => Persist::Log0,
+            1 => {
+                args.push(CallOp::Var(topics[0]));
+                Persist::Log1
+            }
+            2 => {
+                args.push(CallOp::Var(topics[0]));
+                args.push(CallOp::Var(topics[1]));
+                Persist::Log2
+            }
+            3 => {
+                args.push(CallOp::Var(topics[0]));
+                args.push(CallOp::Var(topics[1]));
+                args.push(CallOp::Var(topics[2]));
+                Persist::Log3
+            }
+            4 => {
+                args.push(CallOp::Var(topics[0]));
+                args.push(CallOp::Var(topics[1]));
+                args.push(CallOp::Var(topics[2]));
+                args.push(CallOp::Var(topics[3]));
+                Persist::Log4
+            }
+            _ => bail!("too many topics"),
+        };
+        self.code.call(fun, &args);
+        Ok(())
+    }
+
+    fn translate_operation(&mut self, operation: Operation, op1: &Variable, op2: &Variable) {
+        let ops = [CallOp::Var(*op1), CallOp::Var(*op2)];
+        match operation {
+            Operation::Add => self.code.call(Num::Add, &ops),
+            Operation::Sub => self.code.call(Num::Sub, &ops),
+            Operation::Mul => self.code.call(Num::Mul, &ops),
+            Operation::Eq => self.code.call(Num::Eq, &ops),
+            Operation::Lt => self.code.call(Num::Lt, &ops),
+            Operation::Gt => self.code.call(Num::Gt, &ops),
+            Operation::Shr => self.code.call(Num::Shr, &ops),
+            Operation::Shl => self.code.call(Num::Shl, &ops),
+            Operation::Sar => self.code.call(Num::Sar, &ops),
+            Operation::BitAnd => self.code.call(Num::BitAnd, &ops),
+            Operation::BitOr => self.code.call(Num::BitOr, &ops),
+            Operation::BitXor => self.code.call(Num::BitXor, &ops),
+            Operation::Div => self.code.call(Num::Div, &ops),
+            Operation::Byte => self.code.call(Num::Byte, &ops),
+            Operation::Mod => self.code.call(Num::Mod, &ops),
+            Operation::SDiv => self.code.call(Num::SDiv, &ops),
+            Operation::SLt => self.code.call(Num::SLt, &ops),
+            Operation::SGt => self.code.call(Num::SGt, &ops),
+            Operation::SMod => self.code.call(Num::SMod, &ops),
+            Operation::Exp => self.code.call(Num::Exp, &ops),
+            Operation::SignExtend => self.code.call(Num::SignExtend, &ops),
+            Operation::IsZero => self.code.call(Num::IsZero, &[ops[0]]),
+            Operation::BitNot => self.code.call(Num::BitNot, &ops),
+        }
     }
 }

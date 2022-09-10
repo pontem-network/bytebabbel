@@ -36,4 +36,11 @@ pub enum Statement {
     Abort(u8),
     Result(Vec<Variable>),
     Continue(BlockId),
+    Log {
+        storage: Variable,
+        memory: Variable,
+        offset: Variable,
+        len: Variable,
+        topics: Vec<Variable>,
+    },
 }

@@ -1,20 +1,20 @@
 use crate::abi::entries::FunHash;
-use crate::{Abi, Function, Mir};
+use crate::{Function, Mir, MoveAbi};
 use anyhow::Error;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
 
 pub struct Program {
     constructor: Mir,
     functions_mir: HashMap<FunHash, Mir>,
-    abi: Abi,
+    abi: MoveAbi,
 }
 
 impl Program {
     pub fn new(
         constructor: Mir,
         functions_mir: HashMap<FunHash, Mir>,
-        abi: Abi,
+        abi: MoveAbi,
     ) -> Result<Program, Error> {
         Ok(Program {
             constructor,
@@ -25,6 +25,10 @@ impl Program {
 
     pub fn name(&self) -> &str {
         self.abi.name()
+    }
+
+    pub fn identifiers(&self) -> &HashSet<String> {
+        self.abi.identifiers()
     }
 
     pub fn functions_hash(&self) -> impl Iterator<Item = FunHash> + '_ {

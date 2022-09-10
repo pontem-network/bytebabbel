@@ -2,7 +2,7 @@ use crate::testssol::env::stdlib::publish_std;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
 
 use aptos_aggregator::transaction::ChangeSetExt;
@@ -13,15 +13,17 @@ use aptos_types::state_store::state_key::StateKey;
 use aptos_types::state_store::state_storage_usage::StateStorageUsage;
 use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
-use aptos_vm::move_vm_ext::{MoveVmExt, SessionExt, SessionId};
+use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
+use eth::abi::call::{CallFn, ToCall};
+use eth::abi::entries::AbiEntries;
+use eth::abi::inc_ret_param::value::ParamValue;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::value::MoveTypeLayout;
 use move_vm_types::gas::UnmeteredGasMeter;
-use move_vm_types::loaded_data::runtime_types::Type;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
@@ -29,10 +31,11 @@ pub struct MoveExecutor {
     resolver: Resolver,
     vm: MoveVmExt,
     seq: u64,
+    entries: AbiEntries,
 }
 
 impl MoveExecutor {
-    pub fn new() -> MoveExecutor {
+    pub fn new(entries: AbiEntries) -> MoveExecutor {
         let resolver = INSTANCE
             .get_or_init(|| {
                 let mut resolver = Resolver::default();
@@ -55,6 +58,7 @@ impl MoveExecutor {
             resolver,
             vm: Self::create_vm(),
             seq: 1,
+            entries,
         }
     }
 
@@ -85,27 +89,49 @@ impl MoveExecutor {
         self.resolver.apply(output);
     }
 
-    pub fn run(&mut self, ident: &str, params: &str) -> Result<ExecutionResult> {
+    pub fn run(
+        &mut self,
+        ident: &str,
+        signer: &str,
+        params: Option<&str>,
+    ) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
         let id = SessionId::Txn {
             sender: *module_id.address(),
             sequence_number: self.seq,
-            script_hash: HashValue::sha3_256_of(params.as_bytes()).to_vec(),
+            script_hash: HashValue::sha3_256_of(params.unwrap_or_default().as_bytes()).to_vec(),
         };
         self.seq += 1;
 
         let adapter = StorageAdapter::new(&self.resolver);
         let mut session = self.vm.new_session(&adapter, id);
 
-        let args = Self::prepare_args(params, &module_id, &ident, &session)?;
+        let (args, entry) = self.prepare_args(signer, params, &module_id, &ident)?;
+
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
         let result = session.finish().unwrap();
         let events = result.events.clone();
         let output = result.into_change_set(&mut ()).unwrap();
+
+        let returns = if let Some(entry) = entry {
+            self.decode_result(returns, entry)?
+        } else {
+            vec![]
+        };
         self.resolver.apply(output);
+
         Ok(ExecutionResult { returns, events })
+    }
+
+    fn decode_result(
+        &self,
+        result: Vec<(Vec<u8>, MoveTypeLayout)>,
+        callfn: CallFn,
+    ) -> Result<Vec<ParamValue>> {
+        let result: Vec<u8> = bcs::from_bytes(&result[0].0).map_err(|e| anyhow!(e))?;
+        callfn.decode_return(result)
     }
 
     fn prepare_ident(ident: &str) -> (ModuleId, Identifier) {
@@ -119,58 +145,31 @@ impl MoveExecutor {
     }
 
     fn prepare_args(
-        args: &str,
+        &self,
+        signer: &str,
+        args: Option<&str>,
         module_id: &ModuleId,
         ident: &Identifier,
-        session: &SessionExt<StorageAdapter<Resolver>>,
-    ) -> Result<Vec<Vec<u8>>> {
-        let fun = session.load_function(module_id, ident, &[])?;
-        let arguments = args.split(',').collect::<Vec<_>>();
-
-        ensure!(
-            (arguments.len() == fun.parameters.len())
-                || (args.is_empty() && fun.parameters.is_empty()),
-            "Invalid number of arguments"
-        );
-
-        arguments
-            .into_iter()
-            .zip(fun.parameters)
-            .map(|(val, tp)| {
-                let val = val.trim_matches(char::is_whitespace);
-                let bval = match tp {
-                    Type::Bool => bcs::to_bytes(&val.parse::<bool>()?),
-                    Type::U8 => bcs::to_bytes(&val.parse::<u8>()?),
-                    Type::U64 => bcs::to_bytes(&val.parse::<u64>()?),
-                    Type::U128 => bcs::to_bytes(&val.parse::<u128>()?),
-                    Type::Address | Type::Signer => {
-                        bcs::to_bytes(&AccountAddress::from_hex_literal(val)?)
-                    }
-                    Type::Vector(tp) => match tp.as_ref() {
-                        Type::U8 => bcs::to_bytes(&hex::decode(val)?),
-                        _ => unreachable!(),
-                    },
-                    Type::Reference(tp) => match tp.as_ref() {
-                        Type::Signer => bcs::to_bytes(&AccountAddress::from_hex_literal(val)?),
-                        _ => unreachable!(),
-                    },
-                    _ => unreachable!(),
-                }?;
-                Ok(bval)
-            })
-            .collect::<Result<Vec<Vec<u8>>>>()
-    }
-}
-
-impl Default for MoveExecutor {
-    fn default() -> Self {
-        MoveExecutor::new()
+    ) -> Result<(Vec<Vec<u8>>, Option<CallFn>)> {
+        let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
+        if let Some(args) = args {
+            let func = self
+                .entries
+                .by_name(ident.as_str())
+                .ok_or_else(|| anyhow!("No such function:{}::{}", module_id, ident))?;
+            let mut call = ToCall::try_call(func)?;
+            call.parse_and_set_inputs(args)?;
+            let request = call.encode(false)?;
+            Ok((vec![signer, bcs::to_bytes(&request)?], Some(call)))
+        } else {
+            Ok((vec![signer], None))
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct ExecutionResult {
-    pub returns: Vec<(Vec<u8>, MoveTypeLayout)>,
+    pub returns: Vec<ParamValue>,
     pub events: Vec<Event>,
 }
 

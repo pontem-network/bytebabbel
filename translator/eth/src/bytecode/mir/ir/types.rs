@@ -6,9 +6,10 @@ use std::fmt::{Display, Formatter};
 pub enum SType {
     Storage,
     Memory,
-    Number,
+    Num,
     Bool,
     Address,
+    Bytes,
 }
 
 impl Display for SType {
@@ -17,11 +18,12 @@ impl Display for SType {
             f,
             "{}",
             match self {
-                SType::Number => "u128",
+                SType::Num => "num",
                 SType::Bool => "bool",
                 SType::Storage => "Storage",
                 SType::Memory => "Memory",
                 SType::Address => "Address",
+                SType::Bytes => "vector<u8>",
             }
         )
     }
@@ -31,17 +33,13 @@ pub type LocalIndex = u8;
 
 #[derive(Debug, Clone)]
 pub enum Value {
-    Number(u128),
+    Number(U256),
     Bool(bool),
 }
 
 impl From<U256> for Value {
     fn from(val: U256) -> Self {
-        if val > U256::from(u128::MAX) {
-            Value::Number(val.low_u128())
-        } else {
-            Value::Number(val.as_u128())
-        }
+        Value::Number(val)
     }
 }
 
@@ -54,7 +52,7 @@ impl From<bool> for Value {
 impl Value {
     pub fn s_type(&self) -> SType {
         match self {
-            Value::Number(_) => SType::Number,
+            Value::Number(_) => SType::Num,
             Value::Bool(_) => SType::Bool,
         }
     }
@@ -63,9 +61,10 @@ impl Value {
 impl From<&EthType> for SType {
     fn from(tp: &EthType) -> Self {
         match tp {
-            EthType::U256 => SType::Number,
+            EthType::U256 => SType::Num,
             EthType::Bool => SType::Bool,
             EthType::Address => SType::Address,
+            EthType::Bytes => SType::Bytes,
         }
     }
 }

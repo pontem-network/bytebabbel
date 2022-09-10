@@ -1,4 +1,5 @@
-use intrinsic::{self_address_index, template, Cast, Mem, Storage};
+use enum_iterator::all;
+use intrinsic::{self_address_index, template, Function, Mem, Num, Persist};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -9,17 +10,31 @@ use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
+use std::collections::HashSet;
 
 #[test]
 pub fn test_template_verification() {
     let address = AccountAddress::random();
-    let template = template(address, "template_module");
+
+    let template = template(
+        address,
+        "template_module",
+        &["div".to_string(), "mod".to_string()]
+            .into_iter()
+            .collect::<HashSet<_>>(),
+    );
     CodeUnitVerifier::verify_module(&VerifierConfig::default(), &template).unwrap();
 }
 
 #[test]
 pub fn test_template_verification_core() {
-    let template = template(CORE_CODE_ADDRESS, "template_module");
+    let template = template(
+        CORE_CODE_ADDRESS,
+        "template_module",
+        &["sstore".to_string(), "mod".to_string()]
+            .into_iter()
+            .collect(),
+    );
     CodeUnitVerifier::verify_module(&VerifierConfig::default(), &template).unwrap();
 }
 
@@ -43,19 +58,19 @@ pub fn test_template() {
 }
 
 #[test]
-pub fn test_intrinsic_signature_token() {
+pub fn test_intrinsic_signature_token_mem_store() {
     let address = AccountAddress::random();
 
-    let template = template(address, "template_module");
+    let template = template(address, "template_module", &HashSet::new());
 
     assert_eq!(
         template.self_id(),
         ModuleId::new(address, Identifier::new("template_module").unwrap())
     );
 
-    assert_eq!(Storage::instance(), find_def(&template, "Persist"));
+    assert_eq!(Persist::instance(), find_def(&template, "Persist"));
     assert_eq!(
-        Storage::token(),
+        Persist::token(),
         SignatureToken::MutableReference(Box::new(SignatureToken::Struct(find_struct_by_name(
             &template, "Persist",
         ))))
@@ -65,46 +80,63 @@ pub fn test_intrinsic_signature_token() {
         SignatureToken::Struct(find_struct_by_name(&template, "Memory"))
     );
 
-    assert_eq!(
-        Mem::New.func_handler(),
-        find_function_by_name(&template, "new_mem")
-    );
-    assert_eq!(
-        Mem::Store.func_handler(),
-        find_function_by_name(&template, "mstore")
-    );
-    assert_eq!(
-        Mem::Store8.func_handler(),
-        find_function_by_name(&template, "mstore8")
-    );
-    assert_eq!(
-        Mem::Load.func_handler(),
-        find_function_by_name(&template, "mload")
-    );
-    assert_eq!(
-        Mem::Size.func_handler(),
-        find_function_by_name(&template, "effective_len")
-    );
-
-    assert_eq!(
-        Storage::Store.func_handler(),
-        find_function_by_name(&template, "sstore")
-    );
-    assert_eq!(
-        Storage::Load.func_handler(),
-        find_function_by_name(&template, "sload")
-    );
-    assert_eq!(
-        Storage::Create.func_handler(),
-        find_function_by_name(&template, "init_store")
-    );
-
-    assert_eq!(
-        Cast::AddressToNumber.func_handler(),
-        find_function_by_name(&template, "address_to_number")
-    );
-
     assert_eq!(self_address_index(), find_address_const(&template, address));
+
+    assert_eq!(
+        Num::token(),
+        SignatureToken::Struct(find_struct_by_name(&template, "U256"))
+    );
+}
+
+#[test]
+pub fn test_intrinsic_signature_token() {
+    let address = AccountAddress::random();
+    let template = template(address, "template_module", &HashSet::new());
+
+    let diff: Vec<Mem> = all::<Mem>()
+        .filter(|mem| find_function_by_name(&template, mem.name()) != mem.handler())
+        .collect();
+
+    for mem in &diff {
+        println!(
+            "{} -> {:?}",
+            mem.name(),
+            find_function_by_name(&template, mem.name())
+        );
+    }
+    if !diff.is_empty() {
+        panic!("Some functions are not found");
+    }
+
+    let diff: Vec<Persist> = all::<Persist>()
+        .filter(|store| find_function_by_name(&template, store.name()) != store.handler())
+        .collect();
+
+    for store in &diff {
+        println!(
+            "{} -> {:?}",
+            store.name(),
+            find_function_by_name(&template, store.name())
+        );
+    }
+    if !diff.is_empty() {
+        panic!("Some functions are not found");
+    }
+
+    let diff: Vec<Num> = all::<Num>()
+        .filter(|num| find_function_by_name(&template, num.name()) != num.handler())
+        .collect();
+
+    for num in &diff {
+        println!(
+            "{} -> {:?}",
+            num.name(),
+            find_function_by_name(&template, num.name())
+        );
+    }
+    if !diff.is_empty() {
+        panic!("Some functions are not found");
+    }
 }
 
 fn find_function_by_name(module: &CompiledModule, name: &str) -> FunctionHandleIndex {

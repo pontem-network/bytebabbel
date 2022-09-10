@@ -8,7 +8,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct AbiEntries {
     pub entries: Vec<Entry>,
 }
@@ -689,14 +689,14 @@ mod tests {
         assert_eq!("0xcdcd77c0", &format!("0x{}", entry_fn.hash_hex()));
 
         let mut call_fn = entry_fn.try_call().unwrap();
-        assert!(call_fn.clone().encode().is_err());
+        assert!(call_fn.clone().encode(true).is_err());
 
         call_fn.set_input(1, true).unwrap();
-        assert!(call_fn.clone().encode().is_err());
+        assert!(call_fn.clone().encode(true).is_err());
 
         call_fn.set_input(0, 69u32).unwrap();
 
-        let encode = hex::encode(call_fn.encode().unwrap());
+        let encode = hex::encode(call_fn.encode(true).unwrap());
         assert_eq!(
             "0xcdcd77c0\
             0000000000000000000000000000000000000000000000000000000000000045\
@@ -714,7 +714,7 @@ mod tests {
         call_fn
             .set_input(0, ["abc".as_bytes(), "def".as_bytes()])
             .unwrap();
-        let encode = hex::encode(call_fn.encode().unwrap());
+        let encode = hex::encode(call_fn.encode(true).unwrap());
         assert_eq!(
             "0xfce353f6\
             6162630000000000000000000000000000000000000000000000000000000000\
@@ -733,7 +733,7 @@ mod tests {
         call_fn.set_input(0, "dave".as_bytes()).unwrap();
         call_fn.set_input(1, true).unwrap();
         call_fn.set_input(2, [1usize, 2, 3]).unwrap();
-        let encode = hex::encode(call_fn.encode().unwrap());
+        let encode = hex::encode(call_fn.encode(true).unwrap());
 
         assert_eq!(
             format!("0x{encode}"),
@@ -761,7 +761,7 @@ mod tests {
         call_fn.set_input(1, [1110u32, 1929u32]).unwrap();
         call_fn.set_input(2, "1234567890".as_bytes()).unwrap();
         call_fn.set_input(3, "Hello, world!".as_bytes()).unwrap();
-        let encode = hex::encode(call_fn.encode().unwrap());
+        let encode = hex::encode(call_fn.encode(true).unwrap());
 
         assert_eq!(
             format!("0x{encode}"),
@@ -789,7 +789,7 @@ mod tests {
             .set_input(0, vec![vec![1usize, 2], vec![3usize]])
             .unwrap();
         call_fn.set_input(1, ["one", "two", "three"]).unwrap();
-        let encode = hex::encode(call_fn.encode().unwrap());
+        let encode = hex::encode(call_fn.encode(true).unwrap());
 
         assert_eq!(
             format!("0x{encode}"),
