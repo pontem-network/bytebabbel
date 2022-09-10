@@ -94,9 +94,13 @@ impl MvIrTranslator {
         let name = Identifier::new(def.name.clone())?;
         let visibility = Visibility::Public;
 
-        let input = self.sign_writer.make_signature(map_signature(&def.input));
+        let input = self
+            .sign_writer
+            .make_signature(map_signature(&def.move_input));
 
-        let output = self.sign_writer.make_signature(map_signature(&def.output));
+        let output = self
+            .sign_writer
+            .make_signature(map_signature(&def.move_output));
 
         let locals = self.map_locals(mir);
         self.code.reset();

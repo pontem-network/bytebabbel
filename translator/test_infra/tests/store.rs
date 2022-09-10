@@ -20,7 +20,7 @@ pub fn test_empty_constructor() {
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!("[\"42u256\"]", res);
+    assert_eq!("(42)", res);
 }
 
 #[test]
@@ -47,7 +47,7 @@ pub fn test_constructor_with_data() {
             .unwrap()
             .returns
             .to_result_str();
-        assert_eq!(format!("[\"{}u256\"]", val), res);
+        assert_eq!(format!("({})", val), res);
     }
 }
 
@@ -61,10 +61,12 @@ pub fn test_store() {
 
     vm.run("0x42::load_store::constructor", "0x42", None)
         .unwrap();
+
     let a = rand::random::<u128>();
     let b = rand::random::<u128>();
     let c = rand::random::<bool>();
     let f = rand::random::<bool>();
+
     vm.run(
         "0x42::load_store::set_all",
         "0x42",
@@ -75,9 +77,8 @@ pub fn test_store() {
     let res = vm
         .run("0x42::load_store::get_all", "0x42", Some(""))
         .unwrap()
-        .returns
-        .to_result_str();
-    assert_eq!(format!("[[\"{}\",\"{}\",\"{}\",\"{}\"]]", a, b, c, f), res);
+        .returns;
+    assert_eq!(format!("({}, {}, {}, {})", a, b, c, f), res.to_result_str());
 
     let a = rand::random::<u128>();
     let b = rand::random::<u128>();
@@ -98,28 +99,28 @@ pub fn test_store() {
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("\"{}\"", a), actual_a);
+    assert_eq!(format!("({})", a), actual_a);
 
     let actual_b = vm
         .run("0x42::load_store::get_b", "0x42", Some(""))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("\"{}\"", b), actual_b);
+    assert_eq!(format!("({})", b), actual_b);
 
     let actual_c = vm
         .run("0x42::load_store::get_c", "0x42", Some(""))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("\"{}\"", c), actual_c);
+    assert_eq!(format!("({})", c), actual_c);
 
     let actual_f = vm
         .run("0x42::load_store::get_flag", "0x42", Some(""))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("\"{}\"", f), actual_f);
+    assert_eq!(format!("({})", f), actual_f);
 }
 
 #[test]
@@ -132,12 +133,13 @@ pub fn test_bool_store() {
     vm.deploy("0x42", bytecode);
     vm.run("0x42::bool_store::constructor", "0x42", None)
         .unwrap();
+
     let actual_f = vm
         .run("0x42::bool_store::load", "0x42", Some(""))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("[\"{}\"]", false), actual_f);
+    assert_eq!(format!("({})", false), actual_f);
 
     vm.run("0x42::bool_store::store", "0x42", Some("true"))
         .unwrap();
@@ -147,15 +149,15 @@ pub fn test_bool_store() {
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("\"{}\"", true), actual_f);
+    assert_eq!(format!("({})", true), actual_f);
 
     vm.run("0x42::bool_store::store", "0x42", Some("false"))
         .unwrap();
+
     let actual_f = vm
         .run("0x42::bool_store::load", "0x42", Some(""))
         .unwrap()
         .returns
-        .remove(0)
         .to_result_str();
-    assert_eq!(format!("\"{}\"", false), actual_f);
+    assert_eq!(format!("({})", false), actual_f);
 }

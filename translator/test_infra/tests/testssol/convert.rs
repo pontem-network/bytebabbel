@@ -1,5 +1,6 @@
 use eth::abi::inc_ret_param::value::ParamValue;
 use evm::utils::I256;
+use itertools::Itertools;
 use move_core_types::value::MoveValue;
 use primitive_types::U256;
 
@@ -55,7 +56,9 @@ where
     T: ResultToString,
 {
     fn to_result_str(&self) -> String {
-        let list: Vec<String> = self.iter().map(|item| item.to_result_str()).collect();
-        format!("{list:?}")
+        format!(
+            "({})",
+            self.iter().map(|item| item.to_result_str()).join(", ")
+        )
     }
 }

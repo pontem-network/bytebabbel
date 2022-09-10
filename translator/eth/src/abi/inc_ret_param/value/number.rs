@@ -14,7 +14,7 @@ impl AsParamValue for i8 {
         let value = if self >= 0 {
             I256::from(U256::from(self as u8))
         } else {
-            I256::from(U256::from(self.abs() as u8)) / I256::minus_one()
+            I256::from(U256::from(self.unsigned_abs())) / I256::minus_one()
         };
         ParamValue::Int { size: 8, value }
     }
@@ -32,7 +32,7 @@ impl AsParamValue for i16 {
         let value = if self >= 0 {
             I256::from(U256::from(self as u16))
         } else {
-            I256::from(U256::from(self.abs() as u16)) / I256::minus_one()
+            I256::from(U256::from(self.unsigned_abs())) / I256::minus_one()
         };
         ParamValue::Int { size: 16, value }
     }
@@ -50,7 +50,7 @@ impl AsParamValue for i32 {
         let value = if self >= 0 {
             I256::from(U256::from(self as u32))
         } else {
-            I256::from(U256::from(self.abs() as u32)) / I256::minus_one()
+            I256::from(U256::from(self.unsigned_abs())) / I256::minus_one()
         };
         ParamValue::Int { size: 32, value }
     }
@@ -68,7 +68,7 @@ impl AsParamValue for i64 {
         let value = if self >= 0 {
             I256::from(U256::from(self as u64))
         } else {
-            I256::from(U256::from(self.abs() as u64)) / I256::minus_one()
+            I256::from(U256::from(self.unsigned_abs())) / I256::minus_one()
         };
         ParamValue::Int { size: 64, value }
     }
@@ -86,7 +86,7 @@ impl AsParamValue for i128 {
         let value = if self >= 0 {
             I256::from(U256::from(self as u128))
         } else {
-            I256::from(U256::from(self.abs() as u128)) / I256::minus_one()
+            I256::from(U256::from(self.unsigned_abs())) / I256::minus_one()
         };
         ParamValue::Int { size: 128, value }
     }
@@ -104,7 +104,7 @@ impl AsParamValue for isize {
         let value = if self >= 0 {
             I256::from(U256::from(self as usize))
         } else {
-            I256::from(U256::from(self.abs() as usize)) / I256::minus_one()
+            I256::from(U256::from(self.unsigned_abs())) / I256::minus_one()
         };
         ParamValue::Int { size: 128, value }
     }

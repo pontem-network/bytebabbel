@@ -4,9 +4,10 @@ pub mod inc_ret_param;
 pub mod types;
 
 use crate::abi::entries::{AbiEntries, Entry, FunHash};
+use crate::abi::inc_ret_param::Param;
 use crate::bytecode::types::EthType;
 use crate::Function;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use std::collections::HashMap;
 
 pub struct MoveAbi {
@@ -22,22 +23,21 @@ impl MoveAbi {
             .filter_map(|entry| {
                 let hash = FunHash::from(&entry);
                 if let Entry::Function(fun) = entry {
-                    let input = vec![EthType::Address, EthType::Bytes];
-                    let output = vec![EthType::Bytes];
-                    // todo replace with static type definition
-                    // input.extend(
-                    //     map_types(fun.inputs.unwrap_or_default())
-                    //         .context("Input mapping")
-                    //         .unwrap(),
-                    // );
-                    // let output = map_types(fun.outputs.unwrap_or_default())
-                    //     .context("Output mapping")
-                    //     .unwrap();
+                    let move_input = vec![EthType::Address, EthType::Bytes];
+                    let move_output = vec![EthType::Bytes];
+                    let eth_input = map_types(fun.inputs.unwrap_or_default())
+                        .context("Input mapping")
+                        .unwrap();
+                    let eth_output = map_types(fun.outputs.unwrap_or_default())
+                        .context("Output mapping")
+                        .unwrap();
                     let fun = Function {
                         name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
-                        input,
+                        move_input,
                         hash,
-                        output,
+                        move_output,
+                        eth_input,
+                        eth_output,
                     };
                     Some((hash, fun))
                 } else {
@@ -59,4 +59,11 @@ impl MoveAbi {
     pub fn name(&self) -> &str {
         &self.name
     }
+}
+
+fn map_types(types: Vec<Param>) -> Result<Vec<EthType>, Error> {
+    types
+        .into_iter()
+        .map(|param| EthType::try_from(&param))
+        .collect()
 }

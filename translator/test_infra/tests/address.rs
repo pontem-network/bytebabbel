@@ -23,12 +23,12 @@ pub fn test_address_support() {
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!("[\"true\"]", res);
+    assert_eq!("(true)", res);
 
     let res = vm
         .run("0x42::AddressSupport::is_owner", "0x44", Some(""))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!("[\"false\"]", res);
+    assert_eq!("(false)", res);
 }

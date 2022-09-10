@@ -35,7 +35,7 @@ impl Env {
 impl From<&Function> for Env {
     fn from(fun: &Function) -> Self {
         Env {
-            call_data_size: U256::from(fun.input.len() * FRAME_SIZE + FUN_HASH_LEN),
+            call_data_size: U256::from(fun.move_input.len() * FRAME_SIZE + FUN_HASH_LEN),
             hash: fun.hash,
         }
     }
@@ -44,7 +44,7 @@ impl From<&Function> for Env {
 impl From<&Constructor> for Env {
     fn from(fun: &Constructor) -> Self {
         Env {
-            call_data_size: U256::from(fun.input.len() * FRAME_SIZE + FUN_HASH_LEN),
+            call_data_size: U256::from(fun.move_input.len() * FRAME_SIZE + FUN_HASH_LEN),
             hash: FunHash::default(),
         }
     }
@@ -54,32 +54,40 @@ impl From<&Constructor> for Env {
 pub struct Function {
     pub hash: FunHash,
     pub name: String,
-    pub input: Vec<EthType>,
-    pub output: Vec<EthType>,
+    pub move_input: Vec<EthType>,
+    pub eth_input: Vec<EthType>,
+    pub move_output: Vec<EthType>,
+    pub eth_output: Vec<EthType>,
 }
 
 impl Display for Function {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({:?}) -> ({:?})", self.name, self.input, self.output)
+        write!(
+            f,
+            "{}({:?}) -> ({:?})",
+            self.name, self.move_input, self.move_output
+        )
     }
 }
 
 #[derive(Debug)]
 pub struct Constructor {
-    pub input: Vec<EthType>,
+    pub move_input: Vec<EthType>,
+    pub eth_input: Vec<EthType>,
 }
 
 impl Default for Constructor {
     fn default() -> Self {
         Constructor {
-            input: vec![EthType::Address],
+            move_input: vec![EthType::Address],
+            eth_input: vec![],
         }
     }
 }
 
 impl Display for Constructor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "constructor({:?})", self.input)
+        write!(f, "constructor({:?})", self.move_input)
     }
 }
 
@@ -88,8 +96,10 @@ impl From<&Constructor> for Function {
         Function {
             hash: Default::default(),
             name: "constructor".to_string(),
-            input: c.input.clone(),
-            output: vec![],
+            move_input: c.move_input.clone(),
+            eth_input: c.eth_input.clone(),
+            move_output: vec![],
+            eth_output: vec![],
         }
     }
 }

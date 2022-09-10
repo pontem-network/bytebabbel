@@ -68,7 +68,7 @@ impl InstructionHandler for TxMeta {
             }
             TxMeta::CallDataSize => {
                 let id = if ctx.is_static_analysis_enable() {
-                    ir.create_var(Eval::Val(U256::from(4)))
+                    ir.create_var(Eval::Val(U256::from(1024)))
                 } else {
                     ir.create_var(Eval::ArgsSize)
                 };

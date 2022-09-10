@@ -7,6 +7,7 @@ use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
 use crate::{Function, Hir};
 use anyhow::{anyhow, ensure, Error};
+use primitive_types::U256;
 use std::collections::HashMap;
 
 pub mod binary;
@@ -117,7 +118,7 @@ impl<'a> MirTranslator<'a> {
                     )?;
                 }
                 Instruction::Stop => {
-                    if !self.fun.output.is_empty() {
+                    if !self.fun.eth_output.is_empty() {
                         self.mir.add_statement(Statement::Abort(u8::MAX));
                     } else {
                         self.translate_ret_unit()?;
@@ -279,7 +280,21 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn translate_ret_unit(&mut self) -> Result<(), Error> {
-        self.mir.add_statement(Statement::Result(vec![]));
+        let unit = self.variables.borrow(SType::Bytes);
+        let len = self.variables.borrow(SType::Num);
+        self.mir.add_statement(Statement::CreateVar(
+            len,
+            Expression::Const(Value::from(U256::zero())),
+        ));
+        self.mir.add_statement(Statement::CreateVar(
+            unit,
+            Expression::MSlice {
+                memory: self.mem_var,
+                offset: len,
+                len,
+            },
+        ));
+        self.mir.add_statement(Statement::Result(vec![unit]));
         Ok(())
     }
 

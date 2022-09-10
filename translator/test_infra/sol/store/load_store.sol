@@ -14,6 +14,13 @@ contract load_store {
     TestStruct struct1;
     bool flag;
 
+    constructor() {
+        struct1.a = 42;
+        struct1.b = 42;
+        struct1.c = true;
+        flag = true;
+        return;
+    }
 
     function set_all(uint a, uint b, bool c, bool f) public {
         struct1.a = a;

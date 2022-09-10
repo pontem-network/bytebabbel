@@ -159,10 +159,8 @@ impl MoveExecutor {
                 .ok_or_else(|| anyhow!("No such function:{}::{}", module_id, ident))?;
             let mut call = ToCall::try_call(func)?;
             call.parse_and_set_inputs(args)?;
-            Ok((
-                vec![signer, bcs::to_bytes(&call.encode(false)?)?],
-                Some(call),
-            ))
+            let request = call.encode(false)?;
+            Ok((vec![signer, bcs::to_bytes(&request)?], Some(call)))
         } else {
             Ok((vec![signer], None))
         }

@@ -66,8 +66,8 @@ impl ParamType {
             ParamType::Bool => self.set_value(value.parse::<bool>()?),
             ParamType::Int(size) => {
                 let value = value.split_once('i').map(|(v, _)| v).unwrap_or(value);
-                let value = if value.starts_with('-') {
-                    I256::from(U256::from_dec_str(&value[1..])?) / I256::minus_one()
+                let value = if let Some(val) = value.strip_prefix('-') {
+                    I256::from(U256::from_dec_str(val)?) / I256::minus_one()
                 } else {
                     I256::from(U256::from_dec_str(value)?)
                 };

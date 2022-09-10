@@ -88,6 +88,17 @@ module self::template {
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
 
         let data_len = std::vector::length(&mem.data);
+
+        if (data_len < position) {
+            let diff = position - data_len;
+            let i = 0;
+            while (i < diff) {
+                std::vector::push_back(&mut mem.data, 0);
+                i = i + 1;
+            }
+        };
+
+
         let byte_offset = 0u64;
         let word = 4;
         while (word > 0) {
@@ -127,8 +138,12 @@ module self::template {
 
     // API
     fun mslice(mem: &mut Memory, position: U256, length: U256): vector<u8> {
-        let position = as_u64(position);
         let length = as_u64(length);
+        if (length == 0) {
+            return std::vector::empty()
+        };
+
+        let position = as_u64(position);
         let data_len = std::vector::length(&mem.data);
 
         let offset = 0u64;
@@ -142,6 +157,7 @@ module self::template {
             };
             offset = offset + 1;
         };
+
         slice
     }
 
@@ -181,6 +197,22 @@ module self::template {
         std::vector::push_back(&mut buff, 7);
         let len = as_u128(request_buffer_len(&buff));
         assert!(len == 7 + 4, 1);
+    }
+
+    #[test]
+    fun test_random_access() {
+        let memory = new_mem(1024);
+        mstore(&mut memory, from_u128(64), from_u128(128));
+        let value = mload(&mut memory, from_u128(64));
+        let value = as_u128(value);
+        assert!(value == 128, 1);
+        let value = mload(&mut memory, from_u128(0));
+        let value = as_u128(value);
+        assert!(value == 0, 2);
+
+        let value = mload(&mut memory, from_u128(32));
+        let value = as_u128(value);
+        assert!(value == 0, 2);
     }
 
     #[test]
@@ -1874,5 +1906,42 @@ module self::template {
         let b = from_u128(0xf0f0f0f0f0f0f0f0u128);
         let c = bitxor(a, b);
         assert!(as_u128(c) == 0xffffffffffffffffu128, 1);
+    }
+
+    #[test]
+    fun test_slt() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = slt(a, b);
+        assert!(c == true, 0);
+
+        let a = from_u128(1);
+        let b = from_u128(0);
+        let c = slt(a, b);
+        assert!(c == false, 1);
+
+        let a = from_u128(128);
+        let b = from_u128(128);
+        let c = slt(a, b);
+        assert!(c == false, 2);
+    }
+
+    #[test]
+    fun test_as_u64() {
+        let a = from_u128(0);
+        let b = as_u64(a);
+        assert!(b == 0, 0);
+
+        let a = from_u128(1);
+        let b = as_u64(a);
+        assert!(b == 1, 1);
+
+        let a = from_u128(0xffffffffffffffff);
+        let b = as_u64(a);
+        assert!(b == 0xffffffffffffffff, 2);
+
+        let a = from_u128(0x10000000000000000);
+        let b = as_u64(a);
+        assert!(b == 0, 3);
     }
 }

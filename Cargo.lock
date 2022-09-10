@@ -7744,6 +7744,7 @@ dependencies = [
  "evm",
  "framework",
  "hex",
+ "itertools",
  "lazy_static 1.4.0",
  "libtest-mimic",
  "log",
