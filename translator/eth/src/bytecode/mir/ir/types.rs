@@ -64,6 +64,7 @@ impl From<&EthType> for SType {
             EthType::U256 => SType::Num,
             EthType::Bool => SType::Bool,
             EthType::Address => SType::Address,
+            EthType::Bytes => SType::Bytes,
         }
     }
 }

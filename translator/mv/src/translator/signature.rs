@@ -1,13 +1,15 @@
 use eth::bytecode::types::EthType;
+use intrinsic::Num;
 use move_binary_format::file_format::{Signature, SignatureIndex, SignatureToken};
 
 pub fn map_signature(eth_types: &[EthType]) -> Vec<SignatureToken> {
     eth_types
         .iter()
         .map(|eth| match eth {
-            EthType::U256 => SignatureToken::U128,
+            EthType::U256 => Num::token(),
             EthType::Bool => SignatureToken::Bool,
             EthType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
+            EthType::Bytes => SignatureToken::Vector(Box::new(SignatureToken::U8)),
         })
         .collect()
 }

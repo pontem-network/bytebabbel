@@ -118,7 +118,7 @@ impl MvIrTranslator {
             .locals()
             .iter()
             .map(|tp| match tp {
-                SType::Num => SignatureToken::U128,
+                SType::Num => Num::token(),
                 SType::Bool => SignatureToken::Bool,
                 SType::Storage => Persist::token(),
                 SType::Memory => Mem::token(),

@@ -642,33 +642,33 @@ module self::template {
     }
 
     // API
-    fun lt(a: &U256, b: &U256): bool {
-        compare(a, b) == LESS_THAN
+    fun lt(a: U256, b: U256): bool {
+        compare(&a, &b) == LESS_THAN
     }
 
     // API
-    fun le(a: &U256, b: &U256): bool {
-        compare(a, b) != GREATER_THAN
+    fun le(a: U256, b: U256): bool {
+        compare(&a, &b) != GREATER_THAN
     }
 
     // API
-    fun gt(a: &U256, b: &U256): bool {
-        compare(a, b) == GREATER_THAN
+    fun gt(a: U256, b: U256): bool {
+        compare(&a, &b) == GREATER_THAN
     }
 
     // API
-    fun ge(a: &U256, b: &U256): bool {
-        compare(a, b) != LESS_THAN
+    fun ge(a: U256, b: U256): bool {
+        compare(&a, &b) != LESS_THAN
     }
 
     // API
-    fun eq(a: &U256, b: &U256): bool {
-        compare(a, b) == EQUAL
+    fun eq(a: U256, b: U256): bool {
+        compare(&a, &b) == EQUAL
     }
 
     // API
-    fun ne(a: &U256, b: &U256): bool {
-        compare(a, b) != EQUAL
+    fun ne(a: U256, b: U256): bool {
+        compare(&a, &b) != EQUAL
     }
 
     // API
@@ -910,7 +910,7 @@ module self::template {
 
     // Private functions.
     /// Get bits used to store `a`.
-    fun bits(a: & U256): u64 {
+    fun bits(a: &U256): u64 {
         let i = 1;
         while (i < WORDS) {
             let a1 = get(a, WORDS - i);

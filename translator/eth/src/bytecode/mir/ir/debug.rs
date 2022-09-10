@@ -203,10 +203,15 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             )?;
         }
         Expression::SLoad { storage, offset } => {
-            write!(buf, "var_{:?}.state_load(var_{:?})", storage, offset)?;
+            write!(
+                buf,
+                "var_{:?}.state_load(var_{:?})",
+                storage.index(),
+                offset.index()
+            )?;
         }
         Expression::MSize { memory } => {
-            write!(buf, "var_{:?}.mem_len()", memory)?;
+            write!(buf, "var_{:?}.mem_len()", memory.index())?;
         }
         Expression::GetMem => {
             write!(buf, "contract_memory()")?;
