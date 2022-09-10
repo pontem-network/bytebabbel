@@ -319,11 +319,12 @@ impl MvIrTranslator {
             }
             Expression::Cast(var, cast) => self.translate_cast(var, cast)?,
             Expression::BytesLen(bytes) => {
-                self.code.call(Mem::BytesLen, &[CallOp::Borrow(*bytes)]);
+                self.code
+                    .call(Mem::RequestBufferLen, &[CallOp::Borrow(*bytes)]);
             }
             Expression::ReadNum { data, offset } => {
                 self.code.call(
-                    Num::FromBytes,
+                    Mem::ReadRequestBuffer,
                     &[CallOp::Borrow(*data), CallOp::Var(*offset)],
                 );
             }
@@ -474,7 +475,7 @@ impl MvIrTranslator {
             Operation::SMod => self.code.call(Num::SMod, &ops),
             Operation::Exp => self.code.call(Num::Exp, &ops),
             Operation::SignExtend => self.code.call(Num::SignExtend, &ops),
-            Operation::IsZero => self.code.call(Num::IsZero, &ops),
+            Operation::IsZero => self.code.call(Num::IsZero, &[ops[0]]),
             Operation::BitNot => self.code.call(Num::BitNot, &ops),
         }
     }

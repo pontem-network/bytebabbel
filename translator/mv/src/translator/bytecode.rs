@@ -3,7 +3,7 @@ use move_binary_format::file_format::{Bytecode, LocalIndex};
 
 impl Writer {
     pub fn ld_var(&mut self, idx: LocalIndex) {
-        self.write(Bytecode::MoveLoc(idx));
+        self.write(Bytecode::CopyLoc(idx));
     }
 
     pub fn set_var(&mut self, idx: LocalIndex) {

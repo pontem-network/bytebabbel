@@ -46,7 +46,8 @@ pub enum Mem {
     Store8,
     Slice,
     Hash,
-    BytesLen,
+    ReadRequestBuffer,
+    RequestBufferLen,
 }
 
 impl Mem {
@@ -65,20 +66,22 @@ impl Function for Mem {
             Self::Store8 => "mstore8",
             Self::Hash => "hash",
             Self::Slice => "mslice",
-            Self::BytesLen => "bytes_len",
+            Self::RequestBufferLen => "request_buffer_len",
+            Mem::ReadRequestBuffer => "read_request_buffer",
         }
     }
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Mem::New => FunctionHandleIndex(43),
-            Mem::Size => FunctionHandleIndex(12),
-            Mem::Load => FunctionHandleIndex(36),
-            Mem::Store => FunctionHandleIndex(40),
-            Mem::Store8 => FunctionHandleIndex(41),
-            Mem::Hash => FunctionHandleIndex(24),
-            Mem::Slice => FunctionHandleIndex(39),
-            Mem::BytesLen => FunctionHandleIndex(8),
+            Mem::New => FunctionHandleIndex(42),
+            Mem::Size => FunctionHandleIndex(11),
+            Mem::Load => FunctionHandleIndex(35),
+            Mem::Store => FunctionHandleIndex(39),
+            Mem::Store8 => FunctionHandleIndex(40),
+            Mem::Hash => FunctionHandleIndex(23),
+            Mem::Slice => FunctionHandleIndex(38),
+            Mem::RequestBufferLen => FunctionHandleIndex(53),
+            Mem::ReadRequestBuffer => FunctionHandleIndex(51),
         }
     }
 }
@@ -121,14 +124,14 @@ impl Function for Persist {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Persist::InitContract => FunctionHandleIndex(25),
-            Persist::Store => FunctionHandleIndex(66),
-            Persist::Load => FunctionHandleIndex(62),
-            Persist::Log0 => FunctionHandleIndex(30),
-            Persist::Log1 => FunctionHandleIndex(31),
-            Persist::Log2 => FunctionHandleIndex(32),
-            Persist::Log3 => FunctionHandleIndex(33),
-            Persist::Log4 => FunctionHandleIndex(34),
+            Persist::InitContract => FunctionHandleIndex(24),
+            Persist::Store => FunctionHandleIndex(67),
+            Persist::Load => FunctionHandleIndex(63),
+            Persist::Log0 => FunctionHandleIndex(29),
+            Persist::Log1 => FunctionHandleIndex(30),
+            Persist::Log2 => FunctionHandleIndex(31),
+            Persist::Log3 => FunctionHandleIndex(32),
+            Persist::Log4 => FunctionHandleIndex(33),
         }
     }
 }
@@ -217,37 +220,37 @@ impl Function for Num {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Num::Add => FunctionHandleIndex(45),
-            Num::Sub => FunctionHandleIndex(48),
-            Num::Mul => FunctionHandleIndex(47),
-            Num::Div => FunctionHandleIndex(10),
-            Num::Mod => FunctionHandleIndex(38),
+            Num::Add => FunctionHandleIndex(44),
+            Num::Sub => FunctionHandleIndex(47),
+            Num::Mul => FunctionHandleIndex(46),
+            Num::Div => FunctionHandleIndex(9),
+            Num::Mod => FunctionHandleIndex(37),
             Num::BitOr => FunctionHandleIndex(4),
             Num::BitAnd => FunctionHandleIndex(2),
             Num::BitXor => FunctionHandleIndex(6),
-            Num::Shl => FunctionHandleIndex(58),
-            Num::Shr => FunctionHandleIndex(60),
-            Num::Lt => FunctionHandleIndex(35),
-            Num::Gt => FunctionHandleIndex(23),
-            Num::Le => FunctionHandleIndex(28),
-            Num::Ge => FunctionHandleIndex(20),
-            Num::Eq => FunctionHandleIndex(13),
-            Num::Neq => FunctionHandleIndex(42),
+            Num::Shl => FunctionHandleIndex(59),
+            Num::Shr => FunctionHandleIndex(61),
+            Num::Lt => FunctionHandleIndex(34),
+            Num::Gt => FunctionHandleIndex(22),
+            Num::Le => FunctionHandleIndex(27),
+            Num::Ge => FunctionHandleIndex(19),
+            Num::Eq => FunctionHandleIndex(12),
+            Num::Neq => FunctionHandleIndex(41),
             Num::BitNot => FunctionHandleIndex(3),
             Num::Byte => FunctionHandleIndex(7),
-            Num::FromAddress => FunctionHandleIndex(15),
-            Num::FromBytes => FunctionHandleIndex(17),
-            Num::FromBool => FunctionHandleIndex(16),
-            Num::ToBool => FunctionHandleIndex(67),
-            Num::FromU64s => FunctionHandleIndex(19),
-            Num::IsZero => FunctionHandleIndex(27),
-            Num::SDiv => FunctionHandleIndex(55),
-            Num::SLt => FunctionHandleIndex(63),
-            Num::SGt => FunctionHandleIndex(57),
-            Num::SMod => FunctionHandleIndex(64),
-            Num::Exp => FunctionHandleIndex(14),
-            Num::SignExtend => FunctionHandleIndex(56),
-            Num::Sar => FunctionHandleIndex(54),
+            Num::FromAddress => FunctionHandleIndex(14),
+            Num::FromBytes => FunctionHandleIndex(16),
+            Num::FromBool => FunctionHandleIndex(15),
+            Num::ToBool => FunctionHandleIndex(68),
+            Num::FromU64s => FunctionHandleIndex(18),
+            Num::IsZero => FunctionHandleIndex(26),
+            Num::SDiv => FunctionHandleIndex(56),
+            Num::SLt => FunctionHandleIndex(64),
+            Num::SGt => FunctionHandleIndex(58),
+            Num::SMod => FunctionHandleIndex(65),
+            Num::Exp => FunctionHandleIndex(13),
+            Num::SignExtend => FunctionHandleIndex(57),
+            Num::Sar => FunctionHandleIndex(55),
         }
     }
 }

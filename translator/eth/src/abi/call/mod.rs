@@ -136,7 +136,7 @@ impl<'a> CallFn<'a> {
                     return Ok(result);
                 }
 
-                let offset = encode::to_usize(&value[start..start + 32]);
+                let offset = encode::to_u256(&value[start..start + 32]).as_usize();
                 let result = decode_value(&value[offset..], tp)?;
                 start += 32;
                 Ok(result)

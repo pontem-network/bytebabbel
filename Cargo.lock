@@ -2769,7 +2769,7 @@ dependencies = [
 [[package]]
 name = "evm"
 version = "0.35.0"
-source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#ffde919ebb9ba79997611f4a48a5b7bfa27f6115"
+source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#b4c05594178fe413f84895b4e0b3d4d9849d76df"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -2789,7 +2789,7 @@ dependencies = [
 [[package]]
 name = "evm-core"
 version = "0.35.0"
-source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#ffde919ebb9ba79997611f4a48a5b7bfa27f6115"
+source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#b4c05594178fe413f84895b4e0b3d4d9849d76df"
 dependencies = [
  "parity-scale-codec",
  "primitive-types",
@@ -2800,7 +2800,7 @@ dependencies = [
 [[package]]
 name = "evm-gasometer"
 version = "0.35.0"
-source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#ffde919ebb9ba79997611f4a48a5b7bfa27f6115"
+source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#b4c05594178fe413f84895b4e0b3d4d9849d76df"
 dependencies = [
  "environmental",
  "evm-core",
@@ -2811,7 +2811,7 @@ dependencies = [
 [[package]]
 name = "evm-runtime"
 version = "0.35.0"
-source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#ffde919ebb9ba79997611f4a48a5b7bfa27f6115"
+source = "git+https://github.com/pontem-network/evm.git?branch=evm2move#b4c05594178fe413f84895b4e0b3d4d9849d76df"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -5906,7 +5906,6 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "poem-derive",
- "quick-xml",
  "regex",
  "rfc7239",
  "rustls-pemfile 1.0.1",
@@ -5939,9 +5938,9 @@ dependencies = [
 
 [[package]]
 name = "poem-openapi"
-version = "2.0.11"
+version = "2.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e69c569eb0671cc85e65cfb6bd960d0168d24732ff58825227b4d2a10167ba91"
+checksum = "4d4d9252b377035ab2ef8d88020d0484f80892ec6325028af9e4c5839a0656b7"
 dependencies = [
  "base64 0.13.0",
  "bytes 1.2.1",
@@ -5951,7 +5950,6 @@ dependencies = [
  "num-traits 0.2.15",
  "poem",
  "poem-openapi-derive",
- "quick-xml",
  "regex",
  "serde 1.0.144",
  "serde_json",
@@ -6239,16 +6237,6 @@ name = "quick-error"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
-
-[[package]]
-name = "quick-xml"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9279fbdacaad3baf559d8cabe0acc3d06e30ea14931af31af79578ac0946decc"
-dependencies = [
- "memchr",
- "serde 1.0.144",
-]
 
 [[package]]
 name = "quote"
@@ -7082,9 +7070,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "2.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89df7a26519371a3cce44fbb914c2819c84d9b897890987fa3ab096491cc0ea8"
+checksum = "368f2d60d049ea019a84dcd6687b0d1e0030fe663ae105039bdf967ed5e6a9a7"
 dependencies = [
  "base64 0.13.0",
  "chrono",
@@ -7098,9 +7086,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with_macros"
-version = "2.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de337f322382fcdfbb21a014f7c224ee041a23785651db67b9827403178f698f"
+checksum = "1ccadfacf6cf10faad22bbadf55986bdd0856edfb5d9210aa1dcf1f516e84e93"
 dependencies = [
  "darling",
  "proc-macro2 1.0.43",

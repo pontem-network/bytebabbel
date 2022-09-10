@@ -1,6 +1,8 @@
 use crate::abi::inc_ret_param::types::ParamType;
 use anyhow::{bail, Result};
+use evm_core::utils::I256;
 use itertools::Itertools;
+use primitive_types::U256;
 use std::fmt::Debug;
 
 // bytes,byte1,byte2,byte<N>.., address and array
@@ -16,13 +18,13 @@ pub enum ParamValue {
     // default: 256
     Int {
         size: u16,
-        value: isize,
+        value: I256,
     },
     // 2^3...2^8 = 8 ... 256
     // default: 256
     UInt {
         size: u16,
-        value: usize,
+        value: U256,
     },
     // 1 ... 32
     Byte(Vec<u8>),

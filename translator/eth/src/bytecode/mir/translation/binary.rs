@@ -31,7 +31,9 @@ impl<'a> MirTranslator<'a> {
 
         let cmd: Operation = cmd.into();
         let result = match cmd {
-            Operation::Eq | Operation::Lt | Operation::Gt => self.map_var(result, SType::Bool),
+            Operation::Eq | Operation::Lt | Operation::Gt | Operation::SLt | Operation::SGt => {
+                self.map_var(result, SType::Bool)
+            }
             _ => self.map_var(result, SType::Num),
         };
         self.mir

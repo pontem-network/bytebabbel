@@ -134,6 +134,7 @@ impl Writer {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum CallOp {
     Var(Variable),
     MutBorrow(Variable),

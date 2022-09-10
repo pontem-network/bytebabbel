@@ -1,12 +1,14 @@
 use anyhow::{bail, Result};
+use evm_core::utils::I256;
+use primitive_types::U256;
 
 use crate::abi::inc_ret_param::value::ParamValue;
 
 pub trait ParamValueToRustType {
     fn to_bool(&self) -> Result<bool>;
     fn to_vec(&self) -> Result<Vec<ParamValue>>;
-    fn to_isize(&self) -> Result<isize>;
-    fn to_usize(&self) -> Result<usize>;
+    fn to_i256(&self) -> Result<I256>;
+    fn to_u256(&self) -> Result<U256>;
 }
 
 impl ParamValueToRustType for ParamValue {
@@ -26,17 +28,17 @@ impl ParamValueToRustType for ParamValue {
         }
     }
 
-    fn to_isize(&self) -> Result<isize> {
+    fn to_i256(&self) -> Result<I256> {
         match self {
             ParamValue::Int { value, .. } => Ok(*value),
-            ParamValue::UInt { value, .. } => Ok(*value as isize),
+            ParamValue::UInt { value, .. } => Ok(I256::from(*value)),
             _ => bail!("Expected UInt or Int type. Passed {self:?}"),
         }
     }
 
-    fn to_usize(&self) -> Result<usize> {
+    fn to_u256(&self) -> Result<U256> {
         match self {
-            ParamValue::Int { value, .. } => Ok(*value as usize),
+            ParamValue::Int { value, .. } => Ok(U256::from(*value)),
             ParamValue::UInt { value, .. } => Ok(*value),
             _ => bail!("Expected UInt or Int type. Passed {self:?}"),
         }

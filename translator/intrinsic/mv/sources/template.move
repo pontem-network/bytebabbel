@@ -26,11 +26,19 @@ module self::template {
     }
 
     /// API
-    fun bytes_len(data: &vector<u8>): U256 {
-        let len = std::vector::length(data);
+    /// Returnts len of the buffer in bytes plus 4.
+    fun request_buffer_len(data: &vector<u8>): U256 {
+        let len = std::vector::length(data) + 4;
         U256 {
            v0: len, v1: 0, v2: 0, v3: 0
         }
+    }
+
+    //API
+    fun read_request_buffer(data: &vector<u8>, offset: U256): U256 {
+        from_bytes(data, U256 {
+              v0: offset.v0 - 4, v1: 0, v2: 0, v3: 0
+          })
     }
 
     // API
@@ -141,7 +149,7 @@ module self::template {
     fun hash(mem: &mut Memory, position: U256, length: U256): U256 {
         let slice = mslice(mem, position, length);
         let res = std::hash::sha3_256(slice);
-        from_bytes(&res, 0)
+        from_bytes(&res, zero())
     }
 
     fun resize_offset(mem: &mut Memory, offset: u64, len: u64) {
@@ -171,8 +179,8 @@ module self::template {
         std::vector::push_back(&mut buff, 5);
         std::vector::push_back(&mut buff, 6);
         std::vector::push_back(&mut buff, 7);
-        let len = as_u128(bytes_len(&buff));
-        assert!(len == 7, 1);
+        let len = as_u128(request_buffer_len(&buff));
+        assert!(len == 7 + 4, 1);
     }
 
     #[test]
@@ -1227,11 +1235,12 @@ module self::template {
     // API
     fun from_address(addr: &signer): U256 {
         let encoded = std::bcs::to_bytes(addr);
-        from_bytes(&encoded, 0)
+        from_bytes(&encoded, zero())
     }
 
     // API
-    fun from_bytes(bytes: &vector<u8>, offset: u64): U256 {
+    fun from_bytes(bytes: &vector<u8>, offset: U256): U256 {
+        let offset = offset.v0;
         return U256 {
             v0: read_u64(bytes, offset + 24),
             v1: read_u64(bytes, offset + 16),
@@ -1333,9 +1342,9 @@ module self::template {
         let addr = from_address(self);
         let bytes = to_bytes(&addr);
         let val = *std::vector::borrow(&bytes, 7);
-        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
         write(&addr, &mut bytes, 0);
-        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
     }
 
     #[test(self = @0x4213421342134213)]
@@ -1344,9 +1353,9 @@ module self::template {
         let addr = from_address(self);
         let bytes = to_bytes(&addr);
         let val = *std::vector::borrow(&bytes, 7);
-        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
         write(&addr, &mut bytes, 0);
-        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
     }
 
     #[test(self = @0xffeeddccbbaa99887766554433221100f0e0d0c0b0a090807060504030201000)]
@@ -1354,9 +1363,9 @@ module self::template {
         let addr = from_address(self);
         let bytes = to_bytes(&addr);
         let val = *std::vector::borrow(&bytes, 7);
-        assert!(from_bytes(&bytes, 0) == addr, (val as u64));
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
         write(&addr, &mut bytes, 0);
-        assert!(from_bytes(&bytes, 0) == addr, 1);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, 1);
     }
 
     #[test]

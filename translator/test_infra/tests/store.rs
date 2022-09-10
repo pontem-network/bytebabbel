@@ -137,10 +137,11 @@ pub fn test_bool_store() {
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!(format!("\"{}\"", false), actual_f);
+    assert_eq!(format!("[\"{}\"]", false), actual_f);
 
     vm.run("0x42::bool_store::store", "0x42", Some("true"))
         .unwrap();
+
     let actual_f = vm
         .run("0x42::bool_store::load", "0x42", Some(""))
         .unwrap()

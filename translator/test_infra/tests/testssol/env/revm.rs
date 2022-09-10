@@ -126,11 +126,13 @@ impl TryFrom<&EvmPack> for REvm {
 #[allow(unused_imports)]
 #[cfg(test)]
 mod test {
+    use evm::utils::I256;
     use std::ops::Deref;
     use std::path::PathBuf;
     use std::sync::Mutex;
 
     use lazy_static::lazy_static;
+    use primitive_types::U256;
 
     use crate::testssol::env::revm::REvm;
     use crate::testssol::env::sol::build_sol_by_path;
@@ -195,12 +197,12 @@ mod test {
         let tx = call.set_input(0, 2usize).unwrap().encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_isize().unwrap(), 4);
+        assert_eq!(result[0].to_i256().unwrap(), I256::from(U256::from(4)));
 
         let tx = call.set_input(0, 4u8).unwrap().encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_isize().unwrap(), 16);
+        assert_eq!(result[0].to_i256().unwrap(), I256::from(U256::from(16)));
 
         // max_num_tuple
 
@@ -220,8 +222,8 @@ mod test {
             .unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 2);
-        assert_eq!(result[0].to_isize().unwrap(), 2);
-        assert_eq!(result[1].to_usize().unwrap(), 4);
+        assert_eq!(result[0].to_i256().unwrap(), I256::from(U256::from(2)));
+        assert_eq!(result[1].to_u256().unwrap(), U256::from(4));
     }
 
     #[test]

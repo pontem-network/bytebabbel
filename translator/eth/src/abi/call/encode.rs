@@ -1,4 +1,6 @@
 use anyhow::{anyhow, bail, ensure, Result};
+use evm_core::utils::I256;
+use primitive_types::U256;
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::ParamValue;
@@ -44,12 +46,15 @@ pub fn encode_value(
             Ok(ValueEncodeType::Static(result.to_vec()))
         }
         ParamValue::Int { value, .. } => {
-            let value_bytes = value.to_be_bytes();
-            Ok(ValueEncodeType::Static(pad_left32(&value_bytes).to_vec()))
+            let value = U256::from(*value);
+            let mut value_bytes = vec![0u8; 32];
+            value.to_big_endian(&mut value_bytes);
+            Ok(ValueEncodeType::Static(value_bytes))
         }
         ParamValue::UInt { value, .. } => {
-            let value_bytes = value.to_be_bytes();
-            Ok(ValueEncodeType::Static(pad_left32(&value_bytes).to_vec()))
+            let mut value_bytes = vec![0u8; 32];
+            value.to_big_endian(&mut value_bytes);
+            Ok(ValueEncodeType::Static(value_bytes))
         }
         ParamValue::Byte(data) => Ok(ValueEncodeType::Static(pad_right32(data).to_vec())),
         ParamValue::Bytes(data) | ParamValue::String(data) => {
@@ -115,11 +120,11 @@ pub fn decode_value(value: &[u8], value_type: &ParamType) -> Result<ParamValue> 
         }
         ParamType::Int(size) => Ok(ParamValue::Int {
             size: *size,
-            value: to_isize(value),
+            value: to_i256(value),
         }),
         ParamType::UInt(size) => Ok(ParamValue::UInt {
             size: *size,
-            value: to_usize(value),
+            value: to_u256(value),
         }),
         ParamType::Byte(size) => {
             let data = { &value[0..*size as usize] }.to_vec();
@@ -127,7 +132,7 @@ pub fn decode_value(value: &[u8], value_type: &ParamType) -> Result<ParamValue> 
             Ok(ParamValue::Byte(data))
         }
         ParamType::Bytes | ParamType::String => {
-            let len = to_usize(&value[0..32]);
+            let len = to_u256(&value[0..32]).as_usize();
             let data = { &value[32..32 + len] }.to_vec();
             let result = match value_type {
                 ParamType::Bytes => ParamValue::Bytes(data),
@@ -149,9 +154,9 @@ pub fn decode_value(value: &[u8], value_type: &ParamType) -> Result<ParamValue> 
             let len = match len {
                 Some(size) => *size as usize,
                 None => {
-                    let size = to_usize(&value[0..32]);
+                    let size = to_u256(&value[0..32]);
                     value = &value[32..];
-                    size
+                    size.as_usize()
                 }
             };
 
@@ -169,7 +174,7 @@ pub fn decode_value(value: &[u8], value_type: &ParamType) -> Result<ParamValue> 
 
             let result = (0..len)
                 .map(|index| {
-                    let offset = to_usize(&value[32 * index..32 * (index + 1)]);
+                    let offset = to_u256(&value[32 * index..32 * (index + 1)]).as_usize();
                     decode_value(&value[offset..], sub_type)
                 })
                 .collect::<Result<Vec<ParamValue>>>()?;
@@ -192,16 +197,12 @@ fn pad_right32(data: &[u8]) -> [u8; 32] {
     result
 }
 
-pub fn to_usize(data: &[u8]) -> usize {
-    let mut bytes = [0u8; 8];
-    bytes.clone_from_slice(&data[24..32]);
-    usize::from_be_bytes(bytes)
+pub fn to_u256(data: &[u8]) -> U256 {
+    U256::from_big_endian(data)
 }
 
-fn to_isize(data: &[u8]) -> isize {
-    let mut bytes = [0u8; 8];
-    bytes.clone_from_slice(&data[24..32]);
-    isize::from_be_bytes(bytes)
+fn to_i256(data: &[u8]) -> I256 {
+    U256::from_big_endian(data).into()
 }
 
 pub fn enc_offset(start: u32) -> [u8; 32] {
@@ -240,6 +241,7 @@ mod test {
     use crate::abi::call::encode::{decode_value, encode_value, ParamTypeSize};
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
+    use primitive_types::U256;
 
     // https://docs.soliditylang.org/en/v0.8.0/abi-spec.html#examples
 
@@ -341,7 +343,7 @@ mod test {
 
         let tp = ParamType::Int(128);
         let value = { -69i128 }.to_param();
-        let enc = hex::decode("000000000000000000000000000000000000000000000000ffffffffffffffbb")
+        let enc = hex::decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffbb")
             .unwrap();
         assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
         assert_eq!(decode_value(&enc, &tp).unwrap(), value);
@@ -391,15 +393,15 @@ mod test {
         let value = ParamValue::Array(vec![
             ParamValue::UInt {
                 size: 256,
-                value: 1,
+                value: U256::from(1),
             },
             ParamValue::UInt {
                 size: 256,
-                value: 2,
+                value: U256::from(2),
             },
             ParamValue::UInt {
                 size: 256,
-                value: 3,
+                value: U256::from(3),
             },
         ]);
         let enc = hex::decode(
@@ -435,11 +437,11 @@ mod test {
         let value = ParamValue::Array(vec![
             ParamValue::UInt {
                 size: 32,
-                value: 1110,
+                value: U256::from(1110),
             },
             ParamValue::UInt {
                 size: 32,
-                value: 1929,
+                value: U256::from(1929),
             },
         ]);
         let enc = hex::decode(
@@ -473,16 +475,16 @@ mod test {
             ParamValue::Array(vec![
                 ParamValue::UInt {
                     size: 256,
-                    value: 1,
+                    value: U256::from(1),
                 },
                 ParamValue::UInt {
                     size: 256,
-                    value: 2,
+                    value: U256::from(2),
                 },
             ]),
             ParamValue::Array(vec![ParamValue::UInt {
                 size: 256,
-                value: 3,
+                value: U256::from(3),
             }]),
         ]);
 
