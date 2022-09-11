@@ -1,12 +1,12 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::ir::Hir2;
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
 use evm_core::utils::I256;
 use primitive_types::U256;
 use std::ops::{Div, Rem};
+use std::rc::Rc;
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy, Ord, PartialOrd)]
 pub enum UnaryOp {
@@ -30,14 +30,14 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
         let param = params.remove(0);
         if !ctx.is_in_loop() {
             if let Some(param) = param.resolve(ctx) {
-                return ExecutionResult::Output(vec![Expr::Val(self.calc(param))]);
+                return ExecutionResult::Expr(vec![Rc::new(Expr::Val(self.calc(param)))]);
             }
         }
-        ExecutionResult::Output(vec![Expr::UnaryOp(*self, Box::new(param))])
+        ExecutionResult::Expr(vec![Rc::new(Expr::UnaryOp(*self, param))])
     }
 }
 
@@ -67,7 +67,7 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
         let b = params.remove(1);
         let a = params.remove(0);
         if !ctx.is_in_loop() {
@@ -76,14 +76,14 @@ impl InstructionHandler for BinaryOp {
                 let b = b.resolve(ctx);
                 if let (Some(a), Some(b)) = (a, b) {
                     let res = self.calc(a, b);
-                    return ExecutionResult::Output(vec![Expr::Val(res)]);
+                    return ExecutionResult::Expr(vec![Rc::new(Expr::Val(res))]);
                 }
             }
             if self == &BinaryOp::EQ && a == b {
-                return ExecutionResult::Output(vec![Expr::Val(U256::one())]);
+                return ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::one()))]);
             }
         }
-        ExecutionResult::Output(vec![Expr::BinaryOp(*self, Box::new(a), Box::new(b))])
+        ExecutionResult::Expr(vec![Rc::new(Expr::BinaryOp(*self, a, b))])
     }
 }
 
@@ -220,7 +220,7 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
         let op3 = params.remove(2);
         let op2 = params.remove(1);
         let op1 = params.remove(0);
@@ -231,11 +231,11 @@ impl InstructionHandler for TernaryOp {
             let op3 = op3.resolve(ctx);
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
-                return ExecutionResult::Output(vec![Expr::Val(res)]);
+                return ExecutionResult::Expr(vec![Rc::new(Expr::Val(res))]);
             }
         }
-        let expr = Expr::TernaryOp(self.clone(), Box::new(op1), Box::new(op2), Box::new(op3));
-        ExecutionResult::Output(vec![expr])
+        let expr = Expr::TernaryOp(self.clone(), op1, op2, op3);
+        ExecutionResult::Expr(vec![Rc::new(expr)])
     }
 }
 

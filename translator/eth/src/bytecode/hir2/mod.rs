@@ -18,6 +18,7 @@ use crate::{BlockId, Function};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct HirTranslator2<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
@@ -231,13 +232,13 @@ impl<'a> HirTranslator2<'a> {
             let pops = inst.pops();
             let params = ctx.pop_stack(pops);
             ensure!(pops == params.len(), "Invalid stake state.");
-            let res = inst.handle(params, ir, ctx);
+            let res = inst.handle(params, ctx);
             match res {
                 ExecutionResult::Abort(code) => {
                     return Ok(BlockResult::Abort(code));
                 }
                 ExecutionResult::None => {}
-                ExecutionResult::Output(stack) => {
+                ExecutionResult::Expr(stack) => {
                     ensure!(stack.len() == inst.pushes(), "Invalid stake state.");
                     ctx.push_stack(stack);
                 }
@@ -261,10 +262,13 @@ impl<'a> HirTranslator2<'a> {
                         false_br,
                     });
                 }
+                ExecutionResult::Statement(st) => {
+                    ir.add_statement(st);
+                }
             }
         }
         Ok(BlockResult::Jmp(
-            Expr::Val(U256::zero()),
+            Rc::new(Expr::Val(U256::zero())),
             block.last().map(|i| BlockId(i.next())).unwrap_or_default(),
         ))
     }
@@ -278,16 +282,16 @@ pub enum StopFlag {
 
 #[derive(Debug)]
 pub enum BlockResult {
-    Jmp(Expr, BlockId),
+    Jmp(Rc<Expr>, BlockId),
     CndJmp {
-        cnd: Expr,
+        cnd: Rc<Expr>,
         true_br: BlockId,
         false_br: BlockId,
     },
     Stop,
     Result {
-        offset: Expr,
-        len: Expr,
+        offset: Rc<Expr>,
+        len: Rc<Expr>,
     },
     Abort(u8),
 }

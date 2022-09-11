@@ -43,11 +43,11 @@ impl Context {
         &self.vars
     }
 
-    pub fn pop_stack(&mut self, pops: usize) -> Vec<Expr> {
+    pub fn pop_stack(&mut self, pops: usize) -> Vec<Rc<Expr>> {
         self.stack.pop(pops)
     }
 
-    pub fn push_stack(&mut self, to_push: Vec<Expr>) {
+    pub fn push_stack(&mut self, to_push: Vec<Rc<Expr>>) {
         self.stack.push(to_push)
     }
 

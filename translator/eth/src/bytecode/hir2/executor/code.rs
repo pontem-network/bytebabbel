@@ -1,8 +1,8 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::ir::Hir2;
 use primitive_types::U256;
+use std::rc::Rc;
 
 pub enum CodeOp {
     CodeSize,
@@ -19,10 +19,10 @@ pub enum CodeOp {
 }
 
 impl InstructionHandler for CodeOp {
-    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
         match self {
             CodeOp::CodeSize => {
-                ExecutionResult::Output(vec![Expr::Val(U256::from(ctx.code_size()))])
+                ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::from(ctx.code_size())))])
             }
             CodeOp::CallDataCopy => {
                 todo!()

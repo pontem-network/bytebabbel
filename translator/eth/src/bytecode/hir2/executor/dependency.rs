@@ -1,27 +1,27 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::ir::Hir2;
 use primitive_types::U256;
+use std::rc::Rc;
 
 pub struct Sha3;
 
 impl InstructionHandler for Sha3 {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
         let len = params.remove(1);
         let offset = params.remove(0);
-        ExecutionResult::Output(vec![Expr::Hash {
-            mem_offset: Box::new(offset),
-            mem_len: Box::new(len),
-        }])
+        ExecutionResult::Expr(vec![Rc::new(Expr::Hash {
+            mem_offset: offset,
+            mem_len: len,
+        })])
     }
 }
 
 pub struct Address;
 
 impl InstructionHandler for Address {
-    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
-        ExecutionResult::Output(vec![Expr::Val(ctx.address())])
+    fn handle(&self, _: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+        ExecutionResult::Expr(vec![Rc::new(Expr::Val(ctx.address()))])
     }
 }
 
@@ -43,12 +43,12 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => U256::zero(),
             TxMeta::Origin => U256::zero(),
             TxMeta::Caller => {
-                return ExecutionResult::Output(vec![Expr::Signer]);
+                return ExecutionResult::Expr(vec![Rc::new(Expr::Signer)]);
             }
             TxMeta::CallValue => U256::zero(),
             TxMeta::CallDataLoad => {
@@ -61,13 +61,15 @@ impl InstructionHandler for TxMeta {
                         if offset.is_zero() {
                             let mut buf = [0u8; 32];
                             buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
-                            return ExecutionResult::Output(vec![Expr::Val(U256::from(buf))]);
+                            return ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::from(
+                                buf,
+                            )))]);
                         }
                     }
                 }
-                return ExecutionResult::Output(vec![Expr::Args {
-                    args_offset: Box::new(offset),
-                }]);
+                return ExecutionResult::Expr(vec![Rc::new(Expr::Args {
+                    args_offset: offset,
+                })]);
             }
             TxMeta::CallDataSize => {
                 let expr = if ctx.is_static_analysis_enable() {
@@ -75,7 +77,7 @@ impl InstructionHandler for TxMeta {
                 } else {
                     Expr::ArgsSize
                 };
-                return ExecutionResult::Output(vec![expr]);
+                return ExecutionResult::Expr(vec![Rc::new(expr)]);
             }
             TxMeta::Blockhash => U256::zero(),
             TxMeta::Timestamp => U256::zero(),
@@ -86,6 +88,6 @@ impl InstructionHandler for TxMeta {
             TxMeta::GasLimit => U256::MAX,
             TxMeta::Gas => U256::MAX,
         };
-        ExecutionResult::Output(vec![Expr::Val(val)])
+        ExecutionResult::Expr(vec![Rc::new(Expr::Val(val))])
     }
 }

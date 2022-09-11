@@ -1,36 +1,37 @@
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::VarId;
 use crate::BlockId;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    SetVar(VarId, Expr),
+    SetVar(VarId, Rc<Expr>),
     MemStore8 {
-        addr: Expr,
-        var: Expr,
+        addr: Rc<Expr>,
+        var: Rc<Expr>,
     },
     MemStore {
-        addr: Expr,
-        var: Expr,
+        addr: Rc<Expr>,
+        var: Rc<Expr>,
     },
     SStore {
-        addr: Expr,
-        var: Expr,
+        addr: Rc<Expr>,
+        var: Rc<Expr>,
     },
     Log {
-        offset: Expr,
-        len: Expr,
-        topics: Vec<Expr>,
+        offset: Rc<Expr>,
+        len: Rc<Expr>,
+        topics: Vec<Rc<Expr>>,
     },
     If {
-        condition: Expr,
+        condition: Rc<Expr>,
         true_branch: Vec<Statement>,
         false_branch: Vec<Statement>,
     },
     Loop {
         id: BlockId,
         condition_block: Vec<Statement>,
-        condition: Expr,
+        condition: Rc<Expr>,
         is_true_br_loop: bool,
         loop_br: Vec<Statement>,
     },
@@ -41,7 +42,7 @@ pub enum Statement {
     Stop,
     Abort(u8),
     Result {
-        offset: Expr,
-        len: Expr,
+        offset: Rc<Expr>,
+        len: Rc<Expr>,
     },
 }
