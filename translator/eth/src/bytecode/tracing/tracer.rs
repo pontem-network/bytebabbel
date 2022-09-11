@@ -2,7 +2,7 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
 use anyhow::{anyhow, Error};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 pub struct Tracer<'a> {
@@ -199,9 +199,11 @@ impl<'a> Tracer<'a> {
     fn calculate_io(&self) -> Result<HashMap<BlockId, BlockIO>, Error> {
         let mut io: HashMap<BlockId, BlockIO> = HashMap::new();
         for (id, block) in self.blocks {
-            //let mut block_io = BlockIO::default();
             let mut exec = Executor::default();
             let res = exec.exec_one(block);
+
+            let outputs = res.output.into_iter().map(|i| (i.offset(), i)).collect();
+
             let inputs = res
                 .input
                 .into_iter()
@@ -211,13 +213,7 @@ impl<'a> Tracer<'a> {
                 })
                 .collect::<Result<_, _>>()?;
 
-            io.insert(
-                *id,
-                BlockIO {
-                    inputs,
-                    output: res.output,
-                },
-            );
+            io.insert(*id, BlockIO { inputs, outputs });
         }
         Ok(io)
     }
@@ -262,8 +258,8 @@ pub struct FlowTrace {
 
 pub type ID = usize;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockIO {
     pub inputs: Vec<(ID, BlockId)>,
-    pub output: Vec<StackItem>,
+    pub outputs: BTreeMap<BlockId, StackItem>,
 }

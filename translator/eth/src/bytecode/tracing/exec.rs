@@ -130,7 +130,7 @@ impl Executor {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum StackItem {
     Negative { id: usize, offset: BlockId },
     Positive { value: BlockId, offset: BlockId },

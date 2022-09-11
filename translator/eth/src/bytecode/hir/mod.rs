@@ -219,8 +219,6 @@ impl<'a> HirTranslator<'a> {
                 true_br,
                 false_br,
             } => {
-                if ctx.is_in_loop() {}
-
                 ensure!(true_br == if_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == if_.jmp.false_br, "invalid false_br");
                 let instructions = ir.swap_instruction(vec![]);
@@ -242,9 +240,6 @@ impl<'a> HirTranslator<'a> {
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
         let block = self.get_block(id)?;
-        let io = self.get_io(id)?;
-        println!("block: {:?} ", id);
-        println!("io: {:?}", io);
         for inst in block.iter() {
             let pops = inst.pops();
             let params = ctx.pop_stack(pops);
