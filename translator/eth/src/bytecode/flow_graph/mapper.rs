@@ -84,7 +84,7 @@ impl Mapper {
                 }
             }
             (false, false) => {
-                // IF
+                //IF
                 // let common_tail = block.take_common_fail().into_iter().collect::<Vec<_>>();
 
                 seq.push(Flow::IF(IfFlow {

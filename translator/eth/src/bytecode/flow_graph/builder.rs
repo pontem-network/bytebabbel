@@ -4,6 +4,7 @@ use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, OpCode};
+use anyhow::Error;
 use primitive_types::U256;
 use std::collections::{HashMap, VecDeque};
 use std::usize;
@@ -16,13 +17,13 @@ pub struct FlowBuilder<'a> {
 }
 
 impl<'a> FlowBuilder<'a> {
-    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>) -> FlowBuilder<'a> {
-        FlowBuilder {
+    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>) -> Result<FlowBuilder<'a>, Error> {
+        Ok(FlowBuilder {
             call_stack: Vec::new(),
             block: Default::default(),
             blocks,
-            flow_trace: Tracer::new(blocks).trace(),
-        }
+            flow_trace: Tracer::new(blocks).trace()?,
+        })
     }
 
     pub fn make_flow(&mut self) -> Flow {

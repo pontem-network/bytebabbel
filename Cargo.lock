@@ -2516,20 +2516,24 @@ dependencies = [
 
 [[package]]
 name = "e2m"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "aptos",
  "aptos-types",
  "aptos-vm",
- "base32",
+ "bcs",
+ "cached-packages",
  "clap 3.2.20",
  "env_logger",
+ "framework",
+ "hex",
  "log",
+ "move-binary-format 0.0.3 (git+https://github.com/move-language/move?rev=4bdf8d3e76ffaab5c83eda2fa55dfe136c380675)",
  "move-core-types 0.0.4 (git+https://github.com/move-language/move?rev=4bdf8d3e76ffaab5c83eda2fa55dfe136c380675)",
  "serde_json",
  "serde_yaml 0.8.26",
- "sha2 0.10.5",
+ "sha2 0.9.9",
  "tempfile",
  "tokio",
  "translator",

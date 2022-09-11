@@ -119,6 +119,7 @@ impl<'a> TryFrom<&'a AbiType> for EthType {
         Ok(match value.tp {
             ParamType::Bool => EthType::Bool,
             ParamType::UInt(_) | ParamType::Int(_) => EthType::U256,
+            ParamType::String => EthType::Bytes,
             _ => bail!("Unknown type: {}", value.tp.to_string()),
         })
     }
