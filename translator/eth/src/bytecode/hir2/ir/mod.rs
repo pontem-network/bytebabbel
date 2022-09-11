@@ -22,12 +22,3 @@ impl Hir2 {
         self.statements
     }
 }
-
-#[derive(Hash, Eq, PartialEq, Copy, Clone, Default, Debug, Ord, PartialOrd)]
-pub struct VarId(u64);
-
-impl VarId {
-    pub fn index(&self) -> u64 {
-        self.0
-    }
-}

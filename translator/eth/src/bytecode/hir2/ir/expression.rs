@@ -1,6 +1,6 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::ir::VarId;
+use crate::bytecode::hir2::vars::VarId;
 use primitive_types::U256;
 use std::rc::Rc;
 
@@ -35,7 +35,7 @@ impl Expr {
             Expr::Val(val) => {
                 return Some(*val);
             }
-            Expr::Var(var) => ctx.vars().get(var)?.resolve(ctx),
+            Expr::Var(var) => ctx.vars().get(var)?.0.resolve(ctx),
             Expr::MLoad { .. } => None,
             Expr::SLoad { .. } => None,
             Expr::Signer => None,

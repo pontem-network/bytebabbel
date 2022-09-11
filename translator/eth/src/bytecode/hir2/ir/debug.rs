@@ -30,20 +30,20 @@ fn write_statements(inst: &[Statement], buf: &mut String, width: usize) -> Resul
 
 fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(), Error> {
     match inst {
-        Statement::SetVar(id, expr) => {
-            write!(buf, "{:width$}let var{:?} = ", " ", id.0)?;
+        Statement::Assign { var, expr } => {
+            write!(buf, "{:width$}let var{:?} = ", " ", var.index())?;
             print_var_expression(expr, buf)?;
             writeln!(buf, ";")?;
         }
         Statement::MemStore8 { addr, var } => {
-            write!(buf, "{:width$}store8[", " ",)?;
+            write!(buf, "{:width$}mem8[", " ",)?;
             print_var_expression(addr, buf)?;
             write!(buf, "] = ")?;
             print_var_expression(var, buf)?;
             writeln!(buf, ";")?;
         }
         Statement::MemStore { addr, var } => {
-            write!(buf, "{:width$}store[", " ",)?;
+            write!(buf, "{:width$}mem[", " ",)?;
             print_var_expression(addr, buf)?;
             write!(buf, "] = ")?;
             print_var_expression(var, buf)?;
@@ -83,7 +83,7 @@ fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
             print_var_expression(condition, buf)?;
             writeln!(buf, " {{")?;
             write_statements(true_branch, buf, width + 4)?;
-            write!(buf, "{:width$}}} else {{", " ", width = width)?;
+            writeln!(buf, "{:width$}}} else {{", " ", width = width)?;
             write_statements(false_branch, buf, width + 4)?;
             writeln!(buf, "{:width$}}}", " ", width = width)?;
         }
@@ -100,7 +100,7 @@ fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
             print_var_expression(condition, buf)?;
             writeln!(buf, " {{")?;
             write_statements(loop_br, buf, width + 8)?;
-            write!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
+            writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
             if *is_true_br_loop {
                 writeln!(buf, "{:width$}break {:?};", " ", id, width = width + 8)?;
             } else {
@@ -112,7 +112,7 @@ fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::Continue { loop_id, context } => {
             write!(buf, "{:width$}{{", " ")?;
             write_statements(context, buf, width + 4)?;
-            write!(buf, "{:width$}}}", " ")?;
+            writeln!(buf, "{:width$}}}", " ")?;
             writeln!(buf, "{:width$}continue {:?};", " ", loop_id)?;
         }
         Statement::Stop => {
@@ -121,7 +121,13 @@ fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
         Statement::Abort(code) => {
             writeln!(buf, "{:width$}abort({});", " ", code)?;
         }
-        Statement::Result { .. } => {}
+        Statement::Result { offset, len } => {
+            write!(buf, "{:width$}return mem[", " ",)?;
+            print_var_expression(offset, buf)?;
+            write!(buf, ":+")?;
+            print_var_expression(len, buf)?;
+            writeln!(buf, "];")?;
+        }
     }
     Ok(())
 }
@@ -132,7 +138,7 @@ fn print_var_expression(expr: &Expr, buf: &mut String) -> Result<(), Error> {
             write!(buf, "{:?}", val)?;
         }
         Expr::Var(var) => {
-            write!(buf, "var{:?}", var.0)?;
+            write!(buf, "var{:?}", var.index())?;
         }
         Expr::MLoad { mem_offset } => {
             write!(buf, "mem[")?;
@@ -159,20 +165,25 @@ fn print_var_expression(expr: &Expr, buf: &mut String) -> Result<(), Error> {
             write!(buf, "]")?;
         }
         Expr::UnaryOp(cmd, op) => {
-            write!(buf, "{:?}", cmd)?;
+            write!(buf, "({}", cmd)?;
             print_var_expression(op, buf)?;
+            write!(buf, ")")?;
         }
         Expr::BinaryOp(cmd, op1, op2) => {
+            write!(buf, "(")?;
             print_var_expression(op1, buf)?;
-            write!(buf, " {:?} ", cmd)?;
+            write!(buf, " {} ", cmd)?;
             print_var_expression(op2, buf)?;
+            write!(buf, ")")?;
         }
         Expr::TernaryOp(cmd, op, op1, op2) => {
+            write!(buf, "(")?;
             print_var_expression(op, buf)?;
-            write!(buf, " {:?} ", cmd)?;
+            write!(buf, " {} ", cmd)?;
             print_var_expression(op1, buf)?;
             write!(buf, " : ")?;
             print_var_expression(op2, buf)?;
+            write!(buf, ")")?;
         }
         Expr::Hash {
             mem_offset,

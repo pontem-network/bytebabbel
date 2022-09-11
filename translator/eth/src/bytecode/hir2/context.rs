@@ -1,6 +1,7 @@
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::stack::Stack;
-use crate::bytecode::hir2::vars::Vars;
+use crate::bytecode::hir2::vars::{VarId, Vars};
+use crate::bytecode::tracing::exec::StackItem;
 use crate::bytecode::types::Env;
 use primitive_types::U256;
 use std::rc::Rc;
@@ -41,6 +42,10 @@ impl Context {
 
     pub fn vars(&self) -> &Vars {
         &self.vars
+    }
+
+    pub fn push_var(&mut self, expr: Rc<Expr>, stack_item: StackItem) -> VarId {
+        self.vars.insert(expr, stack_item)
     }
 
     pub fn pop_stack(&mut self, pops: usize) -> Vec<Rc<Expr>> {

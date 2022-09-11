@@ -1,11 +1,14 @@
 use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::ir::VarId;
+use crate::bytecode::hir2::vars::VarId;
 use crate::BlockId;
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    SetVar(VarId, Rc<Expr>),
+    Assign {
+        var: VarId,
+        expr: Rc<Expr>,
+    },
     MemStore8 {
         addr: Rc<Expr>,
         var: Rc<Expr>,

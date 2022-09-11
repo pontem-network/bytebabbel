@@ -119,7 +119,7 @@ impl<'a> HirTranslator2<'a> {
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
 
                 let mut loop_ir = Default::default();
-                self.exec_flow(loop_.br.flow(), &mut loop_ir, &mut ctx.inherit())?;
+                self.exec_flow(loop_.br.flow(), &mut loop_ir, ctx)?;
                 ctx.exit_loop();
 
                 ir.add_statement(Statement::Loop {
@@ -228,17 +228,39 @@ impl<'a> HirTranslator2<'a> {
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
         let block = self.get_block(id)?;
+        let io = self.get_block_io(id)?;
+        // println!("-------------------");
+        // println!("block {:?}", id);
+        // println!("io {:?}", io);
+        // println!();
+        // println!();
+
         for inst in block.iter() {
             let pops = inst.pops();
             let params = ctx.pop_stack(pops);
             ensure!(pops == params.len(), "Invalid stake state.");
             let res = inst.handle(params, ctx);
+
             match res {
                 ExecutionResult::Abort(code) => {
                     return Ok(BlockResult::Abort(code));
                 }
                 ExecutionResult::None => {}
-                ExecutionResult::Expr(stack) => {
+                ExecutionResult::Expr(mut stack) => {
+                    if let Some(si) = io.outputs.get(&inst.0) {
+                        if si.is_positive() {
+                            let expr = stack.get_mut(0).unwrap();
+                            let var = ctx.push_var(expr.clone(), si.clone());
+                            ir.add_statement(Statement::Assign {
+                                var,
+                                expr: expr.clone(),
+                            });
+                            *expr = Rc::new(Expr::Var(var));
+
+                            // println!("pushing {:?}", stack);
+                            // println!("item {:?}", si);
+                        }
+                    }
                     ensure!(stack.len() == inst.pushes(), "Invalid stake state.");
                     ctx.push_stack(stack);
                 }

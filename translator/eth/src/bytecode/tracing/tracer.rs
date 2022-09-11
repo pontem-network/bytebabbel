@@ -1,4 +1,5 @@
 use crate::bytecode::block::InstructionBlock;
+use crate::bytecode::instruction::Offset;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
 use anyhow::{anyhow, Error};
@@ -202,7 +203,7 @@ impl<'a> Tracer<'a> {
             let mut exec = Executor::default();
             let res = exec.exec_one(block);
 
-            let outputs = res.output.into_iter().map(|i| (i.offset(), i)).collect();
+            let outputs = res.output.into_iter().map(|i| (i.offset().0, i)).collect();
 
             let inputs = res
                 .input
@@ -261,5 +262,5 @@ pub type ID = usize;
 #[derive(Debug, Clone)]
 pub struct BlockIO {
     pub inputs: Vec<(ID, BlockId)>,
-    pub outputs: BTreeMap<BlockId, StackItem>,
+    pub outputs: BTreeMap<Offset, StackItem>,
 }

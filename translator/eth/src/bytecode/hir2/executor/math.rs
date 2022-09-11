@@ -5,6 +5,7 @@ use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
 use evm_core::utils::I256;
 use primitive_types::U256;
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Div, Rem};
 use std::rc::Rc;
 
@@ -38,6 +39,15 @@ impl InstructionHandler for UnaryOp {
             }
         }
         ExecutionResult::Expr(vec![Rc::new(Expr::UnaryOp(*self, param))])
+    }
+}
+
+impl Display for UnaryOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnaryOp::IsZero => write!(f, "0 == "),
+            UnaryOp::Not => write!(f, "!"),
+        }
     }
 }
 
@@ -213,6 +223,34 @@ impl BinaryOp {
     }
 }
 
+impl Display for BinaryOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinaryOp::EQ => write!(f, "=="),
+            BinaryOp::Lt => write!(f, "<"),
+            BinaryOp::Gt => write!(f, ">"),
+            BinaryOp::Shr => write!(f, ">>"),
+            BinaryOp::Shl => write!(f, "<<"),
+            BinaryOp::Sar => write!(f, ">>>"),
+            BinaryOp::Add => write!(f, "+"),
+            BinaryOp::And => write!(f, "&"),
+            BinaryOp::Or => write!(f, "|"),
+            BinaryOp::Xor => write!(f, "^"),
+            BinaryOp::Mul => write!(f, "*"),
+            BinaryOp::Sub => write!(f, "-"),
+            BinaryOp::Div => write!(f, "/"),
+            BinaryOp::SDiv => write!(f, "//"),
+            BinaryOp::SLt => write!(f, "<"),
+            BinaryOp::SGt => write!(f, ">"),
+            BinaryOp::Byte => write!(f, "#"),
+            BinaryOp::Mod => write!(f, "%"),
+            BinaryOp::SMod => write!(f, "%%"),
+            BinaryOp::Exp => write!(f, "**"),
+            BinaryOp::SignExtend => write!(f, "***"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum TernaryOp {
     AddMod,
@@ -244,6 +282,19 @@ impl TernaryOp {
         match self {
             TernaryOp::AddMod => arithmetic::addmod(op1, op2, op3),
             TernaryOp::MulMod => arithmetic::mulmod(op1, op2, op3),
+        }
+    }
+}
+
+impl Display for TernaryOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TernaryOp::AddMod => {
+                write!(f, "addmod")
+            }
+            TernaryOp::MulMod => {
+                write!(f, "mulmod")
+            }
         }
     }
 }
