@@ -18,7 +18,10 @@ impl Executor {
         for _ in 0..count {
             res.push(self.call_stack.pop().unwrap_or_else(|| {
                 self.negative_stack_seq += 1;
-                StackItem::Negative(self.negative_stack_seq, offset)
+                StackItem::Negative {
+                    id: self.negative_stack_seq,
+                    offset: BlockId(offset),
+                }
             }));
         }
         res
@@ -54,7 +57,10 @@ impl Executor {
                     let jmp = ops.remove(0);
                     return Next::Cnd(
                         jmp,
-                        StackItem::Positive(BlockId(inst.next()), inst.offset()),
+                        StackItem::Positive {
+                            value: BlockId(inst.next()),
+                            offset: BlockId(inst.offset()),
+                        },
                     );
                 }
                 OpCode::Return | OpCode::Stop | OpCode::Revert | OpCode::SelfDestruct => {
@@ -73,15 +79,12 @@ impl Executor {
                 OpCode::Push(val) => {
                     let val = U256::from(val.as_slice());
                     if val <= U256::from(u32::MAX) {
-                        self.push_stack(vec![StackItem::Positive(
-                            BlockId::from(val.as_usize()),
-                            inst.offset(),
-                        )]);
+                        self.push_stack(vec![StackItem::Positive {
+                            value: BlockId::from(val.as_usize()),
+                            offset: BlockId(inst.offset()),
+                        }]);
                     } else {
-                        self.push_stack(vec![StackItem::Positive(
-                            BlockId::default(),
-                            inst.offset(),
-                        )]);
+                        self.push_stack(vec![StackItem::Calc(BlockId(inst.offset()))]);
                     }
                 }
                 _ => {
@@ -95,7 +98,7 @@ impl Executor {
                     if pushes > 0 {
                         self.push_stack(
                             (0..pushes)
-                                .map(|_| StackItem::Positive(BlockId::default(), inst.offset()))
+                                .map(|_| StackItem::Calc(BlockId(inst.offset())))
                                 .collect(),
                         );
                     }
@@ -104,7 +107,12 @@ impl Executor {
         }
         block
             .last()
-            .map(|last| Next::Jmp(StackItem::Positive(BlockId(last.next()), last.offset())))
+            .map(|last| {
+                Next::Jmp(StackItem::Positive {
+                    value: BlockId(last.next()),
+                    offset: BlockId(last.offset()),
+                })
+            })
             .unwrap_or(Next::Stop)
     }
 
@@ -124,15 +132,15 @@ impl Executor {
 
 #[derive(Clone, Copy, Debug)]
 pub enum StackItem {
-    Negative(usize, Offset),
-    Positive(BlockId, Offset),
-    Calc(usize, Offset),
+    Negative { id: usize, offset: BlockId },
+    Positive { value: BlockId, offset: BlockId },
+    Calc(BlockId),
 }
 
 impl StackItem {
     pub fn is_negative(&self) -> bool {
         match self {
-            StackItem::Negative(_, _) => true,
+            StackItem::Negative { .. } => true,
             _ => false,
         }
     }
@@ -143,16 +151,26 @@ impl StackItem {
 
     pub fn as_positive(&self) -> Result<BlockId, Error> {
         match self {
-            StackItem::Positive(id, _) => Ok(*id),
-            StackItem::Negative(id, _) => Err(anyhow!("Negative stack item: {} as jump", id)),
-            StackItem::Calc(_, _) => Err(anyhow!("Calc stack item as jump")),
+            StackItem::Positive { value, offset: _ } => Ok(*value),
+            StackItem::Negative { id, offset: _ } => {
+                Err(anyhow!("Negative stack item: {} as jump", id))
+            }
+            StackItem::Calc(_) => Err(anyhow!("Calc stack item as jump")),
         }
     }
 
-    pub fn as_negative(&self) -> Option<usize> {
+    pub fn as_negative(&self) -> Option<(usize, BlockId)> {
         match self {
-            StackItem::Negative(id, _) => Some(*id),
+            StackItem::Negative { id, offset } => Some((*id, *offset)),
             _ => None,
+        }
+    }
+
+    pub fn offset(&self) -> BlockId {
+        match self {
+            StackItem::Negative { offset, .. } => *offset,
+            StackItem::Positive { offset, .. } => *offset,
+            StackItem::Calc(offset) => *offset,
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::tracing::exec::{Executor, Next};
+use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -19,7 +19,7 @@ impl<'a> Tracer<'a> {
     }
 
     pub fn trace(&mut self) -> Result<FlowTrace, Error> {
-        let io = self.calculate_io();
+        let io = self.calculate_io()?;
         let loops = self.clone().find_loops()?;
         let funcs = self.clone().find_funcs(&loops);
         Ok(FlowTrace { io, funcs, loops })
@@ -80,9 +80,7 @@ impl<'a> Tracer<'a> {
     }
 
     fn check_func(&self, id: &BlockId, fun: &Func, _loops: &HashMap<BlockId, Loop>) -> bool {
-        println!("check_func: {:?}", id);
-        println!("check_func: {:?}", fun);
-        //todo
+        //todo filter out functions that are not really functions)
         true
     }
 
@@ -198,18 +196,30 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    fn calculate_io(&self) -> HashMap<BlockId, BlockIO> {
+    fn calculate_io(&self) -> Result<HashMap<BlockId, BlockIO>, Error> {
         let mut io: HashMap<BlockId, BlockIO> = HashMap::new();
         for (id, block) in self.blocks {
             //let mut block_io = BlockIO::default();
             let mut exec = Executor::default();
             let res = exec.exec_one(block);
-            println!("block: {:?}", id);
-            println!("block: {:?}", res);
-        }
-        io;
+            let inputs = res
+                .input
+                .into_iter()
+                .map(|i| {
+                    i.as_negative()
+                        .ok_or_else(|| anyhow!("Invalid input: {:?}. Block:{}", i, id))
+                })
+                .collect::<Result<_, _>>()?;
 
-        panic!()
+            io.insert(
+                *id,
+                BlockIO {
+                    inputs,
+                    output: res.output,
+                },
+            );
+        }
+        Ok(io)
     }
 }
 
@@ -250,10 +260,10 @@ pub struct FlowTrace {
     pub loops: HashMap<BlockId, Loop>,
 }
 
-pub type ID = u64;
+pub type ID = usize;
 
 #[derive(Debug)]
 pub struct BlockIO {
-    pub inputs: Vec<ID>,
-    pub output: Vec<ID>,
+    pub inputs: Vec<(ID, BlockId)>,
+    pub output: Vec<StackItem>,
 }

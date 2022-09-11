@@ -46,8 +46,10 @@ pub fn transpile_program(
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
 
-    let contract_flow = FlowBuilder::new(&contract)?.make_flow();
-    let hir = HirTranslator::new(&contract, contract_flow);
+    let mut flow_builder = FlowBuilder::new(&contract)?;
+    let contract_flow = flow_builder.make_flow();
+    let block_io = flow_builder.block_io();
+    let hir = HirTranslator::new(&contract, contract_flow, block_io);
 
     let functions = abi
         .functions()

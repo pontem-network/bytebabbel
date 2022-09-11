@@ -13,6 +13,7 @@ use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
+use crate::bytecode::tracing::tracer::BlockIO;
 use crate::bytecode::types::{Env, Function};
 use crate::BlockId;
 use anyhow::{anyhow, bail, ensure, Error};
@@ -23,16 +24,19 @@ use std::fmt::Debug;
 pub struct HirTranslator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
     contact_flow: Flow,
+    block_io: HashMap<BlockId, BlockIO>,
 }
 
 impl<'a> HirTranslator<'a> {
     pub fn new(
         contract: &'a HashMap<BlockId, InstructionBlock>,
         contact_flow: Flow,
+        block_io: HashMap<BlockId, BlockIO>,
     ) -> HirTranslator {
         HirTranslator {
             contract,
             contact_flow,
+            block_io,
         }
     }
 
@@ -54,6 +58,12 @@ impl<'a> HirTranslator<'a> {
         self.contract
             .get(block_id)
             .ok_or_else(|| anyhow!("block not found"))
+    }
+
+    fn get_io(&self, block_id: &BlockId) -> Result<&BlockIO, Error> {
+        self.block_io
+            .get(block_id)
+            .ok_or_else(|| anyhow!("block io not found"))
     }
 
     fn exec_flow(&self, flow: &Flow, ir: &mut Hir, ctx: &mut Context) -> Result<StopFlag, Error> {
@@ -232,6 +242,9 @@ impl<'a> HirTranslator<'a> {
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
         let block = self.get_block(id)?;
+        let io = self.get_io(id)?;
+        println!("block: {:?} ", id);
+        println!("io: {:?}", io);
         for inst in block.iter() {
             let pops = inst.pops();
             let params = ctx.pop_stack(pops);
@@ -279,12 +292,6 @@ impl<'a> HirTranslator<'a> {
 pub enum StopFlag {
     Continue,
     Stop,
-}
-
-#[derive(Debug, Default)]
-pub struct BlockIO {
-    pub inputs: Vec<VarId>,
-    pub outputs: Vec<VarId>,
 }
 
 #[derive(Debug)]

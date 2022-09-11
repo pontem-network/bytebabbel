@@ -118,10 +118,9 @@ impl Mapper {
                 seq.push(self.map_branch(element.clone()));
             } else {
                 index += 1;
+                seq.push(Flow::Block(block));
                 if let Some(block) = self.loop_map.get(&block) {
                     seq.push(Flow::Continue(*block));
-                } else {
-                    seq.push(Flow::Block(block));
                 }
             }
         }
