@@ -7,7 +7,7 @@ use primitive_types::U256;
 pub struct Sha3;
 
 impl InstructionHandler for Sha3 {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
         let len = params.remove(1);
         let offset = params.remove(0);
         ExecutionResult::Output(vec![Expr::Hash {
@@ -20,7 +20,7 @@ impl InstructionHandler for Sha3 {
 pub struct Address;
 
 impl InstructionHandler for Address {
-    fn handle(&self, _: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         ExecutionResult::Output(vec![Expr::Val(ctx.address())])
     }
 }
@@ -43,7 +43,7 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => U256::zero(),
             TxMeta::Origin => U256::zero(),

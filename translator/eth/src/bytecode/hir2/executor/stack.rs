@@ -12,7 +12,7 @@ pub enum StackOp {
 }
 
 impl InstructionHandler for StackOp {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
         match self {
             StackOp::Push(val) => {
                 ExecutionResult::Output(vec![Expr::Val(U256::from(val.as_slice()))])

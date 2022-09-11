@@ -79,7 +79,7 @@ impl<'a> Tracer<'a> {
             .collect()
     }
 
-    fn check_func(&self, id: &BlockId, fun: &Func, _loops: &HashMap<BlockId, Loop>) -> bool {
+    fn check_func(&self, _id: &BlockId, _fun: &Func, _loops: &HashMap<BlockId, Loop>) -> bool {
         //todo filter out functions that are not really functions)
         true
     }

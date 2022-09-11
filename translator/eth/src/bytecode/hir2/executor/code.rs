@@ -19,7 +19,7 @@ pub enum CodeOp {
 }
 
 impl InstructionHandler for CodeOp {
-    fn handle(&self, ops: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         match self {
             CodeOp::CodeSize => {
                 ExecutionResult::Output(vec![Expr::Val(U256::from(ctx.code_size()))])

@@ -1,12 +1,14 @@
+use crate::bytecode::hir2::ir::expression::Expr;
+use crate::bytecode::hir2::stack::Stack;
 use crate::bytecode::hir2::vars::Vars;
 use crate::bytecode::types::Env;
 use primitive_types::U256;
 use std::rc::Rc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Context {
     address: U256,
-    // stack: Stack,
+    stack: Stack,
     env: Rc<Env>,
     // loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
@@ -19,7 +21,7 @@ impl Context {
     pub fn new(env: Env, contract_address: U256, code_size: u128) -> Context {
         Context {
             address: contract_address,
-            // stack: Stack::default(),
+            stack: Stack::default(),
             env: Rc::new(env),
             // loop_input: Default::default(),
             loop_stack_size: 0,
@@ -41,13 +43,13 @@ impl Context {
         &self.vars
     }
 
-    // pub fn pop_stack(&mut self, pops: usize) -> Vec<VarId> {
-    //     self.stack.pop(pops)
-    // }
-    //
-    // pub fn push_stack(&mut self, to_push: Vec<VarId>) {
-    //     self.stack.push(to_push)
-    // }
+    pub fn pop_stack(&mut self, pops: usize) -> Vec<Expr> {
+        self.stack.pop(pops)
+    }
+
+    pub fn push_stack(&mut self, to_push: Vec<Expr>) {
+        self.stack.push(to_push)
+    }
 
     pub fn env(&self) -> &Env {
         self.env.as_ref()
@@ -95,10 +97,16 @@ impl Context {
     pub fn exit_loop(&mut self) {
         self.loop_stack_size -= 1;
     }
-}
 
-// #[derive(Debug, Clone)]
-// pub struct MapStackItem {
-//     pub origin: VarId,
-//     pub new: VarId,
-// }
+    pub fn inherit(&self) -> Context {
+        Context {
+            address: self.address,
+            stack: self.stack.clone(),
+            env: self.env.clone(),
+            loop_stack_size: self.loop_stack_size,
+            static_analysis: self.static_analysis,
+            code_size: self.code_size,
+            vars: self.vars.clone(),
+        }
+    }
+}

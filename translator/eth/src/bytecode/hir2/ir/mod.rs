@@ -17,6 +17,10 @@ impl Hir2 {
     pub fn statements(&self) -> &[Statement] {
         &self.statements
     }
+
+    pub fn inner(self) -> Vec<Statement> {
+        self.statements
+    }
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Default, Debug, Ord, PartialOrd)]

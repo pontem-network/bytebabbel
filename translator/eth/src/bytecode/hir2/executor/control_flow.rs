@@ -15,7 +15,7 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         match self {
             ControlFlow::Stop => ExecutionResult::Stop,
             ControlFlow::Abort(code) => ExecutionResult::Abort(*code),
