@@ -178,9 +178,9 @@ pub fn test_for_users() {
     }
     test(Flags::default());
     test(Flags::native_interface());
+    test_for_users_with_hidden_result();
 }
 
-#[test]
 pub fn test_for_users_with_hidden_result() {
     let flags = Flags {
         native_input: false,
