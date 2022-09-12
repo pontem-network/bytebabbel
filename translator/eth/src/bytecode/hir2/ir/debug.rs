@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
 use crate::bytecode::hir2::ir::Hir2;
