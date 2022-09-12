@@ -22,6 +22,14 @@ impl Args {
         });
 
         let address = self.profile_or_address.to_address()?;
+        let address_str = format!("0x{}", address.to_string());
+
+        let mut init_args = self.init_args.clone();
+        while let Some(pos) = init_args.to_lowercase().find("self") {
+            init_args.replace_range(pos..pos + 4, &address_str);
+        }
+
+        dbg!(&init_args);
 
         let module_name = self
             .move_module_name
@@ -34,7 +42,7 @@ impl Args {
         let mv = translate(
             address,
             &module_name,
-            &self.init_args,
+            &init_args,
             &eth_content,
             &abi_content,
         )?;
