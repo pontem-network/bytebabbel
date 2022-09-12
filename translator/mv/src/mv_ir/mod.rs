@@ -3,7 +3,6 @@ pub mod interface;
 
 use crate::mv_ir::func::Func;
 use anyhow::{anyhow, Error};
-use eth::abi::entries::AbiEntries;
 use log::log_enabled;
 use log::Level;
 use move_binary_format::binary_views::BinaryIndexedView;

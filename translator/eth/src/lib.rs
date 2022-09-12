@@ -34,7 +34,7 @@ pub fn transpile_program(
     contract_addr: U256,
 ) -> Result<Program, Error> {
     let (contract_code, constructor) =
-        static_initialization(bytecode_str, &abi_entries, init_args, contract_addr)?;
+        static_initialization(bytecode_str, abi_entries, init_args, contract_addr)?;
     if log_enabled!(log::Level::Trace) {
         trace!("Bytecode: {}", &hex::encode(&contract_code));
     }
