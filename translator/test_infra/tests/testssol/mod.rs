@@ -165,7 +165,6 @@ pub fn make_move_module(
     let mvir = MvIrTranslator::new(addr, MAX_MEMORY, program);
     let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;
-    println!("{}", move_interface(&compiled_module, &abi).unwrap());
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;
     Ok(bytecode)
