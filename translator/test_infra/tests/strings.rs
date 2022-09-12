@@ -20,7 +20,7 @@ pub fn test_strings() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::Strings::constructor", "0x42", None).unwrap();

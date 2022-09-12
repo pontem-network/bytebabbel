@@ -19,7 +19,7 @@ pub fn test_empty_constructor() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::empty::constructor", "0x42", None).unwrap();
     let res = vm
@@ -46,7 +46,7 @@ pub fn test_constructor_with_data() {
             Flags::default(),
         )
         .unwrap();
-        let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+        let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
         vm.deploy("0x42", bytecode);
         vm.run("0x42::with_data::constructor", "0x42", None)
             .unwrap();
@@ -70,7 +70,7 @@ pub fn test_store() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::load_store::constructor", "0x42", None)
@@ -149,7 +149,7 @@ pub fn test_bool_store() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::bool_store::constructor", "0x42", None)
         .unwrap();

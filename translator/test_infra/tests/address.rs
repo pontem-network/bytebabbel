@@ -21,7 +21,7 @@ pub fn test_address_support() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::AddressSupport::constructor", "0x42", None)
         .unwrap();

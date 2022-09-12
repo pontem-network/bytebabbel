@@ -5,10 +5,12 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+#[derive(Debug)]
 pub struct Variables {
     inner: Rc<RefCell<Inner>>,
 }
 
+#[derive(Debug)]
 pub struct Inner {
     locals: HashMap<SType, Locals>,
     seq: LocalIndex,
@@ -97,7 +99,7 @@ impl Variables {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Locals {
     free: Vec<LocalIndex>,
     borrowed: Vec<LocalIndex>,
@@ -177,7 +179,7 @@ pub struct Variable(LocalIndex, SType);
 
 impl Variable {
     pub fn none() -> Variable {
-        Variable(0, SType::Address)
+        Variable(0, SType::Signer)
     }
 
     pub fn s_type(&self) -> SType {

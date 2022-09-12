@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 pub fn make_constructor(store: HashMap<U256, U256>) -> Mir {
     let mut mir = Mir::default();
-    let mut variables = Variables::new(vec![SType::Address]);
+    let mut variables = Variables::new(vec![SType::Signer]);
     mir.add_statement(Statement::InitStorage(variables.borrow_param(0)));
     let store_var = variables.borrow_global(SType::Storage);
     mir.add_statement(Statement::CreateVar(store_var, Expression::GetStore));

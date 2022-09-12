@@ -43,18 +43,22 @@ pub enum Expression {
 #[derive(Debug, Clone)]
 pub enum Cast {
     BoolToNum,
-    AddressToNum,
+    SignerToNum,
     BytesToNum,
     NumToBool,
+    AddressToNum,
+    NumToAddress,
 }
 
 impl Cast {
     pub fn make(from: SType, to: SType) -> Result<Cast, Error> {
         match (from, to) {
             (SType::Bool, SType::Num) => Ok(Cast::BoolToNum),
-            (SType::Address, SType::Num) => Ok(Cast::AddressToNum),
+            (SType::Signer, SType::Num) => Ok(Cast::SignerToNum),
             (SType::Bytes, SType::Num) => Ok(Cast::BytesToNum),
             (SType::Num, SType::Bool) => Ok(Cast::NumToBool),
+            (SType::Address, SType::Num) => Ok(Cast::AddressToNum),
+            (SType::Num, SType::Address) => Ok(Cast::NumToAddress),
             _ => Err(anyhow!("Can't cast {:?} to {:?}", from, to)),
         }
     }
@@ -62,18 +66,22 @@ impl Cast {
     pub fn from(&self) -> SType {
         match self {
             Cast::BoolToNum => SType::Bool,
-            Cast::AddressToNum => SType::Address,
+            Cast::SignerToNum => SType::Signer,
             Cast::BytesToNum => SType::Bytes,
             Cast::NumToBool => SType::Num,
+            Cast::AddressToNum => SType::Address,
+            Cast::NumToAddress => SType::Num,
         }
     }
 
     pub fn to(&self) -> SType {
         match self {
             Cast::BoolToNum => SType::Num,
-            Cast::AddressToNum => SType::Num,
+            Cast::SignerToNum => SType::Num,
             Cast::BytesToNum => SType::Num,
             Cast::NumToBool => SType::Bool,
+            Cast::AddressToNum => SType::Num,
+            Cast::NumToAddress => SType::Address,
         }
     }
 }

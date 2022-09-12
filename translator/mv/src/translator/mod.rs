@@ -129,8 +129,9 @@ impl MvIrTranslator {
                 SType::Bool => SignatureToken::Bool,
                 SType::Storage => Persist::token(),
                 SType::Memory => Mem::token(),
-                SType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
+                SType::Signer => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
                 SType::Bytes => SignatureToken::Vector(Box::new(SignatureToken::U8)),
+                SType::Address => SignatureToken::Address,
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -402,13 +403,19 @@ impl MvIrTranslator {
     fn translate_cast(&mut self, var: &Variable, cast: &Cast) -> Result<(), Error> {
         match cast {
             Cast::BoolToNum => self.code.call(Num::FromBool, &[CallOp::Var(*var)]),
-            Cast::AddressToNum => self.code.call(Num::FromAddress, &[CallOp::Var(*var)]),
+            Cast::SignerToNum => self.code.call(Num::FromSigner, &[CallOp::Var(*var)]),
             Cast::BytesToNum => {
                 self.code
                     .call(Num::FromBytes, &[CallOp::Var(*var), CallOp::ConstU64(0)]);
             }
             Cast::NumToBool => {
                 self.code.call(Num::ToBool, &[CallOp::Var(*var)]);
+            }
+            Cast::AddressToNum => {
+                self.code.call(Num::FromAddress, &[CallOp::Var(*var)]);
+            }
+            Cast::NumToAddress => {
+                self.code.call(Num::ToAddress, &[CallOp::Var(*var)]);
             }
         }
         Ok(())
