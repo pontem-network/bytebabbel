@@ -37,7 +37,11 @@ pub fn test_for_users() {
     )
     .unwrap();
     let res = vm
-        .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+        .run(
+            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", 
+             "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", 
+            Some("")
+        )
         .unwrap();
     let new_user_event = &res.events[0];
 
