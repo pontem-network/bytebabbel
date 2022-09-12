@@ -186,6 +186,10 @@ impl Variable {
         self.1
     }
 
+    pub fn is_num(&self) -> bool {
+        matches!(self.1, SType::Num)
+    }
+
     pub fn index(&self) -> LocalIndex {
         self.0
     }

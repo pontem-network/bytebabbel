@@ -37,7 +37,7 @@ impl<'a> MirTranslator<'a> {
             _ => self.map_var(result, SType::Num),
         };
         self.mir
-            .add_statement(Statement::CreateVar(result, cmd.expr(op, op1)));
+            .add_statement(Statement::Assign(result, cmd.expr(op, op1)));
         Ok(())
     }
 }

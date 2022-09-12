@@ -5,7 +5,7 @@ use crate::BlockId;
 #[derive(Debug, Clone)]
 pub enum Statement {
     InitStorage(Variable),
-    CreateVar(Variable, Expression),
+    Assign(Variable, Expression),
     MStore {
         memory: Variable,
         offset: Variable,

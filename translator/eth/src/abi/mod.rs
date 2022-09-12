@@ -74,10 +74,10 @@ fn map_function(hash: FunHash, fun: &FunctionData) -> Function {
         .unwrap();
     Function {
         name: fun.name.clone().unwrap_or_else(|| "anonymous".to_string()),
-        move_input,
+        eth_input: move_input,
         hash,
-        move_output,
-        eth_input,
-        eth_output,
+        eth_output: move_output,
+        native_input: eth_input,
+        native_output: eth_output,
     }
 }

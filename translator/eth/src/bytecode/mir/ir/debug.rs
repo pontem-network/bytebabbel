@@ -43,7 +43,7 @@ fn print_statements(st: &[Statement], buf: &mut String, width: usize) -> Result<
 
 fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(), Error> {
     match inst {
-        Statement::CreateVar(var, value) => {
+        Statement::Assign(var, value) => {
             write!(
                 buf,
                 "{:width$}let var_{:?}: {} = ",

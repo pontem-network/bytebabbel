@@ -13,7 +13,6 @@ mod testssol;
 
 #[test]
 pub fn test_for_users() {
-    env_logger::init();
     fn test(flags: Flags) {
         let evm = build_sol(include_bytes!("../sol/demo/users.sol")).unwrap();
         let bytecode = make_move_module(
@@ -179,4 +178,48 @@ pub fn test_for_users() {
     }
     test(Flags::default());
     test(Flags::native_interface());
+}
+
+#[test]
+pub fn test_for_users_with_hidden_result() {
+    let flags = Flags {
+        native_input: false,
+        native_output: false,
+        hidden_output: true,
+    };
+    let evm = build_sol(include_bytes!("../sol/demo/users.sol")).unwrap();
+    let bytecode = make_move_module(
+        &format!(
+            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::{}",
+            evm.name()
+        ),
+        evm.bin(),
+        "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
+        evm.abi(),
+        flags,
+    )
+    .unwrap();
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), flags);
+    vm.deploy(
+        "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
+        bytecode,
+    );
+
+    vm.run(
+        "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::constructor",
+        "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
+        None,
+    )
+    .unwrap();
+
+    let res = vm
+        .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+        .unwrap();
+    assert_eq!(0, res.returns.len());
+
+    let res = vm
+        .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+        .unwrap()
+        .returns;
+    assert_eq!(0, res.len());
 }

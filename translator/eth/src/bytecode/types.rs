@@ -35,7 +35,7 @@ impl Env {
 impl From<&Function> for Env {
     fn from(fun: &Function) -> Self {
         Env {
-            call_data_size: U256::from(fun.eth_input.len() * FRAME_SIZE + FUN_HASH_LEN),
+            call_data_size: U256::from(fun.native_input.len() * FRAME_SIZE + FUN_HASH_LEN),
             hash: fun.hash,
         }
     }
@@ -54,10 +54,10 @@ impl From<&Constructor> for Env {
 pub struct Function {
     pub hash: FunHash,
     pub name: String,
-    pub move_input: Vec<EthType>,
     pub eth_input: Vec<EthType>,
-    pub move_output: Vec<EthType>,
+    pub native_input: Vec<EthType>,
     pub eth_output: Vec<EthType>,
+    pub native_output: Vec<EthType>,
 }
 
 impl Display for Function {
@@ -65,7 +65,7 @@ impl Display for Function {
         write!(
             f,
             "{}({:?}) -> ({:?})",
-            self.name, self.move_input, self.move_output
+            self.name, self.eth_input, self.eth_output
         )
     }
 }
@@ -96,10 +96,10 @@ impl From<&Constructor> for Function {
         Function {
             hash: Default::default(),
             name: "constructor".to_string(),
-            move_input: c.move_input.clone(),
-            eth_input: c.eth_input.clone(),
-            move_output: vec![],
+            eth_input: c.move_input.clone(),
+            native_input: c.eth_input.clone(),
             eth_output: vec![],
+            native_output: vec![],
         }
     }
 }
