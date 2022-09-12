@@ -72,12 +72,10 @@ impl InstructionHandler for TxMeta {
 fn call_data_size(ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
     let id = if ctx.flags().native_input {
         ir.create_var(Eval::Val(ctx.env().call_data_size()))
+    } else if ctx.is_static_analysis_enable() {
+        ir.create_var(Eval::Val(U256::from(1024)))
     } else {
-        if ctx.is_static_analysis_enable() {
-            ir.create_var(Eval::Val(U256::from(1024)))
-        } else {
-            ir.create_var(Eval::ArgsSize)
-        }
+        ir.create_var(Eval::ArgsSize)
     };
     ExecutionResult::Output(vec![id])
 }
@@ -90,7 +88,7 @@ fn call_data_load(params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> Execut
                 let mut buf = [0u8; 32];
                 buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
                 let id = ir.create_var(Eval::Val(U256::from(buf)));
-                return ExecutionResult::Output(vec![id]);
+                ExecutionResult::Output(vec![id])
             } else {
                 let index = ((offset - U256::from(4)) / U256::from(32)) + U256::one();
                 ExecutionResult::Output(

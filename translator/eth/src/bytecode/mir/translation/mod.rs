@@ -39,7 +39,7 @@ impl<'a> MirTranslator<'a> {
 
         let mut variables = if flags.native_input {
             let mut args = vec![SType::Signer];
-            args.extend(fun.eth_input.iter().map(|t| SType::from(t)));
+            args.extend(fun.eth_input.iter().map(SType::from));
             Variables::new(args)
         } else {
             Variables::new(vec![signer.1, args.1])

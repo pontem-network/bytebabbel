@@ -41,7 +41,6 @@ impl Args {
                 hidden_output: self.hidde_output,
             },
         };
-
         let mv = translate(&eth_content, &abi_content, cfg)?;
         fs::write(&mv_path, mv.bytecode)?;
         fs::write(&move_path, mv.interface)?;

@@ -57,11 +57,7 @@ fn write_function(
 ) -> Result<(), Error> {
     let args = if flags.native_input {
         if let Some(input) = &fun.inputs {
-            input
-                .iter()
-                .map(|p| map_param(p))
-                .collect::<Vec<_>>()
-                .join(", ")
+            input.iter().map(map_param).collect::<Vec<_>>().join(", ")
         } else {
             String::default()
         }
@@ -72,23 +68,17 @@ fn write_function(
     let ret = if flags.native_output {
         if flags.hidden_output {
             "".to_string()
-        } else {
-            if let Some(output) = &fun.outputs {
-                let params = output
-                    .iter()
-                    .map(|p| map_param(p))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                if output.is_empty() {
-                    params
-                } else if output.len() == 1 {
-                    format!(": {}", params)
-                } else {
-                    format!(": ({})", params)
-                }
+        } else if let Some(output) = &fun.outputs {
+            let params = output.iter().map(map_param).collect::<Vec<_>>().join(", ");
+            if output.is_empty() {
+                params
+            } else if output.len() == 1 {
+                format!(": {}", params)
             } else {
-                String::default()
+                format!(": ({})", params)
             }
+        } else {
+            String::default()
         }
     } else {
         ": vector<u8>".to_string()

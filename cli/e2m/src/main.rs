@@ -44,13 +44,13 @@ pub struct Args {
     #[cfg(feature = "deploy")]
     deploy: bool,
 
-    #[clap(long = "native_input", default_value = "false")]
+    #[clap(long = "native_input")]
     native_input: bool,
 
-    #[clap(long = "native_output", default_value = "false")]
+    #[clap(long = "native_output")]
     native_output: bool,
 
-    #[clap(long = "hidde_output", default_value = "false")]
+    #[clap(long = "hidde_output")]
     hidde_output: bool,
 }
 
