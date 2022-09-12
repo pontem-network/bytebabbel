@@ -114,9 +114,9 @@ impl MoveExecutor {
 
         let entry = self.eth_call(ident.as_str())?;
 
-        let fun = session.load_function(&module_id, &ident, &[]).unwrap();
         let args = if self.flags.native_input {
-            self.prepare_move_args(signer, params, &fun)?
+            let fun = session.load_function(&module_id, &ident, &[]);
+            self.prepare_move_args(signer, params, &fun.unwrap())?
         } else {
             self.prepare_eth_args(signer, params, &entry)?
         };
