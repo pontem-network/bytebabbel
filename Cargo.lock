@@ -7771,6 +7771,7 @@ dependencies = [
  "serde_json",
  "sha3 0.10.4",
  "termion",
+ "translator",
 ]
 
 [[package]]

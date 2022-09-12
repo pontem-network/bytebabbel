@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use move_core_types::account_address::AccountAddress;
 
 use crate::Args;
-use translator::translate;
+use translator::{translate, Flags};
 
 impl Args {
     pub fn convert(&self) -> Result<ResultConvert> {
@@ -31,13 +31,14 @@ impl Args {
         let abi_content = fs::read_to_string(&paths.abi)?;
         let eth_content = fs::read_to_string(&paths.bin)?;
 
-        let mv = translate(
-            address,
-            &module_name,
-            &self.init_args,
-            &eth_content,
-            &abi_content,
-        )?;
+        let cfg = translator::Config {
+            contract_addr: address,
+            name: &module_name,
+            initialization_args: &self.init_args,
+            flags: Flags::default(),
+        };
+
+        let mv = translate(&eth_content, &abi_content, cfg)?;
         fs::write(&mv_path, mv.bytecode)?;
         fs::write(&move_path, mv.interface)?;
 

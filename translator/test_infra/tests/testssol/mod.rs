@@ -1,10 +1,7 @@
 use anyhow::{anyhow, ensure, Error, Result};
 use eth::abi::call::ToCall;
-use eth::transpile_program;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
-use mv::translator::MvIrTranslator;
-use primitive_types::U256;
 use regex::Regex;
 use std::fmt::Debug;
 
@@ -17,12 +14,11 @@ pub mod parse;
 use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
-use eth::abi::entries::AbiEntries;
-use mv::mv_ir::interface::move_interface;
+use eth::Flags;
 use parse::{SolFile, SolTest};
+use translator::translate;
 
 const TEST_NAME: &str = "sol";
-pub const MAX_MEMORY: u64 = 1024 * 32;
 
 lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
@@ -132,6 +128,7 @@ impl STest {
             &hex::encode(self.bin()?),
             "",
             self.abi_str(),
+            Flags::default(),
         )?;
         let mut vm = MoveExecutor::new(self.contract.abi()?.clone());
         vm.deploy("0x42", bytecode);
@@ -156,18 +153,19 @@ pub fn make_move_module(
     eth: &str,
     init_args: &str,
     abi: &str,
+    flags: Flags,
 ) -> Result<Vec<u8>, Error> {
     let mut split = name.split("::");
     let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
-    let abi = AbiEntries::try_from(abi)?;
-    let program = transpile_program(name, eth, init_args, &abi, U256::from(addr.as_slice()))?;
-    let mvir = MvIrTranslator::new(addr, MAX_MEMORY, program);
-    let module = mvir.translate()?;
-    let compiled_module = module.make_move_module()?;
-    let mut bytecode = Vec::new();
-    compiled_module.serialize(&mut bytecode)?;
-    Ok(bytecode)
+    let cfg = translator::Config {
+        contract_addr: addr,
+        name,
+        initialization_args: init_args,
+        flags,
+    };
+    let target = translate(eth, abi, cfg)?;
+    Ok(target.bytecode)
 }
 
 fn return_val_to_string(val: Result<String>) -> String {

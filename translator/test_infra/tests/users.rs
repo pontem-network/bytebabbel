@@ -3,6 +3,7 @@ use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
 use eth::abi::entries::AbiEntries;
+use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -22,6 +23,7 @@ pub fn test_for_users() {
         evm.bin(),
         "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
         evm.abi(),
+        Flags::native_interface(),
     )
     .unwrap();
     let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());

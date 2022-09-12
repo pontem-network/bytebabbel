@@ -5,7 +5,7 @@ use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
-use crate::{Function, Hir};
+use crate::{Flags, Function, Hir};
 use anyhow::{anyhow, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
@@ -32,7 +32,7 @@ pub struct MirTranslator<'a> {
 }
 
 impl<'a> MirTranslator<'a> {
-    pub fn new(fun: &'a Function) -> MirTranslator<'a> {
+    pub fn new(fun: &'a Function, flags: Flags) -> MirTranslator<'a> {
         // Now we use static parameters signer and args
         // Signer = 0
         // Args = 1

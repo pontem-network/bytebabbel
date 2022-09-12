@@ -3,6 +3,7 @@ use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
 use eth::abi::entries::AbiEntries;
+use eth::Flags;
 
 #[allow(dead_code)]
 mod testssol;
@@ -10,8 +11,14 @@ mod testssol;
 #[test]
 pub fn test_empty_constructor() {
     let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
-    let bytecode =
-        make_move_module(&format!("0x42::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
+    let bytecode = make_move_module(
+        &format!("0x42::{}", evm.name()),
+        evm.bin(),
+        "",
+        evm.abi(),
+        Flags::default(),
+    )
+    .unwrap();
     let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::empty::constructor", "0x42", None).unwrap();
@@ -36,6 +43,7 @@ pub fn test_constructor_with_data() {
             evm.bin(),
             init_args,
             evm.abi(),
+            Flags::default(),
         )
         .unwrap();
         let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
@@ -54,8 +62,14 @@ pub fn test_constructor_with_data() {
 #[test]
 pub fn test_store() {
     let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
-    let bytecode =
-        make_move_module(&format!("0x42::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
+    let bytecode = make_move_module(
+        &format!("0x42::{}", evm.name()),
+        evm.bin(),
+        "",
+        evm.abi(),
+        Flags::default(),
+    )
+    .unwrap();
     let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
     vm.deploy("0x42", bytecode);
 
@@ -127,8 +141,14 @@ pub fn test_store() {
 pub fn test_bool_store() {
     env_logger::init();
     let evm = build_sol(include_bytes!("../sol/store/bool_store.sol")).unwrap();
-    let bytecode =
-        make_move_module(&format!("0x42::{}", evm.name()), evm.bin(), "", evm.abi()).unwrap();
+    let bytecode = make_move_module(
+        &format!("0x42::{}", evm.name()),
+        evm.bin(),
+        "",
+        evm.abi(),
+        Flags::default(),
+    )
+    .unwrap();
     let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::bool_store::constructor", "0x42", None)
