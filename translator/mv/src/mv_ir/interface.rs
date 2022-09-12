@@ -22,6 +22,7 @@ pub fn move_interface(
     )?;
 
     write_constants(&mut buff)?;
+    writeln!(buff)?;
 
     abi.entries
         .iter()
@@ -42,7 +43,7 @@ pub fn move_interface(
 fn write_constants(buff: &mut String) -> Result<(), Error> {
     writeln!(
         buff,
-        "{:width$}public fun constructor(_account_address: &signer) {{}}",
+        "{:width$}public native fun constructor(account_address: &signer);",
         "",
         width = 4
     )?;
@@ -69,7 +70,11 @@ fn write_function(
         if flags.hidden_output {
             "".to_string()
         } else if let Some(output) = &fun.outputs {
-            let params = output.iter().map(map_param).collect::<Vec<_>>().join(", ");
+            let params = output
+                .iter()
+                .map(|p| map_type(&EthType::try_from(p).unwrap()))
+                .collect::<Vec<_>>()
+                .join(", ");
             if output.is_empty() {
                 params
             } else if output.len() == 1 {
@@ -86,13 +91,14 @@ fn write_function(
 
     writeln!(
         buff,
-        "{:width$}public native fun {}(account_address: &signer,{}) {};",
+        "{:width$}public native fun {}(account_address: &signer,{}){};",
         "",
         fun.name.as_deref().unwrap_or("anonymous"),
         args,
         ret,
         width = 4
     )?;
+    writeln!(buff)?;
     Ok(())
 }
 
@@ -112,47 +118,31 @@ fn write_u256(buff: &mut String) -> Result<(), Error> {
 
     writeln!(
         buff,
-        "{:width$}public fun as_u128(a: U256): u128 {{",
+        "{:width$}public native fun as_u128(val: U256): u128;",
         "",
         width = 4
     )?;
-    writeln!(
-        buff,
-        "{:width$}((a.v1 as u128) << 64) + (a.v0 as u128)",
-        "",
-        width = 8
-    )?;
-    writeln!(buff, "{:width$}}}", "", width = 4)?;
     writeln!(buff)?;
-
     writeln!(
         buff,
-        "{:width$}public fun from_u128(val: u128): U256 {{",
+        "{:width$}public native fun from_u128(val: u128): U256;",
         "",
         width = 4
     )?;
-    writeln!(
-        buff,
-        "{:width$}let (a2, a1) = split_u128(val);",
-        "",
-        width = 8
-    )?;
-    writeln!(buff, "{:width$}U256 {{", "", width = 8)?;
-    writeln!(buff, "{:width$}v0: a1,", "", width = 12)?;
-    writeln!(buff, "{:width$}v1: a2,", "", width = 12)?;
-    writeln!(buff, "{:width$}v2: 0,", "", width = 12)?;
-    writeln!(buff, "{:width$}v3: 0,", "", width = 12)?;
-    writeln!(buff, "{:width$}}}", "", width = 8)?;
-    writeln!(buff, "{:width$}}}", "", width = 4)?;
     Ok(())
 }
 
 fn map_param(p: &Param) -> String {
-    let ty = match EthType::try_from(p).unwrap() {
+    let ty = map_type(&EthType::try_from(p).unwrap());
+    format!("{}: {}", p.name, ty)
+}
+
+fn map_type(ty: &EthType) -> String {
+    match ty {
         EthType::U256 => "U256",
         EthType::Bool => "bool",
         EthType::Address => "address",
         EthType::Bytes => "vector<u8>",
-    };
-    format!("{}: {}", p.name, ty)
+    }
+    .to_string()
 }
