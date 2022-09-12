@@ -15,7 +15,7 @@ env:
 jobs:
   tests:
     name: Test
-    runs-on: ${{ matrix.os }}
+    runs-on: [${{ matrix.os }}, x64]
     if: "!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci')"
 
     defaults:
@@ -69,7 +69,6 @@ jobs:
       - name: Test
         run: RUST_BACKTRACE=1 cargo test --offline
         shell: bash
-        architecture: x64
 
       - name: Clippy
         if: runner.os == 'Linux'
