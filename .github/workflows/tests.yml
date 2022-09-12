@@ -69,7 +69,7 @@ jobs:
         shell: bash
 
       - name: Test
-        run: cargo test --offline
+        run: RUST_BACKTRACE=1 cargo test --offline
         shell: bash
 
       - name: Clippy
