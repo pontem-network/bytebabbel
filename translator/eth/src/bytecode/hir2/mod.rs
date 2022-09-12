@@ -96,7 +96,7 @@ impl<'a> HirTranslator2<'a> {
         let mut cnd_ir = Hir2::default();
         let res = self.exec_block(&loop_.jmp.block, &mut cnd_ir, ctx)?;
 
-        let res = match res {
+        match res {
             BlockResult::Jmp(cnd, _) => {
                 let mut loop_ir = Default::default();
                 self.exec_flow(loop_.br.flow(), &mut loop_ir, &mut ctx.inherit())?;
@@ -132,8 +132,7 @@ impl<'a> HirTranslator2<'a> {
                 Ok(StopFlag::Continue)
             }
             _ => bail!("loop condition must be a conditional jump"),
-        };
-        res
+        }
     }
 
     fn exec_flow_seq(
@@ -245,7 +244,7 @@ impl<'a> HirTranslator2<'a> {
                     if let Some(si) = io.outputs.get(&inst.0) {
                         if si.is_positive() {
                             let expr = stack.get_mut(0).unwrap();
-                            let var = ctx.push_var(expr.clone(), si.clone());
+                            let var = ctx.push_var(expr.clone(), *si);
                             ir.add_statement(Statement::Assign {
                                 var,
                                 expr: expr.clone(),

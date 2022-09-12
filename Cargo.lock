@@ -2692,6 +2692,7 @@ dependencies = [
  "itertools",
  "lazy_static 1.4.0",
  "log",
+ "move-core-types 0.0.4 (git+https://github.com/move-language/move?rev=4bdf8d3e76ffaab5c83eda2fa55dfe136c380675)",
  "primitive-types",
  "regex",
  "serde 1.0.144",

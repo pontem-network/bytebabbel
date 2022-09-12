@@ -109,7 +109,7 @@ impl<'a> HirTranslator<'a> {
         let before_inst = ir.swap_instruction(vec![]);
         let res = self.exec_block(&loop_.jmp.block, ir, ctx)?;
         let cnd_block = ir.swap_instruction(before_inst);
-        let res = match res {
+        match res {
             BlockResult::Jmp(cnd, _) => {
                 // ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
@@ -147,9 +147,7 @@ impl<'a> HirTranslator<'a> {
                 Ok(StopFlag::Continue)
             }
             _ => bail!("loop condition must be a conditional jump"),
-        };
-        // ctx.exit_loop();
-        res
+        }
     }
 
     fn exec_flow_seq(

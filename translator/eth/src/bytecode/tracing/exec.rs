@@ -141,10 +141,7 @@ pub enum StackItem {
 
 impl StackItem {
     pub fn is_negative(&self) -> bool {
-        match self {
-            StackItem::Negative { .. } => true,
-            _ => false,
-        }
+        matches!(self, StackItem::Negative { .. })
     }
 
     pub fn is_positive(&self) -> bool {
