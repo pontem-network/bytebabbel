@@ -9,7 +9,6 @@ pub struct IrOptimizer;
 impl IrOptimizer {
     pub fn optimize(ir: Hir) -> Result<Hir, Error> {
         let ir = UnusedVarClipper::optimize(ir)?;
-        let ir = UnusedVarClipper::optimize(ir)?;
         Ok(ir)
     }
 }

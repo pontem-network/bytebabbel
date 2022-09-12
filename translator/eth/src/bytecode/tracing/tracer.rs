@@ -1,7 +1,9 @@
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::tracing::exec::{Executor, Next};
+use crate::bytecode::instruction::Offset;
+use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
-use std::collections::{HashMap, HashSet};
+use anyhow::{anyhow, Error};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 pub struct Tracer<'a> {
@@ -17,10 +19,11 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    pub fn trace(&mut self) -> FlowTrace {
-        let loops = self.clone().find_loops();
+    pub fn trace(&mut self) -> Result<FlowTrace, Error> {
+        let io = self.calculate_io()?;
+        let loops = self.clone().find_loops()?;
         let funcs = self.clone().find_funcs(&loops);
-        FlowTrace { funcs, loops }
+        Ok(FlowTrace { io, funcs, loops })
     }
 
     fn next_block(block: &InstructionBlock) -> BlockId {
@@ -78,11 +81,11 @@ impl<'a> Tracer<'a> {
     }
 
     fn check_func(&self, _id: &BlockId, _fun: &Func, _loops: &HashMap<BlockId, Loop>) -> bool {
-        //todo
+        //todo filter out functions that are not really functions)
         true
     }
 
-    fn find_loops(&mut self) -> HashMap<BlockId, Loop> {
+    fn find_loops(&mut self) -> Result<HashMap<BlockId, Loop>, Error> {
         let mut id = BlockId::default();
         let mut stack: Vec<Fork> = vec![];
         let mut loop_candidates: HashMap<BlockId, (BlockId, Vec<BlockId>)> = HashMap::new();
@@ -95,9 +98,10 @@ impl<'a> Tracer<'a> {
                 .ok_or_else(|| format!("Block with id {} not found. Blocks: {:?}", id, self.blocks))
                 .unwrap();
 
-            let res = self.executor.exec_block(block);
+            let res = self.executor.exec(block);
             match res {
                 Next::Jmp(jmp) => {
+                    let jmp = jmp.as_positive()?;
                     if let Some(lp) = breaks.get(&jmp) {
                         loops.get_mut(lp).unwrap().breaks.insert(id);
                     }
@@ -159,10 +163,12 @@ impl<'a> Tracer<'a> {
                             break;
                         }
                     } else {
-                        return loops;
+                        return Ok(loops);
                     }
                 },
                 Next::Cnd(true_br, false_br) => {
+                    let true_br = true_br.as_positive()?;
+                    let false_br = false_br.as_positive()?;
                     if let Some(lp) = breaks.get(&true_br) {
                         loops.get_mut(lp).unwrap().breaks.insert(id);
                         stack.push(Fork {
@@ -189,6 +195,28 @@ impl<'a> Tracer<'a> {
                 }
             }
         }
+    }
+
+    fn calculate_io(&self) -> Result<HashMap<BlockId, BlockIO>, Error> {
+        let mut io: HashMap<BlockId, BlockIO> = HashMap::new();
+        for (id, block) in self.blocks {
+            let mut exec = Executor::default();
+            let res = exec.exec_one(block);
+
+            let outputs = res.output.into_iter().map(|i| (i.offset().0, i)).collect();
+
+            let inputs = res
+                .input
+                .into_iter()
+                .map(|i| {
+                    i.as_negative()
+                        .ok_or_else(|| anyhow!("Invalid input: {:?}. Block:{}", i, id))
+                })
+                .collect::<Result<_, _>>()?;
+
+            io.insert(*id, BlockIO { inputs, outputs });
+        }
+        Ok(io)
     }
 }
 
@@ -224,6 +252,15 @@ pub struct Loop {
 
 #[derive(Debug)]
 pub struct FlowTrace {
+    pub io: HashMap<BlockId, BlockIO>,
     pub funcs: HashMap<BlockId, Func>,
     pub loops: HashMap<BlockId, Loop>,
+}
+
+pub type ID = usize;
+
+#[derive(Debug, Clone)]
+pub struct BlockIO {
+    pub inputs: Vec<(ID, BlockId)>,
+    pub outputs: BTreeMap<Offset, StackItem>,
 }

@@ -257,6 +257,7 @@ impl<'a> MirTranslator<'a> {
                 let len = self.get_var(len)?;
                 ensure!(offset.s_type() == SType::Num, "offset must be of type num");
                 ensure!(len.s_type() == SType::Num, "len must be of type num");
+                self.mapping.insert(id, result);
 
                 self.mir.add_statement(Statement::CreateVar(
                     result,

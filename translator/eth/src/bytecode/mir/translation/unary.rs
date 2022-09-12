@@ -28,16 +28,21 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn unary_with_num(&mut self, cmd: UnaryOp, op: Variable, result: VarId) -> Result<(), Error> {
-        let result = self.map_var(result, SType::Bool);
         match cmd {
-            UnaryOp::IsZero => self.mir.add_statement(Statement::CreateVar(
-                result,
-                Operation::IsZero.expr(op, Variable::none()),
-            )),
-            UnaryOp::Not => self.mir.add_statement(Statement::CreateVar(
-                result,
-                Operation::BitNot.expr(op, Variable::none()),
-            )),
+            UnaryOp::IsZero => {
+                let result = self.map_var(result, SType::Bool);
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Operation::IsZero.expr(op, Variable::none()),
+                ))
+            }
+            UnaryOp::Not => {
+                let result = self.map_var(result, SType::Num);
+                self.mir.add_statement(Statement::CreateVar(
+                    result,
+                    Operation::BitNot.expr(op, Variable::none()),
+                ))
+            }
         }
         Ok(())
     }
