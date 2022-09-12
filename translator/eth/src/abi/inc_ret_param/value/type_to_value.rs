@@ -4,6 +4,7 @@ use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::collection::{TryParamAddress, TryParamBytes};
 use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
 use evm_core::utils::I256;
+use move_core_types::account_address::AccountAddress;
 use primitive_types::U256;
 
 impl ParamType {
@@ -99,16 +100,9 @@ impl ParamType {
                 self.set_value(hex::decode(value.trim_start_matches("0x"))?)
             }
             ParamType::Address => {
-                let mut val = value.trim_start_matches("0x").to_string();
-                if val.len() < 64 {
-                    val = "0".repeat(64 - val.len()) + &val;
-                }
-                let bt = hex::decode(&val)?;
-                ensure!(
-                    bt.len() <= 32,
-                    "The address cannot exceed 32 bytes.{self:?} {value}"
-                );
-                self.set_value(bt)
+                let mut addr = AccountAddress::from_hex_literal(value)?.to_vec();
+                addr[0..12].copy_from_slice(&[0u8; 12]);
+                self.set_value(addr)
             }
             _ => unreachable!(),
         }

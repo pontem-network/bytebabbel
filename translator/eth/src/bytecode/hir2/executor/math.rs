@@ -272,7 +272,7 @@ impl InstructionHandler for TernaryOp {
                 return ExecutionResult::Expr(vec![Rc::new(Expr::Val(res))]);
             }
         }
-        let expr = Expr::TernaryOp(self.clone(), op1, op2, op3);
+        let expr = Expr::TernaryOp(*self, op1, op2, op3);
         ExecutionResult::Expr(vec![Rc::new(expr)])
     }
 }

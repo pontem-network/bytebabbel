@@ -32,9 +32,7 @@ pub enum Expr {
 impl Expr {
     pub fn resolve(&self, ctx: &Context) -> Option<U256> {
         match self {
-            Expr::Val(val) => {
-                return Some(*val);
-            }
+            Expr::Val(val) => Some(*val),
             Expr::Var(var) => ctx.vars().get(var)?.0.resolve(ctx),
             Expr::MLoad { .. } => None,
             Expr::SLoad { .. } => None,
