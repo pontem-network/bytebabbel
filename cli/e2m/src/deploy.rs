@@ -37,7 +37,7 @@ impl Args {
                 "--profile",
                 profile,
                 "--max-gas",
-                "1000",
+                "5000",
             ])
             .map_err(|_| anyhow!("Invalid profile parameter. "))?;
 
