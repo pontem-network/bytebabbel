@@ -18,7 +18,6 @@ use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::entries::AbiEntries;
-use mv::mv_ir::interface::move_interface;
 use parse::{SolFile, SolTest};
 
 const TEST_NAME: &str = "sol";

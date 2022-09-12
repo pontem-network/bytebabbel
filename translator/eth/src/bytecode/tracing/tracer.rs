@@ -29,7 +29,7 @@ impl<'a> Tracer<'a> {
     fn next_block(block: &InstructionBlock) -> BlockId {
         block
             .last()
-            .map(|lst| BlockId::from(lst.offset() + lst.size()))
+            .map(|lst| BlockId::from(lst.offset() + lst.size() as Offset))
             .unwrap()
     }
 
@@ -53,7 +53,7 @@ impl<'a> Tracer<'a> {
             let call_addr = if let Some(inst) = block.get(block.len() - 2) {
                 if let OpCode::Push(vec) = &inst.1 {
                     let val = U256::from(vec.as_slice());
-                    BlockId::from(val.as_usize())
+                    BlockId::from(val)
                 } else {
                     continue;
                 }
@@ -203,7 +203,11 @@ impl<'a> Tracer<'a> {
             let mut exec = Executor::default();
             let res = exec.exec_one(block);
 
-            let outputs = res.output.into_iter().map(|i| (i.offset().0, i)).collect();
+            let outputs = res
+                .output
+                .into_iter()
+                .map(|i| (i.offset().0 as u64, i))
+                .collect();
 
             let inputs = res
                 .input

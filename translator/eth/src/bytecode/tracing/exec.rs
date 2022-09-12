@@ -21,7 +21,7 @@ impl Executor {
                 self.negative_stack_seq += 1;
                 StackItem::Negative {
                     id: self.negative_stack_seq,
-                    offset: BlockId(offset),
+                    offset: BlockId::from(offset),
                 }
             }));
         }
@@ -59,8 +59,8 @@ impl Executor {
                     return Next::Cnd(
                         jmp,
                         StackItem::Positive {
-                            value: BlockId(inst.next()),
-                            offset: BlockId(inst.offset()),
+                            value: BlockId::from(inst.next()),
+                            offset: BlockId::from(inst.offset()),
                         },
                     );
                 }
@@ -81,11 +81,11 @@ impl Executor {
                     let val = U256::from(val.as_slice());
                     if val <= U256::from(u32::MAX) {
                         self.push_stack(vec![StackItem::Positive {
-                            value: BlockId::from(val.as_usize()),
-                            offset: BlockId(inst.offset()),
+                            value: BlockId::from(val),
+                            offset: BlockId::from(inst.offset()),
                         }]);
                     } else {
-                        self.push_stack(vec![StackItem::Calc(BlockId(inst.offset()))]);
+                        self.push_stack(vec![StackItem::Calc(BlockId::from(inst.offset()))]);
                     }
                 }
                 OpCode::Pop => {}
@@ -100,7 +100,7 @@ impl Executor {
                     if pushes > 0 {
                         self.push_stack(
                             (0..pushes)
-                                .map(|_| StackItem::Calc(BlockId(inst.offset())))
+                                .map(|_| StackItem::Calc(BlockId::from(inst.offset())))
                                 .collect(),
                         );
                     }
@@ -111,8 +111,8 @@ impl Executor {
             .last()
             .map(|last| {
                 Next::Jmp(StackItem::Positive {
-                    value: BlockId(last.next()),
-                    offset: BlockId(last.offset()),
+                    value: BlockId::from(last.next()),
+                    offset: BlockId::from(last.offset()),
                 })
             })
             .unwrap_or(Next::Stop)

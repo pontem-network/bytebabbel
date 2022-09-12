@@ -2,7 +2,7 @@ use crate::OpCode;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-pub type Offset = usize;
+pub type Offset = u64;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Instruction(pub Offset, pub OpCode);
@@ -17,7 +17,7 @@ impl Instruction {
     }
 
     pub fn next(&self) -> Offset {
-        self.0 + self.size()
+        self.0 + self.size() as Offset
     }
 }
 
