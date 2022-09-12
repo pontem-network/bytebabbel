@@ -9,6 +9,7 @@ edition = "2021"
 mv = {path = "../mv"}
 eth = {path = "../eth" }
 translator = {path = ".."}
+intrinsic = {path = "../intrinsic"}
 
 move-bytecode-source-map = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
 move-ir-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }

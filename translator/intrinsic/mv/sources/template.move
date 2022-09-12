@@ -257,6 +257,12 @@ module self::template {
         assert!(as_u128(val) == 0xFFFFFFFFFFFFFFFF0000000000000000, 0);
     }
 
+    #[test_only]
+    fun read_signer(addr: &signer): U256 {
+        let encoded = std::bcs::to_bytes(addr);
+        from_bytes(&encoded, zero())
+    }
+
     #[test(
         v1 = @0xAA00000000000000000000000000000000000000000000000000000000000000,
         v2 = @0xAAFF000000000000000000000000000000000000000000000000000000000000,
@@ -269,7 +275,7 @@ module self::template {
 
         mstore8(&mut memory, from_u128(0), from_u128(0xAA));
         let val = mload(&mut memory, from_u128(0));
-        let expected = from_signer(v1);
+        let expected = read_signer(v1);
         assert!(eq(val, expected), 1);
 
         let val = mload(&mut memory, from_u128(1));
@@ -277,18 +283,18 @@ module self::template {
 
         mstore8(&mut memory, from_u128(1), from_u128(0xFF));
         let val = mload(&mut memory, from_u128(0));
-        let expected = from_signer(v2);
+        let expected = read_signer(v2);
         assert!(eq(val, expected), 2);
 
         mstore8(&mut memory, from_u128(2), from_u128(0x11));
         let val = mload(&mut memory, from_u128(0));
-        let expected = from_signer(v3);
+        let expected = read_signer(v3);
         assert!(eq(val, expected), 3);
 
         mstore8(&mut memory, from_u128(8), from_u128(0x11));
         mstore8(&mut memory, from_u128(7), from_u128(0x22));
         let val = mload(&mut memory, from_u128(0));
-        let expected = from_signer(v4);
+        let expected = read_signer(v4);
         assert!(eq(val, expected), 4);
 
         mstore8(&mut memory, from_u128(15), from_u128(0x33));
@@ -298,7 +304,7 @@ module self::template {
         mstore8(&mut memory, from_u128(31), from_u128(0x77));
 
         let val = mload(&mut memory, from_u128(0));
-        let expected = from_signer(v5);
+        let expected = read_signer(v5);
         assert!(eq(val, expected), 5);
     }
 
@@ -314,23 +320,23 @@ module self::template {
     fun test_hash(s1: &signer, s2: &signer, hash_1: &signer, hash_2: &signer, hash_3: &signer, hash_4: &signer, hash_5: &signer) {
         let memory = new_mem(1024);
 
-        mstore(&mut memory, from_u128(0), from_signer(s1));
-        mstore(&mut memory, from_u128(32), from_signer(s2));
+        mstore(&mut memory, from_u128(0), read_signer(s1));
+        mstore(&mut memory, from_u128(32), read_signer(s2));
 
         let resp = hash(&mut memory, from_u128(0), from_u128(1));
-        assert!(eq(resp, from_signer(hash_1)), 1);
+        assert!(eq(resp, read_signer(hash_1)), 1);
 
         let resp = hash(&mut memory, from_u128(0), from_u128(32));
-        assert!(eq(resp, from_signer(hash_2)), 2);
+        assert!(eq(resp, read_signer(hash_2)), 2);
 
         let resp = hash(&mut memory, from_u128(0), from_u128(64));
-        assert!(eq(resp, from_signer(hash_3)), 3);
+        assert!(eq(resp, read_signer(hash_3)), 3);
 
         let resp = hash(&mut memory, from_u128(0), from_u128(70));
-        assert!(eq(resp, from_signer(hash_4)), 4);
+        assert!(eq(resp, read_signer(hash_4)), 4);
 
         let resp = hash(&mut memory, from_u128(64), from_u128(6));
-        assert!(eq(resp, from_signer(hash_5)), 5);
+        assert!(eq(resp, read_signer(hash_5)), 5);
     }
 
     #[test]
@@ -540,7 +546,7 @@ module self::template {
     }
 
     /// Convert `U256` to `u128` value if possible (otherwise it aborts).
-    fun as_u128(a: U256): u128 {
+    public fun as_u128(a: U256): u128 {
         ((a.v1 as u128) << 64) + (a.v0 as u128)
     }
 
@@ -569,7 +575,7 @@ module self::template {
     }
 
     /// Returns a `U256` from `u128` value.
-    fun from_u128(val: u128): U256 {
+    public fun from_u128(val: u128): U256 {
         let (a2, a1) = split_u128(val);
         U256 {
             v0: a1,
@@ -1267,13 +1273,27 @@ module self::template {
     // API
     fun from_signer(addr: &signer): U256 {
         let encoded = std::bcs::to_bytes(addr);
-        from_bytes(&encoded, zero())
+        // todo replace with riding last 20 bytes
+        let address_mask = U256 {
+            v0: 0xFFFFFFFFFFFFFFFF,
+            v1: 0xFFFFFFFFFFFFFFFF,
+            v2: 0x00000000FFFFFFFF,
+            v3: 0x0000000000000000,
+        };
+        bitand(from_bytes(&encoded, zero()), address_mask)
     }
 
     // API
     fun from_address(addr: address): U256 {
         let encoded = std::bcs::to_bytes(&addr);
-        from_bytes(&encoded, zero())
+        // todo replace with riding last 20 bytes
+        let address_mask = U256 {
+            v0: 0xFFFFFFFFFFFFFFFF,
+            v1: 0xFFFFFFFFFFFFFFFF,
+            v2: 0x00000000FFFFFFFF,
+            v3: 0x0000000000000000,
+        };
+        bitand(from_bytes(&encoded, zero()), address_mask)
     }
 
     /// API

@@ -92,6 +92,7 @@ pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {
 pub struct Flags {
     pub native_input: bool,
     pub native_output: bool,
+    pub hidden_output: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -100,6 +101,7 @@ impl Default for Flags {
         Self {
             native_input: false,
             native_output: false,
+            hidden_output: false,
         }
     }
 }
@@ -109,6 +111,7 @@ impl Flags {
         Self {
             native_input: true,
             native_output: true,
+            hidden_output: false,
         }
     }
 }

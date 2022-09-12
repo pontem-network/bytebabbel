@@ -26,6 +26,7 @@ use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::value::MoveTypeLayout;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
+use primitive_types::U256;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
@@ -161,10 +162,14 @@ impl MoveExecutor {
     ) -> Result<Vec<Vec<u8>>> {
         let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
         if let Some(args) = args {
-            let mut call = entry.clone().unwrap();
-            call.parse_and_set_inputs(args)?;
-            let request = call.encode(false)?;
-            Ok(vec![signer, bcs::to_bytes(&request)?])
+            if let Some(call) = entry {
+                let mut call = call.clone();
+                call.parse_and_set_inputs(args)?;
+                let request = call.encode(false)?;
+                Ok(vec![signer, bcs::to_bytes(&request)?])
+            } else {
+                Ok(vec![signer])
+            }
         } else {
             Ok(vec![signer])
         }
@@ -186,23 +191,32 @@ impl MoveExecutor {
                 .map(|(val, tp)| {
                     let val = val.trim_matches(char::is_whitespace);
                     match tp {
-                        Type::Bool => bcs::to_bytes(&val.parse::<bool>().unwrap()),
-                        Type::U8 => bcs::to_bytes(&val.parse::<u8>().unwrap()),
-                        Type::U64 => bcs::to_bytes(&val.parse::<u64>().unwrap()),
-                        Type::U128 => bcs::to_bytes(&val.parse::<u128>().unwrap()),
+                        Type::Bool => bcs::to_bytes(&val.parse::<bool>().unwrap()).unwrap(),
+                        Type::U8 => bcs::to_bytes(&val.parse::<u8>().unwrap()).unwrap(),
+                        Type::U64 => bcs::to_bytes(&val.parse::<u64>().unwrap()).unwrap(),
+                        Type::U128 => bcs::to_bytes(&val.parse::<u128>().unwrap()).unwrap(),
                         Type::Address => {
-                            bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap())
+                            bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap()).unwrap()
                         }
                         Type::Signer => {
-                            bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap())
+                            bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap()).unwrap()
                         }
                         Type::Vector(tp) => match tp.as_ref() {
-                            Type::U8 => bcs::to_bytes(&hex::decode(val).unwrap()),
+                            Type::U8 => bcs::to_bytes(&hex::decode(val).unwrap()).unwrap(),
                             _ => unreachable!(),
                         },
+                        Type::Reference(tp) => match tp.as_ref() {
+                            Type::Signer => {
+                                bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap())
+                                    .unwrap()
+                            }
+                            _ => unreachable!(),
+                        },
+                        Type::Struct(_) => U256::from_dec_str(val)
+                            .map(|v| bcs::to_bytes(&v.0).unwrap())
+                            .unwrap(),
                         _ => unreachable!(),
                     }
-                    .unwrap()
                 })
                 .collect::<Vec<Vec<u8>>>();
             Ok(res)
