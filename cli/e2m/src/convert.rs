@@ -12,14 +12,22 @@ use translator::translate;
 impl Args {
     pub fn convert(&self) -> Result<ResultConvert> {
         let paths = path_to_abibin(&self.path)?;
-        let mv_path = self.output_path.clone().unwrap_or_else(|| {
-            let filename = path_to_filename(&paths.abi).unwrap();
-            PathBuf::from("./").join(filename).with_extension("mv")
-        });
-        let move_path = self.output_path.clone().unwrap_or_else(|| {
-            let filename = path_to_filename(&paths.abi).unwrap();
-            PathBuf::from("./").join(filename).with_extension("move")
-        });
+        let mv_path = self
+            .output_path
+            .clone()
+            .unwrap_or_else(|| {
+                let filename = path_to_filename(&paths.abi).unwrap();
+                PathBuf::from("./").join(filename)
+            })
+            .with_extension("mv");
+        let move_path = self
+            .output_path
+            .clone()
+            .unwrap_or_else(|| {
+                let filename = path_to_filename(&paths.abi).unwrap();
+                PathBuf::from("./").join(filename)
+            })
+            .with_extension("move");
 
         let address = self.profile_or_address.to_address()?;
         let address_str = format!("0x{}", &address);
