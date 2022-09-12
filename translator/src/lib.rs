@@ -1,4 +1,5 @@
 use anyhow::Error;
+use eth::abi::entries::AbiEntries;
 use eth::transpile_program;
 use move_core_types::account_address::AccountAddress;
 use mv::translator::MvIrTranslator;
@@ -13,7 +14,8 @@ pub fn translate(
     bytecode: &str,
     abi: &str,
 ) -> Result<Vec<u8>, Error> {
-    let program = transpile_program(name, bytecode, init_args, abi, U256::from(addr.as_slice()))?;
+    let abi = AbiEntries::try_from(abi)?;
+    let program = transpile_program(name, bytecode, init_args, &abi, U256::from(addr.as_slice()))?;
     let mvir = MvIrTranslator::new(addr, MAX_MEMORY, program);
     let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;
