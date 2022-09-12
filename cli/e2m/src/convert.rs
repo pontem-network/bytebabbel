@@ -12,9 +12,13 @@ use translator::translate;
 impl Args {
     pub fn convert(&self) -> Result<ResultConvert> {
         let paths = path_to_abibin(&self.path)?;
-        let output_path = self.output_path.clone().unwrap_or_else(|| {
+        let mv_path = self.output_path.clone().unwrap_or_else(|| {
             let filename = path_to_filename(&paths.abi).unwrap();
             PathBuf::from("./").join(filename).with_extension("mv")
+        });
+        let move_path = self.output_path.clone().unwrap_or_else(|| {
+            let filename = path_to_filename(&paths.abi).unwrap();
+            PathBuf::from("./").join(filename).with_extension("move")
         });
 
         let address = self.profile_or_address.to_address()?;
@@ -26,19 +30,22 @@ impl Args {
 
         let abi_content = fs::read_to_string(&paths.abi)?;
         let eth_content = fs::read_to_string(&paths.bin)?;
-        let move_bytecode: Vec<u8> = translate(
+
+        let mv = translate(
             address,
             &module_name,
             &self.init_args,
             &eth_content,
             &abi_content,
         )?;
-        fs::write(&output_path, move_bytecode)?;
+        fs::write(&mv_path, mv.bytecode)?;
+        fs::write(&move_path, mv.interface)?;
 
         paths.delete_tmp_dir();
 
         Ok(ResultConvert {
-            output_path,
+            mv_path,
+            move_path,
             module_name,
             address,
         })
@@ -205,7 +212,8 @@ impl SolPaths {
 }
 
 pub struct ResultConvert {
-    pub output_path: PathBuf,
+    pub mv_path: PathBuf,
+    pub move_path: PathBuf,
     pub module_name: String,
     pub address: AccountAddress,
 }
