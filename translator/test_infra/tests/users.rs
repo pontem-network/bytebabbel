@@ -26,7 +26,7 @@ pub fn test_for_users() {
         Flags::native_interface(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
+    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
     vm.deploy(
         "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
         bytecode,

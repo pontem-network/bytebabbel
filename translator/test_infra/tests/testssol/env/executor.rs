@@ -13,17 +13,19 @@ use aptos_types::state_store::state_key::StateKey;
 use aptos_types::state_store::state_storage_usage::StateStorageUsage;
 use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
-use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
+use aptos_vm::move_vm_ext::{MoveVmExt, SessionExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
 use eth::abi::call::{CallFn, ToCall};
 use eth::abi::entries::AbiEntries;
 use eth::abi::inc_ret_param::value::ParamValue;
+use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::value::MoveTypeLayout;
 use move_vm_types::gas::UnmeteredGasMeter;
+use move_vm_types::loaded_data::runtime_types::Type;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
@@ -32,10 +34,11 @@ pub struct MoveExecutor {
     vm: MoveVmExt,
     seq: u64,
     entries: AbiEntries,
+    flags: Flags,
 }
 
 impl MoveExecutor {
-    pub fn new(entries: AbiEntries) -> MoveExecutor {
+    pub fn new(entries: AbiEntries, flags: Flags) -> MoveExecutor {
         let resolver = INSTANCE
             .get_or_init(|| {
                 let mut resolver = Resolver::default();
@@ -59,6 +62,7 @@ impl MoveExecutor {
             vm: Self::create_vm(),
             seq: 1,
             entries,
+            flags,
         }
     }
 
@@ -106,8 +110,13 @@ impl MoveExecutor {
         let adapter = StorageAdapter::new(&self.resolver);
         let mut session = self.vm.new_session(&adapter, id);
 
-        let (args, entry) = self.prepare_args(signer, params, &module_id, &ident)?;
+        let entry = self.eth_call(ident.as_str())?;
 
+        let args = if self.flags.native_input {
+            self.prepare_move_args(signer, params, &module_id, &ident, &session)?
+        } else {
+            self.prepare_eth_args(signer, params, &entry)?
+        };
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
@@ -144,25 +153,73 @@ impl MoveExecutor {
         )
     }
 
-    fn prepare_args(
+    fn prepare_eth_args(
+        &self,
+        signer: &str,
+        args: Option<&str>,
+        entry: &Option<CallFn>,
+    ) -> Result<Vec<Vec<u8>>> {
+        let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
+        if let Some(args) = args {
+            let mut call = entry.clone().unwrap();
+            call.parse_and_set_inputs(args)?;
+            let request = call.encode(false)?;
+            Ok(vec![signer, bcs::to_bytes(&request)?])
+        } else {
+            Ok(vec![signer])
+        }
+    }
+
+    fn prepare_move_args(
         &self,
         signer: &str,
         args: Option<&str>,
         module_id: &ModuleId,
         ident: &Identifier,
-    ) -> Result<(Vec<Vec<u8>>, Option<CallFn>)> {
-        let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
+        session: &SessionExt<StorageAdapter<Resolver>>,
+    ) -> Result<Vec<Vec<u8>>> {
         if let Some(args) = args {
-            let func = self
-                .entries
-                .by_name(ident.as_str())
-                .ok_or_else(|| anyhow!("No such function:{}::{}", module_id, ident))?;
-            let mut call = ToCall::try_call(func)?;
-            call.parse_and_set_inputs(args)?;
-            let request = call.encode(false)?;
-            Ok((vec![signer, bcs::to_bytes(&request)?], Some(call)))
+            let fun = session.load_function(module_id, ident, &[]).unwrap();
+            let res = format!("{},{}", signer, args)
+                .split(",")
+                .zip(fun.parameters)
+                .map(|(val, tp)| {
+                    let val = val.trim_matches(char::is_whitespace);
+                    match tp {
+                        Type::Bool => bcs::to_bytes(&val.parse::<bool>().unwrap()),
+                        Type::U8 => bcs::to_bytes(&val.parse::<u8>().unwrap()),
+                        Type::U64 => bcs::to_bytes(&val.parse::<u64>().unwrap()),
+                        Type::U128 => bcs::to_bytes(&val.parse::<u128>().unwrap()),
+                        Type::Address => {
+                            bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap())
+                        }
+                        Type::Signer => {
+                            bcs::to_bytes(&AccountAddress::from_hex_literal(val).unwrap())
+                        }
+                        Type::Vector(tp) => match tp.as_ref() {
+                            Type::U8 => bcs::to_bytes(&hex::decode(val).unwrap()),
+                            _ => unreachable!(),
+                        },
+                        _ => unreachable!(),
+                    }
+                    .unwrap()
+                })
+                .collect::<Vec<Vec<u8>>>();
+            Ok(res)
         } else {
-            Ok((vec![signer], None))
+            let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
+            Ok(vec![signer])
+        }
+    }
+
+    fn eth_call(&self, ident: &str) -> Result<Option<CallFn>> {
+        let entry = self
+            .entries
+            .by_name(ident)
+            .map(|func| ToCall::try_call(func));
+        match entry {
+            None => Ok(None),
+            Some(res) => Ok(Some(res?)),
         }
     }
 }

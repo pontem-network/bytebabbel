@@ -84,6 +84,12 @@ impl From<VarId> for u64 {
     }
 }
 
+impl From<u64> for VarId {
+    fn from(id: u64) -> VarId {
+        VarId(id)
+    }
+}
+
 impl AsRef<u64> for VarId {
     fn as_ref(&self) -> &u64 {
         &self.0

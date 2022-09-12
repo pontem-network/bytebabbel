@@ -130,7 +130,7 @@ impl STest {
             self.abi_str(),
             Flags::default(),
         )?;
-        let mut vm = MoveExecutor::new(self.contract.abi()?.clone());
+        let mut vm = MoveExecutor::new(self.contract.abi()?.clone(), Flags::default());
         vm.deploy("0x42", bytecode);
         vm.run(&format!("{}::constructor", module_address), "0x42", None)
             .unwrap();
