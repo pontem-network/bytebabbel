@@ -277,7 +277,10 @@ impl<'a> HirTranslator<'a> {
         }
         Ok(BlockResult::Jmp(
             VarId::default(),
-            block.last().map(|i| BlockId(i.next())).unwrap_or_default(),
+            block
+                .last()
+                .map(|i| BlockId::from(i.next()))
+                .unwrap_or_default(),
         ))
     }
 }

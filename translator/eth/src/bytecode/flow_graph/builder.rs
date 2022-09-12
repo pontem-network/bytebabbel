@@ -145,7 +145,7 @@ impl<'a> FlowBuilder<'a> {
                     OpCode::Jump => return Next::Jmp(ops.remove(0)),
                     OpCode::JumpIf => {
                         let jmp = ops.remove(0);
-                        return Next::Cnd(jmp, BlockId(inst.next()));
+                        return Next::Cnd(jmp, BlockId(inst.next() as u128));
                     }
                     OpCode::Return | OpCode::Stop | OpCode::Revert | OpCode::SelfDestruct => {
                         return Next::Stop
@@ -163,7 +163,7 @@ impl<'a> FlowBuilder<'a> {
                     OpCode::Push(val) => {
                         let val = U256::from(val.as_slice());
                         if val <= U256::from(u32::MAX) {
-                            self.push_stack(vec![BlockId::from(val.as_usize())]);
+                            self.push_stack(vec![BlockId::from(val)]);
                         } else {
                             self.push_stack(vec![BlockId::default()]);
                         }
@@ -178,7 +178,7 @@ impl<'a> FlowBuilder<'a> {
             }
             block
                 .last()
-                .map(|last| Next::Jmp(BlockId(last.next())))
+                .map(|last| Next::Jmp(BlockId(last.next() as u128)))
                 .unwrap_or(Next::Stop)
         } else {
             Next::Stop
