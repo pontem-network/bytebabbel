@@ -102,7 +102,6 @@ impl ParamType {
             ParamType::Address => {
                 let mut addr = AccountAddress::from_hex_literal(value)?.to_vec();
                 addr[0..12].copy_from_slice(&[0u8; 12]);
-                println!("{:?}", addr);
                 self.set_value(addr)
             }
             _ => unreachable!(),
