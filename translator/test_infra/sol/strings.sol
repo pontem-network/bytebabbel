@@ -10,7 +10,7 @@ contract Strings {
 //    function get_state() public view returns (string memory) {
 //        return state;
 //    }
-//
+
 //    function set_state(string memory s) public {
 //        state = s;
 //    }

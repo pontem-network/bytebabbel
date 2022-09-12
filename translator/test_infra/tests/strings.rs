@@ -16,11 +16,11 @@ pub fn test_strings() {
     let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap());
     vm.deploy("0x42", bytecode);
 
-    vm.run("0x42::ForLoop::constructor", "0x42", None).unwrap();
+    vm.run("0x42::Strings::constructor", "0x42", None).unwrap();
     let res = vm
-        .run("0x42::ForLoop::const_str", "0x42", Some(""))
+        .run("0x42::Strings::const_str", "0x42", Some(""))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!("(42)", res);
+    assert_eq!("(hello)", res);
 }

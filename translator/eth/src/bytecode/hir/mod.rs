@@ -111,11 +111,11 @@ impl<'a> HirTranslator<'a> {
         let cnd_block = ir.swap_instruction(before_inst);
         let res = match res {
             BlockResult::Jmp(cnd, _) => {
-                ctx.enter_loop();
+                // ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
                 self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
                 let loop_inst = ir.swap_instruction(instructions);
-                ctx.exit_loop();
+                // ctx.exit_loop();
                 ir.push_loop(
                     loop_.jmp.block,
                     cnd_block,
@@ -132,11 +132,11 @@ impl<'a> HirTranslator<'a> {
             } => {
                 ensure!(true_br == loop_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
-                ctx.enter_loop();
+                // ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
                 self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
                 let loop_inst = ir.swap_instruction(instructions);
-                ctx.exit_loop();
+                // ctx.exit_loop();
                 ir.push_loop(
                     loop_.jmp.block,
                     cnd_block,
@@ -148,7 +148,7 @@ impl<'a> HirTranslator<'a> {
             }
             _ => bail!("loop condition must be a conditional jump"),
         };
-        ctx.exit_loop();
+        // ctx.exit_loop();
         res
     }
 

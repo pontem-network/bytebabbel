@@ -8,7 +8,6 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::debug::print_ir;
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
 use crate::bytecode::hir2::ir::Hir2;
@@ -48,7 +47,7 @@ impl<'a> HirTranslator2<'a> {
         let mut ctx = Context::new(Env::from(fun), contract_address, code_size);
         let mut ir = Hir2::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
-        print_ir(&ir, &fun.name)?;
+        // print_ir(&ir, &fun.name)?;
         Ok(ir)
     }
 
@@ -96,6 +95,7 @@ impl<'a> HirTranslator2<'a> {
         ctx.enter_loop();
         let mut cnd_ir = Hir2::default();
         let res = self.exec_block(&loop_.jmp.block, &mut cnd_ir, ctx)?;
+
         let res = match res {
             BlockResult::Jmp(cnd, _) => {
                 let mut loop_ir = Default::default();
@@ -119,8 +119,8 @@ impl<'a> HirTranslator2<'a> {
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
 
                 let mut loop_ir = Default::default();
-                self.exec_flow(loop_.br.flow(), &mut loop_ir, ctx)?;
-                ctx.exit_loop();
+                self.exec_flow(loop_.br.flow(), &mut loop_ir, &mut ctx.inherit())?;
+                //todo ctx.exit_loop();
 
                 ir.add_statement(Statement::Loop {
                     id: loop_.jmp.block,
@@ -229,11 +229,6 @@ impl<'a> HirTranslator2<'a> {
     ) -> Result<BlockResult, Error> {
         let block = self.get_block(id)?;
         let io = self.get_block_io(id)?;
-        // println!("-------------------");
-        // println!("block {:?}", id);
-        // println!("io {:?}", io);
-        // println!();
-        // println!();
 
         for inst in block.iter() {
             let pops = inst.pops();
@@ -256,9 +251,6 @@ impl<'a> HirTranslator2<'a> {
                                 expr: expr.clone(),
                             });
                             *expr = Rc::new(Expr::Var(var));
-
-                            // println!("pushing {:?}", stack);
-                            // println!("item {:?}", si);
                         }
                     }
                     ensure!(stack.len() == inst.pushes(), "Invalid stake state.");

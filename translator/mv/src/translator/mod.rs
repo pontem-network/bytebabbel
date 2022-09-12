@@ -483,7 +483,7 @@ impl MvIrTranslator {
             Operation::Exp => self.code.call(Num::Exp, &ops),
             Operation::SignExtend => self.code.call(Num::SignExtend, &ops),
             Operation::IsZero => self.code.call(Num::IsZero, &[ops[0]]),
-            Operation::BitNot => self.code.call(Num::BitNot, &ops),
+            Operation::BitNot => self.code.call(Num::BitNot, &[ops[0]]),
         }
     }
 }

@@ -18,9 +18,9 @@ pub fn test_for_loop() {
 
     vm.run("0x42::ForLoop::constructor", "0x42", None).unwrap();
     let res = vm
-        .run("0x42::ForLoop::sum", "0x42", Some("10, 10"))
+        .run("0x42::ForLoop::sum", "0x42", Some("9, 9"))
         .unwrap()
         .returns
         .to_result_str();
-    assert_eq!("(100)", res);
+    assert_eq!("(81)", res);
 }

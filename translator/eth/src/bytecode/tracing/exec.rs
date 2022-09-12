@@ -2,6 +2,7 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::instruction::Offset;
 use crate::{BlockId, OpCode, U256};
 use anyhow::{anyhow, Error};
+use std::collections::HashSet;
 use std::mem;
 
 #[derive(Debug, Clone, Default)]
@@ -9,7 +10,7 @@ pub struct Executor {
     call_stack: Vec<StackItem>,
     pub path: Vec<BlockId>,
     negative_stack_seq: usize,
-    negative_item_used: Vec<StackItem>,
+    negative_item_used: HashSet<StackItem>,
 }
 
 impl Executor {
@@ -87,10 +88,11 @@ impl Executor {
                         self.push_stack(vec![StackItem::Calc(BlockId(inst.offset()))]);
                     }
                 }
+                OpCode::Pop => {}
                 _ => {
                     for op in ops {
                         if op.is_negative() {
-                            self.negative_item_used.push(op);
+                            self.negative_item_used.insert(op);
                         }
                     }
 
@@ -130,7 +132,7 @@ impl Executor {
     }
 }
 
-#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum StackItem {
     Negative { id: usize, offset: BlockId },
     Positive { value: BlockId, offset: BlockId },
@@ -185,6 +187,6 @@ pub enum Next {
 #[derive(Clone, Debug)]
 pub struct BlockResult {
     pub next: Next,
-    pub input: Vec<StackItem>,
+    pub input: HashSet<StackItem>,
     pub output: Vec<StackItem>,
 }
