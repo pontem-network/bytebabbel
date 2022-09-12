@@ -11,6 +11,7 @@ env:
   CARGO_INCREMENTAL: 1
   CARGO_NET_RETRY: 10
   CARGO_TERM_COLOR: always
+  TARGET_CPU=amd64
 
 jobs:
   tests:
@@ -62,10 +63,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Formatting
-        run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            cargo fmt -- --check
-          fi
+        if: runner.os == 'Linux'
+        run: cargo fmt -- --check
         shell: bash
 
       - name: Test
