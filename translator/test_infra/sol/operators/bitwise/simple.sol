@@ -31,4 +31,9 @@ contract Simple {
     function and_uint(uint128 a, uint128 b) public pure returns (uint128) {
         return a & b;
     }
+
+    // # not_uint128 (20) 65515
+    function not_uint(uint128 a) public pure returns (uint128) {
+        return ~a;
+    }
 }

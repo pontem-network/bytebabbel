@@ -121,6 +121,7 @@ impl<'a> TryFrom<&'a AbiType> for EthType {
             ParamType::UInt(_) | ParamType::Int(_) => EthType::U256,
             ParamType::String => EthType::Bytes,
             ParamType::Address => EthType::Address,
+            ParamType::Byte(_) => EthType::Bytes,
             _ => bail!("Unknown type: {}", value.tp.to_string()),
         })
     }

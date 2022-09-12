@@ -11,7 +11,7 @@ mod testssol;
 #[test]
 pub fn test_for_loop() {
     env_logger::init();
-    let evm = build_sol(include_bytes!("../sol/loop/ignore_for.sol")).unwrap();
+    let evm = build_sol(include_bytes!("../sol/loop/for.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
         evm.bin(),
