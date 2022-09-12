@@ -17,6 +17,8 @@ pub mod parse;
 use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
+use eth::abi::entries::AbiEntries;
+use mv::mv_ir::interface::move_interface;
 use parse::{SolFile, SolTest};
 
 const TEST_NAME: &str = "sol";
@@ -158,7 +160,8 @@ pub fn make_move_module(
     let mut split = name.split("::");
     let addr = AccountAddress::from_hex_literal(split.next().unwrap())?;
     let name = split.next().unwrap();
-    let program = transpile_program(name, eth, init_args, abi, U256::from(addr.as_slice()))?;
+    let abi = AbiEntries::try_from(abi)?;
+    let program = transpile_program(name, eth, init_args, &abi, U256::from(addr.as_slice()))?;
     let mvir = MvIrTranslator::new(addr, MAX_MEMORY, program);
     let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;

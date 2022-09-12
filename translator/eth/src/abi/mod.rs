@@ -17,12 +17,12 @@ pub struct MoveAbi {
 }
 
 impl MoveAbi {
-    pub fn new(name: &str, abi: AbiEntries) -> Result<MoveAbi, Error> {
+    pub fn new(name: &str, abi: &AbiEntries) -> Result<MoveAbi, Error> {
         let (functions, identifiers) = abi
             .entries
-            .into_iter()
+            .iter()
             .filter_map(|entry| {
-                let hash = FunHash::from(&entry);
+                let hash = FunHash::from(entry);
                 if let Entry::Function(fun) = entry {
                     Some((hash, fun))
                 } else {
@@ -63,17 +63,17 @@ fn map_types(types: Vec<Param>) -> Result<Vec<EthType>, Error> {
         .collect()
 }
 
-fn map_function(hash: FunHash, fun: FunctionData) -> Function {
+fn map_function(hash: FunHash, fun: &FunctionData) -> Function {
     let move_input = vec![EthType::Address, EthType::Bytes];
     let move_output = vec![EthType::Bytes];
-    let eth_input = map_types(fun.inputs.unwrap_or_default())
+    let eth_input = map_types(fun.inputs.clone().unwrap_or_default())
         .context("Input mapping")
         .unwrap();
-    let eth_output = map_types(fun.outputs.unwrap_or_default())
+    let eth_output = map_types(fun.outputs.clone().unwrap_or_default())
         .context("Output mapping")
         .unwrap();
     Function {
-        name: fun.name.unwrap_or_else(|| "anonymous".to_string()),
+        name: fun.name.clone().unwrap_or_else(|| "anonymous".to_string()),
         move_input,
         hash,
         move_output,

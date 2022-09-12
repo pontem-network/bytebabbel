@@ -30,18 +30,17 @@ pub fn transpile_program(
     name: &str,
     bytecode_str: &str,
     init_args: &str,
-    abi: &str,
+    abi_entries: &AbiEntries,
     contract_addr: U256,
 ) -> Result<Program, Error> {
-    let abi_entries = AbiEntries::try_from(abi)?;
     let (contract_code, constructor) =
-        static_initialization(bytecode_str, &abi_entries, init_args, contract_addr)?;
+        static_initialization(bytecode_str, abi_entries, init_args, contract_addr)?;
     if log_enabled!(log::Level::Trace) {
         trace!("Bytecode: {}", &hex::encode(&contract_code));
     }
     let contract_code_len = contract_code.len();
 
-    let abi = MoveAbi::new(name, AbiEntries::try_from(abi)?)?;
+    let abi = MoveAbi::new(name, abi_entries)?;
 
     let contract = BlockIter::new(InstructionIter::new(contract_code))
         .map(|block| (BlockId::from(block.start), block))

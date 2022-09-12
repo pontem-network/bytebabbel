@@ -72,7 +72,7 @@ impl InstructionHandler for Instruction {
             OpCode::JumpDest => NoOp.handle(params, context),
 
             OpCode::Balance => TxMeta::Balance.handle(params, context),
-            OpCode::Origin => TxMeta::Balance.handle(params, context),
+            OpCode::Origin => TxMeta::Origin.handle(params, context),
             OpCode::Caller => TxMeta::Caller.handle(params, context),
             OpCode::CallValue => TxMeta::CallValue.handle(params, context),
             OpCode::CallDataLoad => TxMeta::CallDataLoad.handle(params, context),

@@ -54,7 +54,11 @@ impl Args {
             return self.publish(&result);
         }
 
-        Ok(result.output_path.to_string_lossy().to_string())
+        Ok(format!(
+            "{}\n{}",
+            result.mv_path.to_string_lossy(),
+            result.move_path.to_string_lossy()
+        ))
     }
 }
 

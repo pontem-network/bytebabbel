@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// High-Level Intermediate Representation
 pub mod context;
 pub mod executor;

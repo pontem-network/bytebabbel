@@ -41,7 +41,7 @@ impl Args {
             ])
             .map_err(|_| anyhow!("Invalid profile parameter. "))?;
 
-        let binarycode = fs::read(&result_convert.output_path)?;
+        let binarycode = fs::read(&result_convert.mv_path)?;
 
         // Send the compiled module and metadata using the code::publish_package_txn.
         let metadata = gen_meta(result_convert, &binarycode)?;

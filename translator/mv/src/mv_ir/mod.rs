@@ -1,4 +1,5 @@
 pub mod func;
+pub mod interface;
 
 use crate::mv_ir::func::Func;
 use anyhow::{anyhow, Error};
