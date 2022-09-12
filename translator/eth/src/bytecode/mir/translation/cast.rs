@@ -14,7 +14,7 @@ impl<'a> MirTranslator<'a> {
         let cast = Cast::make(from.s_type(), to)?;
         let var = self.variables.borrow_global(to);
         self.mir
-            .add_statement(Statement::CreateVar(var, Expression::Cast(from, cast)));
+            .add_statement(Statement::Assign(var, Expression::Cast(from, cast)));
         Ok(var)
     }
 }

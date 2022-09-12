@@ -107,15 +107,22 @@ impl MvIrTranslator {
 
         let input = if self.flags.native_input {
             let mut input = vec![signer()];
-            input.extend(map_signature(&def.eth_input, true));
+            input.extend(map_signature(&def.native_input, true));
             self.sign_writer.make_signature(input)
         } else {
             self.sign_writer
-                .make_signature(map_signature(&def.move_input, false))
+                .make_signature(map_signature(&def.eth_input, false))
         };
-        let output = self
-            .sign_writer
-            .make_signature(map_signature(&def.move_output, false));
+
+        let output = if self.flags.hidden_output {
+            self.sign_writer.make_signature(vec![])
+        } else if self.flags.native_output {
+            self.sign_writer
+                .make_signature(map_signature(&def.native_output, true))
+        } else {
+            self.sign_writer
+                .make_signature(map_signature(&def.eth_output, false))
+        };
 
         let locals = self.map_locals(mir);
         self.code.reset();
@@ -158,7 +165,7 @@ impl MvIrTranslator {
 
     fn translate_statement(&mut self, st: &Statement) -> Result<(), Error> {
         match st {
-            Statement::CreateVar(var, exp) => {
+            Statement::Assign(var, exp) => {
                 self.translate_expr(exp)?;
                 self.code.set_var(var.index());
             }

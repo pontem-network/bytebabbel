@@ -1,6 +1,7 @@
 use crate::bytecode::hir::ir::instruction::Instruction;
 use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
 use crate::bytecode::mir::ir::expression::Expression;
+use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
@@ -39,7 +40,7 @@ impl<'a> MirTranslator<'a> {
 
         let mut variables = if flags.native_input {
             let mut args = vec![SType::Signer];
-            args.extend(fun.eth_input.iter().map(SType::from));
+            args.extend(fun.native_input.iter().map(SType::from));
             Variables::new(args)
         } else {
             Variables::new(vec![signer.1, args.1])
@@ -48,10 +49,10 @@ impl<'a> MirTranslator<'a> {
         let mut mir = Mir::default();
 
         let store_var = variables.borrow_global(SType::Storage);
-        mir.add_statement(Statement::CreateVar(store_var, Expression::GetStore));
+        mir.add_statement(Statement::Assign(store_var, Expression::GetStore));
 
         let mem_var = variables.borrow_global(SType::Memory);
-        mir.add_statement(Statement::CreateVar(mem_var, Expression::GetMem));
+        mir.add_statement(Statement::Assign(mem_var, Expression::GetMem));
 
         MirTranslator {
             fun,
@@ -123,7 +124,7 @@ impl<'a> MirTranslator<'a> {
                     )?;
                 }
                 Instruction::Stop => {
-                    if !self.fun.eth_output.is_empty() {
+                    if !self.fun.native_output.is_empty() {
                         self.mir.add_statement(Statement::Abort(u8::MAX));
                     } else {
                         self.translate_ret_unit()?;
@@ -138,7 +139,7 @@ impl<'a> MirTranslator<'a> {
                 Instruction::MapVar { id, val } => {
                     let val = self.get_var(*val)?;
                     let id = self.get_var(*id)?;
-                    self.mir.add_statement(Statement::CreateVar(id, val.expr()));
+                    self.mir.add_statement(Statement::Assign(id, val.expr()));
                 }
                 Instruction::Continue {
                     loop_id: id,
@@ -179,10 +180,8 @@ impl<'a> MirTranslator<'a> {
                 let var = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, var);
 
-                self.mir.add_statement(Statement::CreateVar(
-                    var,
-                    Expression::Const(Value::from(val)),
-                ));
+                self.mir
+                    .add_statement(Statement::Assign(var, Expression::Const(Value::from(val))));
             }
             Eval::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
@@ -198,7 +197,7 @@ impl<'a> MirTranslator<'a> {
                 let addr = self.get_var(addr)?;
                 ensure!(addr.s_type() == SType::Num, "address must be of type num");
                 self.mapping.insert(id, result);
-                self.mir.add_statement(Statement::CreateVar(
+                self.mir.add_statement(Statement::Assign(
                     result,
                     Expression::MLoad {
                         memory: self.mem_var,
@@ -212,7 +211,7 @@ impl<'a> MirTranslator<'a> {
                 let addr = self.get_var(addr)?;
                 ensure!(addr.s_type() == SType::Num, "address must be of type num");
 
-                self.mir.add_statement(Statement::CreateVar(
+                self.mir.add_statement(Statement::Assign(
                     result,
                     Expression::SLoad {
                         storage: self.store_var,
@@ -222,7 +221,7 @@ impl<'a> MirTranslator<'a> {
             }
             Eval::MSize => {
                 let result = self.variables.borrow(SType::Num);
-                self.mir.add_statement(Statement::CreateVar(
+                self.mir.add_statement(Statement::Assign(
                     result,
                     Expression::MSize {
                         memory: self.mem_var,
@@ -249,7 +248,7 @@ impl<'a> MirTranslator<'a> {
                 ensure!(len.s_type() == SType::Num, "len must be of type num");
                 self.mapping.insert(id, result);
 
-                self.mir.add_statement(Statement::CreateVar(
+                self.mir.add_statement(Statement::Assign(
                     result,
                     Expression::Hash {
                         mem: self.mem_var,
@@ -271,13 +270,18 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn translate_ret_unit(&mut self) -> Result<(), Error> {
+        if self.flags.hidden_output || self.flags.native_output {
+            self.mir.add_statement(Statement::Result(vec![]));
+            return Ok(());
+        }
+
         let unit = self.variables.borrow(SType::Bytes);
         let len = self.variables.borrow(SType::Num);
-        self.mir.add_statement(Statement::CreateVar(
+        self.mir.add_statement(Statement::Assign(
             len,
             Expression::Const(Value::from(U256::zero())),
         ));
-        self.mir.add_statement(Statement::CreateVar(
+        self.mir.add_statement(Statement::Assign(
             unit,
             Expression::MSlice {
                 memory: self.mem_var,
@@ -290,19 +294,54 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn translate_ret(&mut self, offset: VarId, len: VarId) -> Result<(), Error> {
-        let offset = self.get_var(offset)?;
-        let len = self.get_var(len)?;
-        let result = self.variables.borrow(SType::Bytes);
-        self.mir.add_statement(Statement::CreateVar(
-            result,
-            Expression::MSlice {
-                memory: self.mem_var,
-                offset,
-                len,
-            },
-        ));
+        if self.flags.hidden_output {
+            self.mir.add_statement(Statement::Result(vec![]));
+            return Ok(());
+        }
 
-        self.mir.add_statement(Statement::Result(vec![result]));
+        if self.flags.native_output {
+            let mut results = vec![];
+            let offset = self.get_var(offset)?;
+            let word_size = self.variables.borrow(SType::Num);
+            self.mir.add_statement(Statement::Assign(
+                word_size,
+                Expression::Const(Value::from(U256::from(32))),
+            ));
+            let mut tmp = self.variables.borrow(SType::Num);
+
+            for tp in &self.fun.native_output {
+                self.mir.add_statement(Statement::Assign(
+                    tmp,
+                    Expression::MLoad {
+                        memory: self.mem_var,
+                        offset,
+                    },
+                ));
+                let result = self.cast(tmp, SType::from(tp))?;
+                if result.is_num() {
+                    tmp = self.variables.borrow(SType::Num);
+                }
+                results.push(result);
+                self.mir.add_statement(Statement::Assign(
+                    offset,
+                    Expression::Operation(Operation::Add, offset, word_size),
+                ));
+            }
+            self.mir.add_statement(Statement::Result(results));
+        } else {
+            let offset = self.get_var(offset)?;
+            let len = self.get_var(len)?;
+            let result = self.variables.borrow(SType::Bytes);
+            self.mir.add_statement(Statement::Assign(
+                result,
+                Expression::MSlice {
+                    memory: self.mem_var,
+                    offset,
+                    len,
+                },
+            ));
+            self.mir.add_statement(Statement::Result(vec![result]));
+        }
         Ok(())
     }
 
@@ -314,7 +353,7 @@ impl<'a> MirTranslator<'a> {
             let args = self.variables.borrow_param(self.args_index);
             ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
             self.mir
-                .add_statement(Statement::CreateVar(result, Expression::BytesLen(args)));
+                .add_statement(Statement::Assign(result, Expression::BytesLen(args)));
             self.mapping.insert(id, result);
         }
         Ok(())
@@ -331,7 +370,7 @@ impl<'a> MirTranslator<'a> {
             ensure!(offset.s_type() == SType::Num, "offset must be of type num");
             ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
 
-            self.mir.add_statement(Statement::CreateVar(
+            self.mir.add_statement(Statement::Assign(
                 result,
                 Expression::ReadNum { data, offset },
             ));

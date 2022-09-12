@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
-use once_cell::sync::OnceCell;
-
 use aptos_aggregator::transaction::ChangeSetExt;
 use aptos_crypto::HashValue;
 use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
@@ -13,7 +11,7 @@ use aptos_types::state_store::state_key::StateKey;
 use aptos_types::state_store::state_storage_usage::StateStorageUsage;
 use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
-use aptos_vm::move_vm_ext::{MoveVmExt, SessionExt, SessionId};
+use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
 use eth::abi::call::{CallFn, ToCall};
 use eth::abi::entries::AbiEntries;
@@ -24,9 +22,12 @@ use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::value::MoveTypeLayout;
+use move_vm_runtime::session::LoadedFunctionInstantiation;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
+use once_cell::sync::OnceCell;
 use primitive_types::U256;
+use serde::Deserialize;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 
@@ -114,7 +115,8 @@ impl MoveExecutor {
         let entry = self.eth_call(ident.as_str())?;
 
         let args = if self.flags.native_input {
-            self.prepare_move_args(signer, params, &module_id, &ident, &session)?
+            let fun = session.load_function(&module_id, &ident, &[]);
+            self.prepare_move_args(signer, params, &fun.unwrap())?
         } else {
             self.prepare_eth_args(signer, params, &entry)?
         };
@@ -125,17 +127,63 @@ impl MoveExecutor {
         let events = result.events.clone();
         let output = result.into_change_set(&mut ()).unwrap();
 
-        let returns = if let Some(entry) = entry {
-            self.decode_result(returns, entry)?
-        } else {
+        let returns = if self.flags.hidden_output {
             vec![]
+        } else if self.flags.native_output {
+            self.decode_result_move(returns)?
+        } else {
+            if let Some(entry) = entry {
+                self.decode_result_eth(returns, entry)?
+            } else {
+                vec![]
+            }
         };
+
         self.resolver.apply(output);
 
         Ok(ExecutionResult { returns, events })
     }
 
-    fn decode_result(
+    fn decode_result_move(
+        &self,
+        result: Vec<(Vec<u8>, MoveTypeLayout)>,
+    ) -> Result<Vec<ParamValue>> {
+        result
+            .iter()
+            .map(|(val, tp)| match tp {
+                MoveTypeLayout::Bool => {
+                    bcs::from_bytes::<bool>(&val).map(|val| ParamValue::Bool(val))
+                }
+                MoveTypeLayout::U8 => bcs::from_bytes::<u8>(&val).map(|val| ParamValue::UInt {
+                    size: 32,
+                    value: U256::from(val),
+                }),
+                MoveTypeLayout::U64 => bcs::from_bytes::<u64>(&val).map(|val| ParamValue::UInt {
+                    size: 32,
+                    value: U256::from(val),
+                }),
+                MoveTypeLayout::U128 => bcs::from_bytes::<u128>(&val).map(|val| ParamValue::UInt {
+                    size: 32,
+                    value: U256::from(val),
+                }),
+                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(&val)
+                    .map(|val| ParamValue::Address(val.into_bytes())),
+                MoveTypeLayout::Vector(_) => {
+                    todo!()
+                }
+                MoveTypeLayout::Struct(_) => {
+                    bcs::from_bytes::<U256Wrapper>(&val).map(|val| ParamValue::UInt {
+                        size: 32,
+                        value: U256(val.0),
+                    })
+                }
+                _ => unreachable!(),
+            })
+            .collect::<Result<Vec<ParamValue>, _>>()
+            .map_err(|e| anyhow!(e))
+    }
+
+    fn decode_result_eth(
         &self,
         result: Vec<(Vec<u8>, MoveTypeLayout)>,
         callfn: CallFn,
@@ -179,15 +227,12 @@ impl MoveExecutor {
         &self,
         signer: &str,
         args: Option<&str>,
-        module_id: &ModuleId,
-        ident: &Identifier,
-        session: &SessionExt<StorageAdapter<Resolver>>,
+        fun: &LoadedFunctionInstantiation,
     ) -> Result<Vec<Vec<u8>>> {
         if let Some(args) = args {
-            let fun = session.load_function(module_id, ident, &[]).unwrap();
             let res = format!("{},{}", signer, args)
                 .split(",")
-                .zip(fun.parameters)
+                .zip(&fun.parameters)
                 .map(|(val, tp)| {
                     let val = val.trim_matches(char::is_whitespace);
                     match tp {
@@ -237,6 +282,9 @@ impl MoveExecutor {
         }
     }
 }
+
+#[derive(Deserialize)]
+pub struct U256Wrapper([u64; 4]);
 
 #[derive(Debug)]
 pub struct ExecutionResult {

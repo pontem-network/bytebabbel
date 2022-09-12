@@ -31,14 +31,14 @@ impl<'a> MirTranslator<'a> {
         match cmd {
             UnaryOp::IsZero => {
                 let result = self.map_var(result, SType::Bool);
-                self.mir.add_statement(Statement::CreateVar(
+                self.mir.add_statement(Statement::Assign(
                     result,
                     Operation::IsZero.expr(op, Variable::none()),
                 ))
             }
             UnaryOp::Not => {
                 let result = self.map_var(result, SType::Num);
-                self.mir.add_statement(Statement::CreateVar(
+                self.mir.add_statement(Statement::Assign(
                     result,
                     Operation::BitNot.expr(op, Variable::none()),
                 ))
@@ -56,14 +56,14 @@ impl<'a> MirTranslator<'a> {
                     .push_const_bool(false)
                     .eq()?
                     .build(SType::Bool)?;
-                self.mir.add_statement(Statement::CreateVar(result, ops));
+                self.mir.add_statement(Statement::Assign(result, ops));
             }
             UnaryOp::Not => {
                 let ops = StackOpsBuilder::default()
                     .push_bool(op)?
                     .not()?
                     .build(SType::Bool)?;
-                self.mir.add_statement(Statement::CreateVar(result, ops));
+                self.mir.add_statement(Statement::Assign(result, ops));
             }
         }
         Ok(())
