@@ -31,7 +31,7 @@ impl InstructionHandler for CodeOp {
             }
             CodeOp::CodeCopy => {
                 let offset = ir.resolve_var(ops[1]).unwrap_or_default();
-                ir.code_copy(BlockId::from(offset.as_usize()));
+                ir.code_copy(BlockId::from(offset));
                 ExecutionResult::Output(vec![])
             }
             CodeOp::ExtCodeSize => {

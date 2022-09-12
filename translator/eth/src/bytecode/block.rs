@@ -1,6 +1,7 @@
-use crate::bytecode::instruction::Instruction;
+use crate::bytecode::instruction::{Instruction, Offset};
 use crate::bytecode::loc::Loc;
 use crate::OpCode;
+use primitive_types::U256;
 use std::fmt::{Debug, Display, Formatter};
 
 pub type InstructionBlock = Loc<Vec<Instruction>>;
@@ -58,15 +59,15 @@ impl<I: Iterator<Item = Instruction>> Iterator for BlockIter<I> {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
-pub struct BlockId(pub usize);
+pub struct BlockId(pub u128);
 
 impl BlockId {
     pub fn hex(x: &str) -> BlockId {
-        let mut buf = 0_usize.to_be_bytes();
+        let mut buf = 0_u128.to_be_bytes();
         let f = hex::decode(x).unwrap();
         let start_idx = buf.len() - f.len();
         buf[start_idx..].copy_from_slice(&f);
-        BlockId(usize::from_be_bytes(buf))
+        BlockId(u128::from_be_bytes(buf))
     }
 }
 
@@ -82,14 +83,26 @@ impl Display for BlockId {
     }
 }
 
-impl From<BlockId> for usize {
+impl From<BlockId> for u128 {
     fn from(id: BlockId) -> Self {
         id.0
     }
 }
 
-impl From<usize> for BlockId {
-    fn from(val: usize) -> Self {
+impl From<u128> for BlockId {
+    fn from(val: u128) -> Self {
         BlockId(val)
+    }
+}
+
+impl From<U256> for BlockId {
+    fn from(val: U256) -> Self {
+        BlockId(val.as_u128())
+    }
+}
+
+impl From<Offset> for BlockId {
+    fn from(val: Offset) -> Self {
+        BlockId::from(val as u128)
     }
 }

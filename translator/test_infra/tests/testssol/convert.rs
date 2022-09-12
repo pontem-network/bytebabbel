@@ -32,11 +32,6 @@ impl ResultToString for ParamValue {
             ParamValue::String(value) => String::from_utf8(value.clone()).unwrap_or_default(),
             ParamValue::Array(..) => {
                 todo!()
-                // if let Some(size) = size {
-                //     format!("{tp:?}[{size}]")
-                // } else {
-                //     format!("{tp:?}[]")
-                // }
             }
             ParamValue::Custom { .. } => {
                 todo!()

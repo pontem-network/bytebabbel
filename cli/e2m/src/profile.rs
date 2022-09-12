@@ -13,9 +13,10 @@ pub struct ProfileConfig {
 impl ProfileConfig {
     pub fn load(profile_name: &str) -> Result<ProfileConfig> {
         fs::read_to_string("./.aptos/config.yaml")
-            .map_err(|err| anyhow!("Error: {err:?}"))
+            .map_err(|_| anyhow!("No profiles found. To create a profile, use \"$ aptos init\""))
             .and_then(|yaml_string| {
-                serde_yaml::from_str(&yaml_string).map_err(|err| anyhow!("Error: {err:?}"))
+                serde_yaml::from_str(&yaml_string)
+                    .map_err(|err| anyhow!("Invalid profile format. Error: {err:?}"))
             })
             .and_then(|yaml: Value| {
                 let account: String = yaml

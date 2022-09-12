@@ -14,6 +14,7 @@ pub mod parse;
 use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
+use eth::abi::entries::AbiEntries;
 use eth::Flags;
 use parse::{SolFile, SolTest};
 use translator::translate;

@@ -31,18 +31,18 @@ impl<C> Loc<C> {
 }
 
 pub trait Move {
-    fn move_forward(&mut self, offset: usize);
-    fn move_back(&mut self, offset: usize);
+    fn move_forward(&mut self, offset: Offset);
+    fn move_back(&mut self, offset: Offset);
 }
 
 impl<C: Move> Move for Loc<C> {
-    fn move_forward(&mut self, offset: usize) {
+    fn move_forward(&mut self, offset: Offset) {
         self.start += offset;
         self.end += offset;
         self.inner.move_forward(offset);
     }
 
-    fn move_back(&mut self, offset: usize) {
+    fn move_back(&mut self, offset: Offset) {
         self.start -= offset;
         self.end -= offset;
         self.inner.move_back(offset);
@@ -50,7 +50,7 @@ impl<C: Move> Move for Loc<C> {
 }
 
 impl Move for Loc<Vec<Instruction>> {
-    fn move_forward(&mut self, offset: usize) {
+    fn move_forward(&mut self, offset: Offset) {
         self.start += offset;
         self.end += offset;
 
@@ -59,7 +59,7 @@ impl Move for Loc<Vec<Instruction>> {
         }
     }
 
-    fn move_back(&mut self, offset: usize) {
+    fn move_back(&mut self, offset: Offset) {
         self.start -= offset;
         self.end -= offset;
         for inst in &mut self.inner {
