@@ -1,6 +1,6 @@
 use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
-use crate::translator::signature::{map_signature, SignatureWriter};
+use crate::translator::signature::{map_signature, signer, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, bail, Error};
 use eth::abi::entries::FunHash;
@@ -13,6 +13,7 @@ use eth::bytecode::mir::ir::Mir;
 use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
+use eth::Flags;
 use intrinsic::{template, Mem, Num, Persist};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
@@ -29,10 +30,16 @@ pub struct MvIrTranslator {
     template: CompiledModule,
     max_memory: u64,
     program: Option<Program>,
+    flags: Flags,
 }
 
 impl MvIrTranslator {
-    pub fn new(address: AccountAddress, max_memory: u64, program: Program) -> MvIrTranslator {
+    pub fn new(
+        address: AccountAddress,
+        max_memory: u64,
+        program: Program,
+        flags: Flags,
+    ) -> MvIrTranslator {
         let template = template(address, program.name(), program.identifiers());
         Self {
             sign_writer: SignatureWriter::new(&template.signatures),
@@ -40,6 +47,7 @@ impl MvIrTranslator {
             template,
             max_memory,
             program: Some(program),
+            flags,
         }
     }
 
@@ -66,7 +74,7 @@ impl MvIrTranslator {
 
         let input = self
             .sign_writer
-            .make_signature(map_signature(&[EthType::Address]));
+            .make_signature(map_signature(&[EthType::Address], false));
         let output = self.sign_writer.make_signature(vec![]);
         Ok(Func {
             name: Identifier::new("constructor")?,
@@ -97,13 +105,17 @@ impl MvIrTranslator {
         let name = Identifier::new(def.name.clone())?;
         let visibility = Visibility::Public;
 
-        let input = self
-            .sign_writer
-            .make_signature(map_signature(&def.move_input));
-
+        let input = if self.flags.native_input {
+            let mut input = vec![signer()];
+            input.extend(map_signature(&def.eth_input, true));
+            self.sign_writer.make_signature(input)
+        } else {
+            self.sign_writer
+                .make_signature(map_signature(&def.move_input, false))
+        };
         let output = self
             .sign_writer
-            .make_signature(map_signature(&def.move_output));
+            .make_signature(map_signature(&def.move_output, false));
 
         let locals = self.map_locals(mir);
         self.code.reset();
@@ -129,8 +141,9 @@ impl MvIrTranslator {
                 SType::Bool => SignatureToken::Bool,
                 SType::Storage => Persist::token(),
                 SType::Memory => Mem::token(),
-                SType::Address => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
+                SType::Signer => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
                 SType::Bytes => SignatureToken::Vector(Box::new(SignatureToken::U8)),
+                SType::Address => SignatureToken::Address,
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -402,13 +415,19 @@ impl MvIrTranslator {
     fn translate_cast(&mut self, var: &Variable, cast: &Cast) -> Result<(), Error> {
         match cast {
             Cast::BoolToNum => self.code.call(Num::FromBool, &[CallOp::Var(*var)]),
-            Cast::AddressToNum => self.code.call(Num::FromAddress, &[CallOp::Var(*var)]),
+            Cast::SignerToNum => self.code.call(Num::FromSigner, &[CallOp::Var(*var)]),
             Cast::BytesToNum => {
                 self.code
                     .call(Num::FromBytes, &[CallOp::Var(*var), CallOp::ConstU64(0)]);
             }
             Cast::NumToBool => {
                 self.code.call(Num::ToBool, &[CallOp::Var(*var)]);
+            }
+            Cast::AddressToNum => {
+                self.code.call(Num::FromAddress, &[CallOp::Var(*var)]);
+            }
+            Cast::NumToAddress => {
+                self.code.call(Num::ToAddress, &[CallOp::Var(*var)]);
             }
         }
         Ok(())

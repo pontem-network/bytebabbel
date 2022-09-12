@@ -35,7 +35,7 @@ impl Env {
 impl From<&Function> for Env {
     fn from(fun: &Function) -> Self {
         Env {
-            call_data_size: U256::from(fun.move_input.len() * FRAME_SIZE + FUN_HASH_LEN),
+            call_data_size: U256::from(fun.eth_input.len() * FRAME_SIZE + FUN_HASH_LEN),
             hash: fun.hash,
         }
     }

@@ -6,7 +6,6 @@ use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
-use crate::bytecode::hir2::HirTranslator2;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
@@ -32,6 +31,7 @@ pub fn transpile_program(
     init_args: &str,
     abi_entries: &AbiEntries,
     contract_addr: U256,
+    flags: Flags,
 ) -> Result<Program, Error> {
     let (contract_code, constructor) =
         static_initialization(bytecode_str, abi_entries, init_args, contract_addr)?;
@@ -49,14 +49,13 @@ pub fn transpile_program(
     let mut flow_builder = FlowBuilder::new(&contract)?;
     let contract_flow = flow_builder.make_flow();
     let block_io = flow_builder.block_io();
-    let hir = HirTranslator::new(&contract, contract_flow.clone(), block_io.clone());
-    let hir2 = HirTranslator2::new(&contract, contract_flow, block_io);
+    let hir = HirTranslator::new(&contract, contract_flow, block_io, flags);
 
     let functions = abi
         .functions()
         .iter()
         .map(|(hash, fun)| {
-            translate_function(&hir, &hir2, fun, contract_addr, contract_code_len as u128)
+            translate_function(&hir, fun, contract_addr, contract_code_len as u128, flags)
                 .map(|mir| (*hash, mir))
         })
         .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
@@ -65,14 +64,13 @@ pub fn transpile_program(
 
 pub fn translate_function(
     hir_translator: &HirTranslator,
-    hir_translator2: &HirTranslator2,
     fun: &Function,
     contract_addr: U256,
     code_size: u128,
+    flags: Flags,
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
-    hir_translator2.translate_fun(fun, contract_addr, code_size)?;
-    let mir_translator = MirTranslator::new(fun);
+    let mir_translator = MirTranslator::new(fun, flags);
     let mir = mir_translator.translate(hir)?;
     mir.print(&fun.name);
     Ok(mir)
@@ -88,4 +86,32 @@ pub fn parse_bytecode(input: &str) -> Result<Vec<u8>, Error> {
     let mut bytecode = hex::decode(input)?;
     remove_swarm_hash(&mut bytecode);
     Ok(bytecode)
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Flags {
+    pub native_input: bool,
+    pub native_output: bool,
+    pub hidden_output: bool,
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for Flags {
+    fn default() -> Self {
+        Self {
+            native_input: false,
+            native_output: false,
+            hidden_output: false,
+        }
+    }
+}
+
+impl Flags {
+    pub fn native_interface() -> Self {
+        Self {
+            native_input: true,
+            native_output: true,
+            hidden_output: false,
+        }
+    }
 }

@@ -6,3 +6,4 @@ translator/intrinsic/mv/build
 Cargo.lock
 translator/intrinsic/mv/template.mv
 .idea
+.aptos

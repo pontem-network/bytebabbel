@@ -1,7 +1,7 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
 use crate::bytecode::types::Env;
-use crate::BlockId;
+use crate::{BlockId, Flags};
 use primitive_types::U256;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -15,10 +15,11 @@ pub struct Context {
     loop_stack_size: usize,
     static_analysis: bool,
     code_size: u128,
+    flags: Flags,
 }
 
 impl Context {
-    pub fn new(env: Env, contract_address: U256, code_size: u128) -> Context {
+    pub fn new(env: Env, contract_address: U256, code_size: u128, flags: Flags) -> Context {
         Context {
             address: contract_address,
             stack: Stack::default(),
@@ -27,6 +28,7 @@ impl Context {
             loop_stack_size: 0,
             static_analysis: true,
             code_size,
+            flags,
         }
     }
 
@@ -114,6 +116,10 @@ impl Context {
 
     pub fn exit_loop(&mut self) {
         self.loop_stack_size -= 1;
+    }
+
+    pub fn flags(&self) -> &Flags {
+        &self.flags
     }
 }
 

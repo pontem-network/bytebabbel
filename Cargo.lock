@@ -7750,6 +7750,7 @@ dependencies = [
  "evm",
  "framework",
  "hex",
+ "intrinsic",
  "itertools",
  "lazy_static 1.4.0",
  "libtest-mimic",
@@ -7771,6 +7772,7 @@ dependencies = [
  "serde_json",
  "sha3 0.10.4",
  "termion",
+ "translator",
 ]
 
 [[package]]

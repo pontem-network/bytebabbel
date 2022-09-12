@@ -50,29 +50,10 @@ impl InstructionHandler for TxMeta {
             }
             TxMeta::CallValue => U256::zero(),
             TxMeta::CallDataLoad => {
-                let offset = params[0];
-                if ctx.is_static_analysis_enable() {
-                    ctx.disable_static_analysis();
-                    if let Some(offset) = ir.resolve_var(offset) {
-                        if offset.is_zero() {
-                            let mut buf = [0u8; 32];
-                            buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
-                            let id = ir.create_var(Eval::Val(U256::from(buf)));
-                            return ExecutionResult::Output(vec![id]);
-                        }
-                    }
-                }
-
-                let id = ir.create_var(Eval::Args(offset));
-                return ExecutionResult::Output(vec![id]);
+                return call_data_load(params, ir, ctx);
             }
             TxMeta::CallDataSize => {
-                let id = if ctx.is_static_analysis_enable() {
-                    ir.create_var(Eval::Val(U256::from(1024)))
-                } else {
-                    ir.create_var(Eval::ArgsSize)
-                };
-                return ExecutionResult::Output(vec![id]);
+                return call_data_size(ir, ctx);
             }
             TxMeta::Blockhash => U256::zero(),
             TxMeta::Timestamp => U256::zero(),
@@ -85,5 +66,50 @@ impl InstructionHandler for TxMeta {
         };
         let id = ir.create_var(Eval::Val(val));
         ExecutionResult::Output(vec![id])
+    }
+}
+
+fn call_data_size(ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+    let id = if ctx.flags().native_input {
+        ir.create_var(Eval::Val(ctx.env().call_data_size()))
+    } else if ctx.is_static_analysis_enable() {
+        ir.create_var(Eval::Val(U256::from(1024)))
+    } else {
+        ir.create_var(Eval::ArgsSize)
+    };
+    ExecutionResult::Output(vec![id])
+}
+
+fn call_data_load(params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+    let offset = params[0];
+    if ctx.flags().native_input {
+        if let Some(offset) = ir.resolve_var(offset) {
+            if offset.is_zero() {
+                let mut buf = [0u8; 32];
+                buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
+                let id = ir.create_var(Eval::Val(U256::from(buf)));
+                ExecutionResult::Output(vec![id])
+            } else {
+                let index = ((offset - U256::from(4)) / U256::from(32)) + U256::one();
+                ExecutionResult::Output(
+                    vec![ir.create_var(Eval::Args(VarId::from(index.as_u64())))],
+                )
+            }
+        } else {
+            panic!("unsupported dinamic tepes");
+        }
+    } else {
+        if ctx.is_static_analysis_enable() {
+            ctx.disable_static_analysis();
+            if let Some(offset) = ir.resolve_var(offset) {
+                if offset.is_zero() {
+                    let mut buf = [0u8; 32];
+                    buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
+                    let id = ir.create_var(Eval::Val(U256::from(buf)));
+                    return ExecutionResult::Output(vec![id]);
+                }
+            }
+        }
+        ExecutionResult::Output(vec![ir.create_var(Eval::Args(offset))])
     }
 }

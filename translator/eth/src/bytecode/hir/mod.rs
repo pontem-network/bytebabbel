@@ -16,7 +16,7 @@ use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
 use crate::bytecode::tracing::tracer::BlockIO;
 use crate::bytecode::types::{Env, Function};
-use crate::BlockId;
+use crate::{BlockId, Flags};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
@@ -26,6 +26,7 @@ pub struct HirTranslator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
     contact_flow: Flow,
     block_io: HashMap<BlockId, BlockIO>,
+    flags: Flags,
 }
 
 impl<'a> HirTranslator<'a> {
@@ -33,11 +34,13 @@ impl<'a> HirTranslator<'a> {
         contract: &'a HashMap<BlockId, InstructionBlock>,
         contact_flow: Flow,
         block_io: HashMap<BlockId, BlockIO>,
+        flags: Flags,
     ) -> HirTranslator {
         HirTranslator {
             contract,
             contact_flow,
             block_io,
+            flags,
         }
     }
 
@@ -47,7 +50,7 @@ impl<'a> HirTranslator<'a> {
         contract_address: U256,
         code_size: u128,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size);
+        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, self.flags);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;

@@ -8,6 +8,7 @@ pub enum SType {
     Memory,
     Num,
     Bool,
+    Signer,
     Address,
     Bytes,
 }
@@ -22,8 +23,9 @@ impl Display for SType {
                 SType::Bool => "bool",
                 SType::Storage => "Storage",
                 SType::Memory => "Memory",
-                SType::Address => "Address",
+                SType::Signer => "Signer",
                 SType::Bytes => "vector<u8>",
+                SType::Address => "address",
             }
         )
     }

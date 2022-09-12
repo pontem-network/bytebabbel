@@ -5,8 +5,8 @@ use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
-use crate::{Function, Hir};
-use anyhow::{anyhow, ensure, Error};
+use crate::{Flags, Function, Hir};
+use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
 
@@ -29,18 +29,22 @@ pub struct MirTranslator<'a> {
     pub(super) store_var: Variable,
     pub(super) signer_index: LocalIndex,
     pub(super) args_index: LocalIndex,
+    pub(super) flags: Flags,
 }
 
 impl<'a> MirTranslator<'a> {
-    pub fn new(fun: &'a Function) -> MirTranslator<'a> {
-        // Now we use static parameters signer and args
-        // Signer = 0
-        // Args = 1
-        // todo Replace with dynamic parameters
-        let signer = (0, SType::Address);
+    pub fn new(fun: &'a Function, flags: Flags) -> MirTranslator<'a> {
+        let signer = (0, SType::Signer);
         let args = (1, SType::Bytes);
 
-        let mut variables = Variables::new(vec![signer.1, args.1]);
+        let mut variables = if flags.native_input {
+            let mut args = vec![SType::Signer];
+            args.extend(fun.eth_input.iter().map(SType::from));
+            Variables::new(args)
+        } else {
+            Variables::new(vec![signer.1, args.1])
+        };
+
         let mut mir = Mir::default();
 
         let store_var = variables.borrow_global(SType::Storage);
@@ -58,6 +62,7 @@ impl<'a> MirTranslator<'a> {
             store_var,
             signer_index: signer.0,
             args_index: args.0,
+            flags,
         }
     }
 
@@ -230,25 +235,10 @@ impl<'a> MirTranslator<'a> {
                 self.mapping.insert(id, result);
             }
             Eval::ArgsSize => {
-                let result = self.variables.borrow(SType::Num);
-                let args = self.variables.borrow_param(self.args_index);
-                ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
-                self.mir
-                    .add_statement(Statement::CreateVar(result, Expression::BytesLen(args)));
-                self.mapping.insert(id, result);
+                self.translate_args_size(id)?;
             }
             Eval::Args(offset) => {
-                let result = self.variables.borrow(SType::Num);
-                let data = self.variables.borrow_param(self.args_index);
-                let offset = self.get_var(offset)?;
-                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
-                ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
-
-                self.mir.add_statement(Statement::CreateVar(
-                    result,
-                    Expression::ReadNum { data, offset },
-                ));
-                self.mapping.insert(id, result);
+                self.translate_args(offset, id)?;
             }
             Eval::Hash(offset, len) => {
                 let result = self.variables.borrow(SType::Num);
@@ -313,6 +303,40 @@ impl<'a> MirTranslator<'a> {
         ));
 
         self.mir.add_statement(Statement::Result(vec![result]));
+        Ok(())
+    }
+
+    fn translate_args_size(&mut self, id: VarId) -> Result<(), Error> {
+        if self.flags.native_input {
+            bail!("args_size is not supported in native input mode");
+        } else {
+            let result = self.variables.borrow(SType::Num);
+            let args = self.variables.borrow_param(self.args_index);
+            ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
+            self.mir
+                .add_statement(Statement::CreateVar(result, Expression::BytesLen(args)));
+            self.mapping.insert(id, result);
+        }
+        Ok(())
+    }
+
+    fn translate_args(&mut self, offset: VarId, id: VarId) -> Result<(), Error> {
+        if self.flags.native_input {
+            let param = self.variables.borrow_param(offset.local_index());
+            self.mapping.insert(id, param);
+        } else {
+            let result = self.variables.borrow(SType::Num);
+            let data = self.variables.borrow_param(self.args_index);
+            let offset = self.get_var(offset)?;
+            ensure!(offset.s_type() == SType::Num, "offset must be of type num");
+            ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
+
+            self.mir.add_statement(Statement::CreateVar(
+                result,
+                Expression::ReadNum { data, offset },
+            ));
+            self.mapping.insert(id, result);
+        }
         Ok(())
     }
 }

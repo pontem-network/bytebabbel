@@ -1,4 +1,5 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::mir::ir::types::LocalIndex;
 use anyhow::{anyhow, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
@@ -84,9 +85,21 @@ impl From<VarId> for u64 {
     }
 }
 
+impl From<u64> for VarId {
+    fn from(id: u64) -> VarId {
+        VarId(id)
+    }
+}
+
 impl AsRef<u64> for VarId {
     fn as_ref(&self) -> &u64 {
         &self.0
+    }
+}
+
+impl VarId {
+    pub fn local_index(&self) -> LocalIndex {
+        self.0 as u8
     }
 }
 
