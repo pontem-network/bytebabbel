@@ -35,7 +35,11 @@ impl Args {
             contract_addr: address,
             name: &module_name,
             initialization_args: &self.init_args,
-            flags: Flags::default(),
+            flags: Flags {
+                native_input: self.native_input,
+                native_output: self.native_output,
+                hidden_output: self.hidde_output,
+            },
         };
 
         let mv = translate(&eth_content, &abi_content, cfg)?;

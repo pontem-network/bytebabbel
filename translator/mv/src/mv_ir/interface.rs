@@ -31,11 +31,11 @@ pub fn move_interface(
         })
         .map(|f| write_function(&mut buff, f, module, flags))
         .collect::<Result<Vec<_>, Error>>()?;
-    writeln!(buff, "}}")?;
 
     if flags.native_input || flags.native_output {
         write_u256(&mut buff)?;
     }
+    writeln!(buff, "}}")?;
     Ok(buff)
 }
 

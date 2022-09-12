@@ -43,6 +43,15 @@ pub struct Args {
     #[clap(long = "deploy", short = 'd', value_parser)]
     #[cfg(feature = "deploy")]
     deploy: bool,
+
+    #[clap(long = "native_input", default_value = "false")]
+    native_input: bool,
+
+    #[clap(long = "native_output", default_value = "false")]
+    native_output: bool,
+
+    #[clap(long = "hidde_output", default_value = "false")]
+    hidde_output: bool,
 }
 
 impl Args {
