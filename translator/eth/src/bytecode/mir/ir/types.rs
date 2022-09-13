@@ -7,6 +7,7 @@ pub enum SType {
     Storage,
     Memory,
     Num,
+    RawNum,
     Bool,
     Signer,
     Address,
@@ -26,6 +27,7 @@ impl Display for SType {
                 SType::Signer => "Signer",
                 SType::Bytes => "vector<u8>",
                 SType::Address => "address",
+                SType::RawNum => "u128",
             }
         )
     }
@@ -60,10 +62,16 @@ impl Value {
     }
 }
 
-impl From<&EthType> for SType {
-    fn from(tp: &EthType) -> Self {
-        match tp {
-            EthType::U256 => SType::Num,
+impl SType {
+    pub fn from_eth_type(eth_type: &EthType, u128_io: bool) -> Self {
+        match eth_type {
+            EthType::U256 => {
+                if u128_io {
+                    SType::RawNum
+                } else {
+                    SType::Num
+                }
+            }
             EthType::Bool => SType::Bool,
             EthType::Address => SType::Address,
             EthType::Bytes => SType::Bytes,

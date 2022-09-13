@@ -72,9 +72,9 @@ impl MvIrTranslator {
         self.translate_statements(mir.statements())?;
         let code = self.code.freeze()?;
 
-        let input = self
-            .sign_writer
-            .make_signature(map_signature(&[EthType::Address], false));
+        let input =
+            self.sign_writer
+                .make_signature(map_signature(&[EthType::Address], false, &self.flags));
         let output = self.sign_writer.make_signature(vec![]);
         Ok(Func {
             name: Identifier::new("constructor")?,
@@ -107,21 +107,21 @@ impl MvIrTranslator {
 
         let input = if self.flags.native_input {
             let mut input = vec![signer()];
-            input.extend(map_signature(&def.native_input, true));
+            input.extend(map_signature(&def.native_input, true, &self.flags));
             self.sign_writer.make_signature(input)
         } else {
             self.sign_writer
-                .make_signature(map_signature(&def.eth_input, false))
+                .make_signature(map_signature(&def.eth_input, false, &self.flags))
         };
 
         let output = if self.flags.hidden_output {
             self.sign_writer.make_signature(vec![])
         } else if self.flags.native_output {
             self.sign_writer
-                .make_signature(map_signature(&def.native_output, true))
+                .make_signature(map_signature(&def.native_output, true, &self.flags))
         } else {
             self.sign_writer
-                .make_signature(map_signature(&def.eth_output, false))
+                .make_signature(map_signature(&def.eth_output, false, &self.flags))
         };
 
         let locals = self.map_locals(mir);
@@ -151,6 +151,7 @@ impl MvIrTranslator {
                 SType::Signer => SignatureToken::Reference(Box::new(SignatureToken::Signer)),
                 SType::Bytes => SignatureToken::Vector(Box::new(SignatureToken::U8)),
                 SType::Address => SignatureToken::Address,
+                SType::RawNum => SignatureToken::U128,
             })
             .collect();
         self.sign_writer.make_signature(types)
@@ -435,6 +436,12 @@ impl MvIrTranslator {
             }
             Cast::NumToAddress => {
                 self.code.call(Num::ToAddress, &[CallOp::Var(*var)]);
+            }
+            Cast::RawNumToNum => {
+                self.code.call(Num::FromU128, &[CallOp::Var(*var)]);
+            }
+            Cast::NumToRawNum => {
+                self.code.call(Num::ToU128, &[CallOp::Var(*var)]);
             }
         }
         Ok(())

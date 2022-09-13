@@ -1,17 +1,24 @@
 use eth::bytecode::types::EthType;
+use eth::Flags;
 use intrinsic::Num;
 use move_binary_format::file_format::{Signature, SignatureIndex, SignatureToken};
 
-pub fn map_signature(eth_types: &[EthType], is_native: bool) -> Vec<SignatureToken> {
+pub fn map_signature(eth_types: &[EthType], is_native: bool, flags: &Flags) -> Vec<SignatureToken> {
     eth_types
         .iter()
-        .map(|eth| map_type(eth, is_native))
+        .map(|eth| map_type(eth, is_native, flags))
         .collect()
 }
 
-pub fn map_type(eth_type: &EthType, is_native: bool) -> SignatureToken {
+pub fn map_type(eth_type: &EthType, is_native: bool, flags: &Flags) -> SignatureToken {
     match eth_type {
-        EthType::U256 => Num::token(),
+        EthType::U256 => {
+            if flags.u128_io {
+                SignatureToken::U128
+            } else {
+                Num::token()
+            }
+        }
         EthType::Bool => SignatureToken::Bool,
         EthType::Address => {
             if is_native {

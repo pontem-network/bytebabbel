@@ -48,6 +48,8 @@ pub enum Cast {
     NumToBool,
     AddressToNum,
     NumToAddress,
+    RawNumToNum,
+    NumToRawNum,
 }
 
 impl Cast {
@@ -59,6 +61,8 @@ impl Cast {
             (SType::Num, SType::Bool) => Ok(Cast::NumToBool),
             (SType::Address, SType::Num) => Ok(Cast::AddressToNum),
             (SType::Num, SType::Address) => Ok(Cast::NumToAddress),
+            (SType::RawNum, SType::Num) => Ok(Cast::RawNumToNum),
+            (SType::Num, SType::RawNum) => Ok(Cast::NumToRawNum),
             _ => Err(anyhow!("Can't cast {:?} to {:?}", from, to)),
         }
     }
@@ -71,6 +75,8 @@ impl Cast {
             Cast::NumToBool => SType::Num,
             Cast::AddressToNum => SType::Address,
             Cast::NumToAddress => SType::Num,
+            Cast::RawNumToNum => SType::RawNum,
+            Cast::NumToRawNum => SType::Num,
         }
     }
 
@@ -82,6 +88,8 @@ impl Cast {
             Cast::NumToBool => SType::Bool,
             Cast::AddressToNum => SType::Num,
             Cast::NumToAddress => SType::Address,
+            Cast::RawNumToNum => SType::Num,
+            Cast::NumToRawNum => SType::RawNum,
         }
     }
 }
