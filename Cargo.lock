@@ -8138,6 +8138,7 @@ dependencies = [
  "eth",
  "evm",
  "evm-core",
+ "intrinsic",
  "move-core-types 0.0.4 (git+https://github.com/move-language/move?rev=4bdf8d3e76ffaab5c83eda2fa55dfe136c380675)",
  "mv",
  "primitive-types",

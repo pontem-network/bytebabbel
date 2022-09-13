@@ -11,7 +11,15 @@ use std::collections::HashSet;
 
 pub const TEMPLATE_MODULE: &[u8] = include_bytes!("../mv/template.mv");
 
+pub const TOML_TEMPLATE: &str = include_str!("../mv/Move.toml");
+
 pub const SELF_ADDRESS_INDEX: ConstantPoolIndex = ConstantPoolIndex(4);
+
+pub fn toml_template(name: &str, address: AccountAddress) -> String {
+    TOML_TEMPLATE
+        .replace("intrinsic", name)
+        .replace("0x42", &address.to_hex_literal())
+}
 
 pub fn template(
     address: AccountAddress,

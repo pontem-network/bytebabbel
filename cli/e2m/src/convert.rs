@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use move_core_types::account_address::AccountAddress;
 
 use crate::Args;
-use translator::{translate, Flags};
+use translator::{translate, Flags, Target};
 
 impl Args {
     pub fn convert(&self) -> Result<ResultConvert> {
@@ -20,7 +20,8 @@ impl Args {
                 PathBuf::from("./").join(filename)
             })
             .with_extension("mv");
-        let move_path = self
+
+        let interface_path = self
             .output_path
             .clone()
             .unwrap_or_else(|| {
@@ -54,13 +55,20 @@ impl Args {
                 native_output: self.native_output,
                 hidden_output: self.hide_output,
                 u128_io: self.u128_io,
+                package_interface: self.interface_package,
             },
         };
         let mv = translate(&eth_content, &abi_content, cfg)?;
-        fs::write(&mv_path, mv.bytecode)?;
-        fs::write(&move_path, mv.interface)?;
+        fs::write(&mv_path, &mv.bytecode)?;
+        save_interface(&interface_path, &mv, self.interface_package)?;
 
         paths.delete_tmp_dir();
+
+        let move_path = if self.interface_package {
+            interface_path.with_extension("")
+        } else {
+            interface_path
+        };
 
         Ok(ResultConvert {
             mv_path,
@@ -69,6 +77,32 @@ impl Args {
             address,
         })
     }
+}
+
+fn save_interface(path: &Path, target: &Target, save_as_package: bool) -> Result<()> {
+    if path.exists() {
+        if path.is_file() {
+            fs::remove_file(path)?;
+        } else {
+            fs::remove_dir_all(path)?;
+        }
+    }
+
+    if save_as_package {
+        let base_dir = path.with_extension("");
+        let name = base_dir
+            .file_name()
+            .ok_or_else(|| anyhow!("Invalid path"))?;
+
+        fs::create_dir_all(&base_dir)?;
+        fs::write(base_dir.join("Move.toml"), &target.manifest)?;
+        let sources = base_dir.join("sources");
+        fs::create_dir_all(&sources)?;
+        fs::write(sources.join(name).with_extension("move"), &target.interface)?;
+    } else {
+        fs::write(path, &target.interface)?;
+    }
+    Ok(())
 }
 
 fn path_to_filename(path: &Path) -> Result<String> {
