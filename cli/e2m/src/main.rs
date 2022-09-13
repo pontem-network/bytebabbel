@@ -39,24 +39,29 @@ pub struct Args {
     #[clap(long = "args", short = 'a', default_value = "")]
     init_args: String,
 
-    /// deploying the module in aptos node
+    /// Deploying the module in aptos node
     #[clap(long = "deploy", short = 'd', value_parser)]
     #[cfg(feature = "deploy")]
     deploy: bool,
 
-    #[clap(long = "native_input")]
+    /// Use native input
+    #[clap(long = "native_input", default_value = "false")]
     native_input: bool,
 
-    #[clap(long = "native_output")]
+    /// Use native output
+    #[clap(long = "native_output", default_value = "false")]
     native_output: bool,
 
-    #[clap(long = "hide_output")]
+    /// Hide all output during execution
+    #[clap(long = "hide_output", default_value = "false")]
     hide_output: bool,
 
-    #[clap(long = "u128_io")]
+    /// Use 128 bit numbers for input & output
+    #[clap(long = "u128_io", default_value = "false")]
     u128_io: bool,
 
-    #[clap(long = "interface_package", short = 'i')]
+    /// Show module id in move interface
+    #[clap(long = "interface_package", short = 'i', default_value = "false")]
     interface_package: bool,
 }
 
