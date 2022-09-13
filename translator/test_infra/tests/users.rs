@@ -169,6 +169,10 @@ pub fn test_for_users() {
             .to_result_str();
         assert_eq!("(1000)", res);
 
+        let res = vm
+            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""));
+        assert!(res.is_err());
+
         let res = vm.run(
             "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::transfer",
             "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
