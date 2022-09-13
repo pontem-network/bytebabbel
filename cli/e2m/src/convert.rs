@@ -53,6 +53,7 @@ impl Args {
                 native_input: self.native_input,
                 native_output: self.native_output,
                 hidden_output: self.hide_output,
+                u128_io: self.u128_io,
             },
         };
         let mv = translate(&eth_content, &abi_content, cfg)?;

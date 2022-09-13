@@ -52,6 +52,9 @@ pub struct Args {
 
     #[clap(long = "hide_output")]
     hide_output: bool,
+
+    #[clap(long = "u128_io")]
+    u128_io: bool,
 }
 
 impl Args {

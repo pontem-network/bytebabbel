@@ -33,7 +33,7 @@ pub fn move_interface(
         .map(|f| write_function(&mut buff, f, module, flags))
         .collect::<Result<Vec<_>, Error>>()?;
 
-    if flags.native_input || flags.native_output {
+    if (flags.native_input || flags.native_output) && !flags.u128_io {
         write_u256(&mut buff)?;
     }
     writeln!(buff, "}}")?;
@@ -58,7 +58,11 @@ fn write_function(
 ) -> Result<(), Error> {
     let args = if flags.native_input {
         if let Some(input) = &fun.inputs {
-            input.iter().map(map_param).collect::<Vec<_>>().join(", ")
+            input
+                .iter()
+                .map(|p| map_param(p, &flags))
+                .collect::<Vec<_>>()
+                .join(", ")
         } else {
             String::default()
         }
@@ -72,7 +76,7 @@ fn write_function(
         } else if let Some(output) = &fun.outputs {
             let params = output
                 .iter()
-                .map(|p| map_type(&EthType::try_from(p).unwrap()))
+                .map(|p| map_type(&EthType::try_from(p).unwrap(), &flags))
                 .collect::<Vec<_>>()
                 .join(", ");
             if output.is_empty() {
@@ -132,14 +136,20 @@ fn write_u256(buff: &mut String) -> Result<(), Error> {
     Ok(())
 }
 
-fn map_param(p: &Param) -> String {
-    let ty = map_type(&EthType::try_from(p).unwrap());
+fn map_param(p: &Param, flags: &Flags) -> String {
+    let ty = map_type(&EthType::try_from(p).unwrap(), flags);
     format!("{}: {}", p.name, ty)
 }
 
-fn map_type(ty: &EthType) -> String {
+fn map_type(ty: &EthType, flags: &Flags) -> String {
     match ty {
-        EthType::U256 => "U256",
+        EthType::U256 => {
+            if flags.u128_io {
+                "u128"
+            } else {
+                "U256"
+            }
+        }
         EthType::Bool => "bool",
         EthType::Address => "address",
         EthType::Bytes => "vector<u8>",
