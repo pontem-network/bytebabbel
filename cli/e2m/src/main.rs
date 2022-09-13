@@ -50,7 +50,7 @@ pub struct Args {
     #[clap(long = "native_output")]
     native_output: bool,
 
-    #[clap(long = "hidde_output")]
+    #[clap(long = "hide_output")]
     hide_output: bool,
 }
 
