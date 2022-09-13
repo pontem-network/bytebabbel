@@ -52,7 +52,7 @@ impl Args {
             flags: Flags {
                 native_input: self.native_input,
                 native_output: self.native_output,
-                hidden_output: self.hidde_output,
+                hidden_output: self.hide_output,
             },
         };
         let mv = translate(&eth_content, &abi_content, cfg)?;
