@@ -40,7 +40,11 @@ impl<'a> MirTranslator<'a> {
 
         let mut variables = if flags.native_input {
             let mut args = vec![SType::Signer];
-            args.extend(fun.native_input.iter().map(SType::from));
+            args.extend(
+                fun.native_input
+                    .iter()
+                    .map(|t| SType::from_eth_type(t, flags.u128_io)),
+            );
             Variables::new(args)
         } else {
             Variables::new(vec![signer.1, args.1])
@@ -317,7 +321,7 @@ impl<'a> MirTranslator<'a> {
                         offset,
                     },
                 ));
-                let result = self.cast(tmp, SType::from(tp))?;
+                let result = self.cast(tmp, SType::from_eth_type(tp, self.flags.u128_io))?;
                 if result.is_num() {
                     tmp = self.variables.borrow(SType::Num);
                 }

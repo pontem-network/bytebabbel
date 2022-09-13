@@ -178,6 +178,12 @@ pub fn test_for_users() {
     }
     test(Flags::default());
     test(Flags::native_interface());
+    test(Flags {
+        native_input: true,
+        native_output: true,
+        hidden_output: false,
+        u128_io: true,
+    });
     test_for_users_with_hidden_result();
 }
 
@@ -186,6 +192,7 @@ pub fn test_for_users_with_hidden_result() {
         native_input: false,
         native_output: false,
         hidden_output: true,
+        u128_io: false,
     };
     let evm = build_sol(include_bytes!("../sol/demo/users.sol")).unwrap();
     let bytecode = make_move_module(

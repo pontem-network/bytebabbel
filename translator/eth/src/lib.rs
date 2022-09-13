@@ -93,6 +93,7 @@ pub struct Flags {
     pub native_input: bool,
     pub native_output: bool,
     pub hidden_output: bool,
+    pub u128_io: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -102,6 +103,7 @@ impl Default for Flags {
             native_input: false,
             native_output: false,
             hidden_output: false,
+            u128_io: false,
         }
     }
 }
@@ -112,6 +114,7 @@ impl Flags {
             native_input: true,
             native_output: true,
             hidden_output: false,
+            u128_io: false,
         }
     }
 }

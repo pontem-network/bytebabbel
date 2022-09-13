@@ -252,7 +252,7 @@ module self::template {
     #[test]
     fun mem_shift() {
         let memory = new_mem(1024);
-        mstore(&mut memory, from_u128(0), from_u128(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF));
+        mstore(&mut memory, from_u128(0), from_u128(0x0000000000000000FFFFFFFFFFFFFFFF));
         let val = mload(&mut memory, from_u128(8));
         assert!(as_u128(val) == 0xFFFFFFFFFFFFFFFF0000000000000000, 0);
     }
@@ -547,6 +547,7 @@ module self::template {
 
     /// Convert `U256` to `u128` value if possible (otherwise it aborts).
     public fun as_u128(a: U256): u128 {
+        assert!(a.v2 == 0 && a.v3 == 0, EWORDS_OVERFLOW);
         ((a.v1 as u128) << 64) + (a.v0 as u128)
     }
 

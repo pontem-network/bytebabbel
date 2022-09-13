@@ -184,8 +184,10 @@ pub enum Num {
     FromBytes,
     FromBool,
     FromU64s,
+    FromU128,
     ToBool,
     ToAddress,
+    ToU128,
     IsZero,
 }
 
@@ -231,6 +233,8 @@ impl Function for Num {
             Self::Sar => "sar",
             Self::FromAddress => "from_address",
             Self::ToAddress => "to_address",
+            Self::FromU128 => "from_u128",
+            Self::ToU128 => "as_u128",
         }
     }
 
@@ -269,6 +273,8 @@ impl Function for Num {
             Num::Sar => FunctionHandleIndex(56),
             Num::FromAddress => FunctionHandleIndex(14),
             Num::ToAddress => FunctionHandleIndex(69),
+            Num::FromU128 => FunctionHandleIndex(18),
+            Num::ToU128 => FunctionHandleIndex(0),
         }
     }
 }
