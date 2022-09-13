@@ -55,6 +55,9 @@ pub struct Args {
 
     #[clap(long = "u128_io")]
     u128_io: bool,
+
+    #[clap(long = "interface_package", short = 'i')]
+    interface_package: bool,
 }
 
 impl Args {

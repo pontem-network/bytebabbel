@@ -183,6 +183,7 @@ pub fn test_for_users() {
         native_output: true,
         hidden_output: false,
         u128_io: true,
+        package_interface: false,
     });
     test_for_users_with_hidden_result();
 }
@@ -193,6 +194,7 @@ pub fn test_for_users_with_hidden_result() {
         native_output: false,
         hidden_output: true,
         u128_io: false,
+        package_interface: false,
     };
     let evm = build_sol(include_bytes!("../sol/demo/users.sol")).unwrap();
     let bytecode = make_move_module(

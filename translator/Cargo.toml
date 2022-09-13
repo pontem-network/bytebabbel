@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 eth = {path = "eth" }
 mv = {path = "mv"}
+intrinsic = {path = "intrinsic"}
 
 anyhow = "1.0.58"
 
