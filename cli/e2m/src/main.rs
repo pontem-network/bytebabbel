@@ -1,15 +1,12 @@
-use anyhow::{Error, Result};
+use anyhow::Result;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 pub mod convert;
 #[cfg(feature = "deploy")]
 pub mod deploy;
 pub mod profile;
-
-use crate::profile::ProfileConfig;
+pub mod flags;
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]
@@ -34,35 +31,16 @@ pub struct Args {
         default_value = "default",
         value_parser
     )]
-    profile_or_address: ProfileValue,
+    profile_or_address: profile::ProfileValue,
 
+    /// Parameters for initialization
     #[clap(long = "args", short = 'a', default_value = "")]
     init_args: String,
 
-    /// Deploying the module in aptos node
-    #[clap(long = "deploy", short = 'd', value_parser)]
-    #[cfg(feature = "deploy")]
-    deploy: bool,
-
-    /// Use native input
-    #[clap(long = "native_input", default_value = "false")]
-    native_input: bool,
-
-    /// Use native output
-    #[clap(long = "native_output", default_value = "false")]
-    native_output: bool,
-
-    /// Hide all output during execution
-    #[clap(long = "hide_output", default_value = "false")]
-    hide_output: bool,
-
-    /// Use 128 bit numbers for input & output
-    #[clap(long = "u128_io", default_value = "false")]
-    u128_io: bool,
-
-    /// Show module id in move interface
-    #[clap(long = "interface_package", short = 'i', default_value = "false")]
-    interface_package: bool,
+    #[clap(flatten)]
+    deploy_flags: flags::DeployFlags,
+    #[clap(flatten)]
+    translation_flags: flags::TranslationFlags,
 }
 
 impl Args {
@@ -70,55 +48,17 @@ impl Args {
         let result = self.convert()?;
 
         #[cfg(feature = "deploy")]
-        if self.deploy {
+        if self.deploy_flags.deploy {
             return self.publish(&result);
         }
+
+        self.translation_flags.check()?;
 
         Ok(format!(
             "{}\n{}",
             result.mv_path.to_string_lossy(),
             result.move_path.to_string_lossy()
         ))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum ProfileValue {
-    Address(AccountAddress),
-    Profile(ProfileConfig),
-}
-
-impl ProfileValue {
-    pub fn to_address(&self) -> Result<AccountAddress> {
-        let address = match self {
-            ProfileValue::Address(address) => *address,
-            ProfileValue::Profile(profile_name) => profile_name.address,
-        };
-        Ok(address)
-    }
-
-    #[cfg(feature = "deploy")]
-    pub fn name_profile(&self) -> Result<&String> {
-        match self {
-            ProfileValue::Address(..) => {
-                anyhow::bail!("The address was transmitted. The profile name was expected.")
-            }
-            ProfileValue::Profile(profile_name) => Ok(&profile_name.name),
-        }
-    }
-}
-
-impl FromStr for ProfileValue {
-    type Err = Error;
-
-    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
-        if value.starts_with("0x") {
-            Ok(ProfileValue::Address(AccountAddress::from_hex_literal(
-                value,
-            )?))
-        } else {
-            Ok(ProfileValue::Profile(ProfileConfig::load(value)?))
-        }
     }
 }
 
