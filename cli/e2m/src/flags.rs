@@ -1,5 +1,5 @@
-use clap::Args;
 use anyhow::{anyhow, Result};
+use clap::Args;
 
 #[derive(Args, Debug)]
 pub struct DeployFlags {
@@ -37,7 +37,9 @@ impl TranslationFlags {
         if self.native_output && self.hide_output {
             Err(anyhow!("Wrong set of flags: native_output & hide_output"))
         } else if self.u128_io && !(self.native_input || self.native_output) {
-            Err(anyhow!("Wrong set of flags: u128_io must use with native_input or native_output"))
+            Err(anyhow!(
+                "Wrong set of flags: u128_io must use with native_input or native_output"
+            ))
         } else {
             Ok(())
         }

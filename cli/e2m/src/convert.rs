@@ -60,7 +60,11 @@ impl Args {
         };
         let mv = translate(&eth_content, &abi_content, cfg)?;
         fs::write(&mv_path, &mv.bytecode)?;
-        save_interface(&interface_path, &mv, self.translation_flags.interface_package)?;
+        save_interface(
+            &interface_path,
+            &mv,
+            self.translation_flags.interface_package,
+        )?;
 
         paths.delete_tmp_dir();
 

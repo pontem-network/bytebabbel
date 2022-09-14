@@ -5,8 +5,8 @@ use std::path::PathBuf;
 pub mod convert;
 #[cfg(feature = "deploy")]
 pub mod deploy;
-pub mod profile;
 pub mod flags;
+pub mod profile;
 
 #[derive(Parser, Debug)]
 #[clap(version, about)]
