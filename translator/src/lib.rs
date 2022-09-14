@@ -38,7 +38,7 @@ pub fn translate(bytecode: &str, abi: &str, config: Config) -> Result<Target, Er
     let compiled_module = module.make_move_module()?;
 
     let interface = move_interface(&compiled_module, &abi, config.flags)?;
-    let manifest = toml_template(&config.name, config.contract_addr);
+    let manifest = toml_template(config.name, config.contract_addr);
 
     let mut bytecode = Vec::new();
     compiled_module.serialize(&mut bytecode)?;
