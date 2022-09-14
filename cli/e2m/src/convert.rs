@@ -51,20 +51,24 @@ impl Args {
             name: &module_name,
             initialization_args: &init_args,
             flags: Flags {
-                native_input: self.native_input,
-                native_output: self.native_output,
-                hidden_output: self.hide_output,
-                u128_io: self.u128_io,
-                package_interface: self.interface_package,
+                native_input: self.translation_flags.native_input,
+                native_output: self.translation_flags.native_output,
+                hidden_output: self.translation_flags.hide_output,
+                u128_io: self.translation_flags.u128_io,
+                package_interface: self.translation_flags.interface_package,
             },
         };
         let mv = translate(&eth_content, &abi_content, cfg)?;
         fs::write(&mv_path, &mv.bytecode)?;
-        save_interface(&interface_path, &mv, self.interface_package)?;
+        save_interface(
+            &interface_path,
+            &mv,
+            self.translation_flags.interface_package,
+        )?;
 
         paths.delete_tmp_dir();
 
-        let move_path = if self.interface_package {
+        let move_path = if self.translation_flags.interface_package {
             interface_path.with_extension("")
         } else {
             interface_path

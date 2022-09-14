@@ -1,8 +1,49 @@
 use std::fs;
+use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use serde_yaml::Value;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProfileValue {
+    Address(AccountAddress),
+    Profile(ProfileConfig),
+}
+
+impl ProfileValue {
+    pub fn to_address(&self) -> Result<AccountAddress> {
+        let address = match self {
+            ProfileValue::Address(address) => *address,
+            ProfileValue::Profile(profile_name) => profile_name.address,
+        };
+        Ok(address)
+    }
+
+    #[cfg(feature = "deploy")]
+    pub fn name_profile(&self) -> Result<&String> {
+        match self {
+            ProfileValue::Address(..) => {
+                anyhow::bail!("The address was transmitted. The profile name was expected.")
+            }
+            ProfileValue::Profile(profile_name) => Ok(&profile_name.name),
+        }
+    }
+}
+
+impl FromStr for ProfileValue {
+    type Err = Error;
+
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        if value.starts_with("0x") {
+            Ok(ProfileValue::Address(AccountAddress::from_hex_literal(
+                value,
+            )?))
+        } else {
+            Ok(ProfileValue::Profile(ProfileConfig::load(value)?))
+        }
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ProfileConfig {
