@@ -5,7 +5,7 @@ use anyhow::{anyhow, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use serde_yaml::Value;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProfileValue {
     Address(AccountAddress),
     Profile(ProfileConfig),
