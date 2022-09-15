@@ -44,27 +44,66 @@ jobs:
           files: target/release/e2m
           dest: Release_v0.0.0.zip
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.run_number }}
-          release_name: Test Release ${{ github.run_number }}
-          body: |
-            Test release
-          draft: true
-          prerelease: false
+      - name: Test
+        run: |
+          tree
 
-      - name: Upload zip to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Release_v0.0.0.zip
-          asset_name: Release_v0.0.0.zip
-          asset_content_type: application/zip
+          name: cli-builds
+          path: Release*.zip
+
+  release-binaries:
+    name: "Release binaries"
+    needs:
+      - build-linux-binary
+      # - build-os-x-binary
+      # - build-windows-binary
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "write"
+      pull-requests: "read"
+    steps:
+      - name: Download prebuilt binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: cli-builds
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: Create GitHub Release
+        uses: "marvinpinto/action-automatic-releases@v1.2.1"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "Test Releaese"
+          prerelease: false
+          title: "Tittle"
+          files: |
+            Release*.zip
+
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ github.run_number }}
+      #     release_name: Test Release ${{ github.run_number }}
+      #     body: |
+      #       Test release
+      #     draft: true
+      #     prerelease: false
+
+      # - name: Upload zip to release
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ./Release_v0.0.0.zip
+      #     asset_name: Release_v0.0.0.zip
+      #     asset_content_type: application/zip
 
 
