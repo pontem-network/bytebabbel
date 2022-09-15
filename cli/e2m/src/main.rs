@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
+use test_infra::init_log;
 
 pub mod convert;
 #[cfg(feature = "deploy")]
@@ -63,7 +64,7 @@ impl Args {
 }
 
 fn main() {
-    env_logger::init();
+    init_log();
 
     match Args::parse().execute() {
         Ok(result) => {

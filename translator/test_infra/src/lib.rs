@@ -11,6 +11,7 @@ pub mod color;
 pub mod env;
 
 pub static CUST_LOGGER: CustLogger = CustLogger;
+
 lazy_static! {
     static ref REG_FOR_NAME: regex::Regex = regex::Regex::new(r#"(?i)[^a-z\d]+"#).unwrap();
     static ref LOG_BUFF: Mutex<HashMap<String, (ThreadSettings, Vec<String>)>> =
