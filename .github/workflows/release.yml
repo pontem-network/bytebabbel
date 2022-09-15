@@ -5,7 +5,7 @@ on:
     branches:
       - ci_release
     tags:
-      - "v*.*.*"
+      - 'v*.*.*'
 
 
 jobs:
@@ -37,5 +37,11 @@ jobs:
         uses: thedoctor0/zip-release@main
         with:
           type: 'zip'
-          filename: 'release.zip'
+          filename: 'Release_v0.0.0.zip'
           path: /target/release/e2m
+
+      - name: Upload Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: 'Release_v0.0.0.zip'
+          token: ${{ secrets.GITHUB_TOKEN }}
