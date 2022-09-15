@@ -27,7 +27,17 @@ jobs:
           cargo --version --verbose
           rustc --version
 
-      - name: Build_1
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Main build
         uses: actions-rs/cargo@v1
         with:
           command: install
