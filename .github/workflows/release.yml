@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - ci_release
+    tags:
+      - "v*.*.*"
+
+
+jobs:
+  build_and_release:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: cargo
+
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+
+      - name: Build_1
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
+
+      - name: Archive Release
+        uses: thedoctor0/zip-release@main
+        with:
+          type: 'zip'
+          filename: 'release.zip'
+          path: /target/release/e2m
