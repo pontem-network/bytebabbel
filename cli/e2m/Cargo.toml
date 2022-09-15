@@ -14,13 +14,16 @@ description = "Converting the file solidity (abi + bin or sol) to binary code mo
 clap = { version = "3.2.11", features = ["derive"] }
 anyhow = "1.0.58"
 log = "0.4"
-env_logger = "0.9.0"
 tempfile = "3.3"
 serde_yaml = "0.9.11"
+
 #
 move-core-types = { git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675" , features = ["address32"] }
+
 # local
 translator = { path = "../../translator" }
+test_infra = { path = "../../translator/test_infra" }
+
 
 # FEATURE DEPLOY
 # It is necessary to monitor the relevance. At the moment, this particular client is working with devnet

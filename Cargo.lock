@@ -7745,6 +7745,7 @@ dependencies = [
  "aptos-vm",
  "base32",
  "bcs",
+ "chrono",
  "env_logger",
  "eth",
  "evm",

@@ -140,6 +140,7 @@ mod test {
     use eth::abi::entries::AbiEntries;
     use eth::abi::inc_ret_param::value::conv::ParamValueToRustType;
     use eth::abi::inc_ret_param::value::ParamValue;
+    use test_infra::init_log;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
 
@@ -150,6 +151,8 @@ mod test {
 
     #[test]
     fn test_bool() {
+        init_log();
+
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
 
@@ -182,6 +185,8 @@ mod test {
 
     #[test]
     fn test_num() {
+        init_log();
+
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
 
@@ -227,6 +232,8 @@ mod test {
 
     #[test]
     fn test_array() {
+        init_log();
+
         let sol = TESTFILE.lock().unwrap();
         let abi: AbiEntries = sol.abi().unwrap();
         let mut vm = REvm::try_from(sol.deref()).unwrap();
@@ -311,6 +318,8 @@ mod test {
 
     #[test]
     fn test_bytes() {
+        init_log();
+
         let sol = TESTFILE.lock().unwrap();
         let abi = sol.abi().unwrap();
 

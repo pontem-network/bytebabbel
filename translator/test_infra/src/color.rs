@@ -1,7 +1,7 @@
 use termion::color::*;
 
 pub fn font_red(text: &str) -> String {
-    format!("{}{text}{}", Fg(termion::color::Red), font_reset())
+    format!("{}{text}{}", Fg(Red), font_reset())
 }
 
 pub fn font_blue(text: &str) -> String {
