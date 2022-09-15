@@ -4,7 +4,6 @@ use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
 use eth::abi::entries::AbiEntries;
 use eth::Flags;
-use move_core_types::value::MoveValue;
 use test_infra::init_log;
 
 #[allow(dead_code)]

@@ -1,13 +1,11 @@
 use std::collections::HashMap;
-use std::env::VarError;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::{LockResult, Mutex, MutexGuard, PoisonError};
+use std::sync::Mutex;
 
-use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
-use log::{Metadata, Record, SetLoggerError};
+use log::{Metadata, Record};
 
 pub mod color;
 pub mod env;
@@ -50,7 +48,7 @@ impl CustLogger {
 
         if let Some(path) = &settings.save_path {
             // file
-            Self::write_to_file(&path, &content);
+            Self::write_to_file(path, &content);
         } else if settings.buff {
             // buffer
             CustLogger::write_to_buff(content)
@@ -126,9 +124,8 @@ impl log::Log for CustLogger {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 struct ThreadSettings {
-    name_id: String,
     buff: bool,
     save_path: Option<PathBuf>,
 }
@@ -143,14 +140,13 @@ impl ThreadSettings {
                 None
             })
             .map(|path| {
-                let mut file_name = test_name.map_or_else(
-                    || thread_name(),
-                    |name| REG_FOR_NAME.replace_all(name, "_").to_string(),
-                );
+                let mut file_name = test_name.map_or_else(thread_name, |name| {
+                    REG_FOR_NAME.replace_all(name, "_").to_string()
+                });
 
                 file_name = format!(
                     "{}_{}",
-                    chrono::Local::now().format("%y%m%d_%H%M%S").to_string(),
+                    chrono::Local::now().format("%y%m%d_%H%M%S"),
                     file_name
                 );
 
@@ -176,16 +172,6 @@ impl ThreadSettings {
         settings.save_path = save_path;
 
         settings
-    }
-}
-
-impl Default for ThreadSettings {
-    fn default() -> Self {
-        ThreadSettings {
-            name_id: thread_name_id(),
-            buff: false,
-            save_path: None,
-        }
     }
 }
 
@@ -221,7 +207,7 @@ fn thread_id() -> String {
 fn thread_name() -> String {
     let name_id = std::thread::current()
         .name()
-        .map_or_else(|| thread_id(), |name| name.to_string());
+        .map_or_else(thread_id, |name| name.to_string());
     REG_FOR_NAME.replace_all(&name_id, "_").to_string()
 }
 
