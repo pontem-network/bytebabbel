@@ -9,11 +9,12 @@ on:
 
 
 jobs:
-  build_and_release:
-    name: Build
+  build-linux-binary:
+    name: "Build Linux binary"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
@@ -21,11 +22,6 @@ jobs:
             toolchain: nightly
             override: true
             components: cargo
-
-      - name: Toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
 
       - name: Solc latest version
         uses: pontem-network/get-solc@master
@@ -43,15 +39,32 @@ jobs:
           command: install
           args: --path cli/e2m --features=deploy
 
-      - name: Archive Release
-        uses: thedoctor0/zip-release@main
+      - uses: vimtor/action-zip@v1
         with:
-          type: 'zip'
-          filename: 'Release_v0.0.0.zip'
-          path: /target/release/e2m
+          files: target/release/e2m
+          dest: Release_v0.0.0.zip
 
-      - name: Upload Release
-        uses: ncipollo/release-action@v1
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          artifacts: 'Release_v0.0.0.zip'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.run_number }}
+          release_name: Test Release ${{ github.run_number }}
+          body: |
+            Test release
+          draft: true
+          prerelease: false
+
+      - name: Upload zip to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./Release_v0.0.0.zip
+          asset_name: Release_v0.0.0.zip
+          asset_content_type: application/zip
+
+
