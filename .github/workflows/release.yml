@@ -25,113 +25,126 @@ jobs:
           echo ${{ env.RELEASE_VERSION }}
           echo ${{ env.TAG_MESSAGE }}
 
-  # build-linux-binary:
-  #   name: "Build Linux binary"
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+  build-linux-binary:
+    name: "Build Linux binary"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: Install latest nightly
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #           toolchain: nightly
-  #           override: true
-  #           components: cargo
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
-  #     - name: Solc latest version
-  #       uses: pontem-network/get-solc@master
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: cargo
 
-  #     - name: Aptos latest version
-  #       uses: pontem-network/get-aptos@main
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Main build
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: install
-  #         args: --path cli/e2m --features=deploy
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - uses: vimtor/action-zip@v1
-  #       with:
-  #         files: target/release/e2m
-  #         dest: v0.0.0_linux.zip
+      - name: Main build
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
 
-  #     - name: Upload Binary
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: cli-builds
-  #         path: v*.zip
+      - uses: vimtor/action-zip@v1
+        with:
+          files: target/release/e2m
+          dest: ${{ env.RELEASE_VERSION }}_linux.zip
 
-  # build-os-x-binary:
-  #   name: "Build OS X binary"
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: cli-builds
+          path: ${{ env.RELEASE_VERSION }}_linux.zip
 
-  #     - name: Install latest nightly
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #           toolchain: nightly
-  #           override: true
-  #           components: cargo
+  build-os-x-binary:
+    name: "Build OS X binary"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: Solc latest version
-  #       uses: pontem-network/get-solc@master
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
-  #     - name: Aptos latest version
-  #       uses: pontem-network/get-aptos@main
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: cargo
 
-  #     - name: Main build
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: install
-  #         args: --path cli/e2m --features=deploy
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - uses: vimtor/action-zip@v1
-  #       with:
-  #         files: target/release/e2m
-  #         dest: v0.0.0_macOS.zip
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Upload Binary
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: cli-builds
-  #         path: v*.zip
+      - name: Main build
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
 
-  # release-binaries:
-  #   name: "Release binaries"
-  #   needs:
-  #     - build-linux-binary
-  #     - build-os-x-binary
-  #     # - build-windows-binary
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: "write"
-  #     pull-requests: "read"
-  #   steps:
-  #     - name: Download prebuilt binaries
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: cli-builds
+      - uses: vimtor/action-zip@v1
+        with:
+          files: target/release/e2m
+          dest: ${{ env.RELEASE_VERSION }}_macOS.zip
 
-  #     - name: Display structure of downloaded files
-  #       run: ls -R
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: cli-builds
+          path: ${{ env.RELEASE_VERSION }}_macOS.zip
 
-  #     - name: Create GitHub Release
-  #       uses: "marvinpinto/action-automatic-releases@v1.2.1"
-  #       with:
-  #         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-  #         automatic_release_tag: "${{ github.event.inputs.release_tag }}"
-  #         prerelease: false
-  #         title: "${{ github.event.inputs.release_title }}"
-  #         files: |
-  #           v*.zip
+  release-binaries:
+    name: "Release binaries"
+    needs:
+      - build-linux-binary
+      - build-os-x-binary
+      # - build-windows-binary
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "write"
+      pull-requests: "read"
+    steps:
+      - name: Download prebuilt binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: cli-builds
+
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+          echo "TAG_MESSAGE=$(git tag -l --format='%(contents:subject)'${GITHUB_REF#refs/*/})" >> $GITHUB_ENV
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: Create GitHub Release
+        uses: "marvinpinto/action-automatic-releases@v1.2.1"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ env.RELEASE_VERSION }}"
+          prerelease: false
+          title: "${{ env.TAG_MESSAGE }}"
+          files: |
+            ${{ env.RELEASE_VERSION }}*.zip
