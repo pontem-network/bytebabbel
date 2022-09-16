@@ -43,13 +43,13 @@ jobs:
       - uses: vimtor/action-zip@v1
         with:
           files: target/release/e2m
-          dest: ${{ env.RELEASE_VERSION }}_linux.zip
+          dest: e2m-cli-${{ env.RELEASE_VERSION }}-Linux-x86_64.zip
 
       - name: Upload Binary
         uses: actions/upload-artifact@v3
         with:
           name: cli-builds
-          path: ${{ env.RELEASE_VERSION }}_linux.zip
+          path: e2m-cli-${{ env.RELEASE_VERSION }}-Linux-x86_64.zip
 
   build-os-x-binary:
     name: "Build OS X binary"
@@ -88,13 +88,13 @@ jobs:
       - uses: vimtor/action-zip@v1
         with:
           files: target/release/e2m
-          dest: ${{ env.RELEASE_VERSION }}_macOS.zip
+          dest: e2m-cli-${{ env.RELEASE_VERSION }}-MacOSX-x86_64.zip
 
       - name: Upload Binary
         uses: actions/upload-artifact@v3
         with:
           name: cli-builds
-          path: ${{ env.RELEASE_VERSION }}_macOS.zip
+          path: e2m-cli-${{ env.RELEASE_VERSION }}-MacOSX-x86_64.zip
 
   # To make releases for windows we need:
   # - update get-solc/get-aptos actions (so sad)
@@ -175,6 +175,6 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "${{ env.RELEASE_VERSION }}"
           prerelease: false
-          title: "E2M CLI ${{ env.TAG_MESSAGE }}"
+          title: "E2M CLI Release ${{ env.TAG_MESSAGE }}"
           files: |
-            ${{ env.RELEASE_VERSION }}*.zip
+            e2m-cli-${{ env.RELEASE_VERSION }}-*.zip
