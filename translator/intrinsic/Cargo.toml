@@ -10,5 +10,9 @@ anyhow = "1.0.62"
 enum-iterator = "1.2.0"
 rand = "0.8.5"
 
+
 [dev-dependencies]
 move-bytecode-verifier = {git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675"  }
+
+[build-dependencies]
+anyhow = "1.0.62"
