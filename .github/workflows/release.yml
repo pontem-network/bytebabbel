@@ -1,20 +1,20 @@
 name: CI
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_title:
-        type: string
-        required: true
-        description: "Name of the release, e.g. \"E2M CLI string support\":"
-      release_tag:
-        type: string
-        required: true
-        description: "The release tag to create. E.g. `e2m-cli-v0.0.1`:"
+  # workflow_dispatch:
+  #   inputs:
+  #     release_title:
+  #       type: string
+  #       required: true
+  #       description: "Name of the release, e.g. \"E2M CLI string support\":"
+  #     release_tag:
+  #       type: string
+  #       required: true
+  #       description: "The release tag to create. E.g. `e2m-cli-v0.0.1`:"
 
-  # push:
-  #   tags:
-  #     - 'v*.*.*'
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   test:
@@ -28,113 +28,113 @@ jobs:
           echo $RELEASE_VERSION
           echo ${{ env.RELEASE_VERSION }}
 
-  build-linux-binary:
-    name: "Build Linux binary"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  # build-linux-binary:
+  #   name: "Build Linux binary"
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
 
-      - name: Install latest nightly
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: nightly
-            override: true
-            components: cargo
+  #     - name: Install latest nightly
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #           toolchain: nightly
+  #           override: true
+  #           components: cargo
 
-      - name: Solc latest version
-        uses: pontem-network/get-solc@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Solc latest version
+  #       uses: pontem-network/get-solc@master
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Aptos latest version
-        uses: pontem-network/get-aptos@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Aptos latest version
+  #       uses: pontem-network/get-aptos@main
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Main build
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --path cli/e2m --features=deploy
+  #     - name: Main build
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: install
+  #         args: --path cli/e2m --features=deploy
 
-      - uses: vimtor/action-zip@v1
-        with:
-          files: target/release/e2m
-          dest: v0.0.0_linux.zip
+  #     - uses: vimtor/action-zip@v1
+  #       with:
+  #         files: target/release/e2m
+  #         dest: v0.0.0_linux.zip
 
-      - name: Upload Binary
-        uses: actions/upload-artifact@v3
-        with:
-          name: cli-builds
-          path: v*.zip
+  #     - name: Upload Binary
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: cli-builds
+  #         path: v*.zip
 
-  build-os-x-binary:
-    name: "Build OS X binary"
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  # build-os-x-binary:
+  #   name: "Build OS X binary"
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
 
-      - name: Install latest nightly
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: nightly
-            override: true
-            components: cargo
+  #     - name: Install latest nightly
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #           toolchain: nightly
+  #           override: true
+  #           components: cargo
 
-      - name: Solc latest version
-        uses: pontem-network/get-solc@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Solc latest version
+  #       uses: pontem-network/get-solc@master
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Aptos latest version
-        uses: pontem-network/get-aptos@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Aptos latest version
+  #       uses: pontem-network/get-aptos@main
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Main build
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --path cli/e2m --features=deploy
+  #     - name: Main build
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: install
+  #         args: --path cli/e2m --features=deploy
 
-      - uses: vimtor/action-zip@v1
-        with:
-          files: target/release/e2m
-          dest: v0.0.0_macOS.zip
+  #     - uses: vimtor/action-zip@v1
+  #       with:
+  #         files: target/release/e2m
+  #         dest: v0.0.0_macOS.zip
 
-      - name: Upload Binary
-        uses: actions/upload-artifact@v3
-        with:
-          name: cli-builds
-          path: v*.zip
+  #     - name: Upload Binary
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: cli-builds
+  #         path: v*.zip
 
-  release-binaries:
-    name: "Release binaries"
-    needs:
-      - build-linux-binary
-      - build-os-x-binary
-      # - build-windows-binary
-    runs-on: ubuntu-latest
-    permissions:
-      contents: "write"
-      pull-requests: "read"
-    steps:
-      - name: Download prebuilt binaries
-        uses: actions/download-artifact@v3
-        with:
-          name: cli-builds
+  # release-binaries:
+  #   name: "Release binaries"
+  #   needs:
+  #     - build-linux-binary
+  #     - build-os-x-binary
+  #     # - build-windows-binary
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: "write"
+  #     pull-requests: "read"
+  #   steps:
+  #     - name: Download prebuilt binaries
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: cli-builds
 
-      - name: Display structure of downloaded files
-        run: ls -R
+  #     - name: Display structure of downloaded files
+  #       run: ls -R
 
-      - name: Create GitHub Release
-        uses: "marvinpinto/action-automatic-releases@v1.2.1"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ github.event.inputs.release_tag }}"
-          prerelease: false
-          title: "${{ github.event.inputs.release_title }}"
-          files: |
-            v*.zip
+  #     - name: Create GitHub Release
+  #       uses: "marvinpinto/action-automatic-releases@v1.2.1"
+  #       with:
+  #         repo_token: "${{ secrets.GITHUB_TOKEN }}"
+  #         automatic_release_tag: "${{ github.event.inputs.release_tag }}"
+  #         prerelease: false
+  #         title: "${{ github.event.inputs.release_title }}"
+  #         files: |
+  #           v*.zip
