@@ -43,9 +43,11 @@ impl Paths {
     fn init() -> Result<Paths> {
         let intrinsic_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
 
-        let mut project = intrinsic_path.join("../../target/mote_tamplate");
-        fs::remove_dir_all(&project)
-            .map_err(|err| anyhow!("Deleting a project directory {project:?} {err}"))?;
+        let mut project = intrinsic_path.join("../../target/move_tamplate");
+        if project.exists() {
+            fs::remove_dir_all(&project)
+                .map_err(|err| anyhow!("Deleting a project directory {project:?} {err}"))?;
+        }
         fs::create_dir_all(&project)
             .map_err(|err| anyhow!("Creating a project directory {project:?} {err}"))?;
         project = project.canonicalize()?;
