@@ -6,25 +6,6 @@ on:
       - 'v*.*.*'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set env
-        run: |
-          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-          echo "TAG_MESSAGE=$(git tag -l --format='%(contents:subject)'${GITHUB_REF#refs/*/})" >> $GITHUB_ENV
-
-  test_1:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Test
-        run: |
-          echo $RELEASE_VERSION
-          echo ${{ env.RELEASE_VERSION }}
-          echo ${{ env.TAG_MESSAGE }}
-
   build-linux-binary:
     name: "Build Linux binary"
     runs-on: ubuntu-latest
@@ -115,12 +96,57 @@ jobs:
           name: cli-builds
           path: ${{ env.RELEASE_VERSION }}_macOS.zip
 
+  build-windows-binary:
+    name: "Build Windows binary"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: cargo
+
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Main build
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
+
+      - uses: vimtor/action-zip@v1
+        with:
+          files: target/release/e2m
+          dest: ${{ env.RELEASE_VERSION }}_windows.zip
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: cli-builds
+          path: ${{ env.RELEASE_VERSION }}_windows.zip
+
   release-binaries:
     name: "Release binaries"
     needs:
       - build-linux-binary
       - build-os-x-binary
-      # - build-windows-binary
+      - build-windows-binary
     runs-on: ubuntu-latest
     permissions:
       contents: "write"
@@ -145,6 +171,6 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "${{ env.RELEASE_VERSION }}"
           prerelease: false
-          title: "${{ env.TAG_MESSAGE }}"
+          title: "E2M CLI ${{ env.TAG_MESSAGE }}"
           files: |
             ${{ env.RELEASE_VERSION }}*.zip
