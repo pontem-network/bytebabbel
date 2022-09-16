@@ -129,8 +129,9 @@ pub fn test_intrinsic_signature_token() {
 
     for num in &diff {
         println!(
-            "{} -> {:?}",
+            "{} {} -> {:?}",
             num.name(),
+            num.handler().0,
             find_function_by_name(&template, num.name())
         );
     }

@@ -93,15 +93,15 @@ impl Function for Mem {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Mem::New => FunctionHandleIndex(43),
+            Mem::New => FunctionHandleIndex(44),
             Mem::Size => FunctionHandleIndex(11),
             Mem::Load => FunctionHandleIndex(36),
             Mem::Store => FunctionHandleIndex(40),
             Mem::Store8 => FunctionHandleIndex(41),
             Mem::Hash => FunctionHandleIndex(24),
             Mem::Slice => FunctionHandleIndex(39),
-            Mem::RequestBufferLen => FunctionHandleIndex(54),
-            Mem::ReadRequestBuffer => FunctionHandleIndex(52),
+            Mem::RequestBufferLen => FunctionHandleIndex(56),
+            Mem::ReadRequestBuffer => FunctionHandleIndex(54),
         }
     }
 }
@@ -145,8 +145,8 @@ impl Function for Persist {
     fn handler(&self) -> FunctionHandleIndex {
         match self {
             Persist::InitContract => FunctionHandleIndex(25),
-            Persist::Store => FunctionHandleIndex(68),
-            Persist::Load => FunctionHandleIndex(64),
+            Persist::Store => FunctionHandleIndex(70),
+            Persist::Load => FunctionHandleIndex(66),
             Persist::Log0 => FunctionHandleIndex(30),
             Persist::Log1 => FunctionHandleIndex(31),
             Persist::Log2 => FunctionHandleIndex(32),
@@ -248,16 +248,16 @@ impl Function for Num {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Num::Add => FunctionHandleIndex(45),
-            Num::Sub => FunctionHandleIndex(48),
-            Num::Mul => FunctionHandleIndex(47),
+            Num::Add => FunctionHandleIndex(47),
+            Num::Sub => FunctionHandleIndex(50),
+            Num::Mul => FunctionHandleIndex(49),
             Num::Div => FunctionHandleIndex(9),
             Num::Mod => FunctionHandleIndex(38),
             Num::BitOr => FunctionHandleIndex(4),
             Num::BitAnd => FunctionHandleIndex(2),
             Num::BitXor => FunctionHandleIndex(6),
-            Num::Shl => FunctionHandleIndex(60),
-            Num::Shr => FunctionHandleIndex(62),
+            Num::Shl => FunctionHandleIndex(62),
+            Num::Shr => FunctionHandleIndex(64),
             Num::Lt => FunctionHandleIndex(35),
             Num::Gt => FunctionHandleIndex(23),
             Num::Le => FunctionHandleIndex(28),
@@ -269,18 +269,18 @@ impl Function for Num {
             Num::FromSigner => FunctionHandleIndex(17),
             Num::FromBytes => FunctionHandleIndex(16),
             Num::FromBool => FunctionHandleIndex(15),
-            Num::ToBool => FunctionHandleIndex(70),
+            Num::ToBool => FunctionHandleIndex(72),
             Num::FromU64s => FunctionHandleIndex(19),
             Num::IsZero => FunctionHandleIndex(27),
-            Num::SDiv => FunctionHandleIndex(57),
-            Num::SLt => FunctionHandleIndex(65),
-            Num::SGt => FunctionHandleIndex(59),
-            Num::SMod => FunctionHandleIndex(66),
+            Num::SDiv => FunctionHandleIndex(59),
+            Num::SLt => FunctionHandleIndex(67),
+            Num::SGt => FunctionHandleIndex(61),
+            Num::SMod => FunctionHandleIndex(68),
             Num::Exp => FunctionHandleIndex(13),
-            Num::SignExtend => FunctionHandleIndex(58),
-            Num::Sar => FunctionHandleIndex(56),
+            Num::SignExtend => FunctionHandleIndex(60),
+            Num::Sar => FunctionHandleIndex(58),
             Num::FromAddress => FunctionHandleIndex(14),
-            Num::ToAddress => FunctionHandleIndex(69),
+            Num::ToAddress => FunctionHandleIndex(71),
             Num::FromU128 => FunctionHandleIndex(18),
             Num::ToU128 => FunctionHandleIndex(0),
         }

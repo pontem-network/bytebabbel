@@ -111,10 +111,10 @@ fn content_processing(path: PathBuf) -> Result<String> {
         .split_once("module ")
         .ok_or_else(|| anyhow!("The module was not found in the file {path:?}"))?
         .1
-        .split_once("{")
+        .split_once('{')
         .ok_or_else(|| anyhow!("The beginning of the module was not found {path:?}"))?
         .1
-        .rsplit_once("}")
+        .rsplit_once('}')
         .ok_or_else(|| anyhow!("End of module not found {path:?}"))?
         .0
         .to_string();
@@ -123,7 +123,7 @@ fn content_processing(path: PathBuf) -> Result<String> {
     while let Some(start_pos) = result.find("use self::") {
         // use self ..
         let end_pos = result[start_pos..]
-            .find(";")
+            .find(';')
             .ok_or_else(|| anyhow!("No \"use\" ending found {path:?}"))?
             + 1;
         result.replace_range(start_pos..start_pos + end_pos, &" ".repeat(end_pos));
@@ -148,14 +148,14 @@ fn duplicate_constants(mut text: String) -> Result<String> {
         .into_iter()
         .map(|(start_pos, ..)| {
             let end_pos = text[start_pos..]
-                .find(";")
+                .find(';')
                 .ok_or_else(|| anyhow!("No \"const\" ending found"))?
                 + start_pos
                 + 1;
             let const_name = text[start_pos..end_pos]
                 .trim_start_matches("const")
                 .trim()
-                .split_once(":")
+                .split_once(':')
                 .ok_or_else(|| {
                     anyhow!(
                         "Could not get a constant name {}",
