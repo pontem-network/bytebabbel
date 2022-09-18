@@ -131,12 +131,10 @@ impl MoveExecutor {
             vec![]
         } else if self.flags.native_output {
             self.decode_result_move(returns)?
-        } else {
-            if let Some(entry) = entry {
+        } else if let Some(entry) = entry {
                 self.decode_result_eth(returns, entry)?
-            } else {
-                vec![]
-            }
+        } else {
+            vec![]
         };
 
         self.resolver.apply(output);
@@ -152,27 +150,27 @@ impl MoveExecutor {
             .iter()
             .map(|(val, tp)| match tp {
                 MoveTypeLayout::Bool => {
-                    bcs::from_bytes::<bool>(&val).map(|val| ParamValue::Bool(val))
+                    bcs::from_bytes::<bool>(val).map(ParamValue::Bool)
                 }
-                MoveTypeLayout::U8 => bcs::from_bytes::<u8>(&val).map(|val| ParamValue::UInt {
+                MoveTypeLayout::U8 => bcs::from_bytes::<u8>(val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
                 }),
-                MoveTypeLayout::U64 => bcs::from_bytes::<u64>(&val).map(|val| ParamValue::UInt {
+                MoveTypeLayout::U64 => bcs::from_bytes::<u64>(val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
                 }),
-                MoveTypeLayout::U128 => bcs::from_bytes::<u128>(&val).map(|val| ParamValue::UInt {
+                MoveTypeLayout::U128 => bcs::from_bytes::<u128>(val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
                 }),
-                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(&val)
+                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(val)
                     .map(|val| ParamValue::Address(val.into_bytes())),
                 MoveTypeLayout::Vector(_) => {
                     todo!()
                 }
                 MoveTypeLayout::Struct(_) => {
-                    bcs::from_bytes::<U256Wrapper>(&val).map(|val| ParamValue::UInt {
+                    bcs::from_bytes::<U256Wrapper>(val).map(|val| ParamValue::UInt {
                         size: 32,
                         value: U256(val.0),
                     })
@@ -231,7 +229,7 @@ impl MoveExecutor {
     ) -> Result<Vec<Vec<u8>>> {
         if let Some(args) = args {
             let res = format!("{},{}", signer, args)
-                .split(",")
+                .split(',')
                 .zip(&fun.parameters)
                 .map(|(val, tp)| {
                     let val = val.trim_matches(char::is_whitespace);
@@ -275,7 +273,7 @@ impl MoveExecutor {
         let entry = self
             .entries
             .by_name(ident)
-            .map(|func| ToCall::try_call(func));
+            .map(ToCall::try_call);
         match entry {
             None => Ok(None),
             Some(res) => Ok(Some(res?)),

@@ -113,7 +113,7 @@ impl STest {
         let return_value = callfn.decode_return(result_bytes)?.to_result_str();
         log::trace!("emv result_string: {return_value:?}");
 
-        Ok(format!("{return_value}"))
+        Ok(return_value)
     }
 
     fn module_address(&self) -> String {
@@ -130,7 +130,7 @@ impl STest {
             self.abi_str(),
             Flags::default(),
         )?;
-        let mut vm = MoveExecutor::new(self.contract.abi()?.clone(), Flags::default());
+        let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
         vm.deploy("0x42", bytecode);
         vm.run(&format!("{}::constructor", module_address), "0x42", None)
             .unwrap();

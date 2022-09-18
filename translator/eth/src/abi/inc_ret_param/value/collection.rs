@@ -248,12 +248,12 @@ mod test {
         let bytes = vec![1, 2, 3, 4, 5];
 
         assert_eq!(
-            ParamValue::from(bytes.clone().try_to_vec_u8().unwrap().try_to_param_bytes()),
+            bytes.clone().try_to_vec_u8().unwrap().try_to_param_bytes(),
             ParamValue::Bytes(bytes.clone())
         );
         assert_eq!(
             bytes.clone().try_to_param_bytes(),
-            ParamValue::Bytes(bytes.clone())
+            ParamValue::Bytes(bytes)
         );
 
         assert_eq!(

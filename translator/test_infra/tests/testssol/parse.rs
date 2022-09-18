@@ -24,7 +24,7 @@ pub struct SolFile {
 impl SolFile {
     pub fn from_sol_dir() -> Result<Vec<SolFile>> {
         let dir = PathBuf::from(SOL_DIRECTORY).canonicalize()?;
-        SolFile::from_dir(PathBuf::from(dir))
+        SolFile::from_dir(dir)
     }
 
     /// The search is carried out by nested folders inclusive
@@ -113,7 +113,7 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
         .to_string()
         .split_once(&SOL_DIRECTORY[2..])?
         .1
-        .split("/")
+        .split('/')
         .filter(|p| !p.is_empty())
         .collect::<Vec<&str>>()
         .join("::");
@@ -135,13 +135,13 @@ pub struct SolTest {
 impl TryFrom<&str> for SolTest {
     type Error = anyhow::Error;
     fn try_from(instruction: &str) -> Result<Self> {
-        let (name, part) = instruction.split_once('(').ok_or(anyhow!(
+        let (name, part) = instruction.split_once('(').ok_or_else(|| anyhow!(
             "Function name and parameters not found: {}",
             instruction
         ))?;
         let (params, ..) = part
             .split_once(')')
-            .ok_or(anyhow!("Function parameters not found: {}", instruction))?;
+            .ok_or_else(|| anyhow!("Function parameters not found: {}", instruction))?;
 
         Ok(SolTest {
             func: name.trim().to_string(),
@@ -198,7 +198,7 @@ impl SolTest {
             }
             fuzzing_params = fuzzing_params
                 .into_iter()
-                .map(|row| {
+                .flat_map(|row| {
                     variation_param
                         .iter()
                         .map(|param| {
@@ -208,7 +208,6 @@ impl SolTest {
                         })
                         .collect::<Vec<Vec<String>>>()
                 })
-                .flatten()
                 .collect();
         }
 

@@ -146,7 +146,7 @@ fn find_function_by_name(module: &CompiledModule, name: &str) -> FunctionHandleI
         .enumerate()
         .find(|(_, h)| module.identifier_at(h.name).as_str() == name)
         .map(|(id, _)| FunctionHandleIndex(id as u16))
-        .expect(format!("'{}' not found", name).as_str())
+        .unwrap_or_else(|| panic!("'{}' not found", name))
 }
 
 fn find_struct_by_name(module: &CompiledModule, name: &str) -> StructHandleIndex {
