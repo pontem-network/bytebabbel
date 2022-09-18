@@ -135,10 +135,9 @@ pub struct SolTest {
 impl TryFrom<&str> for SolTest {
     type Error = anyhow::Error;
     fn try_from(instruction: &str) -> Result<Self> {
-        let (name, part) = instruction.split_once('(').ok_or_else(|| anyhow!(
-            "Function name and parameters not found: {}",
-            instruction
-        ))?;
+        let (name, part) = instruction
+            .split_once('(')
+            .ok_or_else(|| anyhow!("Function name and parameters not found: {}", instruction))?;
         let (params, ..) = part
             .split_once(')')
             .ok_or_else(|| anyhow!("Function parameters not found: {}", instruction))?;

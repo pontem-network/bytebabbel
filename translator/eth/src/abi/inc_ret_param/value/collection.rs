@@ -251,10 +251,7 @@ mod test {
             bytes.clone().try_to_vec_u8().unwrap().try_to_param_bytes(),
             ParamValue::Bytes(bytes.clone())
         );
-        assert_eq!(
-            bytes.clone().try_to_param_bytes(),
-            ParamValue::Bytes(bytes)
-        );
+        assert_eq!(bytes.clone().try_to_param_bytes(), ParamValue::Bytes(bytes));
 
         assert_eq!(
             [1, 2, 3].try_to_param_bytes(),

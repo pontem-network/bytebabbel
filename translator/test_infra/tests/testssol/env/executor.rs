@@ -132,7 +132,7 @@ impl MoveExecutor {
         } else if self.flags.native_output {
             self.decode_result_move(returns)?
         } else if let Some(entry) = entry {
-                self.decode_result_eth(returns, entry)?
+            self.decode_result_eth(returns, entry)?
         } else {
             vec![]
         };
@@ -149,9 +149,7 @@ impl MoveExecutor {
         result
             .iter()
             .map(|(val, tp)| match tp {
-                MoveTypeLayout::Bool => {
-                    bcs::from_bytes::<bool>(val).map(ParamValue::Bool)
-                }
+                MoveTypeLayout::Bool => bcs::from_bytes::<bool>(val).map(ParamValue::Bool),
                 MoveTypeLayout::U8 => bcs::from_bytes::<u8>(val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
@@ -270,10 +268,7 @@ impl MoveExecutor {
     }
 
     fn eth_call(&self, ident: &str) -> Result<Option<CallFn>> {
-        let entry = self
-            .entries
-            .by_name(ident)
-            .map(ToCall::try_call);
+        let entry = self.entries.by_name(ident).map(ToCall::try_call);
         match entry {
             None => Ok(None),
             Some(res) => Ok(Some(res?)),
