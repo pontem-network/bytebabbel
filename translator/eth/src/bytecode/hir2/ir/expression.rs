@@ -2,30 +2,29 @@ use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir2::vars::VarId;
 use primitive_types::U256;
-use std::rc::Rc;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 pub enum Expr {
     Val(U256),
     Var(VarId),
     MLoad {
-        mem_offset: Rc<Expr>,
+        mem_offset: Box<Expr>,
     },
     SLoad {
-        key: Rc<Expr>,
+        key: Box<Expr>,
     },
     Signer,
     MSize,
     ArgsSize,
     Args {
-        args_offset: Rc<Expr>,
+        args_offset: Box<Expr>,
     },
-    UnaryOp(UnaryOp, Rc<Expr>),
-    BinaryOp(BinaryOp, Rc<Expr>, Rc<Expr>),
-    TernaryOp(TernaryOp, Rc<Expr>, Rc<Expr>, Rc<Expr>),
+    UnaryOp(UnaryOp, Box<Expr>),
+    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
+    TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
     Hash {
-        mem_offset: Rc<Expr>,
-        mem_len: Rc<Expr>,
+        mem_offset: Box<Expr>,
+        mem_len: Box<Expr>,
     },
 }
 

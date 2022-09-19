@@ -2,26 +2,25 @@ use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
 use primitive_types::U256;
-use std::rc::Rc;
 
 pub struct Sha3;
 
 impl InstructionHandler for Sha3 {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         let len = params.remove(1);
         let offset = params.remove(0);
-        ExecutionResult::Expr(vec![Rc::new(Expr::Hash {
-            mem_offset: offset,
-            mem_len: len,
-        })])
+        ExecutionResult::Expr(vec![Expr::Hash {
+            mem_offset: Box::new(offset),
+            mem_len: Box::new(len),
+        }])
     }
 }
 
 pub struct Address;
 
 impl InstructionHandler for Address {
-    fn handle(&self, _: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
-        ExecutionResult::Expr(vec![Rc::new(Expr::Val(ctx.address()))])
+    fn handle(&self, _: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
+        ExecutionResult::Expr(vec![Expr::Val(ctx.address())])
     }
 }
 
@@ -41,7 +40,7 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, _: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         match self {
             TxMeta::Balance => U256::zero(),
             TxMeta::Origin => U256::zero(),
@@ -65,7 +64,7 @@ impl InstructionHandler for TxMeta {
 pub struct CallDataSize;
 
 impl InstructionHandler for CallDataSize {
-    fn handle(&self, _: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         if ctx.flags().native_input {
             ctx.fun().call_data_size().into()
         } else if ctx.is_static_analysis_enable() {
@@ -80,7 +79,7 @@ impl InstructionHandler for CallDataSize {
 pub struct CallDataLoad;
 
 impl InstructionHandler for CallDataLoad {
-    fn handle(&self, params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         let offset = &params[0];
         let expr = if ctx.flags().native_input {
             if let Some(offset) = offset.resolve(ctx) {
@@ -97,14 +96,12 @@ impl InstructionHandler for CallDataLoad {
                 ctx.disable_static_analysis();
                 if let Some(offset) = offset.resolve(ctx) {
                     if offset.is_zero() {
-                        return ExecutionResult::Expr(vec![Rc::new(Expr::Val(
-                            ctx.fun().hash().into(),
-                        ))]);
+                        return ExecutionResult::Expr(vec![Expr::Val(ctx.fun().hash().into())]);
                     }
                 }
             }
             Expr::ArgsSize
         };
-        ExecutionResult::Expr(vec![Rc::new(expr)])
+        ExecutionResult::Expr(vec![expr])
     }
 }

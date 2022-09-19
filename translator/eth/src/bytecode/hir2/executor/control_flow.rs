@@ -3,7 +3,6 @@ use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::instruction::Instruction;
 use crate::BlockId;
-use std::rc::Rc;
 
 pub enum ControlFlow {
     Stop,
@@ -15,7 +14,7 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         match self {
             ControlFlow::Stop => ExecutionResult::Stop,
             ControlFlow::Abort(code) => ExecutionResult::Abort(*code),

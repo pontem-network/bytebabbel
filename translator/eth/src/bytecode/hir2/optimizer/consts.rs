@@ -5,7 +5,6 @@ use crate::bytecode::hir2::ir::statement::Statement;
 use crate::bytecode::hir2::ir::Hir2;
 use crate::bytecode::hir2::vars::VarId;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 pub fn constant_fold(hir: Hir2, ctx: &mut Context) -> Hir2 {
     let mut vars = Vars::new(ctx.const_pool());
@@ -36,7 +35,7 @@ fn map_st(statement: &Statement, vars: &mut Vars) -> Option<Statement> {
             }
             Statement::Assign {
                 var: vars.make_mapping(*var),
-                expr: map_expr(&expr, vars),
+                expr: map_expr(expr, vars),
             }
         }
         Statement::MemStore8 { addr, var } => Statement::MemStore8 {
@@ -96,44 +95,46 @@ fn map_st(statement: &Statement, vars: &mut Vars) -> Option<Statement> {
     })
 }
 
-fn map_expr(expr: &Rc<Expr>, vars: &mut Vars) -> Rc<Expr> {
-    Rc::new(match expr.as_ref() {
+fn map_expr(expr: &Expr, vars: &mut Vars) -> Expr {
+    match expr {
         Expr::Val(_) | Expr::Signer | Expr::MSize | Expr::ArgsSize => return expr.clone(),
         Expr::Var(var) => {
             if let Some(cnst) = vars.pool.get_const(&var) {
                 if cnst.users < 2 {
-                    return Rc::new(Expr::Val(cnst.val));
+                    return Expr::Val(cnst.val);
                 }
             }
             Expr::Var(vars.map_var(*var))
         }
         Expr::MLoad { mem_offset } => Expr::MLoad {
-            mem_offset: map_expr(mem_offset, vars),
+            mem_offset: Box::new(map_expr(mem_offset, vars)),
         },
         Expr::SLoad { key } => Expr::SLoad {
-            key: map_expr(key, vars),
+            key: Box::new(map_expr(key, vars)),
         },
         Expr::Args { args_offset } => Expr::Args {
-            args_offset: map_expr(args_offset, vars),
+            args_offset: Box::new(map_expr(args_offset, vars)),
         },
-        Expr::UnaryOp(cmd, op) => Expr::UnaryOp(*cmd, map_expr(op, vars)),
-        Expr::BinaryOp(cmd, op1, op2) => {
-            Expr::BinaryOp(*cmd, map_expr(op1, vars), map_expr(op2, vars))
-        }
+        Expr::UnaryOp(cmd, op) => Expr::UnaryOp(*cmd, Box::new(map_expr(op, vars))),
+        Expr::BinaryOp(cmd, op1, op2) => Expr::BinaryOp(
+            *cmd,
+            Box::new(map_expr(op1, vars)),
+            Box::new(map_expr(op2, vars)),
+        ),
         Expr::TernaryOp(cmd, op1, op2, op3) => Expr::TernaryOp(
             *cmd,
-            map_expr(op1, vars),
-            map_expr(op2, vars),
-            map_expr(op3, vars),
+            Box::new(map_expr(op1, vars)),
+            Box::new(map_expr(op2, vars)),
+            Box::new(map_expr(op3, vars)),
         ),
         Expr::Hash {
             mem_offset,
             mem_len,
         } => Expr::Hash {
-            mem_offset: map_expr(mem_offset, vars),
-            mem_len: map_expr(mem_len, vars),
+            mem_offset: Box::new(map_expr(mem_offset, vars)),
+            mem_len: Box::new(map_expr(mem_len, vars)),
         },
-    })
+    }
 }
 
 struct Vars<'a> {

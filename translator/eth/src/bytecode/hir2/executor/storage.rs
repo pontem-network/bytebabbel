@@ -2,7 +2,6 @@ use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
-use std::rc::Rc;
 
 pub enum StorageOp {
     SLoad,
@@ -10,11 +9,14 @@ pub enum StorageOp {
 }
 
 impl InstructionHandler for StorageOp {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         match self {
             StorageOp::SLoad => {
                 let addr = params.remove(0);
-                Expr::SLoad { key: addr }.into()
+                Expr::SLoad {
+                    key: Box::new(addr),
+                }
+                .into()
             }
             StorageOp::SStore => {
                 let var = params.remove(1);

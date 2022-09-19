@@ -2,7 +2,6 @@ use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum MemoryOp {
@@ -13,11 +12,14 @@ pub enum MemoryOp {
 }
 
 impl InstructionHandler for MemoryOp {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         match self {
             MemoryOp::MLoad => {
                 let addr = params.remove(0);
-                Expr::MLoad { mem_offset: addr }.into()
+                Expr::MLoad {
+                    mem_offset: Box::new(addr),
+                }
+                .into()
             }
             MemoryOp::MStore => {
                 let var = params.remove(1);

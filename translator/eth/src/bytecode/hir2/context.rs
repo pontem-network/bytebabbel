@@ -5,7 +5,6 @@ use crate::bytecode::hir2::vars::{VarId, Vars};
 use crate::bytecode::tracing::exec::StackItem;
 use crate::{Flags, Function};
 use primitive_types::U256;
-use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Context<'a> {
@@ -52,15 +51,15 @@ impl<'a> Context<'a> {
         &self.vars
     }
 
-    pub fn push_var(&mut self, expr: Rc<Expr>, stack_item: StackItem) -> VarId {
+    pub fn push_var(&mut self, expr: Expr, stack_item: StackItem) -> VarId {
         self.vars.insert(expr, stack_item)
     }
 
-    pub fn pop_stack(&mut self, pops: usize) -> Vec<Rc<Expr>> {
+    pub fn pop_stack(&mut self, pops: usize) -> Vec<Expr> {
         self.stack.pop(pops)
     }
 
-    pub fn push_stack(&mut self, to_push: Vec<Rc<Expr>>) {
+    pub fn push_stack(&mut self, to_push: Vec<Expr>) {
         self.stack.push(to_push)
     }
 

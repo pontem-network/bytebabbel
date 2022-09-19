@@ -7,7 +7,6 @@ use evm_core::utils::I256;
 use primitive_types::U256;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Div, Rem};
-use std::rc::Rc;
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy, Ord, PartialOrd)]
 pub enum UnaryOp {
@@ -31,14 +30,14 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         let param = params.remove(0);
         if !ctx.is_in_loop() {
             if let Some(param) = param.resolve(ctx) {
                 return self.calc(param).into();
             }
         }
-        Expr::UnaryOp(*self, param).into()
+        Expr::UnaryOp(*self, Box::new(param)).into()
     }
 }
 
@@ -77,7 +76,7 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         let b = params.remove(1);
         let a = params.remove(0);
         if !ctx.is_in_loop() {
@@ -93,7 +92,7 @@ impl InstructionHandler for BinaryOp {
                 return U256::one().into();
             }
         }
-        Expr::BinaryOp(*self, a, b).into()
+        Expr::BinaryOp(*self, Box::new(a), Box::new(b)).into()
     }
 }
 
@@ -258,7 +257,7 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         let op3 = params.remove(2);
         let op2 = params.remove(1);
         let op1 = params.remove(0);
@@ -272,7 +271,7 @@ impl InstructionHandler for TernaryOp {
                 return res.into();
             }
         }
-        Expr::TernaryOp(*self, op1, op2, op3).into()
+        Expr::TernaryOp(*self, Box::new(op1), Box::new(op2), Box::new(op3)).into()
     }
 }
 

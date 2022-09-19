@@ -24,22 +24,21 @@ use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
 use crate::bytecode::instruction::Instruction;
 use crate::{BlockId, OpCode};
-use std::rc::Rc;
 
 pub trait InstructionHandler {
-    fn handle(&self, params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult;
+    fn handle(&self, params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult;
 }
 
 struct NoOp;
 
 impl InstructionHandler for NoOp {
-    fn handle(&self, _: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         ExecutionResult::None
     }
 }
 
 impl InstructionHandler for Instruction {
-    fn handle(&self, params: Vec<Rc<Expr>>, context: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Expr>, context: &mut Context) -> ExecutionResult {
         match &self.1 {
             OpCode::Add => BinaryOp::Add.handle(params, context),
             OpCode::Mul => BinaryOp::Mul.handle(params, context),
@@ -135,29 +134,23 @@ pub enum ExecutionResult {
     Abort(u8),
     Statement(Statement),
     None,
-    Expr(Vec<Rc<Expr>>),
+    Expr(Vec<Expr>),
     Result {
-        offset: Rc<Expr>,
-        len: Rc<Expr>,
+        offset: Expr,
+        len: Expr,
     },
     Stop,
-    Jmp(Rc<Expr>, BlockId),
+    Jmp(Expr, BlockId),
     CndJmp {
-        cnd: Rc<Expr>,
+        cnd: Expr,
         true_br: BlockId,
         false_br: BlockId,
     },
 }
 
-impl From<Rc<Expr>> for ExecutionResult {
-    fn from(expr: Rc<Expr>) -> Self {
-        ExecutionResult::Expr(vec![expr])
-    }
-}
-
 impl<T: Into<Expr>> From<T> for ExecutionResult {
     fn from(expr: T) -> Self {
-        ExecutionResult::Expr(vec![Rc::new(expr.into())])
+        ExecutionResult::Expr(vec![expr.into()])
     }
 }
 

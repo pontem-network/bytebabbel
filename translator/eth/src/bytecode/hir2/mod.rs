@@ -20,7 +20,6 @@ use crate::{BlockId, Flags, Function};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 pub struct HirTranslator2<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
@@ -262,7 +261,7 @@ impl<'a> HirTranslator2<'a> {
                                 var,
                                 expr: expr.clone(),
                             });
-                            *expr = Rc::new(Expr::Var(var));
+                            *expr = Expr::Var(var);
                         }
                     }
                     ensure!(stack.len() == inst.pushes(), "Invalid stake state.");
@@ -294,7 +293,7 @@ impl<'a> HirTranslator2<'a> {
             }
         }
         Ok(BlockResult::Jmp(
-            Rc::new(Expr::Val(U256::zero())),
+            Expr::Val(U256::zero()),
             block
                 .last()
                 .map(|i| BlockId::from(i.next()))
@@ -311,16 +310,16 @@ pub enum StopFlag {
 
 #[derive(Debug)]
 pub enum BlockResult {
-    Jmp(Rc<Expr>, BlockId),
+    Jmp(Expr, BlockId),
     CndJmp {
-        cnd: Rc<Expr>,
+        cnd: Expr,
         true_br: BlockId,
         false_br: BlockId,
     },
     Stop,
     Result {
-        offset: Rc<Expr>,
-        len: Rc<Expr>,
+        offset: Expr,
+        len: Expr,
     },
     Abort(u8),
 }
