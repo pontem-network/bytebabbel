@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+    branches:
+      - master
 
 jobs:
   # build-linux-binary:
@@ -143,7 +145,7 @@ jobs:
           npm -g install github-app-installation-token
 
           echo "$GH_APP_PRIVATE_KEY" > public-release.pem
-          github-app-installation-token --appId $APP_ID --installationId $INSTALLATION_ID --privateKeyLocation public-release.pem >> .my_token
+          github-app-installation-token --appId $APP_ID --installationId $INSTALLATION_ID --privateKeyLocation public-release.pem > .my_token
           rm public-release.pem
 
           gh auth login --with-token < .my_token
