@@ -21,9 +21,7 @@ pub enum CodeOp {
 impl InstructionHandler for CodeOp {
     fn handle(&self, _: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
         match self {
-            CodeOp::CodeSize => {
-                ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::from(ctx.code_size())))])
-            }
+            CodeOp::CodeSize => U256::from(ctx.code_size()).into(),
             CodeOp::CallDataCopy => {
                 todo!()
             }

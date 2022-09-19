@@ -8,12 +8,12 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::debug::print_ir;
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
 use crate::bytecode::hir2::ir::Hir2;
 use crate::bytecode::tracing::tracer::BlockIO;
-use crate::bytecode::types::Env;
-use crate::{BlockId, Function};
+use crate::{BlockId, Flags, Function};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
@@ -23,6 +23,7 @@ pub struct HirTranslator2<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
     contact_flow: Flow,
     block_io: HashMap<BlockId, BlockIO>,
+    flags: Flags,
 }
 
 impl<'a> HirTranslator2<'a> {
@@ -30,11 +31,13 @@ impl<'a> HirTranslator2<'a> {
         contract: &'a HashMap<BlockId, InstructionBlock>,
         contact_flow: Flow,
         block_io: HashMap<BlockId, BlockIO>,
+        flags: Flags,
     ) -> HirTranslator2 {
         HirTranslator2 {
             contract,
             contact_flow,
             block_io,
+            flags,
         }
     }
 
@@ -44,10 +47,10 @@ impl<'a> HirTranslator2<'a> {
         contract_address: U256,
         code_size: u128,
     ) -> Result<Hir2, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size);
+        let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir2::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
-        // print_ir(&ir, &fun.name)?;
+        print_ir(&ir, &fun.name)?;
         Ok(ir)
     }
 

@@ -12,7 +12,9 @@ use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::call::CallOp;
 use crate::bytecode::hir2::executor::code::CodeOp;
 use crate::bytecode::hir2::executor::control_flow::ControlFlow;
-use crate::bytecode::hir2::executor::dependency::{Address, Sha3, TxMeta};
+use crate::bytecode::hir2::executor::dependency::{
+    Address, CallDataLoad, CallDataSize, Sha3, TxMeta,
+};
 use crate::bytecode::hir2::executor::event::EventOp;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir2::executor::memory::MemoryOp;
@@ -25,7 +27,7 @@ use crate::{BlockId, OpCode};
 use std::rc::Rc;
 
 pub trait InstructionHandler {
-    fn handle(&self, params: Vec<Rc<Expr>>, context: &mut Context) -> ExecutionResult;
+    fn handle(&self, params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult;
 }
 
 struct NoOp;
@@ -75,8 +77,8 @@ impl InstructionHandler for Instruction {
             OpCode::Origin => TxMeta::Origin.handle(params, context),
             OpCode::Caller => TxMeta::Caller.handle(params, context),
             OpCode::CallValue => TxMeta::CallValue.handle(params, context),
-            OpCode::CallDataLoad => TxMeta::CallDataLoad.handle(params, context),
-            OpCode::CallDataSize => TxMeta::CallDataSize.handle(params, context),
+            OpCode::CallDataLoad => CallDataLoad.handle(params, context),
+            OpCode::CallDataSize => CallDataSize.handle(params, context),
             OpCode::Blockhash => TxMeta::Blockhash.handle(params, context),
             OpCode::Timestamp => TxMeta::Timestamp.handle(params, context),
             OpCode::GasLimit => TxMeta::GasLimit.handle(params, context),
@@ -145,4 +147,22 @@ pub enum ExecutionResult {
         true_br: BlockId,
         false_br: BlockId,
     },
+}
+
+impl From<Rc<Expr>> for ExecutionResult {
+    fn from(expr: Rc<Expr>) -> Self {
+        ExecutionResult::Expr(vec![expr])
+    }
+}
+
+impl<T: Into<Expr>> From<T> for ExecutionResult {
+    fn from(expr: T) -> Self {
+        ExecutionResult::Expr(vec![Rc::new(expr.into())])
+    }
+}
+
+impl From<Statement> for ExecutionResult {
+    fn from(stmt: Statement) -> Self {
+        ExecutionResult::Statement(stmt)
+    }
 }

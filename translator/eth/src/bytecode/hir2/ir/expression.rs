@@ -40,7 +40,7 @@ impl Expr {
             Expr::MSize => None,
             Expr::ArgsSize => {
                 if ctx.is_static_analysis_enable() {
-                    Some(ctx.env().call_data_size())
+                    Some(ctx.fun().call_data_size())
                 } else {
                     None
                 }
@@ -63,5 +63,11 @@ impl Expr {
             }
             Expr::Hash { .. } => None,
         }
+    }
+}
+
+impl From<U256> for Expr {
+    fn from(val: U256) -> Self {
+        Expr::Val(val)
     }
 }

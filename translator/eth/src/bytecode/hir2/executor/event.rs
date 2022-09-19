@@ -11,10 +11,11 @@ impl InstructionHandler for EventOp {
         let len = params.remove(1);
         let offset = params.remove(0);
         let topics = params;
-        ExecutionResult::Statement(Statement::Log {
+        Statement::Log {
             offset,
             len,
             topics,
-        })
+        }
+        .into()
     }
 }

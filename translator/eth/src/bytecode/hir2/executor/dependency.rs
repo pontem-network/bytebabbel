@@ -30,8 +30,6 @@ pub enum TxMeta {
     Origin,
     Caller,
     CallValue,
-    CallDataLoad,
-    CallDataSize,
     Blockhash,
     Timestamp,
     GasLimit,
@@ -43,42 +41,14 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, mut params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
-        let val = match self {
+    fn handle(&self, _: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
+        match self {
             TxMeta::Balance => U256::zero(),
             TxMeta::Origin => U256::zero(),
             TxMeta::Caller => {
-                return ExecutionResult::Expr(vec![Rc::new(Expr::Signer)]);
+                return ExecutionResult::from(Expr::Signer);
             }
             TxMeta::CallValue => U256::zero(),
-            TxMeta::CallDataLoad => {
-                let offset = params.remove(0);
-                if ctx.is_static_analysis_enable() {
-                    let resolver_offset = offset.resolve(ctx);
-                    ctx.disable_static_analysis();
-
-                    if let Some(offset) = resolver_offset {
-                        if offset.is_zero() {
-                            let mut buf = [0u8; 32];
-                            buf[0..4].copy_from_slice(ctx.env().hash().as_ref().as_slice());
-                            return ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::from(
-                                buf,
-                            )))]);
-                        }
-                    }
-                }
-                return ExecutionResult::Expr(vec![Rc::new(Expr::Args {
-                    args_offset: offset,
-                })]);
-            }
-            TxMeta::CallDataSize => {
-                let expr = if ctx.is_static_analysis_enable() {
-                    Expr::Val(U256::from(1024))
-                } else {
-                    Expr::ArgsSize
-                };
-                return ExecutionResult::Expr(vec![Rc::new(expr)]);
-            }
             TxMeta::Blockhash => U256::zero(),
             TxMeta::Timestamp => U256::zero(),
             TxMeta::Difficulty => U256::zero(),
@@ -87,7 +57,54 @@ impl InstructionHandler for TxMeta {
             TxMeta::Coinbase => U256::zero(),
             TxMeta::GasLimit => U256::MAX,
             TxMeta::Gas => U256::MAX,
+        }
+        .into()
+    }
+}
+
+pub struct CallDataSize;
+
+impl InstructionHandler for CallDataSize {
+    fn handle(&self, _: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+        if ctx.flags().native_input {
+            ctx.fun().call_data_size().into()
+        } else if ctx.is_static_analysis_enable() {
+            U256::from(1024).into()
+        } else {
+            Expr::ArgsSize
+        }
+        .into()
+    }
+}
+
+pub struct CallDataLoad;
+
+impl InstructionHandler for CallDataLoad {
+    fn handle(&self, params: Vec<Rc<Expr>>, ctx: &mut Context) -> ExecutionResult {
+        let offset = &params[0];
+        let expr = if ctx.flags().native_input {
+            if let Some(offset) = offset.resolve(ctx) {
+                if offset.is_zero() {
+                    Expr::Val(ctx.fun().hash().into())
+                } else {
+                    Expr::Val(U256::from(((offset.as_u128() - 4) / 32) + 1))
+                }
+            } else {
+                panic!("unsupported dynamic types");
+            }
+        } else {
+            if ctx.is_static_analysis_enable() {
+                ctx.disable_static_analysis();
+                if let Some(offset) = offset.resolve(ctx) {
+                    if offset.is_zero() {
+                        return ExecutionResult::Expr(vec![Rc::new(Expr::Val(
+                            ctx.fun().hash().into(),
+                        ))]);
+                    }
+                }
+            }
+            Expr::ArgsSize
         };
-        ExecutionResult::Expr(vec![Rc::new(Expr::Val(val))])
+        ExecutionResult::Expr(vec![Rc::new(expr)])
     }
 }

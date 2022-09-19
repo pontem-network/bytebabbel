@@ -35,10 +35,10 @@ impl InstructionHandler for UnaryOp {
         let param = params.remove(0);
         if !ctx.is_in_loop() {
             if let Some(param) = param.resolve(ctx) {
-                return ExecutionResult::Expr(vec![Rc::new(Expr::Val(self.calc(param)))]);
+                return self.calc(param).into();
             }
         }
-        ExecutionResult::Expr(vec![Rc::new(Expr::UnaryOp(*self, param))])
+        Expr::UnaryOp(*self, param).into()
     }
 }
 
@@ -86,14 +86,14 @@ impl InstructionHandler for BinaryOp {
                 let b = b.resolve(ctx);
                 if let (Some(a), Some(b)) = (a, b) {
                     let res = self.calc(a, b);
-                    return ExecutionResult::Expr(vec![Rc::new(Expr::Val(res))]);
+                    return res.into();
                 }
             }
             if self == &BinaryOp::EQ && a == b {
-                return ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::one()))]);
+                return U256::one().into();
             }
         }
-        ExecutionResult::Expr(vec![Rc::new(Expr::BinaryOp(*self, a, b))])
+        Expr::BinaryOp(*self, a, b).into()
     }
 }
 
@@ -269,11 +269,10 @@ impl InstructionHandler for TernaryOp {
             let op3 = op3.resolve(ctx);
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
-                return ExecutionResult::Expr(vec![Rc::new(Expr::Val(res))]);
+                return res.into();
             }
         }
-        let expr = Expr::TernaryOp(*self, op1, op2, op3);
-        ExecutionResult::Expr(vec![Rc::new(expr)])
+        Expr::TernaryOp(*self, op1, op2, op3).into()
     }
 }
 

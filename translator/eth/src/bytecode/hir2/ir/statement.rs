@@ -48,4 +48,5 @@ pub enum Statement {
         offset: Rc<Expr>,
         len: Rc<Expr>,
     },
+    Move(Rc<Expr>),
 }

@@ -130,6 +130,11 @@ fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
             print_var_expression(len, buf)?;
             writeln!(buf, "];")?;
         }
+        Statement::Move(val) => {
+            write!(buf, "{:width$}move(", " ",)?;
+            print_var_expression(val, buf)?;
+            writeln!(buf, ")")?;
+        }
     }
     Ok(())
 }
