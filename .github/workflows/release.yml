@@ -142,7 +142,6 @@ jobs:
         run: |
           npm -g install github-app-installation-token
 
-public-release.pemc-release.pem
           github-app-installation-token --appId ${{ secrets.APP_ID }} --installationId ${{ secrets.INSTALLATION_ID }} --privateKeyLocation public-release.pem >> .my_token
           rm public-release.pem
 
