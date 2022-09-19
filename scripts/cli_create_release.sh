@@ -1,5 +1,6 @@
 npm -g install github-app-installation-token
 
+echo ${APP_ID}
 echo "${GH_APP_PRIVATE_KEY}" > public-release.pem
 github-app-installation-token --appId ${APP_ID} --installationId ${INSTALLATION_ID} --privateKeyLocation public-release.2022-09-19.private-key.pem >> .my_token
 rm public-release.pem
