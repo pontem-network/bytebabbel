@@ -7,7 +7,7 @@ use crate::bytecode::hir2::vars::VarId;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub fn const_fold(hir: Hir2, ctx: &mut Context) -> Hir2 {
+pub fn constant_fold(hir: Hir2, ctx: &mut Context) -> Hir2 {
     let mut vars = Vars::new(ctx.const_pool());
     map_ir(hir, &mut vars)
 }
