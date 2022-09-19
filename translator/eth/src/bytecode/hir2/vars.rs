@@ -12,6 +12,12 @@ impl VarId {
     }
 }
 
+impl From<u64> for VarId {
+    fn from(index: u64) -> Self {
+        VarId(index)
+    }
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct Vars {
     inner: HashMap<VarId, (Rc<Expr>, StackItem)>,

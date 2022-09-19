@@ -54,7 +54,7 @@ impl<'a> HirTranslator2<'a> {
         let mut ir = Hir2::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         print_ir(&ir, &fun.name)?;
-        ir = optimize(ir, &mut ctx)?;
+        ir = optimize(ir, &mut ctx);
         print_ir(&ir, &fun.name)?;
         Ok(ir)
     }

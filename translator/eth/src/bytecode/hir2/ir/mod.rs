@@ -22,3 +22,9 @@ impl Hir2 {
         self.statements
     }
 }
+
+impl From<Vec<Statement>> for Hir2 {
+    fn from(statements: Vec<Statement>) -> Self {
+        Hir2 { statements }
+    }
+}
