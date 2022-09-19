@@ -11,6 +11,7 @@ use crate::testssol::make_move_module;
 mod testssol;
 
 #[test]
+#[ignore]
 pub fn test_address_support() {
     init_log();
 

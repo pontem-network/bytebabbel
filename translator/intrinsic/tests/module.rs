@@ -1,5 +1,11 @@
 use enum_iterator::all;
-use intrinsic::{self_address_index, template, Function, Mem, Num, Persist};
+
+#[cfg(test)]
+use std::collections::HashSet;
+
+use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
+use intrinsic::{self_address_index, template, Function};
+
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
@@ -10,7 +16,6 @@ use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
-use std::collections::HashSet;
 
 #[test]
 pub fn test_template_verification() {

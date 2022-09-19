@@ -1,5 +1,5 @@
 use anyhow::Error;
-use intrinsic::Persist;
+use intrinsic::table::Persist;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
