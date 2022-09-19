@@ -1,6 +1,5 @@
-module self::storage {
-    use self::u256::{U256, new_u256, from_bytes, get, zero, as_u64, from_u128};
-    use self::math::split_u128;
+module self::persist {
+    use self::u256::{U256, new_u256, from_bytes, get, zero, as_u64, from_u128, split_u128};
 
     #[test_only]
     use self::u256::{as_u128, eq};
