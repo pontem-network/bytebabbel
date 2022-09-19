@@ -1,5 +1,8 @@
 use enum_iterator::all;
 
+#[cfg(test)]
+use std::collections::HashSet;
+
 use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
 use intrinsic::{self_address_index, template, Function};
 
