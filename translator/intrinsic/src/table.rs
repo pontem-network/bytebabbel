@@ -1,10 +1,8 @@
-
+use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
     FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
 };
-use crate::Function;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Memory {
     New,
@@ -15,7 +13,7 @@ pub enum Memory {
     Hash,
     Slice,
     RequestBufferLen,
-    ReadRequestBuffer
+    ReadRequestBuffer,
 }
 
 impl Memory {
@@ -39,7 +37,7 @@ impl Function for Memory {
             Self::Hash => "hash",
             Self::Slice => "mslice",
             Self::RequestBufferLen => "request_buffer_len",
-            Self::ReadRequestBuffer => "read_request_buffer"
+            Self::ReadRequestBuffer => "read_request_buffer",
         }
     }
 
@@ -53,11 +51,10 @@ impl Function for Memory {
             Self::Hash => FunctionHandleIndex(24),
             Self::Slice => FunctionHandleIndex(39),
             Self::RequestBufferLen => FunctionHandleIndex(56),
-            Self::ReadRequestBuffer => FunctionHandleIndex(54)
+            Self::ReadRequestBuffer => FunctionHandleIndex(54),
         }
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Persist {
@@ -68,7 +65,7 @@ pub enum Persist {
     Log1,
     Log2,
     Log3,
-    Log4
+    Log4,
 }
 
 impl Persist {
@@ -91,7 +88,7 @@ impl Function for Persist {
             Self::Log1 => "log1",
             Self::Log2 => "log2",
             Self::Log3 => "log3",
-            Self::Log4 => "log4"
+            Self::Log4 => "log4",
         }
     }
 
@@ -104,11 +101,10 @@ impl Function for Persist {
             Self::Log1 => FunctionHandleIndex(31),
             Self::Log2 => FunctionHandleIndex(32),
             Self::Log3 => FunctionHandleIndex(33),
-            Self::Log4 => FunctionHandleIndex(34)
+            Self::Log4 => FunctionHandleIndex(34),
         }
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum U256 {
@@ -146,7 +142,7 @@ pub enum U256 {
     FromAddress,
     ToAddress,
     FromU128,
-    ToU128
+    ToU128,
 }
 
 impl U256 {
@@ -196,7 +192,7 @@ impl Function for U256 {
             Self::FromAddress => "from_address",
             Self::ToAddress => "to_address",
             Self::FromU128 => "from_u128",
-            Self::ToU128 => "as_u128"
+            Self::ToU128 => "as_u128",
         }
     }
 
@@ -236,7 +232,7 @@ impl Function for U256 {
             Self::FromAddress => FunctionHandleIndex(14),
             Self::ToAddress => FunctionHandleIndex(71),
             Self::FromU128 => FunctionHandleIndex(18),
-            Self::ToU128 => FunctionHandleIndex(0)
+            Self::ToU128 => FunctionHandleIndex(0),
         }
     }
 }

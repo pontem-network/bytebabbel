@@ -7,12 +7,12 @@ use move_core_types::identifier::IdentStr;
 
 use crate::Paths;
 
-const TEMPLATE_USE: &str = "
+const TEMPLATE_USE: &str = "\
+use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
     FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
 };
-use crate::Function;
 ";
 
 const TEMPLATE_ENUM_TOKEN: &str =
@@ -20,7 +20,7 @@ const TEMPLATE_ENUM_TOKEN: &str =
 const TEMPLATE_ENUM_TOKEN_MUT: &str =
     "SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(###ENUM_INDEX_HANDLE###))))";
 
-const TEMPLATE_ENUM: &str = "
+const TEMPLATE_ENUM: &str = "\
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum ###ENUM_NAME### {
     ###ENUM_BODY###
@@ -139,9 +139,9 @@ fn gen_enum_code(
 ) -> Result<String> {
     let enum_body = table
         .iter()
-        .map(|(name, ..)| name.to_string())
+        .map(|(name, ..)| format!("{name},"))
         .collect::<Vec<String>>()
-        .join(",\n    ");
+        .join("\n    ");
 
     let structure_handle = template_mv
         .find_struct_def_by_name(IdentStr::new(struct_name)?)
@@ -156,19 +156,19 @@ fn gen_enum_code(
 
     let enum_fn_name = table
         .iter()
-        .map(|(name, move_fn)| format!("Self::{name} => \"{move_fn}\""))
+        .map(|(name, move_fn)| format!("Self::{name} => \"{move_fn}\","))
         .collect::<Vec<String>>()
-        .join(",\n            ");
+        .join("\n            ");
 
     let enum_fn_handler = table
         .iter()
         .map(|(name, move_fn)| {
             let fn_index = find_fundction_index(template_mv, move_fn)
                 .ok_or_else(|| anyhow!("Function {move_fn:?} not found"))?;
-            Ok(format!("Self::{name} => FunctionHandleIndex({fn_index})"))
+            Ok(format!("Self::{name} => FunctionHandleIndex({fn_index}),"))
         })
         .collect::<Result<Vec<String>>>()?
-        .join(",\n            ");
+        .join("\n            ");
 
     let result = TEMPLATE_ENUM
         .replace("###ENUM_NAME###", struct_name)
