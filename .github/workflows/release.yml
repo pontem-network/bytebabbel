@@ -130,7 +130,7 @@ jobs:
 
       - name: Create GitHub Release
         run: |
-          apt install -y npm
+          apt-get install -y npm
           echo "Script uses app with id: $APP_ID & installation id: $INSTALLATION_ID"
           npm -g install github-app-installation-token
           sudo apt install gh
