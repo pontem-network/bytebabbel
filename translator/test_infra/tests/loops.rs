@@ -19,10 +19,13 @@ pub fn test_for_loop() {
         evm.bin(),
         "",
         evm.abi(),
-        Flags::default(),
+        Flags::native_interface(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(
+        AbiEntries::try_from(evm.abi()).unwrap(),
+        Flags::native_interface(),
+    );
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::ForLoop::constructor", "0x42", None).unwrap();

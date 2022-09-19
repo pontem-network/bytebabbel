@@ -1,6 +1,8 @@
+mod const_pool;
 mod context;
 mod executor;
 mod ir;
+mod optimizer;
 mod stack;
 mod vars;
 
@@ -12,6 +14,7 @@ use crate::bytecode::hir2::ir::debug::print_ir;
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::ir::statement::Statement;
 use crate::bytecode::hir2::ir::Hir2;
+use crate::bytecode::hir2::optimizer::optimize;
 use crate::bytecode::tracing::tracer::BlockIO;
 use crate::{BlockId, Flags, Function};
 use anyhow::{anyhow, bail, ensure, Error};
@@ -50,6 +53,8 @@ impl<'a> HirTranslator2<'a> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir2::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
+        print_ir(&ir, &fun.name)?;
+        ir = optimize(ir, &mut ctx)?;
         print_ir(&ir, &fun.name)?;
         Ok(ir)
     }
@@ -248,6 +253,11 @@ impl<'a> HirTranslator2<'a> {
                         if si.is_positive() {
                             let expr = stack.get_mut(0).unwrap();
                             let var = ctx.push_var(expr.clone(), *si);
+                            if let Some(val) = expr.val() {
+                                ctx.const_pool().assign_val(var, val);
+                            } else {
+                                ctx.const_pool().assign_var(var);
+                            }
                             ir.add_statement(Statement::Assign {
                                 var,
                                 expr: expr.clone(),

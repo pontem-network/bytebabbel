@@ -1,3 +1,4 @@
+use crate::bytecode::hir2::const_pool::ConstPool;
 use crate::bytecode::hir2::ir::expression::Expr;
 use crate::bytecode::hir2::stack::Stack;
 use crate::bytecode::hir2::vars::{VarId, Vars};
@@ -11,6 +12,7 @@ pub struct Context<'a> {
     address: U256,
     stack: Stack,
     vars: Vars,
+    const_pool: ConstPool,
     fun: &'a Function,
     loop_stack_size: usize,
     static_analysis: bool,
@@ -33,6 +35,7 @@ impl<'a> Context<'a> {
             code_size,
             flags,
             vars: Default::default(),
+            const_pool: Default::default(),
             fun,
         }
     }
@@ -77,6 +80,10 @@ impl<'a> Context<'a> {
         self.fun
     }
 
+    pub fn const_pool(&mut self) -> &mut ConstPool {
+        &mut self.const_pool
+    }
+
     // pub fn create_loop(&mut self, block_id: BlockId, break_br: BlockId) {
     //     self.loop_input
     //         .insert(block_id, (self.stack.clone(), break_br));
@@ -117,6 +124,7 @@ impl<'a> Context<'a> {
             address: self.address,
             stack: self.stack.clone(),
             vars: self.vars.clone(),
+            const_pool: self.const_pool.clone(),
             fun: self.fun,
             loop_stack_size: self.loop_stack_size,
             static_analysis: self.static_analysis,

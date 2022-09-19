@@ -30,10 +30,13 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn resolve(&self, ctx: &Context) -> Option<U256> {
+    pub fn resolve(&self, ctx: &mut Context) -> Option<U256> {
         match self {
             Expr::Val(val) => Some(*val),
-            Expr::Var(var) => ctx.vars().get(var)?.0.resolve(ctx),
+            Expr::Var(var) => {
+                ctx.const_pool().use_var(var);
+                ctx.vars().get(var)?.0.resolve(ctx)
+            }
             Expr::MLoad { .. } => None,
             Expr::SLoad { .. } => None,
             Expr::Signer => None,
@@ -62,6 +65,13 @@ impl Expr {
                 Some(cmd.calc(op1, op2, op3))
             }
             Expr::Hash { .. } => None,
+        }
+    }
+
+    pub fn val(&self) -> Option<U256> {
+        match self {
+            Expr::Val(val) => Some(*val),
+            _ => None,
         }
     }
 }
