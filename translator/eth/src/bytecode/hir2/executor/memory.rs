@@ -17,19 +17,19 @@ impl InstructionHandler for MemoryOp {
         match self {
             MemoryOp::MLoad => {
                 let addr = params.remove(0);
-                ExecutionResult::Expr(vec![Rc::new(Expr::MLoad { mem_offset: addr })])
+                Expr::MLoad { mem_offset: addr }.into()
             }
             MemoryOp::MStore => {
                 let var = params.remove(1);
                 let addr = params.remove(0);
-                ExecutionResult::Statement(Statement::MemStore { addr, var })
+                Statement::MemStore { addr, var }.into()
             }
             MemoryOp::MStore8 => {
                 let var = params.remove(1);
                 let addr = params.remove(0);
-                ExecutionResult::Statement(Statement::MemStore8 { addr, var })
+                Statement::MemStore8 { addr, var }.into()
             }
-            MemoryOp::MSize => ExecutionResult::Expr(vec![Rc::new(Expr::MSize)]),
+            MemoryOp::MSize => Expr::MSize.into(),
         }
     }
 }

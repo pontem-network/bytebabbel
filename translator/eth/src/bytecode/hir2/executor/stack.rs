@@ -14,9 +14,7 @@ pub enum StackOp {
 impl InstructionHandler for StackOp {
     fn handle(&self, mut params: Vec<Rc<Expr>>, _: &mut Context) -> ExecutionResult {
         match self {
-            StackOp::Push(val) => {
-                ExecutionResult::Expr(vec![Rc::new(Expr::Val(U256::from(val.as_slice())))])
-            }
+            StackOp::Push(val) => U256::from(val.as_slice()).into(),
             StackOp::Dup(_) => {
                 let new_item = params[params.len() - 1].clone();
                 params.insert(0, new_item);

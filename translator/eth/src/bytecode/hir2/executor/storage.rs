@@ -14,12 +14,12 @@ impl InstructionHandler for StorageOp {
         match self {
             StorageOp::SLoad => {
                 let addr = params.remove(0);
-                ExecutionResult::Expr(vec![Rc::new(Expr::SLoad { key: addr })])
+                Expr::SLoad { key: addr }.into()
             }
             StorageOp::SStore => {
                 let var = params.remove(1);
                 let addr = params.remove(0);
-                ExecutionResult::Statement(Statement::SStore { addr, var })
+                Statement::SStore { addr, var }.into()
             }
         }
     }
