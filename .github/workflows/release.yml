@@ -128,9 +128,14 @@ jobs:
       # - name: Display structure of downloaded files
       #   run: ls -R
 
+      - uses: actions/checkout@v3
+      - name: Node isntall
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
       - name: Create GitHub Release
         run: |
-          apt-get install -y npm
           echo "Script uses app with id: $APP_ID & installation id: $INSTALLATION_ID"
           npm -g install github-app-installation-token
           sudo apt install gh
