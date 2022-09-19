@@ -10,6 +10,7 @@ use primitive_types::U256;
 
 pub const MAX_MEMORY: u64 = 1024 * 32;
 
+#[derive(Debug)]
 pub struct Config<'a> {
     pub contract_addr: AccountAddress,
     pub name: &'a str,
@@ -36,7 +37,6 @@ pub fn translate(bytecode: &str, abi: &str, config: Config) -> Result<Target, Er
     let mvir = MvIrTranslator::new(config.contract_addr, MAX_MEMORY, program, config.flags);
     let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;
-
     let interface = move_interface(&compiled_module, &abi, config.flags)?;
     let manifest = toml_template(config.name, config.contract_addr);
 

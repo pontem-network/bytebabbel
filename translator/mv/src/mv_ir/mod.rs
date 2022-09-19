@@ -38,6 +38,7 @@ impl Module {
         module.signatures = self.signatures;
 
         print_move_module(&module);
+
         CodeUnitVerifier::verify_module(&VerifierConfig::default(), &module).map_err(|err| {
             anyhow!(
                 "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?} -{:?}",
