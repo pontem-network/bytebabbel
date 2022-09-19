@@ -139,7 +139,20 @@ jobs:
           GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
           INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
           APP_ID: ${{ secrets.APP_ID }}
-        run: scripts/cli_create_release.sh
+        run: |
+          npm -g install github-app-installation-token
+
+public-release.pemc-release.pem
+          github-app-installation-token --appId ${{ secrets.APP_ID }} --installationId ${{ secrets.INSTALLATION_ID }} --privateKeyLocation public-release.pem >> .my_token
+          rm public-release.pem
+
+          gh auth login --with-token < .my_token
+          gh auth status
+          rm .my_token
+
+          gh release create v0.0.0 --notes "bugfix release" --draft -R https://github.com/pontem-network/eth2move-samples
+          echo "Work is done"
+
 
       # - name: Create GitHub Release
       #   uses: "marvinpinto/action-automatic-releases@v1.2.1"
