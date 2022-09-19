@@ -106,7 +106,7 @@ jobs:
 
   release-binaries:
     name: "Release binaries"
-    needs:
+    # needs:
       # - build-linux-binary
       # - build-os-x-binary
       # - build-windows-binary
