@@ -18,3 +18,4 @@ evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
 move-core-types = {git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675" , features = ["address32"] }
+ethabi = "17.2"
