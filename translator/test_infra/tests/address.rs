@@ -1,5 +1,6 @@
 use eth::abi::entries::AbiEntries;
 use eth::Flags;
+use ethabi::Contract;
 use test_infra::init_log;
 
 use crate::testssol::convert::ResultToString;
@@ -24,10 +25,12 @@ pub fn test_address_support() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
+
+    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::AddressSupport::constructor", "0x42", None)
         .unwrap();
+
     let res = vm
         .run("0x42::AddressSupport::is_owner", "0x42", Some(""))
         .unwrap()

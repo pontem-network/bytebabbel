@@ -94,7 +94,7 @@ fn vicinity() -> MemoryVicinity {
 
 fn constructor_encode_params(abi: &Contract, args_str: &str) -> Result<Vec<u8>, Error> {
     if let Some(constructor) = abi.constructor() {
-        constructor.encode_value_by_str(args_str)
+        constructor.call_by_str(args_str)
     } else {
         Ok(vec![])
     }

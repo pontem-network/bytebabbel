@@ -2,7 +2,6 @@ use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
-use eth::abi::entries::AbiEntries;
 use eth::Flags;
 use test_infra::init_log;
 
@@ -22,7 +21,7 @@ pub fn test_for_loop() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::ForLoop::constructor", "0x42", None).unwrap();

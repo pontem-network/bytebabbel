@@ -254,16 +254,16 @@ impl EthEncodeConstructor for Constructor {
 }
 
 pub trait EthEncodeByString {
-    fn encode_value_by_vec_str(&self, params: &[&str]) -> Result<Bytes>;
     fn short_signature_in_hex(&self) -> String;
-    fn encode_value_by_str(&self, params: &str) -> Result<Bytes> {
+    fn call_by_vec_str(&self, params: &[&str]) -> Result<Bytes>;
+    fn call_by_str(&self, params: &str) -> Result<Bytes> {
         let params = fn_params_str_split(params)?;
-        self.encode_value_by_vec_str(&params)
+        self.call_by_vec_str(&params)
     }
 }
 
 impl EthEncodeByString for Function {
-    fn encode_value_by_vec_str(&self, params: &[&str]) -> Result<Bytes> {
+    fn call_by_vec_str(&self, params: &[&str]) -> Result<Bytes> {
         let params = self
             .inputs
             .iter()
@@ -281,7 +281,7 @@ impl EthEncodeByString for Function {
 }
 
 impl EthEncodeByString for Constructor {
-    fn encode_value_by_vec_str(&self, params: &[&str]) -> Result<Bytes> {
+    fn call_by_vec_str(&self, params: &[&str]) -> Result<Bytes> {
         let params = self
             .inputs
             .iter()
@@ -450,7 +450,7 @@ mod test {
         // function baz(uint32 x, bool y)
         // =========================================================================================
         let entry_fn = abi.functions_by_name("baz").unwrap().first().unwrap();
-        let encode = hex::encode(entry_fn.encode_value_by_vec_str(&["69", "true"]).unwrap());
+        let encode = hex::encode(entry_fn.call_by_vec_str(&["69", "true"]).unwrap());
         assert_eq!(&entry_fn.short_signature_in_hex(), "cdcd77c0");
         assert_eq!(
             "0xcdcd77c0\
@@ -465,7 +465,7 @@ mod test {
         let entry_fn = abi.functions_by_name("bar").unwrap().first().unwrap();
         let encode = hex::encode(
             entry_fn
-                .encode_value_by_vec_str(&[&format!(
+                .call_by_vec_str(&[&format!(
                     "[0x{},0x{}]",
                     hex::encode("abc".as_bytes()),
                     hex::encode("def".as_bytes())
@@ -488,7 +488,7 @@ mod test {
         let entry_fn = abi.functions_by_name("sam").unwrap().first().unwrap();
         let encode = hex::encode(
             entry_fn
-                .encode_value_by_vec_str(&[&hex::encode("dave".as_bytes()), "true", "[1,2,3]"])
+                .call_by_vec_str(&[&hex::encode("dave".as_bytes()), "true", "[1,2,3]"])
                 .unwrap(),
         );
 
@@ -514,7 +514,7 @@ mod test {
         let entry_fn = abi.functions_by_name("f").unwrap().first().unwrap();
         let encode = hex::encode(
             entry_fn
-                .encode_value_by_vec_str(&[
+                .call_by_vec_str(&[
                     "291",
                     "[1110,1929]",
                     &hex::encode("1234567890".as_bytes()),
@@ -545,7 +545,7 @@ mod test {
         let entry_fn = abi.functions_by_name("g").unwrap().first().unwrap();
         let encode = hex::encode(
             entry_fn
-                .encode_value_by_vec_str(&["[[1,2],[3]]", r#"[one,two,three]"#])
+                .call_by_vec_str(&["[[1,2],[3]]", r#"[one,two,three]"#])
                 .unwrap(),
         );
 

@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use anyhow::{anyhow, ensure, Error, Result};
-use eth::abi::call::ToCall;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
@@ -13,6 +12,7 @@ pub mod parse;
 use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
+use eth::abi::call::encode::EthEncodeByString;
 use eth::Flags;
 use parse::{SolFile, SolTest};
 use test_infra::color;
@@ -97,22 +97,21 @@ impl STest {
 
         let abi = self.contract.abi()?;
         let ent = abi
-            .by_name(&self.test.func)
+            .functions_by_name(&self.test.func)?
+            .first()
             .ok_or_else(|| anyhow!("function not found in abi"))?;
-        let mut callfn = ent.try_call()?;
-        let tx = callfn
-            .parse_and_set_inputs(&self.test.params)?
-            .encode(true)?;
+        let tx = ent.call_by_str(&self.test.params)?;
 
         let mut evm = REvm::try_from(&self.contract)?;
         evm.construct(vec![])?;
         let result_bytes = evm.run_tx(tx)?;
         log::trace!("emv result_bytes: {result_bytes:?}");
 
-        let return_value = callfn.decode_return(result_bytes)?.to_result_str();
-        log::trace!("emv result_string: {return_value:?}");
+        todo!();
+        // let return_value = callfn.decode_return(result_bytes)?.to_result_str();
+        // log::trace!("emv result_string: {return_value:?}");
 
-        Ok(return_value)
+        // Ok(format!("{return_value}"))
     }
 
     fn module_address(&self) -> String {

@@ -13,10 +13,11 @@ use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
 use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
-use eth::abi::call::{CallFn, ToCall};
-use eth::abi::entries::AbiEntries;
+use eth::abi::call::encode::EthEncodeByString;
+use eth::abi::call::CallFn;
 use eth::abi::inc_ret_param::value::ParamValue;
 use eth::Flags;
+use ethabi::Contract;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
@@ -35,12 +36,12 @@ pub struct MoveExecutor {
     resolver: Resolver,
     vm: MoveVmExt,
     seq: u64,
-    entries: AbiEntries,
+    entries: Contract,
     flags: Flags,
 }
 
 impl MoveExecutor {
-    pub fn new(entries: AbiEntries, flags: Flags) -> MoveExecutor {
+    pub fn new(entries: Contract, flags: Flags) -> MoveExecutor {
         let resolver = INSTANCE
             .get_or_init(|| {
                 let mut resolver = Resolver::default();
@@ -112,7 +113,7 @@ impl MoveExecutor {
         let adapter = StorageAdapter::new(&self.resolver);
         let mut session = self.vm.new_session(&adapter, id);
 
-        let entry = self.eth_call(ident.as_str())?;
+        let entry = self.entries.functions_by_name(ident.as_str())?.first();
 
         let args = if self.flags.native_input {
             let fun = session.load_function(&module_id, &ident, &[]);
@@ -132,6 +133,7 @@ impl MoveExecutor {
         } else if self.flags.native_output {
             self.decode_result_move(returns)?
         } else if let Some(entry) = entry {
+            todo!()
             self.decode_result_eth(returns, entry)?
         } else {
             vec![]
@@ -149,26 +151,28 @@ impl MoveExecutor {
         result
             .iter()
             .map(|(val, tp)| match tp {
-                MoveTypeLayout::Bool => bcs::from_bytes::<bool>(val).map(ParamValue::Bool),
-                MoveTypeLayout::U8 => bcs::from_bytes::<u8>(val).map(|val| ParamValue::UInt {
+                MoveTypeLayout::Bool => {
+                    bcs::from_bytes::<bool>(&val).map(|val| ParamValue::Bool(val))
+                }
+                MoveTypeLayout::U8 => bcs::from_bytes::<u8>(&val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
                 }),
-                MoveTypeLayout::U64 => bcs::from_bytes::<u64>(val).map(|val| ParamValue::UInt {
+                MoveTypeLayout::U64 => bcs::from_bytes::<u64>(&val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
                 }),
-                MoveTypeLayout::U128 => bcs::from_bytes::<u128>(val).map(|val| ParamValue::UInt {
+                MoveTypeLayout::U128 => bcs::from_bytes::<u128>(&val).map(|val| ParamValue::UInt {
                     size: 32,
                     value: U256::from(val),
                 }),
-                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(val)
+                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(&val)
                     .map(|val| ParamValue::Address(val.into_bytes())),
                 MoveTypeLayout::Vector(_) => {
                     todo!()
                 }
                 MoveTypeLayout::Struct(_) => {
-                    bcs::from_bytes::<U256Wrapper>(val).map(|val| ParamValue::UInt {
+                    bcs::from_bytes::<U256Wrapper>(&val).map(|val| ParamValue::UInt {
                         size: 32,
                         value: U256(val.0),
                     })
@@ -202,15 +206,13 @@ impl MoveExecutor {
         &self,
         signer: &str,
         args: Option<&str>,
-        entry: &Option<CallFn>,
+        entry: &Option<&ethabi::Function>,
     ) -> Result<Vec<Vec<u8>>> {
         let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
         if let Some(args) = args {
             if let Some(call) = entry {
-                let mut call = call.clone();
-                call.parse_and_set_inputs(args)?;
-                let request = call.encode(false)?;
-                Ok(vec![signer, bcs::to_bytes(&request)?])
+                let request = call.call_by_str(args)?;
+                Ok(vec![signer, bcs::to_bytes(&request[4..])?])
             } else {
                 Ok(vec![signer])
             }
@@ -267,12 +269,9 @@ impl MoveExecutor {
         }
     }
 
-    fn eth_call(&self, ident: &str) -> Result<Option<CallFn>> {
-        let entry = self.entries.by_name(ident).map(ToCall::try_call);
-        match entry {
-            None => Ok(None),
-            Some(res) => Ok(Some(res?)),
-        }
+    fn eth_call(&self, ident: &str) -> Result<Option<&ethabi::Function>> {
+        let entry = self.entries.functions_by_name(ident)?.first();
+        Ok(entry)
     }
 }
 

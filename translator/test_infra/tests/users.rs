@@ -2,7 +2,6 @@ use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
-use eth::abi::entries::AbiEntries;
 use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
@@ -30,7 +29,7 @@ pub fn test_for_users() {
         )
         .unwrap();
 
-        let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), flags);
+        let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), flags);
         vm.deploy(
             "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
             bytecode,
@@ -217,7 +216,7 @@ pub fn test_for_users_with_hidden_result() {
         flags,
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), flags);
+    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), flags);
     vm.deploy(
         "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
         bytecode,

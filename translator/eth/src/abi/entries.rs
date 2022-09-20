@@ -434,7 +434,7 @@ mod tests {
 
         let abi: Contract = serde_json::from_str(content).unwrap();
         let constructor = abi.constructor.unwrap();
-        let result_new = hex::encode(constructor.encode_value_by_vec_str(&["5"]).unwrap());
+        let result_new = hex::encode(constructor.call_by_vec_str(&["5"]).unwrap());
 
         assert_eq!(result_old, result_new);
     }
