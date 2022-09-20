@@ -1,12 +1,14 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
-use crate::abi::inc_ret_param::Param;
-use crate::abi::types::StateMutability;
 use anyhow::{Error, Result};
 use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
+
+use crate::abi::call::encode::EthEncodeByString;
+use crate::abi::inc_ret_param::Param;
+use crate::abi::types::StateMutability;
 
 #[derive(Debug, Default, Clone)]
 pub struct AbiEntries {
@@ -211,10 +213,13 @@ impl Display for FunHash {
 // @todo
 #[cfg(test)]
 mod tests {
+    use crate::abi::call::encode::EthEncodeByString;
+    use crate::abi::call::ToCall;
     use crate::abi::entries::{AbiEntries, Entry, FunctionData};
     use crate::abi::inc_ret_param::types::ParamType;
     use crate::abi::inc_ret_param::Param;
     use crate::abi::types::StateMutability;
+    use ethabi::Contract;
 
     #[test]
     fn test_entry_deserialize_error() {
@@ -402,6 +407,33 @@ mod tests {
             }),
             result
         );
+
+        let content = r#"[{
+            "inputs": [
+                {
+                    "internalType": "uint32",
+                    "name": "name_",
+                    "type": "uint32"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        }]"#;
+        let abi: AbiEntries = serde_json::from_str(content).unwrap();
+        let result = abi.entries[0]
+            .try_call()
+            .unwrap()
+            .parse_and_set_inputs("5")
+            .unwrap()
+            .encode(true)
+            .unwrap();
+        let result_old = hex::encode(result);
+
+        let abi: Contract = serde_json::from_str(content).unwrap();
+        let consturctor = abi.constructor.unwrap();
+        let result_new = consturctor.encode_value_by_str_hex(&["5"]).unwrap();
+
+        assert_eq!(result_old, result_new);
     }
 
     #[test]
