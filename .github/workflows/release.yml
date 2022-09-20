@@ -5,7 +5,7 @@ on:
     tags:
       - 'v*.*.*'
     branches:
-      - cli_release
+      - ci_release
 
 jobs:
   # build-linux-binary:
