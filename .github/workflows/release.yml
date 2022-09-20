@@ -153,7 +153,7 @@ jobs:
 
   release-binaries:
     name: "Release binaries"
-    needs:
+    # needs:
       # - build-linux-binary
       # - build-os-x-binary-aarch64
       # - build-os-x-binary-x86-64
