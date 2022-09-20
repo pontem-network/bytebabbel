@@ -1,14 +1,14 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Eval, VarId};
-use crate::Hir;
+use crate::bytecode::hir::ir::expression::Expr;
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
 use evm_core::utils::I256;
 use primitive_types::U256;
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Div, Rem};
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy, Ord, PartialOrd)]
 pub enum UnaryOp {
     IsZero,
     Not,
@@ -30,22 +30,29 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
+        let param = params.remove(0);
         if !ctx.is_in_loop() {
-            let param = ir.resolve_var(params[0]);
-            if let Some(param) = param {
-                let id = ir.create_var(Eval::Val(self.calc(param)));
-                return ExecutionResult::Output(vec![id]);
+            if let Some(param) = param.resolve(Some(ctx)) {
+                return self.calc(param).into();
             }
         }
-        let id = ir.create_var(Eval::UnaryOp(*self, params[0]));
-        ExecutionResult::Output(vec![id])
+        Expr::UnaryOp(*self, Box::new(param)).into()
     }
 }
 
-#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
+impl Display for UnaryOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnaryOp::IsZero => write!(f, "0 == "),
+            UnaryOp::Not => write!(f, "!"),
+        }
+    }
+}
+
+#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone, Ord, PartialOrd)]
 pub enum BinaryOp {
-    EQ,
+    Eq,
     Lt,
     Gt,
     Shr,
@@ -69,34 +76,30 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
-        let a = params[0];
-        let b = params[1];
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
+        let b = params.remove(1);
+        let a = params.remove(0);
         if !ctx.is_in_loop() {
             {
-                let a = ir.resolve_var(a);
-                let b = ir.resolve_var(b);
+                let a = a.resolve(Some(ctx));
+                let b = b.resolve(Some(ctx));
                 if let (Some(a), Some(b)) = (a, b) {
                     let res = self.calc(a, b);
-                    let id = ir.create_var(Eval::Val(res));
-                    return ExecutionResult::Output(vec![id]);
+                    return res.into();
                 }
             }
-            if self == &BinaryOp::EQ && a == b {
-                let id = ir.create_var(Eval::Val(U256::one()));
-                return ExecutionResult::Output(vec![id]);
+            if self == &BinaryOp::Eq && a == b {
+                return U256::one().into();
             }
         }
-
-        let id = ir.create_var(Eval::BinaryOp(*self, a, b));
-        ExecutionResult::Output(vec![id])
+        Expr::BinaryOp(*self, Box::new(a), Box::new(b)).into()
     }
 }
 
 impl BinaryOp {
     pub fn calc(&self, mut a: U256, mut b: U256) -> U256 {
         match self {
-            BinaryOp::EQ => {
+            BinaryOp::Eq => {
                 if a == b {
                     U256::one()
                 } else {
@@ -219,30 +222,57 @@ impl BinaryOp {
     }
 }
 
-#[derive(Debug, Clone)]
+impl Display for BinaryOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinaryOp::Eq => write!(f, "=="),
+            BinaryOp::Lt => write!(f, "<"),
+            BinaryOp::Gt => write!(f, ">"),
+            BinaryOp::Shr => write!(f, ">>"),
+            BinaryOp::Shl => write!(f, "<<"),
+            BinaryOp::Sar => write!(f, ">>>"),
+            BinaryOp::Add => write!(f, "+"),
+            BinaryOp::And => write!(f, "&"),
+            BinaryOp::Or => write!(f, "|"),
+            BinaryOp::Xor => write!(f, "^"),
+            BinaryOp::Mul => write!(f, "*"),
+            BinaryOp::Sub => write!(f, "-"),
+            BinaryOp::Div => write!(f, "/"),
+            BinaryOp::SDiv => write!(f, "//"),
+            BinaryOp::SLt => write!(f, "<"),
+            BinaryOp::SGt => write!(f, ">"),
+            BinaryOp::Byte => write!(f, "#"),
+            BinaryOp::Mod => write!(f, "%"),
+            BinaryOp::SMod => write!(f, "%%"),
+            BinaryOp::Exp => write!(f, "**"),
+            BinaryOp::SignExtend => write!(f, "***"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum TernaryOp {
     AddMod,
     MulMod,
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
-        let op1 = params[0];
-        let op2 = params[1];
-        let op3 = params[2];
+    fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
+        let op3 = params.remove(2);
+        let op2 = params.remove(1);
+        let op1 = params.remove(0);
 
         if !ctx.is_in_loop() {
-            let op1 = ir.resolve_var(op1);
-            let op2 = ir.resolve_var(op2);
-            let op3 = ir.resolve_var(op3);
+            let op1 = op1.resolve(Some(ctx));
+            let op2 = op2.resolve(Some(ctx));
+            let op3 = op3.resolve(Some(ctx));
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
-                let id = ir.create_var(Eval::Val(res));
-                return ExecutionResult::Output(vec![id]);
+                return res.into();
             }
         }
-        let id = ir.create_var(Eval::TernaryOp(self.clone(), op1, op2, op3));
-        ExecutionResult::Output(vec![id])
+
+        Expr::TernaryOp(*self, Box::new(op1), Box::new(op2), Box::new(op3)).into()
     }
 }
 
@@ -251,6 +281,19 @@ impl TernaryOp {
         match self {
             TernaryOp::AddMod => arithmetic::addmod(op1, op2, op3),
             TernaryOp::MulMod => arithmetic::mulmod(op1, op2, op3),
+        }
+    }
+}
+
+impl Display for TernaryOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TernaryOp::AddMod => {
+                write!(f, "addmod")
+            }
+            TernaryOp::MulMod => {
+                write!(f, "mulmod")
+            }
         }
     }
 }

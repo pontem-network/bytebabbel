@@ -1,7 +1,7 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Eval, VarId};
-use crate::Hir;
+use crate::bytecode::hir::ir::expression::Expr;
+use crate::bytecode::hir::ir::statement::Statement;
 
 #[derive(Debug, Clone)]
 pub enum MemoryOp {
@@ -12,29 +12,26 @@ pub enum MemoryOp {
 }
 
 impl InstructionHandler for MemoryOp {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         match self {
             MemoryOp::MLoad => {
-                let addr = params[0];
-                let id = ir.create_var(Eval::MLoad(addr));
-                ExecutionResult::Output(vec![id])
+                let addr = params.remove(0);
+                Expr::MLoad {
+                    mem_offset: Box::new(addr),
+                }
+                .into()
             }
             MemoryOp::MStore => {
-                let addr = params[0];
-                let val = params[1];
-                ir.mstore(addr, val);
-                ExecutionResult::None
+                let var = params.remove(1);
+                let addr = params.remove(0);
+                Statement::MemStore { addr, var }.into()
             }
             MemoryOp::MStore8 => {
-                let addr = params[0];
-                let val = params[1];
-                ir.mstore8(addr, val);
-                ExecutionResult::None
+                let var = params.remove(1);
+                let addr = params.remove(0);
+                Statement::MemStore8 { addr, var }.into()
             }
-            MemoryOp::MSize => {
-                let id = ir.create_var(Eval::MSize);
-                ExecutionResult::Output(vec![id])
-            }
+            MemoryOp::MSize => Expr::MSize.into(),
         }
     }
 }

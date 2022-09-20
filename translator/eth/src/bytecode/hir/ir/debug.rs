@@ -1,215 +1,206 @@
-use crate::bytecode::hir::executor::math::{BinaryOp, UnaryOp};
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::Eval;
-use crate::Hir;
+#![allow(dead_code)]
+
+use crate::bytecode::hir::ir::expression::Expr;
+use crate::bytecode::hir::ir::statement::Statement;
+use crate::bytecode::hir::ir::Hir;
 use anyhow::Error;
-use log::log_enabled;
-use log::Level;
+use log::{log_enabled, Level};
 use std::fmt::Write;
 
-pub fn print_ir(ir: &Hir, name: &str) {
+pub fn print_ir(ir: &Hir, name: &str) -> Result<(), Error> {
     if log_enabled!(Level::Trace) {
         let mut buf = String::new();
-        buf.push_str("HIR for ");
-        buf.push_str(name);
-        buf.push_str(":\n");
-        if let Err(err) = print_buf(ir, &mut buf, 0) {
-            log::error!("Failed to print ir: {}", err);
-        }
-        log::trace!("IR:\n{}", buf);
+        writeln!(buf, "HIR for {}:", name)?;
+        write_buf(ir, &mut buf, 0)?;
+        writeln!(
+            buf,
+            "================================================================================="
+        )?;
+        println!("{}", buf);
+        log::trace!("{}", buf);
     }
-}
-
-fn print_buf(ir: &Hir, buf: &mut String, width: usize) -> Result<(), Error> {
-    writeln!(
-        buf,
-        "================================================================================="
-    )?;
-    print_instructions(ir, &ir.instructions, buf, width)?;
-    writeln!(
-        buf,
-        "================================================================================="
-    )?;
     Ok(())
 }
 
-fn print_instructions(
-    ir: &Hir,
-    inst: &[Instruction],
-    buf: &mut String,
-    width: usize,
-) -> Result<(), Error> {
+fn write_buf(ir: &Hir, buf: &mut String, width: usize) -> Result<(), Error> {
+    write_statements(&ir.statements, buf, width)?;
+    Ok(())
+}
+
+fn write_statements(inst: &[Statement], buf: &mut String, width: usize) -> Result<(), Error> {
     for inst in inst {
-        print_instruction(ir, inst, buf, width)?;
+        write_statement(inst, buf, width)?;
     }
     Ok(())
 }
 
-fn print_instruction(
-    ir: &Hir,
-    inst: &Instruction,
-    buf: &mut String,
-    width: usize,
-) -> Result<(), Error> {
+fn write_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(), Error> {
     match inst {
-        Instruction::SetVar(id) => {
-            write!(buf, "{:width$}let {:?} = ", " ", id)?;
-            print_ir_var(ir.var(id), buf, 0)?;
-            write!(buf, ";")?;
+        Statement::Assign { var, expr } => {
+            write!(buf, "{:width$}let var{:?} = ", " ", var.index())?;
+            print_var_expression(expr, buf)?;
+            writeln!(buf, ";")?;
         }
-        Instruction::If {
+        Statement::MemStore8 { addr, var } => {
+            write!(buf, "{:width$}mem8[", " ",)?;
+            print_var_expression(addr, buf)?;
+            write!(buf, "] = ")?;
+            print_var_expression(var, buf)?;
+            writeln!(buf, ";")?;
+        }
+        Statement::MemStore { addr, var } => {
+            write!(buf, "{:width$}mem[", " ",)?;
+            print_var_expression(addr, buf)?;
+            write!(buf, "] = ")?;
+            print_var_expression(var, buf)?;
+            writeln!(buf, ";")?;
+        }
+        Statement::SStore { addr, var } => {
+            write!(buf, "{:width$}sstore[", " ",)?;
+            print_var_expression(addr, buf)?;
+            write!(buf, "] = ")?;
+            print_var_expression(var, buf)?;
+            writeln!(buf, ";")?;
+        }
+        Statement::Log {
+            offset,
+            len,
+            topics,
+        } => {
+            write!(buf, "{:width$}log[mem[", " ",)?;
+            print_var_expression(offset, buf)?;
+            write!(buf, ":+")?;
+            print_var_expression(len, buf)?;
+            write!(buf, "]](")?;
+            for (i, topic) in topics.iter().enumerate() {
+                if i > 0 {
+                    write!(buf, ", ")?;
+                }
+                print_var_expression(topic, buf)?;
+            }
+            writeln!(buf, ");")?;
+        }
+        Statement::If {
             condition,
             true_branch,
             false_branch,
         } => {
-            writeln!(buf, "{:width$}if {:?} {{", " ", condition)?;
-            print_instructions(ir, true_branch, buf, width + 4)?;
-            writeln!(buf, "{:width$}}} else {{", " ",)?;
-            print_instructions(ir, false_branch, buf, width + 4)?;
-            write!(buf, "{:width$}}}", " ",)?;
+            write!(buf, "{:width$}if ", " ",)?;
+            print_var_expression(condition, buf)?;
+            writeln!(buf, " {{")?;
+            write_statements(true_branch, buf, width + 4)?;
+            writeln!(buf, "{:width$}}} else {{", " ", width = width)?;
+            write_statements(false_branch, buf, width + 4)?;
+            writeln!(buf, "{:width$}}}", " ", width = width)?;
         }
-        Instruction::Stop => {
-            write!(buf, "{:width$}stop!;", " ")?;
-        }
-        Instruction::Abort(code) => {
-            write!(buf, "{:width$}abort!({});", " ", code)?;
-        }
-        Instruction::Result { offset, len } => {
-            write!(buf, "{:width$}return [{:?}; {:?}];", " ", offset, len)?;
-        }
-        Instruction::Loop {
+        Statement::Loop {
             id,
             condition_block,
             condition,
             is_true_br_loop,
             loop_br,
         } => {
-            writeln!(buf, "{:width$}'{}: loop {{", " ", id)?;
-            print_instructions(ir, condition_block, buf, width + 4)?;
-            writeln!(
-                buf,
-                "{:width$}if {condition:?} {{",
-                " ",
-                width = width + 8,
-                condition = condition
-            )?;
+            writeln!(buf, "{:width$}'{}: loop {{", " ", id, width = width)?;
+            write_statements(condition_block, buf, width + 4)?;
+            write!(buf, "{:width$}if ", " ", width = width + 4)?;
+            print_var_expression(condition, buf)?;
+            writeln!(buf, " {{")?;
+            write_statements(loop_br, buf, width + 8)?;
+            writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
             if *is_true_br_loop {
-                print_instructions(ir, loop_br, buf, width + 12)?;
-                writeln!(buf, "{:width$}}} else {{", " ", width = width + 8)?;
-                writeln!(buf, "{:width$}break;", " ", width = width + 12)?;
-                writeln!(buf, "{:width$}}}", " ", width = width + 8)?;
+                writeln!(buf, "{:width$}break {:?};", " ", id, width = width + 8)?;
             } else {
-                writeln!(buf, "{:width$}break;", " ", width = width + 12)?;
-                writeln!(buf, "{:width$}}} else {{", " ", width = width + 8)?;
-                print_instructions(ir, loop_br, buf, width + 12)?;
-                writeln!(buf, "{:width$}}}", " ", width = width + 8)?;
+                write_statements(loop_br, buf, width + 8)?;
             }
-            write!(buf, "{:width$}}}", " ", width = width + 4)?;
+            writeln!(buf, "{:width$}}}", " ", width = width + 4)?;
+            writeln!(buf, "{:width$}}}", " ", width = width)?;
         }
-        Instruction::Continue { loop_id, context } => {
-            writeln!(buf, "{:width$}{{", " ",)?;
-            print_instructions(ir, context, buf, width + 4)?;
-            writeln!(buf, "{:width$}}}", " ",)?;
-            write!(buf, "{:width$}condition {:?};", " ", loop_id)?;
+        Statement::Continue { loop_id, context } => {
+            write!(buf, "{:width$}{{", " ")?;
+            write_statements(context, buf, width + 4)?;
+            writeln!(buf, "{:width$}}}", " ")?;
+            writeln!(buf, "{:width$}continue {:?};", " ", loop_id)?;
         }
-        Instruction::MapVar { id, val } => {
-            write!(buf, "{:width$}{:?} = {:?};", " ", id, val)?;
+        Statement::Stop => {
+            writeln!(buf, "{:width$}stop;", " ")?;
         }
-        Instruction::MemStore8 { addr, var } => {
-            write!(buf, "{:width$}mem[{:?}] = {:?});", " ", addr, var)?;
+        Statement::Abort(code) => {
+            writeln!(buf, "{:width$}abort({});", " ", code)?;
         }
-        Instruction::MemStore { addr, var } => {
-            write!(buf, "{:width$}mem[{:?}] = {:?};", " ", addr, var)?;
+        Statement::Result { offset, len } => {
+            write!(buf, "{:width$}return mem[", " ",)?;
+            print_var_expression(offset, buf)?;
+            write!(buf, ":+")?;
+            print_var_expression(len, buf)?;
+            writeln!(buf, "];")?;
         }
-        Instruction::SStore { addr, var } => {
-            write!(buf, "{:width$}store[{:?}] = {:?};", " ", addr, var)?;
+    }
+    Ok(())
+}
+
+fn print_var_expression(expr: &Expr, buf: &mut String) -> Result<(), Error> {
+    match expr {
+        Expr::Val(val) => {
+            write!(buf, "{:?}", val)?;
         }
-        Instruction::Log {
-            offset,
-            len,
-            topics,
+        Expr::Var(var) => {
+            write!(buf, "var{:?}", var.index())?;
+        }
+        Expr::MLoad { mem_offset } => {
+            write!(buf, "mem[")?;
+            print_var_expression(mem_offset, buf)?;
+            write!(buf, "]")?;
+        }
+        Expr::SLoad { key } => {
+            write!(buf, "sload[")?;
+            print_var_expression(key, buf)?;
+            write!(buf, "]")?;
+        }
+        Expr::Signer => {
+            write!(buf, "signer")?;
+        }
+        Expr::MSize => {
+            write!(buf, "mem_size")?;
+        }
+        Expr::ArgsSize => {
+            write!(buf, "args_size")?;
+        }
+        Expr::Args { args_offset } => {
+            write!(buf, "args[")?;
+            print_var_expression(args_offset, buf)?;
+            write!(buf, "]")?;
+        }
+        Expr::UnaryOp(cmd, op) => {
+            write!(buf, "({}", cmd)?;
+            print_var_expression(op, buf)?;
+            write!(buf, ")")?;
+        }
+        Expr::BinaryOp(cmd, op1, op2) => {
+            write!(buf, "(")?;
+            print_var_expression(op1, buf)?;
+            write!(buf, " {} ", cmd)?;
+            print_var_expression(op2, buf)?;
+            write!(buf, ")")?;
+        }
+        Expr::TernaryOp(cmd, op, op1, op2) => {
+            write!(buf, "(")?;
+            print_var_expression(op, buf)?;
+            write!(buf, " {} ", cmd)?;
+            print_var_expression(op1, buf)?;
+            write!(buf, " : ")?;
+            print_var_expression(op2, buf)?;
+            write!(buf, ")")?;
+        }
+        Expr::Hash {
+            mem_offset,
+            mem_len,
         } => {
-            write!(buf, "{:width$}log(mem[{:?}; {:?}], ", " ", offset, len)?;
-            for topic in topics {
-                write!(buf, "{:?}, ", topic)?;
-            }
-            write!(buf, ");")?;
-        }
-    };
-    writeln!(buf)?;
-    Ok(())
-}
-
-fn print_ir_var(var: &Eval, buf: &mut String, width: usize) -> Result<(), Error> {
-    match var {
-        Eval::Val(val) => {
-            write!(buf, "{:width$}{:?}", " ", val)?;
-        }
-        Eval::UnaryOp(cmd, op1) => {
-            match cmd {
-                UnaryOp::IsZero => write!(buf, "{:width$}{:?} == 0", " ", op1)?,
-                UnaryOp::Not => write!(buf, "{:width$}!{:?}", " ", op1)?,
-            };
-        }
-        Eval::BinaryOp(cmd, op1, op2) => {
-            write!(buf, "{:width$}{:?} {} {:?}", " ", op1, cmd.sign(), op2)?;
-        }
-        Eval::TernaryOp(cmd, op1, op2, op3) => {
-            write!(
-                buf,
-                "{:width$}{:?}({:?}, {:?}, {:?})",
-                " ", cmd, op1, op2, op3
-            )?;
-        }
-        Eval::MLoad(addr) => {
-            write!(buf, "{:width$}mem[{:?}]", " ", addr)?;
-        }
-        Eval::SLoad(addr) => {
-            write!(buf, "{:width$}store[{:?}]", " ", addr)?;
-        }
-        Eval::MSize => {
-            write!(buf, "{:width$}mem.len()", " ",)?;
-        }
-        Eval::Signer => {
-            write!(buf, "{:width$}signer", " ",)?;
-        }
-        Eval::ArgsSize => {
-            write!(buf, "{:width$}args.len()", " ",)?;
-        }
-        Eval::Args(offset) => {
-            write!(buf, "{:width$}args[{:?}]", " ", offset)?;
-        }
-        Eval::Hash(offset, len) => {
-            write!(buf, "{:width$}hash(memory({:?}, {:?}))", " ", offset, len)?;
+            write!(buf, "hash[mem[")?;
+            print_var_expression(mem_offset, buf)?;
+            write!(buf, ":+")?;
+            print_var_expression(mem_len, buf)?;
+            write!(buf, "]]")?;
         }
     }
     Ok(())
-}
-
-impl BinaryOp {
-    pub fn sign(&self) -> &str {
-        match self {
-            BinaryOp::Add => "+",
-            BinaryOp::Sub => "-",
-            BinaryOp::Mul => "*",
-            BinaryOp::Div => "/",
-            BinaryOp::Mod => "%",
-            BinaryOp::Lt => "<",
-            BinaryOp::Gt => ">",
-            BinaryOp::EQ => "==",
-            BinaryOp::Shr => ">>",
-            BinaryOp::Shl => "<<",
-            BinaryOp::Sar => ">!>",
-            BinaryOp::And => "&",
-            BinaryOp::Or => "|",
-            BinaryOp::Xor => "^",
-            BinaryOp::SDiv => "//",
-            BinaryOp::SLt => "<!",
-            BinaryOp::SGt => ">!",
-            BinaryOp::Byte => "byte",
-            BinaryOp::SMod => "%!",
-            BinaryOp::Exp => "**",
-            BinaryOp::SignExtend => "**!",
-        }
-    }
 }

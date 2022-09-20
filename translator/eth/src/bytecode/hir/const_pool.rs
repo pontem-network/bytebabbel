@@ -1,4 +1,4 @@
-use crate::bytecode::hir2::vars::VarId;
+use crate::bytecode::hir::vars::VarId;
 use primitive_types::U256;
 use std::cell::RefCell;
 use std::collections::HashMap;

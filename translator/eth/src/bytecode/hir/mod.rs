@@ -1,26 +1,25 @@
-#![allow(dead_code)]
-/// High-Level Intermediate Representation
-pub mod context;
+mod const_pool;
+mod context;
 pub mod executor;
 pub mod ir;
-pub mod optimization;
-pub mod stack;
+mod optimizer;
+mod stack;
+pub mod vars;
 
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::hir::ir::debug::print_ir;
+use crate::bytecode::hir::ir::expression::Expr;
+use crate::bytecode::hir::ir::statement::Statement;
 use crate::bytecode::hir::ir::Hir;
-use crate::bytecode::hir::optimization::IrOptimizer;
+use crate::bytecode::hir::optimizer::optimize;
 use crate::bytecode::tracing::tracer::BlockIO;
-use crate::bytecode::types::{Env, Function};
-use crate::{BlockId, Flags};
+use crate::{BlockId, Flags, Function};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
-use std::fmt::Debug;
 
 pub struct HirTranslator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
@@ -50,11 +49,11 @@ impl<'a> HirTranslator<'a> {
         contract_address: U256,
         code_size: u128,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, self.flags);
+        let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
-        let ir = IrOptimizer::optimize(ir)?;
-        ir.print(&fun.name);
+        ir = optimize(ir, &mut ctx);
+        print_ir(&ir, &fun.name)?;
         Ok(ir)
     }
 
@@ -64,7 +63,7 @@ impl<'a> HirTranslator<'a> {
             .ok_or_else(|| anyhow!("block not found"))
     }
 
-    fn get_io(&self, block_id: &BlockId) -> Result<&BlockIO, Error> {
+    fn get_block_io(&self, block_id: &BlockId) -> Result<&BlockIO, Error> {
         self.block_io
             .get(block_id)
             .ok_or_else(|| anyhow!("block io not found"))
@@ -84,21 +83,12 @@ impl<'a> HirTranslator<'a> {
         &self,
         block: &BlockId,
         ir: &mut Hir,
-        ctx: &mut Context,
+        _ctx: &mut Context,
     ) -> Result<StopFlag, Error> {
-        let stack = ctx
-            .get_loop(block)
-            .ok_or_else(|| anyhow!("loop not found"))?;
-        let mapping = ctx.map_stack(stack);
-        let context = mapping
-            .into_iter()
-            .map(|map| Instruction::MapVar {
-                id: map.origin,
-                val: map.new,
-            })
-            .collect();
-
-        ir.push_continue(*block, context);
+        ir.add_statement(Statement::Continue {
+            loop_id: *block,
+            context: vec![],
+        });
         Ok(StopFlag::Continue)
     }
 
@@ -108,25 +98,22 @@ impl<'a> HirTranslator<'a> {
         ir: &mut Hir,
         ctx: &mut Context,
     ) -> Result<StopFlag, Error> {
-        ctx.create_loop(loop_.jmp.block, loop_.break_block());
         ctx.enter_loop();
-        let before_inst = ir.swap_instruction(vec![]);
-        let res = self.exec_block(&loop_.jmp.block, ir, ctx)?;
-        let cnd_block = ir.swap_instruction(before_inst);
+        let mut cnd_ir = Hir::default();
+        let res = self.exec_block(&loop_.jmp.block, &mut cnd_ir, ctx)?;
+
         match res {
             BlockResult::Jmp(cnd, _) => {
-                // ctx.enter_loop();
-                let instructions = ir.swap_instruction(vec![]);
-                self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
-                let loop_inst = ir.swap_instruction(instructions);
-                // ctx.exit_loop();
-                ir.push_loop(
-                    loop_.jmp.block,
-                    cnd_block,
-                    cnd,
-                    loop_inst,
-                    loop_.br.is_true_br_loop(),
-                );
+                let mut loop_ir = Default::default();
+                self.exec_flow(loop_.br.flow(), &mut loop_ir, &mut ctx.inherit())?;
+                ctx.exit_loop();
+                ir.add_statement(Statement::Loop {
+                    id: loop_.jmp.block,
+                    condition_block: cnd_ir.inner(),
+                    condition: cnd,
+                    is_true_br_loop: loop_.br.is_true_br_loop(),
+                    loop_br: loop_ir.inner(),
+                });
                 Ok(StopFlag::Continue)
             }
             BlockResult::CndJmp {
@@ -136,18 +123,18 @@ impl<'a> HirTranslator<'a> {
             } => {
                 ensure!(true_br == loop_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
-                // ctx.enter_loop();
-                let instructions = ir.swap_instruction(vec![]);
-                self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
-                let loop_inst = ir.swap_instruction(instructions);
-                // ctx.exit_loop();
-                ir.push_loop(
-                    loop_.jmp.block,
-                    cnd_block,
-                    cnd,
-                    loop_inst,
-                    loop_.br.is_true_br_loop(),
-                );
+
+                let mut loop_ir = Default::default();
+                self.exec_flow(loop_.br.flow(), &mut loop_ir, &mut ctx.inherit())?;
+                //todo ctx.exit_loop();
+
+                ir.add_statement(Statement::Loop {
+                    id: loop_.jmp.block,
+                    condition_block: cnd_ir.inner(),
+                    condition: cnd,
+                    is_true_br_loop: loop_.br.is_true_br_loop(),
+                    loop_br: loop_ir.inner(),
+                });
                 Ok(StopFlag::Continue)
             }
             _ => bail!("loop condition must be a conditional jump"),
@@ -184,15 +171,15 @@ impl<'a> HirTranslator<'a> {
                 bail!("conditional jump not supported");
             }
             BlockResult::Stop => {
-                ir.stop();
+                ir.add_statement(Statement::Stop);
                 Ok(StopFlag::Stop)
             }
             BlockResult::Result { offset, len } => {
-                ir.result(offset, len);
+                ir.add_statement(Statement::Result { offset, len });
                 Ok(StopFlag::Stop)
             }
             BlockResult::Abort(code) => {
-                ir.abort(code);
+                ir.add_statement(Statement::Abort(code));
                 Ok(StopFlag::Stop)
             }
         }
@@ -223,12 +210,16 @@ impl<'a> HirTranslator<'a> {
             } => {
                 ensure!(true_br == if_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == if_.jmp.false_br, "invalid false_br");
-                let instructions = ir.swap_instruction(vec![]);
-                self.exec_flow(&if_.true_br, ir, &mut ctx.clone())?;
-                let true_ir = ir.swap_instruction(vec![]);
-                self.exec_flow(&if_.false_br, ir, &mut ctx.clone())?;
-                let false_ir = ir.swap_instruction(instructions);
-                ir.push_if(cnd, true_ir, false_ir);
+                let mut true_ir = Hir::default();
+                self.exec_flow(&if_.true_br, &mut true_ir, &mut ctx.inherit())?;
+                let mut false_ir = Hir::default();
+                self.exec_flow(&if_.false_br, &mut false_ir, &mut ctx.inherit())?;
+
+                ir.add_statement(Statement::If {
+                    condition: cnd,
+                    true_branch: true_ir.inner(),
+                    false_branch: false_ir.inner(),
+                });
                 Ok(StopFlag::Continue)
             }
             _ => Err(anyhow!("unexpected block result")),
@@ -242,17 +233,36 @@ impl<'a> HirTranslator<'a> {
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
         let block = self.get_block(id)?;
+        let io = self.get_block_io(id)?;
+
         for inst in block.iter() {
             let pops = inst.pops();
             let params = ctx.pop_stack(pops);
             ensure!(pops == params.len(), "Invalid stake state.");
-            let res = inst.handle(params, ir, ctx);
+            let res = inst.handle(params, ctx);
+
             match res {
                 ExecutionResult::Abort(code) => {
                     return Ok(BlockResult::Abort(code));
                 }
                 ExecutionResult::None => {}
-                ExecutionResult::Output(stack) => {
+                ExecutionResult::Expr(mut stack) => {
+                    if let Some(si) = io.outputs.get(&inst.0) {
+                        if si.is_positive() {
+                            let expr = stack.get_mut(0).unwrap();
+                            let var = ctx.push_var(expr.clone(), *si);
+                            if let Some(val) = expr.val() {
+                                ctx.const_pool().assign_val(var, val);
+                            } else {
+                                ctx.const_pool().assign_var(var);
+                            }
+                            ir.add_statement(Statement::Assign {
+                                var,
+                                expr: expr.clone(),
+                            });
+                            *expr = Expr::Var(var);
+                        }
+                    }
                     ensure!(stack.len() == inst.pushes(), "Invalid stake state.");
                     ctx.push_stack(stack);
                 }
@@ -276,10 +286,13 @@ impl<'a> HirTranslator<'a> {
                         false_br,
                     });
                 }
+                ExecutionResult::Statement(st) => {
+                    ir.add_statement(st);
+                }
             }
         }
         Ok(BlockResult::Jmp(
-            VarId::default(),
+            Expr::Val(U256::zero()),
             block
                 .last()
                 .map(|i| BlockId::from(i.next()))
@@ -296,16 +309,16 @@ pub enum StopFlag {
 
 #[derive(Debug)]
 pub enum BlockResult {
-    Jmp(VarId, BlockId),
+    Jmp(Expr, BlockId),
     CndJmp {
-        cnd: VarId,
+        cnd: Expr,
         true_br: BlockId,
         false_br: BlockId,
     },
     Stop,
     Result {
-        offset: VarId,
-        len: VarId,
+        offset: Expr,
+        len: Expr,
     },
     Abort(u8),
 }

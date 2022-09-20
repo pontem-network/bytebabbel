@@ -1,4 +1,4 @@
-use crate::bytecode::hir2::ir::expression::Expr;
+use crate::bytecode::hir::ir::expression::Expr;
 use crate::bytecode::tracing::exec::StackItem;
 use std::collections::HashMap;
 

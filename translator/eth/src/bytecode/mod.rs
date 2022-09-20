@@ -1,7 +1,6 @@
 pub mod block;
 pub mod flow_graph;
 pub mod hir;
-pub mod hir2;
 pub mod instruction;
 pub mod loc;
 pub mod mir;

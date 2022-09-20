@@ -1,6 +1,6 @@
-use crate::bytecode::hir2::context::Context;
-use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::vars::VarId;
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::vars::VarId;
 use primitive_types::U256;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]

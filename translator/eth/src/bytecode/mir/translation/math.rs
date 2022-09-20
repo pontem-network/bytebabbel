@@ -1,5 +1,5 @@
-use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::ir::expression::Expr;
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::ir::expression::Expr;
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;

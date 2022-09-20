@@ -1,8 +1,8 @@
-use crate::bytecode::hir2::executor::math::BinaryOp;
-use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::ir::statement::Statement as Stmt;
-use crate::bytecode::hir2::ir::Hir2;
-use crate::bytecode::hir2::vars::VarId;
+use crate::bytecode::hir::executor::math::BinaryOp;
+use crate::bytecode::hir::ir::expression::Expr;
+use crate::bytecode::hir::ir::statement::Statement as Stmt;
+use crate::bytecode::hir::ir::Hir;
+use crate::bytecode::hir::vars::VarId;
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpr};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
@@ -56,7 +56,7 @@ impl<'a> MirTranslator<'a> {
         }
     }
 
-    pub fn translate(mut self, hir: Hir2) -> Result<Mir, Error> {
+    pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
         let statements = hir.inner();
         let mut mir = Mir::default();
         let store_var = self.variables.borrow_global(SType::Storage);
@@ -152,11 +152,13 @@ impl<'a> MirTranslator<'a> {
                     statements.extend(self.translate_statements(context)?);
                     statements.push(Statement::Continue(*loop_id));
                 }
-                Stmt::Stop => statements.push(if !self.fun.native_output.is_empty() {
-                    Statement::Abort(u8::MAX)
-                } else {
-                    Statement::Result(vec![])
-                }),
+                Stmt::Stop => {
+                    if !self.fun.native_output.is_empty() {
+                        statements.push(Statement::Abort(u8::MAX));
+                    } else {
+                        self.translate_ret_unit(&mut statements)?
+                    }
+                }
                 Stmt::Abort(code) => statements.push(Statement::Abort(*code)),
                 Stmt::Result { offset, len } => self.translate_ret(offset, len, &mut statements)?,
             };
@@ -225,10 +227,25 @@ impl<'a> MirTranslator<'a> {
     fn take_var(&mut self, id: VarId) -> Result<Variable, Error> {
         let var = self
             .mapping
-            .remove(&id)
+            .get(&id)
             .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
-        self.variables.release(&var);
-        Ok(var)
+        Ok(*var)
+    }
+
+    fn translate_ret_unit(&mut self, statements: &mut Vec<Statement>) -> Result<(), Error> {
+        if self.flags.hidden_output || self.flags.native_output {
+            statements.push(Statement::Result(vec![]));
+            return Ok(());
+        }
+
+        let empty = Expression::MSlice {
+            memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+            offset: Expression::Const(Value::from(U256::zero())).ty(SType::Num),
+            len: Expression::Const(Value::from(U256::zero())).ty(SType::Num),
+        }
+        .ty(SType::Bytes);
+        statements.push(Statement::Result(vec![empty]));
+        Ok(())
     }
 
     fn translate_ret(

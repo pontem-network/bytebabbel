@@ -5,7 +5,7 @@ use crate::translator::writer::{CallOp, Code};
 use anyhow::{anyhow, bail, Error};
 use eth::abi::entries::FunHash;
 use eth::bytecode::block::BlockId;
-use eth::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp, TypedExpr};
 use eth::bytecode::mir::ir::statement::Statement;
 use eth::bytecode::mir::ir::types::{SType, Value};
@@ -25,7 +25,7 @@ pub mod bytecode;
 pub mod signature;
 pub mod writer;
 
-pub struct MvIrTranslator {
+pub struct MvTranslator {
     sign_writer: SignatureWriter,
     code: Code,
     template: CompiledModule,
@@ -34,13 +34,13 @@ pub struct MvIrTranslator {
     flags: Flags,
 }
 
-impl MvIrTranslator {
+impl MvTranslator {
     pub fn new(
         address: AccountAddress,
         max_memory: u64,
         program: Program,
         flags: Flags,
-    ) -> MvIrTranslator {
+    ) -> MvTranslator {
         let template = template(address, program.name(), program.identifiers());
         Self {
             sign_writer: SignatureWriter::new(&template.signatures),
@@ -346,9 +346,6 @@ impl MvIrTranslator {
             }
             Expression::TernOp(cmd, op, op1, op2) => {
                 self.translate_ternary(*cmd, op, op1, op2)?;
-            }
-            Expression::Unit => {
-                //no-op
             }
         }
         Ok(())

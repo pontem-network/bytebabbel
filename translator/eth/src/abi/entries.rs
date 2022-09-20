@@ -179,6 +179,7 @@ impl FunctionData {
 }
 
 pub const FUN_HASH_LEN: usize = 4;
+pub const FRAME_SIZE: usize = 32;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Default)]
 pub struct FunHash([u8; FUN_HASH_LEN]);

@@ -1,134 +1,30 @@
-use crate::bytecode::hir::ir::debug::print_ir;
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
-use crate::{BlockId, U256};
-use std::mem;
+use crate::bytecode::hir::ir::statement::Statement;
 
-mod debug;
-pub mod instruction;
-pub mod var;
+pub mod debug;
+pub mod expression;
+pub mod statement;
 
-#[derive(Default, Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct Hir {
-    vars: Vars,
-    instructions: Vec<Instruction>,
-    code_copy: Vec<BlockId>,
+    statements: Vec<Statement>,
 }
 
 impl Hir {
-    pub fn create_var(&mut self, var: Eval) -> VarId {
-        let id = self.vars.create(var);
-        self.instructions.push(Instruction::SetVar(id));
-        id
+    pub fn add_statement(&mut self, statement: Statement) {
+        self.statements.push(statement);
     }
 
-    pub fn mstore(&mut self, addr: VarId, var: VarId) {
-        self.instructions.push(Instruction::MemStore { addr, var });
+    pub fn statements(&self) -> &[Statement] {
+        &self.statements
     }
 
-    pub fn mstore8(&mut self, addr: VarId, var: VarId) {
-        self.instructions.push(Instruction::MemStore8 { addr, var });
-    }
-
-    pub fn sstore(&mut self, addr: VarId, var: VarId) {
-        self.instructions.push(Instruction::SStore { addr, var });
-    }
-
-    pub fn log(&mut self, offset: VarId, len: VarId, topics: Vec<VarId>) {
-        self.instructions.push(Instruction::Log {
-            offset,
-            len,
-            topics,
-        });
-    }
-
-    pub fn push_loop(
-        &mut self,
-        id: BlockId,
-        cnd_block: Vec<Instruction>,
-        cnd: VarId,
-        loop_br: Vec<Instruction>,
-        is_true_br_loop: bool,
-    ) {
-        self.instructions.push(Instruction::Loop {
-            id,
-            condition_block: cnd_block,
-            condition: cnd,
-            is_true_br_loop,
-            loop_br,
-        });
-    }
-
-    pub fn push_if(
-        &mut self,
-        condition: VarId,
-        true_branch: Vec<Instruction>,
-        false_branch: Vec<Instruction>,
-    ) {
-        self.instructions.push(Instruction::If {
-            condition,
-            true_branch,
-            false_branch,
-        });
-    }
-
-    pub fn push_continue(&mut self, loop_id: BlockId, context: Vec<Instruction>) {
-        self.instructions
-            .push(Instruction::Continue { loop_id, context })
-    }
-
-    pub fn print(&self, name: &str) {
-        print_ir(self, name);
-    }
-
-    pub fn swap_instruction(&mut self, mut instruction: Vec<Instruction>) -> Vec<Instruction> {
-        mem::swap(&mut self.instructions, &mut instruction);
-        instruction
-    }
-
-    pub fn resolve_var(&self, id: VarId) -> Option<U256> {
-        self.vars.resolve_var(id)
-    }
-
-    pub fn var(&self, id: &VarId) -> &Eval {
-        self.vars.get(id)
-    }
-
-    pub fn stop(&mut self) {
-        self.instructions.push(Instruction::Stop);
-    }
-
-    pub fn abort(&mut self, code: u8) {
-        self.instructions.push(Instruction::Abort(code));
-    }
-
-    pub fn code_copy(&mut self, id: BlockId) {
-        self.code_copy.push(id);
-    }
-
-    pub fn map_var(&mut self, id: VarId, val: VarId) {
-        self.instructions.push(Instruction::MapVar { id, val });
-    }
-
-    pub fn result(&mut self, offset: VarId, len: VarId) {
-        self.instructions.push(Instruction::Result { offset, len });
-    }
-
-    pub fn into_inner(self) -> (Vars, Vec<Instruction>, Vec<BlockId>) {
-        (self.vars, self.instructions, self.code_copy)
-    }
-
-    pub fn get_code_copy(&self) -> &[BlockId] {
-        &self.code_copy
-    }
-
-    pub fn set_code_copy(&mut self, code_copy: Vec<BlockId>) {
-        self.code_copy = code_copy;
+    pub fn inner(self) -> Vec<Statement> {
+        self.statements
     }
 }
 
-impl AsRef<[Instruction]> for Hir {
-    fn as_ref(&self) -> &[Instruction] {
-        &self.instructions
+impl From<Vec<Statement>> for Hir {
+    fn from(statements: Vec<Statement>) -> Self {
+        Hir { statements }
     }
 }

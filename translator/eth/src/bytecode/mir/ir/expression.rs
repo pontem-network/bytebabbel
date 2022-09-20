@@ -1,4 +1,4 @@
-use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::{anyhow, ensure, Error};
@@ -40,7 +40,6 @@ pub enum Expression {
         offset: TypedExpr,
         len: TypedExpr,
     },
-    Unit,
 }
 
 impl Expression {

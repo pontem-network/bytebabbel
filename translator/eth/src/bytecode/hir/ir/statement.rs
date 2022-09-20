@@ -1,5 +1,5 @@
-use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::vars::VarId;
+use crate::bytecode::hir::ir::expression::Expr;
+use crate::bytecode::hir::vars::VarId;
 use crate::BlockId;
 
 #[derive(Debug, Clone)]

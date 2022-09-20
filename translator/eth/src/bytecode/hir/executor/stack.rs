@@ -1,7 +1,7 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Eval, VarId};
-use crate::{Hir, U256};
+use crate::bytecode::hir::ir::expression::Expr;
+use primitive_types::U256;
 
 pub enum StackOp {
     Push(Vec<u8>),
@@ -11,21 +11,18 @@ pub enum StackOp {
 }
 
 impl InstructionHandler for StackOp {
-    fn handle(&self, mut params: Vec<VarId>, ir: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Context) -> ExecutionResult {
         match self {
-            StackOp::Push(val) => {
-                let id = ir.create_var(Eval::Val(U256::from(val.as_slice())));
-                ExecutionResult::Output(vec![id])
-            }
+            StackOp::Push(val) => U256::from(val.as_slice()).into(),
             StackOp::Dup(_) => {
-                let new_item = params[params.len() - 1];
+                let new_item = params[params.len() - 1].clone();
                 params.insert(0, new_item);
-                ExecutionResult::Output(params)
+                ExecutionResult::Expr(params)
             }
             StackOp::Swap(_) => {
                 let last_index = params.len() - 1;
                 params.swap(0, last_index);
-                ExecutionResult::Output(params)
+                ExecutionResult::Expr(params)
             }
             StackOp::Pop => ExecutionResult::None,
         }

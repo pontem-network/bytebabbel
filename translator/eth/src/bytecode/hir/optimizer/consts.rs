@@ -1,18 +1,18 @@
-use crate::bytecode::hir2::const_pool::ConstPool;
-use crate::bytecode::hir2::context::Context;
-use crate::bytecode::hir2::ir::expression::Expr;
-use crate::bytecode::hir2::ir::statement::Statement;
-use crate::bytecode::hir2::ir::Hir2;
-use crate::bytecode::hir2::vars::VarId;
+use crate::bytecode::hir::const_pool::ConstPool;
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::ir::expression::Expr;
+use crate::bytecode::hir::ir::statement::Statement;
+use crate::bytecode::hir::ir::Hir;
+use crate::bytecode::hir::vars::VarId;
 use std::collections::HashMap;
 
-pub fn constant_fold(hir: Hir2, ctx: &mut Context) -> Hir2 {
+pub fn constant_fold(hir: Hir, ctx: &mut Context) -> Hir {
     let mut vars = Vars::new(ctx.const_pool());
     map_ir(hir, &mut vars)
 }
 
-fn map_ir(hir: Hir2, vars: &mut Vars) -> Hir2 {
-    Hir2::from(map_sts(hir.statements(), vars))
+fn map_ir(hir: Hir, vars: &mut Vars) -> Hir {
+    Hir::from(map_sts(hir.statements(), vars))
 }
 
 fn map_sts(statements: &[Statement], vars: &mut Vars) -> Vec<Statement> {

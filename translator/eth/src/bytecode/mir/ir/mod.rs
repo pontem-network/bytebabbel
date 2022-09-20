@@ -42,8 +42,7 @@ impl Mir {
         debug::print_ir(self, name);
     }
 
-    pub fn print_to_buffer(&self, _buffer: &mut String) -> Result<(), Error> {
-        // debug::print_buf(self, buffer, 0)
-        todo!()
+    pub fn print_to_buffer(&self, buffer: &mut String) -> Result<(), Error> {
+        debug::print_buf(self, buffer, 0)
     }
 }
