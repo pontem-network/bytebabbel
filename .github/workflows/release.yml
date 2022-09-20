@@ -165,21 +165,24 @@ jobs:
       contents: "write"
       pull-requests: "read"
     steps:
-      # - name: Download prebuilt binaries
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: cli-builds
-
-      - name: Display structure of downloaded files
-        run: |
-          echo "debug" > tmp.txt
-          ls
-
       - uses: actions/checkout@v3
+
       - name: Node isntall
         uses: actions/setup-node@v3
         with:
           node-version: 16
+
+      - name: Download prebuilt binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: cli-builds
+
+      - shell: bash
+        name: Display structure of downloaded files
+        run: |
+          pwd
+          echo "debug" > tmp.txt
+          ls
 
       - shell: bash
         name: Create GitHub Release
@@ -188,6 +191,7 @@ jobs:
           INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
           APP_ID: ${{ secrets.APP_ID }}
         run: |
+          pwd
           tree
           cat tmp.txt
 
