@@ -199,4 +199,4 @@ jobs:
           gh auth status
           rm .my_token
 
-          gh release create $RELEASE_VERSION e2m-cli-*.zip --notes "$TAG_MESSAGE" -t "E2M CLI Release $RELEASE_VERSION" -d -R https://github.com/pontem-network/eth2move-samples
+          gh release create $RELEASE_VERSION e2m-cli-$RELEASE_VERSION-MacOSX-x86_64.zip e2m-cli-$RELEASE_VERSION-MacOSX-aarch64.zip e2m-cli-$RELEASE_VERSION-Linux-x86_64.zip --notes "$TAG_MESSAGE" -t "E2M CLI Release $RELEASE_VERSION" -d -R https://github.com/pontem-network/eth2move-samples
