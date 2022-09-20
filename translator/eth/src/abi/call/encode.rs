@@ -6,6 +6,7 @@ use ethabi::token::{LenientTokenizer, Tokenizer};
 use ethabi::{Bytes, Constructor, Function, Token};
 
 use crate::abi::inc_ret_param::types::ParamType;
+use crate::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
 use crate::abi::inc_ret_param::value::ParamValue;
 
 pub enum ValueEncodeType {
@@ -240,6 +241,7 @@ impl ParamTypeSize for ParamType {
 }
 
 // =================================================================================================
+
 trait EthEncodeConstructor {
     fn short_signature(&self) -> [u8; 4];
 }
@@ -252,15 +254,16 @@ impl EthEncodeConstructor for Constructor {
 }
 
 pub trait EthEncodeByString {
-    fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes>;
-    fn encode_value_by_str_hex(&self, params: &[&str]) -> Result<String> {
-        self.encode_value_by_str(params).map(hex::encode)
+    fn encode_value_by_vec_str(&self, params: &[&str]) -> Result<Bytes>;
+    fn short_signature_in_hex(&self) -> String;
+    fn encode_value_by_str(&self, params: &str) -> Result<Bytes> {
+        let params = fn_params_str_split(params)?;
+        self.encode_value_by_vec_str(&params)
     }
-    fn short_signature_hex(&self) -> String;
 }
 
 impl EthEncodeByString for Function {
-    fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes> {
+    fn encode_value_by_vec_str(&self, params: &[&str]) -> Result<Bytes> {
         let params = self
             .inputs
             .iter()
@@ -275,13 +278,13 @@ impl EthEncodeByString for Function {
         Ok(result)
     }
 
-    fn short_signature_hex(&self) -> String {
+    fn short_signature_in_hex(&self) -> String {
         hex::encode(self.short_signature())
     }
 }
 
 impl EthEncodeByString for Constructor {
-    fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes> {
+    fn encode_value_by_vec_str(&self, params: &[&str]) -> Result<Bytes> {
         let params = self
             .inputs
             .iter()
@@ -296,7 +299,7 @@ impl EthEncodeByString for Constructor {
         Ok(result)
     }
 
-    fn short_signature_hex(&self) -> String {
+    fn short_signature_in_hex(&self) -> String {
         hex::encode(self.short_signature())
     }
 }
@@ -436,8 +439,8 @@ mod test {
         // function baz(uint32 x, bool y)
         // =========================================================================================
         let entry_fn = abi.functions_by_name("baz").unwrap().first().unwrap();
-        let encode = entry_fn.encode_value_by_str_hex(&["69", "true"]).unwrap();
-        assert_eq!(&entry_fn.short_signature_hex(), "cdcd77c0");
+        let encode = hex::encode(entry_fn.encode_value_by_vec_str(&["69", "true"]).unwrap());
+        assert_eq!(&entry_fn.short_signature_in_hex(), "cdcd77c0");
         assert_eq!(
             "0xcdcd77c0\
             0000000000000000000000000000000000000000000000000000000000000045\
@@ -449,15 +452,17 @@ mod test {
         // function bar(bytes3[2] memory)
         // =========================================================================================
         let entry_fn = abi.functions_by_name("bar").unwrap().first().unwrap();
-        let encode = entry_fn
-            .encode_value_by_str_hex(&[&format!(
-                "[0x{},0x{}]",
-                hex::encode("abc".as_bytes()),
-                hex::encode("def".as_bytes())
-            )])
-            .unwrap();
+        let encode = hex::encode(
+            entry_fn
+                .encode_value_by_vec_str(&[&format!(
+                    "[0x{},0x{}]",
+                    hex::encode("abc".as_bytes()),
+                    hex::encode("def".as_bytes())
+                )])
+                .unwrap(),
+        );
 
-        assert_eq!(&entry_fn.short_signature_hex(), "fce353f6");
+        assert_eq!(&entry_fn.short_signature_in_hex(), "fce353f6");
         assert_eq!(
             "0xfce353f6\
             6162630000000000000000000000000000000000000000000000000000000000\
@@ -470,11 +475,13 @@ mod test {
         // sam("dave",true,[1,2,3])
         // =========================================================================================
         let entry_fn = abi.functions_by_name("sam").unwrap().first().unwrap();
-        let encode = entry_fn
-            .encode_value_by_str_hex(&[&hex::encode("dave".as_bytes()), "true", "[1,2,3]"])
-            .unwrap();
+        let encode = hex::encode(
+            entry_fn
+                .encode_value_by_vec_str(&[&hex::encode("dave".as_bytes()), "true", "[1,2,3]"])
+                .unwrap(),
+        );
 
-        assert_eq!(&entry_fn.short_signature_hex(), "a5643bf2");
+        assert_eq!(&entry_fn.short_signature_in_hex(), "a5643bf2");
         assert_eq!(
             format!("0x{encode}"),
             "0xa5643bf2\
@@ -494,16 +501,18 @@ mod test {
         // f(0x123, [0x456, 0x789], "1234567890", "Hello, world!")
         // =========================================================================================
         let entry_fn = abi.functions_by_name("f").unwrap().first().unwrap();
-        let encode = entry_fn
-            .encode_value_by_str_hex(&[
-                "291",
-                "[1110,1929]",
-                &hex::encode("1234567890".as_bytes()),
-                &hex::encode("Hello, world!".as_bytes()),
-            ])
-            .unwrap();
+        let encode = hex::encode(
+            entry_fn
+                .encode_value_by_vec_str(&[
+                    "291",
+                    "[1110,1929]",
+                    &hex::encode("1234567890".as_bytes()),
+                    &hex::encode("Hello, world!".as_bytes()),
+                ])
+                .unwrap(),
+        );
 
-        assert_eq!(&entry_fn.short_signature_hex(), "8be65246");
+        assert_eq!(&entry_fn.short_signature_in_hex(), "8be65246");
         assert_eq!(
             format!("0x{encode}"),
             "0x8be65246\
@@ -523,11 +532,13 @@ mod test {
         // g([[1, 2], [3]], ["one", "two", "three"])
         // =========================================================================================
         let entry_fn = abi.functions_by_name("g").unwrap().first().unwrap();
-        let encode = entry_fn
-            .encode_value_by_str_hex(&["[[1,2],[3]]", r#"[one,two,three]"#])
-            .unwrap();
+        let encode = hex::encode(
+            entry_fn
+                .encode_value_by_vec_str(&["[[1,2],[3]]", r#"[one,two,three]"#])
+                .unwrap(),
+        );
 
-        assert_eq!(&entry_fn.short_signature_hex(), "2289b18c");
+        assert_eq!(&entry_fn.short_signature_in_hex(), "2289b18c");
         assert_eq!(
             format!("0x{encode}"),
             "0x2289b18c\

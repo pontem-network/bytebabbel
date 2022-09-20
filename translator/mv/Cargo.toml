@@ -12,6 +12,7 @@ sha3 = "0.10.1"
 itertools = "0.10.3"
 uint = "0.9.3"
 log = "0.4.17"
+ethabi = "17.2"
 
 # local dependencies
 eth = {path = "../eth" }

@@ -126,3 +126,20 @@ impl<'a> TryFrom<&'a AbiType> for EthType {
         })
     }
 }
+
+impl<'a> TryFrom<&'a ethabi::Param> for EthType {
+    type Error = Error;
+
+    fn try_from(value: &'a ethabi::Param) -> Result<Self, Self::Error> {
+        use ethabi::ParamType;
+
+        Ok(match value.kind {
+            ParamType::Bool => EthType::Bool,
+            ParamType::Uint(_) | ParamType::Int(_) => EthType::U256,
+            ParamType::String => EthType::Bytes,
+            ParamType::Address => EthType::Address,
+            ParamType::FixedBytes(_) => EthType::Bytes,
+            _ => bail!("Unknown type: {value:?}"),
+        })
+    }
+}

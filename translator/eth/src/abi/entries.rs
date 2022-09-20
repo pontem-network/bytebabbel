@@ -6,7 +6,6 @@ use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use sha3::{Digest, Keccak256};
 
-use crate::abi::call::encode::EthEncodeByString;
 use crate::abi::inc_ret_param::Param;
 use crate::abi::types::StateMutability;
 
@@ -189,7 +188,11 @@ impl AsRef<[u8; FUN_HASH_LEN]> for FunHash {
         &self.0
     }
 }
-
+impl From<[u8; FUN_HASH_LEN]> for FunHash {
+    fn from(hash: [u8; FUN_HASH_LEN]) -> Self {
+        FunHash(hash)
+    }
+}
 impl From<&Entry> for FunHash {
     fn from(entry: &Entry) -> Self {
         let mut result = [0u8; FUN_HASH_LEN];
@@ -430,8 +433,8 @@ mod tests {
         let result_old = hex::encode(result);
 
         let abi: Contract = serde_json::from_str(content).unwrap();
-        let consturctor = abi.constructor.unwrap();
-        let result_new = consturctor.encode_value_by_str_hex(&["5"]).unwrap();
+        let constructor = abi.constructor.unwrap();
+        let result_new = hex::encode(constructor.encode_value_by_vec_str(&["5"]).unwrap());
 
         assert_eq!(result_old, result_new);
     }
