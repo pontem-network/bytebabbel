@@ -2,6 +2,9 @@ use anyhow::{anyhow, bail, ensure, Result};
 use evm_core::utils::I256;
 use primitive_types::U256;
 
+use ethabi::token::{LenientTokenizer, Tokenizer};
+use ethabi::{Bytes, Function, Token};
+
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::ParamValue;
 
@@ -236,304 +239,280 @@ impl ParamTypeSize for ParamType {
     }
 }
 
+// =================================================================================================
+
+trait EncodeByString {
+    fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes>;
+    fn encode_value_by_str_hex(&self, params: &[&str]) -> Result<String>;
+    fn short_signature_hex(&self) -> String;
+}
+
+impl EncodeByString for Function {
+    fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes> {
+        let params = self
+            .inputs
+            .iter()
+            .map(|param| param.kind.clone())
+            .zip(params.iter().map(|v| v as &str))
+            .collect::<Vec<_>>();
+        let tokens: Vec<Token> = params
+            .iter()
+            .map(|&(ref param, value)| LenientTokenizer::tokenize(param, value))
+            .collect::<Result<_, _>>()?;
+        let result = self.encode_input(&tokens)?;
+        Ok(result)
+    }
+
+    fn encode_value_by_str_hex(&self, params: &[&str]) -> Result<String> {
+        self.encode_value_by_str(params).map(hex::encode)
+    }
+
+    fn short_signature_hex(&self) -> String {
+        hex::encode(self.short_signature())
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::abi::call::encode::{decode_value, encode_value, ParamTypeSize};
-    use crate::abi::inc_ret_param::types::ParamType;
-    use crate::abi::inc_ret_param::value::{AsParamValue, ParamValue};
-    use primitive_types::U256;
+    use crate::abi::call::encode::EncodeByString;
+    use ethabi::Contract;
 
-    // https://docs.soliditylang.org/en/v0.8.0/abi-spec.html#examples
-
+    /// Encoding and decoding input/output
+    ///
+    /// https://docs.soliditylang.org/en/v0.8.0/abi-spec.html#examples
+    /// ============================================================================================
+    /// // SPDX-License-Identifier: GPL-3.0
+    /// pragma solidity >=0.4.16 <0.9.0;
+    ///
+    /// contract Foo {
+    ///    function bar(bytes3[2] memory) public pure {}
+    ///    function baz(uint32 x, bool y) public pure returns (bool r) { r = x > 32 || y; }
+    ///    function sam(bytes memory, bool, uint[] memory) public pure {}
+    /// }
+    /// ============================================================================================
     #[test]
-    fn test_size_bytes() {
-        assert_eq!(Some(32), ParamType::Bool.size_bytes());
-        assert_eq!(Some(32), ParamType::Int(8).size_bytes());
-        assert_eq!(Some(32), ParamType::UInt(16).size_bytes());
-        assert_eq!(Some(32), ParamType::Byte(3).size_bytes());
-        assert_eq!(Some(32), ParamType::Address.size_bytes());
-        assert_eq!(None, ParamType::Bytes.size_bytes());
-        assert_eq!(None, ParamType::String.size_bytes());
+    fn test_input_encode() {
+        let abi_str = r#"[
+          {
+            "inputs": [
+              {
+                "internalType": "bytes3[2]",
+                "name": "",
+                "type": "bytes3[2]"
+              }
+            ],
+            "name": "bar",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "uint32",
+                "name": "x",
+                "type": "uint32"
+              },
+              {
+                "internalType": "bool",
+                "name": "y",
+                "type": "bool"
+              }
+            ],
+            "name": "baz",
+            "outputs": [
+              {
+                "internalType": "bool",
+                "name": "r",
+                "type": "bool"
+              }
+            ],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+              },
+              {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+              }
+            ],
+            "name": "sam",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint32[]",
+                "name": "",
+                "type": "uint32[]"
+              },
+              {
+                "internalType": "bytes10",
+                "name": "",
+                "type": "bytes10"
+              },
+              {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+              }
+            ],
+            "name": "f",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          },
+          {
+            "inputs": [
+              {
+                "internalType": "uint256[][]",
+                "name": "",
+                "type": "uint256[][]"
+              },
+              {
+                "internalType": "string[]",
+                "name": "",
+                "type": "string[]"
+              }
+            ],
+            "name": "g",
+            "outputs": [],
+            "stateMutability": "pure",
+            "type": "function"
+          }
+        ]"#;
 
+        let abi: Contract = serde_json::from_str(abi_str).unwrap();
+
+        // =========================================================================================
+        // function baz(uint32 x, bool y)
+        // =========================================================================================
+        let entry_fn = abi.functions_by_name("baz").unwrap().first().unwrap();
+        let encode = entry_fn.encode_value_by_str_hex(&["69", "true"]).unwrap();
+        assert_eq!(&entry_fn.short_signature_hex(), "cdcd77c0");
         assert_eq!(
-            None,
-            ParamType::Array {
-                size: None,
-                tp: Box::new(ParamType::UInt(8))
-            }
-            .size_bytes()
+            "0xcdcd77c0\
+            0000000000000000000000000000000000000000000000000000000000000045\
+            0000000000000000000000000000000000000000000000000000000000000001",
+            format!("0x{encode}")
         );
 
-        assert_eq!(
-            Some(32 * 3),
-            ParamType::Array {
-                size: Some(3),
-                tp: Box::new(ParamType::UInt(8))
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            Some(32 * 3 * 3),
-            ParamType::Array {
-                size: Some(3),
-                tp: Box::new(ParamType::Array {
-                    size: Some(3),
-                    tp: Box::new(ParamType::Bool),
-                }),
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            None,
-            ParamType::Array {
-                size: Some(3),
-                tp: Box::new(ParamType::Array {
-                    size: None,
-                    tp: Box::new(ParamType::Bool),
-                }),
-            }
-            .size_bytes()
-        );
-
-        assert_eq!(
-            None,
-            ParamType::Array {
-                size: None,
-                tp: Box::new(ParamType::Array {
-                    size: Some(3),
-                    tp: Box::new(ParamType::Bool),
-                }),
-            }
-            .size_bytes()
-        );
-    }
-
-    #[test]
-    fn test_encode_bool() {
-        let tp = ParamType::Bool;
-
-        for (value, enc) in [
-            (
-                true.to_param(),
-                hex::decode("0000000000000000000000000000000000000000000000000000000000000001")
-                    .unwrap(),
-            ),
-            (
-                false.to_param(),
-                hex::decode("0000000000000000000000000000000000000000000000000000000000000000")
-                    .unwrap(),
-            ),
-        ] {
-            assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-            assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-        }
-    }
-
-    #[test]
-    fn test_encode_num() {
-        let tp = ParamType::UInt(32);
-        let value = 69u32.to_param();
-        let enc = hex::decode("0000000000000000000000000000000000000000000000000000000000000045")
+        // =========================================================================================
+        // function bar(bytes3[2] memory)
+        // =========================================================================================
+        let entry_fn = abi.functions_by_name("bar").unwrap().first().unwrap();
+        let encode = entry_fn
+            .encode_value_by_str_hex(&[&format!(
+                "[0x{},0x{}]",
+                hex::encode("abc".as_bytes()),
+                hex::encode("def".as_bytes())
+            )])
             .unwrap();
 
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
+        assert_eq!(&entry_fn.short_signature_hex(), "fce353f6");
+        assert_eq!(
+            "0xfce353f6\
+            6162630000000000000000000000000000000000000000000000000000000000\
+            6465660000000000000000000000000000000000000000000000000000000000",
+            format!("0x{encode}")
+        );
 
-        let tp = ParamType::Int(128);
-        let value = { -69i128 }.to_param();
-        let enc = hex::decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffbb")
-            .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-    }
-
-    #[test]
-    fn test_encode_bytes() {
-        // bytes3["abc","def"])
-        let tp = ParamType::Array {
-            size: Some(2),
-            tp: Box::new(ParamType::Byte(3)),
-        };
-        let value = ParamValue::Array(vec![
-            ParamValue::Byte("abc".as_bytes().to_vec()),
-            ParamValue::Byte("def".as_bytes().to_vec()),
-        ]);
-        let enc = hex::decode("61626300000000000000000000000000000000000000000000000000000000006465660000000000000000000000000000000000000000000000000000000000")
+        // =========================================================================================
+        // function sam(bytes memory, bool, uint[] memory)
+        // sam("dave",true,[1,2,3])
+        // =========================================================================================
+        let entry_fn = abi.functions_by_name("sam").unwrap().first().unwrap();
+        let encode = entry_fn
+            .encode_value_by_str_hex(&[&hex::encode("dave".as_bytes()), "true", "[1,2,3]"])
             .unwrap();
 
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-
-        // bytes("dove")
-        // len + value
-        let tp = ParamType::Bytes;
-        let value = ParamValue::Bytes("dave".as_bytes().to_vec());
-        let enc = hex::decode("00000000000000000000000000000000000000000000000000000000000000046461766500000000000000000000000000000000000000000000000000000000")
-            .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-
-        let tp = ParamType::Bytes;
-        let value = ParamValue::Bytes("Hello, world!".as_bytes().to_vec());
-        let enc = hex::decode("000000000000000000000000000000000000000000000000000000000000000d48656c6c6f2c20776f726c642100000000000000000000000000000000000000").unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-    }
-
-    #[test]
-    fn test_encode_array() {
-        // uint256[1,2,3]
-        // Fixed size
-        let tp = ParamType::Array {
-            size: Some(3),
-            tp: Box::new(ParamType::UInt(256)),
-        };
-        let value = ParamValue::Array(vec![
-            ParamValue::UInt {
-                size: 256,
-                value: U256::from(1),
-            },
-            ParamValue::UInt {
-                size: 256,
-                value: U256::from(2),
-            },
-            ParamValue::UInt {
-                size: 256,
-                value: U256::from(3),
-            },
-        ]);
-        let enc = hex::decode(
-            "0000000000000000000000000000000000000000000000000000000000000001\
-            0000000000000000000000000000000000000000000000000000000000000002\
-            0000000000000000000000000000000000000000000000000000000000000003",
-        )
-        .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-
-        // Dynamic size
-        let tp = ParamType::Array {
-            size: None,
-            tp: Box::new(ParamType::UInt(256)),
-        };
-        let enc = hex::decode(
-            "0000000000000000000000000000000000000000000000000000000000000003\
+        assert_eq!(&entry_fn.short_signature_hex(), "a5643bf2");
+        assert_eq!(
+            format!("0x{encode}"),
+            "0xa5643bf2\
+            0000000000000000000000000000000000000000000000000000000000000060\
+            0000000000000000000000000000000000000000000000000000000000000001\
+            00000000000000000000000000000000000000000000000000000000000000a0\
+            0000000000000000000000000000000000000000000000000000000000000004\
+            6461766500000000000000000000000000000000000000000000000000000000\
+            0000000000000000000000000000000000000000000000000000000000000003\
             0000000000000000000000000000000000000000000000000000000000000001\
             0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000003",
-        )
-        .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
+        );
 
-        // uint32[]
-        // uint32[1110, 1929]
-        let tp = ParamType::Array {
-            size: None,
-            tp: Box::new(ParamType::UInt(32)),
-        };
-        let value = ParamValue::Array(vec![
-            ParamValue::UInt {
-                size: 32,
-                value: U256::from(1110),
-            },
-            ParamValue::UInt {
-                size: 32,
-                value: U256::from(1929),
-            },
-        ]);
-        let enc = hex::decode(
-            "0000000000000000000000000000000000000000000000000000000000000002\
+        // =========================================================================================
+        // f(uint,uint32[],bytes10,bytes)
+        // f(0x123, [0x456, 0x789], "1234567890", "Hello, world!")
+        // =========================================================================================
+        let entry_fn = abi.functions_by_name("f").unwrap().first().unwrap();
+        let encode = entry_fn
+            .encode_value_by_str_hex(&[
+                "291",
+                "[1110,1929]",
+                &hex::encode("1234567890".as_bytes()),
+                &hex::encode("Hello, world!".as_bytes()),
+            ])
+            .unwrap();
+
+        assert_eq!(&entry_fn.short_signature_hex(), "8be65246");
+        assert_eq!(
+            format!("0x{encode}"),
+            "0x8be65246\
+            0000000000000000000000000000000000000000000000000000000000000123\
+            0000000000000000000000000000000000000000000000000000000000000080\
+            3132333435363738393000000000000000000000000000000000000000000000\
+            00000000000000000000000000000000000000000000000000000000000000e0\
+            0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000456\
-            0000000000000000000000000000000000000000000000000000000000000789",
-        )
-        .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
+            0000000000000000000000000000000000000000000000000000000000000789\
+            000000000000000000000000000000000000000000000000000000000000000d\
+            48656c6c6f2c20776f726c642100000000000000000000000000000000000000",
+        );
 
-        let tp = ParamType::Array {
-            size: Some(2),
-            tp: Box::new(ParamType::UInt(32)),
-        };
-        let enc = hex::decode("00000000000000000000000000000000000000000000000000000000000004560000000000000000000000000000000000000000000000000000000000000789").unwrap() ;
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-
+        // =========================================================================================
         // g(uint[][],string[])
-        // uint[][]
-        // [[1,2],[3]]
-        let tp = ParamType::Array {
-            size: None,
-            tp: Box::new(ParamType::Array {
-                size: None,
-                tp: Box::new(ParamType::UInt(256)),
-            }),
-        };
-        let value = ParamValue::Array(vec![
-            ParamValue::Array(vec![
-                ParamValue::UInt {
-                    size: 256,
-                    value: U256::from(1),
-                },
-                ParamValue::UInt {
-                    size: 256,
-                    value: U256::from(2),
-                },
-            ]),
-            ParamValue::Array(vec![ParamValue::UInt {
-                size: 256,
-                value: U256::from(3),
-            }]),
-        ]);
+        // g([[1, 2], [3]], ["one", "two", "three"])
+        // =========================================================================================
+        let entry_fn = abi.functions_by_name("g").unwrap().first().unwrap();
+        let encode = entry_fn
+            .encode_value_by_str_hex(&["[[1,2],[3]]", r#"[one,two,three]"#])
+            .unwrap();
 
-        // 0 - a                                                                - offset of [1, 2]
-        // 1 - b                                                                - offset of [3]
-        // 2 - 0000000000000000000000000000000000000000000000000000000000000002 - count for [1, 2]
-        // 3 - 0000000000000000000000000000000000000000000000000000000000000001 - encoding of 1
-        // 4 - 0000000000000000000000000000000000000000000000000000000000000002 - encoding of 2
-        // 5 - 0000000000000000000000000000000000000000000000000000000000000001 - count for [3]
-        // 6 - 0000000000000000000000000000000000000000000000000000000000000003 - encoding of 3
-        let enc = hex::decode(
-            "0000000000000000000000000000000000000000000000000000000000000002\
+        assert_eq!(&entry_fn.short_signature_hex(), "2289b18c");
+        assert_eq!(
+            format!("0x{encode}"),
+            "0x2289b18c\
+            0000000000000000000000000000000000000000000000000000000000000040\
+            0000000000000000000000000000000000000000000000000000000000000140\
+            0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000040\
             00000000000000000000000000000000000000000000000000000000000000a0\
             0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000001\
             0000000000000000000000000000000000000000000000000000000000000002\
             0000000000000000000000000000000000000000000000000000000000000001\
-            0000000000000000000000000000000000000000000000000000000000000003",
-        )
-        .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
-
-        // string[]
-        // ["one", "two", "three"]
-
-        let tp = ParamType::Array {
-            size: None,
-            tp: Box::new(ParamType::String),
-        };
-        let value = ParamValue::Array(vec![
-            ParamValue::String("one".as_bytes().to_vec()),
-            ParamValue::String("two".as_bytes().to_vec()),
-            ParamValue::String("three".as_bytes().to_vec()),
-        ]);
-
-        // 10 - 0000000000000000000000000000000000000000000000000000000000000003 - count for ["one", "two", "three"]
-        // 11 - 0000000000000000000000000000000000000000000000000000000000000060 - offset for "one"
-        // 12 - 00000000000000000000000000000000000000000000000000000000000000a0 - offset for "two"
-        // 13 - 00000000000000000000000000000000000000000000000000000000000000e0 - offset for "three"
-        // 14 - 0000000000000000000000000000000000000000000000000000000000000003 - count for "one"
-        // 15 - 6f6e650000000000000000000000000000000000000000000000000000000000 - encoding of "one"
-        // 16 - 0000000000000000000000000000000000000000000000000000000000000003 - count for "two"
-        // 17 - 74776f0000000000000000000000000000000000000000000000000000000000 - encoding of "two"
-        // 18 - 0000000000000000000000000000000000000000000000000000000000000005 - count for "three"
-        // 19 - 7468726565000000000000000000000000000000000000000000000000000000 - encoding of "three"
-        let enc = hex::decode(
-            "0000000000000000000000000000000000000000000000000000000000000003\
+            0000000000000000000000000000000000000000000000000000000000000003\
+            0000000000000000000000000000000000000000000000000000000000000003\
             0000000000000000000000000000000000000000000000000000000000000060\
             00000000000000000000000000000000000000000000000000000000000000a0\
             00000000000000000000000000000000000000000000000000000000000000e0\
@@ -543,9 +522,6 @@ mod test {
             74776f0000000000000000000000000000000000000000000000000000000000\
             0000000000000000000000000000000000000000000000000000000000000005\
             7468726565000000000000000000000000000000000000000000000000000000",
-        )
-        .unwrap();
-        assert_eq!(encode_value(&value, &tp, 0).unwrap().data_ref(), &enc);
-        assert_eq!(decode_value(&enc, &tp).unwrap(), value);
+        );
     }
 }
