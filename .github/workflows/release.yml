@@ -172,7 +172,7 @@ jobs:
 
       - name: Display structure of downloaded files
         run: |
-          echo "debug" >> tmp.txt
+          echo "debug" > tmp.txt
           ls
 
       - uses: actions/checkout@v3
@@ -181,13 +181,15 @@ jobs:
         with:
           node-version: 16
 
-      - name: Create GitHub Release
+      - shell: bash
+        name: Create GitHub Release
         env:
           GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
           INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
           APP_ID: ${{ secrets.APP_ID }}
         run: |
           tree
+          cat tmp.txt
 
           npm -g install github-app-installation-token
 
