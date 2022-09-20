@@ -270,10 +270,7 @@ impl EthEncodeByString for Function {
             .map(|param| param.kind.clone())
             .zip(params.iter().map(|v| v as &str))
             .collect::<Vec<_>>();
-        let tokens: Vec<Token> = params
-            .iter()
-            .map(|&(ref param, value)| LenientTokenizer::tokenize(param, value))
-            .collect::<Result<_, _>>()?;
+        let tokens: Vec<Token> = params.iter().map(to_token).collect::<Result<_, _>>()?;
         let result = self.encode_input(&tokens)?;
         Ok(result)
     }
@@ -291,16 +288,30 @@ impl EthEncodeByString for Constructor {
             .map(|param| param.kind.clone())
             .zip(params.iter().map(|v| v as &str))
             .collect::<Vec<_>>();
-        let tokens: Vec<Token> = params
-            .iter()
-            .map(|&(ref param, value)| LenientTokenizer::tokenize(param, value))
-            .collect::<Result<_, _>>()?;
+        let tokens: Vec<Token> = params.iter().map(to_token).collect::<Result<_, _>>()?;
+
         let result = self.encode_input(self.short_signature().into(), &tokens)?;
         Ok(result)
     }
 
     fn short_signature_in_hex(&self) -> String {
         hex::encode(self.short_signature())
+    }
+}
+
+fn to_token(data: &(ethabi::ParamType, &str)) -> Result<Token, ethabi::Error> {
+    match data.0 {
+        ethabi::ParamType::Address => {
+            let value = data.1.trim_start_matches("0x");
+
+            let value = if value.len() >= 40 {
+                value[value.len() - 40..].to_string()
+            } else {
+                "0".repeat(40 - value.len()) + value
+            };
+            LenientTokenizer::tokenize(&data.0, &value)
+        }
+        _ => LenientTokenizer::tokenize(&data.0, data.1),
     }
 }
 

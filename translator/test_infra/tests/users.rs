@@ -29,6 +29,7 @@ pub fn test_for_users() {
             flags,
         )
         .unwrap();
+
         let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), flags);
         vm.deploy(
             "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
@@ -183,6 +184,7 @@ pub fn test_for_users() {
         );
         assert!(res.is_err());
     }
+
     test(Flags::default());
     test(Flags::native_interface());
     test(Flags {
