@@ -1,11 +1,9 @@
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;
 use anyhow::Error;
-use std::mem;
 
 pub mod debug;
 pub mod expression;
-pub mod math;
 pub mod statement;
 pub mod types;
 
@@ -20,9 +18,8 @@ impl Mir {
         self.statements.push(statement);
     }
 
-    pub fn swap(&mut self, mut mir: Mir) -> Mir {
-        mem::swap(&mut self.statements, &mut mir.statements);
-        mir
+    pub fn extend_statements(&mut self, statements: Vec<Statement>) {
+        self.statements.extend(statements);
     }
 
     pub fn into_inner(self) -> Vec<Statement> {
@@ -45,7 +42,8 @@ impl Mir {
         debug::print_ir(self, name);
     }
 
-    pub fn print_to_buffer(&self, buffer: &mut String) -> Result<(), Error> {
-        debug::print_buf(self, buffer, 0)
+    pub fn print_to_buffer(&self, _buffer: &mut String) -> Result<(), Error> {
+        // debug::print_buf(self, buffer, 0)
+        todo!()
     }
 }

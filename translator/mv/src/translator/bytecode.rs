@@ -1,7 +1,7 @@
-use crate::translator::writer::Writer;
+use crate::translator::writer::Code;
 use move_binary_format::file_format::{Bytecode, LocalIndex};
 
-impl Writer {
+impl Code {
     pub fn ld_var(&mut self, idx: LocalIndex) {
         self.write(Bytecode::CopyLoc(idx));
     }

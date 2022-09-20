@@ -7,19 +7,19 @@ use std::collections::HashMap;
 use std::mem;
 
 #[derive(Default, Debug)]
-pub struct Writer {
+pub struct Code {
     code: Vec<Bytecode>,
     labels: HashMap<BlockId, CodeOffset>,
     jmp_label: HashMap<CodeOffset, BlockId>,
     jmps: Vec<CodeOffset>,
 }
 
-impl Writer {
+impl Code {
     pub fn write(&mut self, bytecode: Bytecode) {
         self.code.push(bytecode);
     }
 
-    pub fn extend(&mut self, mut other: Writer) -> Result<(), Error> {
+    pub fn extend(&mut self, mut other: Code) -> Result<(), Error> {
         let prefix = self.pc();
 
         self.labels.extend(
@@ -83,7 +83,7 @@ impl Writer {
         Ok(mem::take(&mut self.code))
     }
 
-    pub fn swap(&mut self, mut other: Writer) -> Writer {
+    pub fn swap(&mut self, mut other: Code) -> Code {
         mem::swap(self, &mut other);
         other
     }
@@ -128,16 +128,20 @@ impl Writer {
                 CallOp::Borrow(var) => {
                     self.code.push(Bytecode::ImmBorrowLoc(var.index()));
                 }
+                CallOp::Expr(bytecode) => {
+                    self.code.extend(bytecode.code.iter().cloned());
+                }
             }
         }
         self.code.push(Bytecode::Call(fun.handler()));
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub enum CallOp {
     Var(Variable),
     MutBorrow(Variable),
     Borrow(Variable),
     ConstU64(u64),
+    Expr(Code),
 }

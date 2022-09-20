@@ -91,7 +91,6 @@ fn map_st(statement: &Statement, vars: &mut Vars) -> Option<Statement> {
             offset: map_expr(offset, vars),
             len: map_expr(len, vars),
         },
-        Statement::Move(expr) => Statement::Move(map_expr(expr, vars)),
     })
 }
 

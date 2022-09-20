@@ -79,10 +79,10 @@ pub fn translate_function(
     code_size: u128,
     flags: Flags,
 ) -> Result<Mir, Error> {
-    let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
+    let _hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
     let hir2 = hir2_translator.translate_fun(fun, contract_addr, code_size)?;
     let mir_translator = MirTranslator::new(fun, flags);
-    let mir = mir_translator.translate(hir)?;
+    let mir = mir_translator.translate(hir2)?;
     mir.print(&fun.name);
     Ok(mir)
 }

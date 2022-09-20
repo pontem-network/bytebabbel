@@ -1,33 +1,27 @@
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
-use crate::bytecode::mir::ir::expression::Expression;
-use crate::bytecode::mir::ir::math::Operation;
+use crate::bytecode::hir2::executor::math::BinaryOp;
+use crate::bytecode::hir2::ir::expression::Expr;
+use crate::bytecode::hir2::ir::statement::Statement as Stmt;
+use crate::bytecode::hir2::ir::Hir2;
+use crate::bytecode::hir2::vars::VarId;
+use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpr};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
-use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
-use crate::{Flags, Function, Hir};
+use crate::{Flags, Function, Mir};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
 
-pub mod binary;
-pub mod brunch;
-pub mod cast;
-pub mod consts;
-pub mod mem;
-pub mod storage;
-pub mod ternary;
-pub mod unary;
+mod cast;
+mod math;
 pub mod variables;
 
 pub struct MirTranslator<'a> {
     pub(super) fun: &'a Function,
     pub(super) variables: Variables,
     pub(super) mapping: HashMap<VarId, Variable>,
-    pub(super) mir: Mir,
-    pub(super) mem_var: Variable,
-    pub(super) store_var: Variable,
+    pub(super) mem_var: Option<Variable>,
+    pub(super) store_var: Option<Variable>,
     pub(super) signer_index: LocalIndex,
     pub(super) args_index: LocalIndex,
     pub(super) flags: Flags,
@@ -38,7 +32,7 @@ impl<'a> MirTranslator<'a> {
         let signer = (0, SType::Signer);
         let args = (1, SType::Bytes);
 
-        let mut variables = if flags.native_input {
+        let variables = if flags.native_input {
             let mut args = vec![SType::Signer];
             args.extend(
                 fun.native_input
@@ -50,336 +44,262 @@ impl<'a> MirTranslator<'a> {
             Variables::new(vec![signer.1, args.1])
         };
 
-        let mut mir = Mir::default();
-
-        let store_var = variables.borrow_global(SType::Storage);
-        mir.add_statement(Statement::Assign(store_var, Expression::GetStore));
-
-        let mem_var = variables.borrow_global(SType::Memory);
-        mir.add_statement(Statement::Assign(mem_var, Expression::GetMem));
-
         MirTranslator {
             fun,
             variables,
             mapping: Default::default(),
-            mir,
-            mem_var,
-            store_var,
+            mem_var: None,
+            store_var: None,
             signer_index: signer.0,
             args_index: args.0,
             flags,
         }
     }
 
-    pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
-        let (mut vars, instructions, _) = hir.into_inner();
-        self.translate_instructions(&instructions, &mut vars)?;
-        self.mir.set_locals(self.variables.locals());
-        Ok(self.mir)
+    pub fn translate(mut self, hir: Hir2) -> Result<Mir, Error> {
+        let statements = hir.inner();
+        let mut mir = Mir::default();
+        let store_var = self.variables.borrow_global(SType::Storage);
+        mir.add_statement(store_var.assign(Expression::GetStore.ty(SType::Storage)));
+        self.store_var = Some(store_var);
+
+        let mem_var = self.variables.borrow_global(SType::Memory);
+        mir.add_statement(mem_var.assign(Expression::GetMem.ty(SType::Memory)));
+        self.mem_var = Some(mem_var);
+
+        mir.extend_statements(self.translate_statements(&statements)?);
+        mir.set_locals(self.variables.locals());
+        Ok(mir)
     }
 
-    pub(super) fn map_var(&mut self, var_id: VarId, tp: SType) -> Variable {
-        let var = self.variables.borrow(tp);
-        self.mapping.insert(var_id, var);
-        var
-    }
-
-    fn translate_instructions(
-        &mut self,
-        instructions: &[Instruction],
-        vars: &mut Vars,
-    ) -> Result<(), Error> {
-        let _scope = self.variables.create_scope();
-        for instruction in instructions {
-            match instruction {
-                Instruction::SetVar(id) => {
-                    self.translate_set_var(*id, vars)?;
+    fn translate_statements(&mut self, stmts: &[Stmt]) -> Result<Vec<Statement>, Error> {
+        let mut statements = Vec::with_capacity(stmts.len());
+        for stmt in stmts {
+            match stmt {
+                Stmt::Assign { var, expr } => {
+                    let expr = self.expr(expr)?;
+                    let mir_var = self.variables.borrow(expr.ty);
+                    self.mapping.insert(*var, mir_var);
+                    statements.push(mir_var.assign(expr))
                 }
-                Instruction::MemStore { addr, var } => {
-                    self.translate_mem_store(*addr, *var, vars)?;
-                }
-                Instruction::MemStore8 { addr, var } => {
-                    self.translate_mem_store8(*addr, *var, vars)?;
-                }
-                Instruction::SStore { addr, var } => {
-                    self.translate_s_store(*addr, *var, vars)?;
-                }
-                Instruction::If {
+                Stmt::MemStore8 { addr, var } => statements.push(Statement::MStore8 {
+                    memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+                    offset: self.expr(addr)?,
+                    val: self.expr(var)?,
+                }),
+                Stmt::MemStore { addr, var } => statements.push(Statement::MStore {
+                    memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+                    offset: self.expr(addr)?,
+                    val: self.expr(var)?,
+                }),
+                Stmt::SStore { addr, var } => statements.push(Statement::SStore {
+                    storage: self.store_var.ok_or_else(|| anyhow!("no storage var"))?,
+                    key: self.expr(addr)?,
+                    val: self.expr(var)?,
+                }),
+                Stmt::Log {
+                    offset,
+                    len,
+                    topics,
+                } => statements.push(Statement::Log {
+                    storage: self.store_var.ok_or_else(|| anyhow!("no storage var"))?,
+                    memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+                    offset: self.expr(offset)?,
+                    len: self.expr(len)?,
+                    topics: topics
+                        .iter()
+                        .map(|t| self.expr(t))
+                        .collect::<Result<Vec<_>, _>>()?,
+                }),
+                Stmt::If {
                     condition,
                     true_branch,
                     false_branch,
                 } => {
-                    self.translate_if(*condition, true_branch, false_branch, vars)?;
+                    let condition = self.expr(condition)?;
+                    statements.push(Statement::IF {
+                        cnd: self.cast(condition, SType::Bool)?,
+                        true_br: self.translate_statements(true_branch)?,
+                        false_br: self.translate_statements(false_branch)?,
+                    })
                 }
-                Instruction::Loop {
+                Stmt::Loop {
                     id,
                     condition_block,
                     condition,
                     is_true_br_loop,
                     loop_br,
                 } => {
-                    self.translate_loop(
-                        *id,
-                        condition_block,
-                        *condition,
-                        *is_true_br_loop,
-                        loop_br,
-                        vars,
-                    )?;
-                }
-                Instruction::Stop => {
-                    if !self.fun.native_output.is_empty() {
-                        self.mir.add_statement(Statement::Abort(u8::MAX));
+                    let condition = self.expr(condition)?;
+                    let condition = self.cast(condition, SType::Bool)?;
+                    let condition = if *is_true_br_loop {
+                        StackOpsBuilder::default()
+                            .push_bool(condition)?
+                            .not()?
+                            .build(SType::Bool)?
                     } else {
-                        self.translate_ret_unit()?;
-                    }
+                        condition
+                    };
+
+                    statements.push(Statement::Loop {
+                        id: *id,
+                        cnd_calc: self.translate_statements(condition_block)?,
+                        cnd: condition,
+                        body: self.translate_statements(loop_br)?,
+                    })
                 }
-                Instruction::Abort(code) => {
-                    self.mir.add_statement(Statement::Abort(*code));
+                Stmt::Continue { loop_id, context } => {
+                    statements.extend(self.translate_statements(context)?);
+                    statements.push(Statement::Continue(*loop_id));
                 }
-                Instruction::Result { offset, len } => {
-                    self.translate_ret(*offset, *len)?;
+                Stmt::Stop => statements.push(if !self.fun.native_output.is_empty() {
+                    Statement::Abort(u8::MAX)
+                } else {
+                    Statement::Result(vec![])
+                }),
+                Stmt::Abort(code) => statements.push(Statement::Abort(*code)),
+                Stmt::Result { offset, len } => self.translate_ret(offset, len, &mut statements)?,
+            };
+        }
+        Ok(statements)
+    }
+
+    fn expr(&mut self, expr: &Expr) -> Result<TypedExpr, Error> {
+        Ok(match expr {
+            Expr::Val(val) => Expression::Const(Value::from(*val)).ty(SType::Num),
+            Expr::Var(var) => {
+                let var = self.take_var(*var)?;
+                Expression::Var(var).ty(var.s_type())
+            }
+            Expr::MLoad { mem_offset } => {
+                let offset = self.expr(mem_offset)?;
+                ensure!(offset.ty == SType::Num, "memory offset must be of type num");
+                Expression::MLoad {
+                    memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+                    offset,
                 }
-                Instruction::MapVar { id, val } => {
-                    let val = self.get_var(*val)?;
-                    let id = self.get_var(*id)?;
-                    self.mir.add_statement(Statement::Assign(id, val.expr()));
+                .ty(SType::Num)
+            }
+            Expr::SLoad { key } => {
+                let key = self.expr(key)?;
+                ensure!(key.ty == SType::Num, "storage key must be of type num");
+                Expression::SLoad {
+                    storage: self.store_var.ok_or_else(|| anyhow!("no storage var"))?,
+                    key,
                 }
-                Instruction::Continue {
-                    loop_id: id,
-                    context: inst,
-                } => {
-                    self.translate_instructions(inst, vars)?;
-                    self.mir.add_statement(Statement::Continue(*id));
-                }
-                Instruction::Log {
+                .ty(SType::Num)
+            }
+            Expr::Signer => {
+                let signer = self.variables.borrow_param(self.signer_index);
+                Expression::Var(signer).ty(SType::Signer)
+            }
+            Expr::MSize => Expression::MSize {
+                memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+            }
+            .ty(SType::Num),
+            Expr::ArgsSize => self.translate_args_size()?,
+            Expr::Args { args_offset } => self.translate_args(args_offset)?,
+            Expr::UnaryOp(cmd, op) => self.translate_unary_op(*cmd, op)?,
+            Expr::BinaryOp(cmd, op1, op2) => self.translate_binary_op(*cmd, op1, op2)?,
+            Expr::TernaryOp(cmd, op1, op2, op3) => {
+                self.translate_ternary_op(*cmd, op1, op2, op3)?
+            }
+            Expr::Hash {
+                mem_offset,
+                mem_len,
+            } => {
+                let offset = self.expr(mem_offset)?;
+                let len = self.expr(mem_len)?;
+                ensure!(offset.ty == SType::Num, "memory offset must be of type num");
+                ensure!(len.ty == SType::Num, "memory len must be of type num");
+                Expression::Hash {
+                    mem: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
                     offset,
                     len,
-                    topics,
-                } => {
-                    let topics = topics
-                        .iter()
-                        .map(|t| self.get_var(*t))
-                        .collect::<Result<Vec<_>, _>>()?;
-
-                    let offset = self.get_var(*offset)?;
-                    let len = self.get_var(*len)?;
-                    self.mir.add_statement(Statement::Log {
-                        storage: self.store_var,
-                        memory: self.mem_var,
-                        offset,
-                        len,
-                        topics,
-                    });
                 }
+                .ty(SType::Num)
             }
-        }
-        Ok(())
+        })
     }
 
-    fn translate_set_var(&mut self, id: VarId, vars: &mut Vars) -> Result<(), Error> {
-        let var = vars.take(id)?;
-        match var {
-            Eval::Val(val) => {
-                let var = self.variables.borrow(SType::Num);
-                self.mapping.insert(id, var);
-
-                self.mir
-                    .add_statement(Statement::Assign(var, Expression::Const(Value::from(val))));
-            }
-            Eval::UnaryOp(cmd, op) => {
-                self.translate_unary_op(cmd, op, id)?;
-            }
-            Eval::BinaryOp(cmd, op1, op2) => {
-                self.translate_binary_op(cmd, op1, op2, id)?;
-            }
-            Eval::TernaryOp(cmd, op1, op2, op3) => {
-                self.translate_ternary_op(cmd, op1, op2, op3, id)?;
-            }
-            Eval::MLoad(addr) => {
-                let result = self.variables.borrow(SType::Num);
-                let addr = self.get_var(addr)?;
-                ensure!(addr.s_type() == SType::Num, "address must be of type num");
-                self.mapping.insert(id, result);
-                self.mir.add_statement(Statement::Assign(
-                    result,
-                    Expression::MLoad {
-                        memory: self.mem_var,
-                        offset: addr,
-                    },
-                ));
-            }
-            Eval::SLoad(addr) => {
-                let result = self.variables.borrow(SType::Num);
-                self.mapping.insert(id, result);
-                let addr = self.get_var(addr)?;
-                ensure!(addr.s_type() == SType::Num, "address must be of type num");
-
-                self.mir.add_statement(Statement::Assign(
-                    result,
-                    Expression::SLoad {
-                        storage: self.store_var,
-                        offset: addr,
-                    },
-                ));
-            }
-            Eval::MSize => {
-                let result = self.variables.borrow(SType::Num);
-                self.mir.add_statement(Statement::Assign(
-                    result,
-                    Expression::MSize {
-                        memory: self.mem_var,
-                    },
-                ));
-            }
-            Eval::Signer => {
-                let signer = self.variables.borrow_param(self.signer_index);
-                let result = self.cast(signer, SType::Num)?;
-                self.mapping.insert(id, result);
-            }
-            Eval::ArgsSize => {
-                self.translate_args_size(id)?;
-            }
-            Eval::Args(offset) => {
-                self.translate_args(offset, id)?;
-            }
-            Eval::Hash(offset, len) => {
-                let result = self.variables.borrow(SType::Num);
-
-                let offset = self.get_var(offset)?;
-                let len = self.get_var(len)?;
-                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
-                ensure!(len.s_type() == SType::Num, "len must be of type num");
-                self.mapping.insert(id, result);
-
-                self.mir.add_statement(Statement::Assign(
-                    result,
-                    Expression::Hash {
-                        mem: self.mem_var,
-                        offset,
-                        len,
-                    },
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    fn get_var(&mut self, id: VarId) -> Result<Variable, Error> {
+    fn take_var(&mut self, id: VarId) -> Result<Variable, Error> {
         let var = self
             .mapping
-            .get(&id)
+            .remove(&id)
             .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
-        Ok(*var)
+        self.variables.release(&var);
+        Ok(var)
     }
 
-    fn translate_ret_unit(&mut self) -> Result<(), Error> {
-        if self.flags.hidden_output || self.flags.native_output {
-            self.mir.add_statement(Statement::Result(vec![]));
-            return Ok(());
-        }
-
-        let unit = self.variables.borrow(SType::Bytes);
-        let len = self.variables.borrow(SType::Num);
-        self.mir.add_statement(Statement::Assign(
-            len,
-            Expression::Const(Value::from(U256::zero())),
-        ));
-        self.mir.add_statement(Statement::Assign(
-            unit,
-            Expression::MSlice {
-                memory: self.mem_var,
-                offset: len,
-                len,
-            },
-        ));
-        self.mir.add_statement(Statement::Result(vec![unit]));
-        Ok(())
-    }
-
-    fn translate_ret(&mut self, offset: VarId, len: VarId) -> Result<(), Error> {
+    fn translate_ret(
+        &mut self,
+        offset: &Expr,
+        len: &Expr,
+        statements: &mut Vec<Statement>,
+    ) -> Result<(), Error> {
         if self.flags.hidden_output {
-            self.mir.add_statement(Statement::Result(vec![]));
-            return Ok(());
+            statements.push(Statement::Result(vec![]));
         }
 
         if self.flags.native_output {
-            let mut results = vec![];
-            let offset = self.get_var(offset)?;
+            let mut offset = self.expr(offset)?;
             let word_size = self.variables.borrow(SType::Num);
-            self.mir.add_statement(Statement::Assign(
-                word_size,
-                Expression::Const(Value::from(U256::from(32))),
-            ));
-            let mut tmp = self.variables.borrow(SType::Num);
+            statements.push(
+                word_size.assign(Expression::Const(Value::from(U256::from(32))).ty(SType::Num)),
+            );
+            let word_size = Expression::Var(word_size).ty(SType::Num);
 
+            let mut results = vec![];
             for tp in &self.fun.native_output {
-                self.mir.add_statement(Statement::Assign(
-                    tmp,
-                    Expression::MLoad {
-                        memory: self.mem_var,
-                        offset,
-                    },
-                ));
-                let result = self.cast(tmp, SType::from_eth_type(tp, self.flags.u128_io))?;
-                if result.is_num() {
-                    tmp = self.variables.borrow(SType::Num);
+                let offset_var = self.variables.borrow(SType::Num);
+                statements.push(offset_var.assign(offset.clone()));
+                let offset_var = Expression::Var(offset_var).ty(SType::Num);
+
+                let mem_frame = Expression::MLoad {
+                    memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+                    offset: offset_var.clone(),
                 }
-                results.push(result);
-                self.mir.add_statement(Statement::Assign(
-                    offset,
-                    Expression::Operation(Operation::Add, offset, word_size),
-                ));
+                .ty(SType::Num);
+                results.push(self.cast(mem_frame, SType::from_eth_type(tp, self.flags.u128_io))?);
+
+                offset = BinaryOp::Add.expr(offset_var.clone(), word_size.clone());
             }
-            self.mir.add_statement(Statement::Result(results));
+            statements.push(Statement::Result(results));
         } else {
-            let offset = self.get_var(offset)?;
-            let len = self.get_var(len)?;
-            let result = self.variables.borrow(SType::Bytes);
-            self.mir.add_statement(Statement::Assign(
-                result,
-                Expression::MSlice {
-                    memory: self.mem_var,
-                    offset,
-                    len,
-                },
-            ));
-            self.mir.add_statement(Statement::Result(vec![result]));
+            let slice = Expression::MSlice {
+                memory: self.mem_var.ok_or_else(|| anyhow!("no memory var"))?,
+                offset: self.expr(offset)?,
+                len: self.expr(len)?,
+            }
+            .ty(SType::Bytes);
+            statements.push(Statement::Result(vec![slice]));
         }
         Ok(())
     }
 
-    fn translate_args_size(&mut self, id: VarId) -> Result<(), Error> {
+    fn translate_args_size(&mut self) -> Result<TypedExpr, Error> {
         if self.flags.native_input {
             bail!("args_size is not supported in native input mode");
         } else {
-            let result = self.variables.borrow(SType::Num);
             let args = self.variables.borrow_param(self.args_index);
             ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
-            self.mir
-                .add_statement(Statement::Assign(result, Expression::BytesLen(args)));
-            self.mapping.insert(id, result);
+            Ok(Expression::BytesLen(args).ty(SType::Num))
         }
-        Ok(())
     }
 
-    fn translate_args(&mut self, offset: VarId, id: VarId) -> Result<(), Error> {
-        if self.flags.native_input {
-            let param = self.variables.borrow_param(offset.local_index());
-            self.mapping.insert(id, param);
+    fn translate_args(&mut self, offset: &Box<Expr>) -> Result<TypedExpr, Error> {
+        Ok(if self.flags.native_input {
+            let offset = offset
+                .resolve(None)
+                .ok_or_else(|| anyhow!("args offset must be a static"))?;
+            let param = self.variables.borrow_param(offset.as_u128() as LocalIndex);
+            Expression::Var(param).ty(param.s_type())
         } else {
-            let result = self.variables.borrow(SType::Num);
             let data = self.variables.borrow_param(self.args_index);
-            let offset = self.get_var(offset)?;
-            ensure!(offset.s_type() == SType::Num, "offset must be of type num");
+            let offset = self.expr(offset)?;
+            ensure!(offset.ty == SType::Num, "offset must be of type num");
             ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
-
-            self.mir.add_statement(Statement::Assign(
-                result,
-                Expression::ReadNum { data, offset },
-            ));
-            self.mapping.insert(id, result);
-        }
-        Ok(())
+            Expression::ReadNum { data, offset }.ty(SType::Num)
+        })
     }
 }

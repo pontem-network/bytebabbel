@@ -1,4 +1,4 @@
-use crate::bytecode::mir::ir::math::Operation;
+use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::{anyhow, ensure, Error};
@@ -9,35 +9,66 @@ pub enum Expression {
     GetStore,
     MLoad {
         memory: Variable,
-        offset: Variable,
+        offset: TypedExpr,
     },
     MSlice {
         memory: Variable,
-        offset: Variable,
-        len: Variable,
+        offset: TypedExpr,
+        len: TypedExpr,
     },
     SLoad {
         storage: Variable,
-        offset: Variable,
+        key: TypedExpr,
     },
     MSize {
         memory: Variable,
     },
     Const(Value),
     Var(Variable),
-    Operation(Operation, Variable, Variable),
+    UnOp(UnaryOp, TypedExpr),
+    BinOp(BinaryOp, TypedExpr, TypedExpr),
+    TernOp(TernaryOp, TypedExpr, TypedExpr, TypedExpr),
     StackOps(StackOps),
-    Cast(Variable, Cast),
+    Cast(TypedExpr, Cast),
     BytesLen(Variable),
     ReadNum {
         data: Variable,
-        offset: Variable,
+        offset: TypedExpr,
     },
     Hash {
         mem: Variable,
-        offset: Variable,
-        len: Variable,
+        offset: TypedExpr,
+        len: TypedExpr,
     },
+    Unit,
+}
+
+impl Expression {
+    pub fn ty(self, ty: SType) -> TypedExpr {
+        TypedExpr::new(self, ty)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TypedExpr {
+    pub expr: Box<Expression>,
+    pub ty: SType,
+}
+
+impl TypedExpr {
+    pub fn new(expr: Expression, ty: SType) -> Self {
+        Self {
+            expr: Box::new(expr),
+            ty,
+        }
+    }
+
+    pub fn as_var(&self) -> Option<Variable> {
+        match &*self.expr {
+            Expression::Var(var) => Some(var.clone()),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -101,7 +132,7 @@ pub struct StackOps {
 
 #[derive(Debug, Clone)]
 pub enum StackOp {
-    PushBoolVar(Variable),
+    PushBoolExpr(TypedExpr),
     PushBool(bool),
     Eq,
     Not,
@@ -114,14 +145,10 @@ pub struct StackOpsBuilder {
 }
 
 impl StackOpsBuilder {
-    pub fn push_bool(mut self, var: Variable) -> Result<StackOpsBuilder, Error> {
-        ensure!(
-            var.s_type() == SType::Bool,
-            "Can't push bool from {:?}",
-            var.s_type()
-        );
-        self.stack.push(var.s_type());
-        self.vec.push(StackOp::PushBoolVar(var));
+    pub fn push_bool(mut self, var: TypedExpr) -> Result<StackOpsBuilder, Error> {
+        ensure!(var.ty == SType::Bool, "Can't push bool from {:?}", var.ty);
+        self.stack.push(var.ty);
+        self.vec.push(StackOp::PushBoolExpr(var));
         Ok(self)
     }
 
@@ -168,7 +195,7 @@ impl StackOpsBuilder {
         Ok(self)
     }
 
-    pub fn build(mut self, tp: SType) -> Result<Expression, Error> {
+    pub fn build(mut self, tp: SType) -> Result<TypedExpr, Error> {
         let res = self
             .stack
             .pop()
@@ -180,12 +207,6 @@ impl StackOpsBuilder {
                 tp
             ));
         }
-        Ok(Expression::StackOps(StackOps { vec: self.vec }))
-    }
-}
-
-impl Operation {
-    pub fn expr(self, op1: Variable, op2: Variable) -> Expression {
-        Expression::Operation(self, op1, op2)
+        Ok(Expression::StackOps(StackOps { vec: self.vec }).ty(tp))
     }
 }

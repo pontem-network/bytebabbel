@@ -82,11 +82,15 @@ impl InstructionHandler for CallDataLoad {
     fn handle(&self, params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         let offset = &params[0];
         let expr = if ctx.flags().native_input {
-            if let Some(offset) = offset.resolve(ctx) {
+            if let Some(offset) = offset.resolve(Some(ctx)) {
                 if offset.is_zero() {
                     Expr::Val(ctx.fun().hash().into())
                 } else {
-                    Expr::Val(U256::from(((offset.as_u128() - 4) / 32) + 1))
+                    Expr::Args {
+                        args_offset: Box::new(Expr::Val(U256::from(
+                            ((offset.as_u128() - 4) / 32) + 1,
+                        ))),
+                    }
                 }
             } else {
                 panic!("unsupported dynamic types");
@@ -94,7 +98,7 @@ impl InstructionHandler for CallDataLoad {
         } else {
             if ctx.is_static_analysis_enable() {
                 ctx.disable_static_analysis();
-                if let Some(offset) = offset.resolve(ctx) {
+                if let Some(offset) = offset.resolve(Some(ctx)) {
                     if offset.is_zero() {
                         return ExecutionResult::Expr(vec![Expr::Val(ctx.fun().hash().into())]);
                     }

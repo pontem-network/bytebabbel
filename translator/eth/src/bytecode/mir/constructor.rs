@@ -11,23 +11,15 @@ pub fn make_constructor(store: HashMap<U256, U256>) -> Mir {
     let mut variables = Variables::new(vec![SType::Signer]);
     mir.add_statement(Statement::InitStorage(variables.borrow_param(0)));
     let store_var = variables.borrow_global(SType::Storage);
-    mir.add_statement(Statement::Assign(store_var, Expression::GetStore));
-
-    let key_var = variables.borrow_global(SType::Num);
-    let value_var = variables.borrow_global(SType::Num);
+    mir.add_statement(Statement::Assign(
+        store_var,
+        Expression::GetStore.ty(SType::Storage),
+    ));
     for (key, value) in store {
-        mir.add_statement(Statement::Assign(
-            key_var,
-            Expression::Const(Value::from(key)),
-        ));
-        mir.add_statement(Statement::Assign(
-            value_var,
-            Expression::Const(Value::from(value)),
-        ));
         mir.add_statement(Statement::SStore {
             storage: store_var,
-            key: key_var,
-            val: value_var,
+            key: Expression::Const(Value::from(key)).ty(SType::Num),
+            val: Expression::Const(Value::from(value)).ty(SType::Num),
         });
     }
     mir.add_statement(Statement::Result(vec![]));

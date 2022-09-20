@@ -1,7 +1,7 @@
 pub mod func;
 pub mod interface;
 
-use crate::mv_ir::func::Func;
+use crate::module::func::Func;
 use anyhow::{anyhow, Error};
 use log::log_enabled;
 use log::Level;

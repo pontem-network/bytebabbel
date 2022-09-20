@@ -33,7 +33,7 @@ impl InstructionHandler for UnaryOp {
     fn handle(&self, mut params: Vec<Expr>, ctx: &mut Context) -> ExecutionResult {
         let param = params.remove(0);
         if !ctx.is_in_loop() {
-            if let Some(param) = param.resolve(ctx) {
+            if let Some(param) = param.resolve(Some(ctx)) {
                 return self.calc(param).into();
             }
         }
@@ -52,7 +52,7 @@ impl Display for UnaryOp {
 
 #[derive(Hash, Eq, PartialEq, Debug, Copy, Clone, Ord, PartialOrd)]
 pub enum BinaryOp {
-    EQ,
+    Eq,
     Lt,
     Gt,
     Shr,
@@ -81,14 +81,14 @@ impl InstructionHandler for BinaryOp {
         let a = params.remove(0);
         if !ctx.is_in_loop() {
             {
-                let a = a.resolve(ctx);
-                let b = b.resolve(ctx);
+                let a = a.resolve(Some(ctx));
+                let b = b.resolve(Some(ctx));
                 if let (Some(a), Some(b)) = (a, b) {
                     let res = self.calc(a, b);
                     return res.into();
                 }
             }
-            if self == &BinaryOp::EQ && a == b {
+            if self == &BinaryOp::Eq && a == b {
                 return U256::one().into();
             }
         }
@@ -99,7 +99,7 @@ impl InstructionHandler for BinaryOp {
 impl BinaryOp {
     pub fn calc(&self, mut a: U256, mut b: U256) -> U256 {
         match self {
-            BinaryOp::EQ => {
+            BinaryOp::Eq => {
                 if a == b {
                     U256::one()
                 } else {
@@ -225,7 +225,7 @@ impl BinaryOp {
 impl Display for BinaryOp {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinaryOp::EQ => write!(f, "=="),
+            BinaryOp::Eq => write!(f, "=="),
             BinaryOp::Lt => write!(f, "<"),
             BinaryOp::Gt => write!(f, ">"),
             BinaryOp::Shr => write!(f, ">>"),
@@ -263,14 +263,15 @@ impl InstructionHandler for TernaryOp {
         let op1 = params.remove(0);
 
         if !ctx.is_in_loop() {
-            let op1 = op1.resolve(ctx);
-            let op2 = op2.resolve(ctx);
-            let op3 = op3.resolve(ctx);
+            let op1 = op1.resolve(Some(ctx));
+            let op2 = op2.resolve(Some(ctx));
+            let op3 = op3.resolve(Some(ctx));
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
                 return res.into();
             }
         }
+
         Expr::TernaryOp(*self, Box::new(op1), Box::new(op2), Box::new(op3)).into()
     }
 }

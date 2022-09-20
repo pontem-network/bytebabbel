@@ -1,20 +1,13 @@
-use crate::bytecode::mir::ir::expression::Expression;
+use crate::bytecode::mir::ir::expression::TypedExpr;
+use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType};
 use anyhow::{anyhow, Error};
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Variables {
-    inner: Rc<RefCell<Inner>>,
-}
-
-#[derive(Debug)]
-pub struct Inner {
     locals: HashMap<SType, Locals>,
     seq: LocalIndex,
-    scopes: Vec<HashSet<Variable>>,
     list: Vec<SType>,
     input: Vec<SType>,
 }
@@ -22,80 +15,61 @@ pub struct Inner {
 impl Variables {
     pub fn new(params: Vec<SType>) -> Variables {
         Variables {
-            inner: Rc::new(RefCell::new(Inner {
-                locals: HashMap::new(),
-                seq: params.len() as LocalIndex,
-                scopes: Vec::new(),
-                list: vec![],
-                input: params,
-            })),
+            locals: HashMap::new(),
+            seq: params.len() as LocalIndex,
+            list: vec![],
+            input: params,
         }
     }
 
     pub fn borrow_global(&mut self, tp: SType) -> Variable {
-        let mut vars = self.inner.borrow_mut();
-        let idx = vars.seq;
-        let locals = vars.locals.entry(tp).or_default();
+        let idx = self.seq;
+        let locals = self.locals.entry(tp).or_default();
         if let Some(idx) = locals.borrow() {
             Variable(idx, tp)
         } else {
             locals.new_borrowed(idx);
-            vars.seq += 1;
-            vars.list.push(tp);
+            self.seq += 1;
+            self.list.push(tp);
             Variable(idx, tp)
         }
     }
 
     pub fn borrow_param(&mut self, idx: LocalIndex) -> Variable {
-        let vars = self.inner.borrow();
-        let tp = vars.input[idx as usize];
+        let tp = self.input[idx as usize];
         Variable(idx, tp)
     }
 
     pub fn borrow(&mut self, tp: SType) -> Variable {
-        let mut vars = self.inner.borrow_mut();
-        let idx = vars.seq;
-        let locals = vars.locals.entry(tp).or_default();
+        let idx = self.seq;
+        let locals = self.locals.entry(tp).or_default();
         let var = if let Some(idx) = locals.borrow() {
             Variable(idx, tp)
         } else {
             locals.new_borrowed(idx);
-            vars.seq += 1;
-            vars.list.push(tp);
+            self.seq += 1;
+            self.list.push(tp);
             Variable(idx, tp)
         };
-        let current_scope = vars.scopes.len() - 1;
-        if let Some(scope) = vars.scopes.get_mut(current_scope) {
-            scope.insert(var);
-        } else {
-            panic!("no scope");
-        }
         var
     }
 
+    pub fn release(&mut self, var: &Variable) {
+        if let Some(locals) = self.locals.get_mut(&var.1) {
+            locals.release(var.0);
+        }
+    }
+
     pub fn borrow_with_id(&mut self, id: LocalIndex, tp: SType) -> Result<Variable, Error> {
-        let mut vars = self.inner.borrow_mut();
-        let locals = vars.locals.entry(tp).or_default();
+        let locals = self.locals.entry(tp).or_default();
         let idx = locals
             .borrow_with_id(id)
             .ok_or_else(|| anyhow!("{} is not a valid local index", id))?;
         Ok(Variable(idx, tp))
     }
 
-    pub fn create_scope(&mut self) -> Scope {
-        {
-            let mut vars = self.inner.borrow_mut();
-            vars.scopes.push(HashSet::new());
-        };
-        Scope {
-            vars: Variables {
-                inner: self.inner.clone(),
-            },
-        }
-    }
-
     pub fn locals(&self) -> Vec<SType> {
-        self.inner.borrow().list.to_vec()
+        self.list.to_vec()
     }
 }
 
@@ -157,23 +131,6 @@ impl Locals {
     }
 }
 
-pub struct Scope {
-    vars: Variables,
-}
-
-impl Drop for Scope {
-    fn drop(&mut self) {
-        let mut vars = self.vars.inner.borrow_mut();
-        if let Some(scope) = vars.scopes.pop() {
-            for var in scope {
-                if let Some(locals) = vars.locals.get_mut(&var.s_type()) {
-                    locals.release(var.0);
-                }
-            }
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Variable(LocalIndex, SType);
 
@@ -194,7 +151,7 @@ impl Variable {
         self.0
     }
 
-    pub fn expr(&self) -> Expression {
-        Expression::Var(*self)
+    pub fn assign(&self, expr: TypedExpr) -> Statement {
+        Statement::Assign(self.clone(), expr)
     }
 }

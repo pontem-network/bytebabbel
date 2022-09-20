@@ -4,7 +4,7 @@ use eth::transpile_program;
 pub use eth::Flags;
 use intrinsic::toml_template;
 use move_core_types::account_address::AccountAddress;
-use mv::mv_ir::interface::move_interface;
+use mv::module::interface::move_interface;
 use mv::translator::MvIrTranslator;
 use primitive_types::U256;
 

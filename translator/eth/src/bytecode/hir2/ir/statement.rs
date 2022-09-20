@@ -47,5 +47,4 @@ pub enum Statement {
         offset: Expr,
         len: Expr,
     },
-    Move(Expr),
 }

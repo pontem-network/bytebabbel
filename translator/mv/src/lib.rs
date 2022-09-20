@@ -1,2 +1,2 @@
-pub mod mv_ir;
+pub mod module;
 pub mod translator;

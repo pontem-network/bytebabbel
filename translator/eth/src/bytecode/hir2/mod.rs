@@ -1,10 +1,10 @@
 mod const_pool;
 mod context;
-mod executor;
-mod ir;
+pub mod executor;
+pub mod ir;
 mod optimizer;
 mod stack;
-mod vars;
+pub mod vars;
 
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};

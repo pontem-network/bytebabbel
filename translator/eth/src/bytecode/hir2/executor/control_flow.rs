@@ -26,7 +26,7 @@ impl InstructionHandler for ControlFlow {
             ControlFlow::Revert => ExecutionResult::Abort(255),
             ControlFlow::Jump => {
                 let dest = params.remove(0);
-                if let Some(block) = dest.resolve(ctx) {
+                if let Some(block) = dest.resolve(Some(ctx)) {
                     ExecutionResult::Jmp(dest, BlockId::from(block))
                 } else {
                     panic!("Unsupported dynamic jump");
@@ -36,12 +36,14 @@ impl InstructionHandler for ControlFlow {
                 let cnd = params.remove(1);
                 let true_br = params.remove(0);
 
-                let true_br = true_br.resolve(ctx).expect("Unsupported dynamic jump if");
+                let true_br = true_br
+                    .resolve(Some(ctx))
+                    .expect("Unsupported dynamic jump if");
                 let true_br = BlockId::from(true_br);
                 let false_br = BlockId::from(inst.next());
 
                 if !ctx.is_in_loop() {
-                    if let Some(cnd_val) = cnd.resolve(ctx) {
+                    if let Some(cnd_val) = cnd.resolve(Some(ctx)) {
                         return ExecutionResult::Jmp(
                             cnd,
                             if cnd_val.is_zero() { false_br } else { true_br },
