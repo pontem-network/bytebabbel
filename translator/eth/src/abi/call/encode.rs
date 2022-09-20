@@ -3,7 +3,7 @@ use evm_core::utils::I256;
 use primitive_types::U256;
 
 use ethabi::token::{LenientTokenizer, Tokenizer};
-use ethabi::{Bytes, Function, Token};
+use ethabi::{Bytes, Constructor, Function, Token};
 
 use crate::abi::inc_ret_param::types::ParamType;
 use crate::abi::inc_ret_param::value::ParamValue;
@@ -240,14 +240,26 @@ impl ParamTypeSize for ParamType {
 }
 
 // =================================================================================================
+trait EthEncodeConstructor {
+    fn short_signature(&self) -> [u8; 4];
+}
 
-trait EncodeByString {
+impl EthEncodeConstructor for Constructor {
+    fn short_signature(&self) -> [u8; 4] {
+        let params: Vec<_> = self.inputs.iter().map(|param| param.kind.clone()).collect();
+        ethabi::short_signature("anonymous", &params)
+    }
+}
+
+pub trait EthEncodeByString {
     fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes>;
-    fn encode_value_by_str_hex(&self, params: &[&str]) -> Result<String>;
+    fn encode_value_by_str_hex(&self, params: &[&str]) -> Result<String> {
+        self.encode_value_by_str(params).map(hex::encode)
+    }
     fn short_signature_hex(&self) -> String;
 }
 
-impl EncodeByString for Function {
+impl EthEncodeByString for Function {
     fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes> {
         let params = self
             .inputs
@@ -263,8 +275,25 @@ impl EncodeByString for Function {
         Ok(result)
     }
 
-    fn encode_value_by_str_hex(&self, params: &[&str]) -> Result<String> {
-        self.encode_value_by_str(params).map(hex::encode)
+    fn short_signature_hex(&self) -> String {
+        hex::encode(self.short_signature())
+    }
+}
+
+impl EthEncodeByString for Constructor {
+    fn encode_value_by_str(&self, params: &[&str]) -> Result<Bytes> {
+        let params = self
+            .inputs
+            .iter()
+            .map(|param| param.kind.clone())
+            .zip(params.iter().map(|v| v as &str))
+            .collect::<Vec<_>>();
+        let tokens: Vec<Token> = params
+            .iter()
+            .map(|&(ref param, value)| LenientTokenizer::tokenize(param, value))
+            .collect::<Result<_, _>>()?;
+        let result = self.encode_input(self.short_signature().into(), &tokens)?;
+        Ok(result)
     }
 
     fn short_signature_hex(&self) -> String {
@@ -274,7 +303,7 @@ impl EncodeByString for Function {
 
 #[cfg(test)]
 mod test {
-    use crate::abi::call::encode::EncodeByString;
+    use crate::abi::call::encode::EthEncodeByString;
     use ethabi::Contract;
 
     /// Encoding and decoding input/output
