@@ -143,23 +143,23 @@ impl MoveExecutor {
         result
             .iter()
             .map(|(val, tp)| match tp {
-                MoveTypeLayout::Bool => bcs::from_bytes::<bool>(&val).map(|val| Token::Bool(val)),
+                MoveTypeLayout::Bool => bcs::from_bytes::<bool>(val).map(Token::Bool),
                 MoveTypeLayout::U8 => {
-                    bcs::from_bytes::<u8>(&val).map(|val| Token::Uint(U256::from(val)))
+                    bcs::from_bytes::<u8>(val).map(|val| Token::Uint(U256::from(val)))
                 }
                 MoveTypeLayout::U64 => {
-                    bcs::from_bytes::<u64>(&val).map(|val| Token::Uint(U256::from(val)))
+                    bcs::from_bytes::<u64>(val).map(|val| Token::Uint(U256::from(val)))
                 }
                 MoveTypeLayout::U128 => {
-                    bcs::from_bytes::<u128>(&val).map(|val| Token::Uint(U256::from(val)))
+                    bcs::from_bytes::<u128>(val).map(|val| Token::Uint(U256::from(val)))
                 }
-                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(&val)
+                MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(val)
                     .map(|val| Token::Address(H160::from(to_eth_address(val.as_ref())))),
                 MoveTypeLayout::Vector(_) => {
                     todo!()
                 }
                 MoveTypeLayout::Struct(_) => {
-                    bcs::from_bytes::<U256Wrapper>(&val).map(|val| Token::Uint(U256(val.0)))
+                    bcs::from_bytes::<U256Wrapper>(val).map(|val| Token::Uint(U256(val.0)))
                 }
                 _ => unreachable!(),
             })

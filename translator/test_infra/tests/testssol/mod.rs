@@ -114,7 +114,7 @@ impl STest {
             .join(", ");
         log::trace!("emv result_string: {return_value:?}");
 
-        Ok(format!("{return_value}"))
+        Ok(return_value)
     }
 
     fn module_address(&self) -> String {
