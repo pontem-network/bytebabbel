@@ -3,15 +3,13 @@ runs:
 
   steps:
     - name: Formatting
-      if: runner.os == 'Linux'
       run: cargo fmt -- --check
       shell: bash
 
     - name: Clippy
-      if: runner.os == 'Linux'
       uses: actions-rs/clippy-check@v1
       with:
         name: Clippy Report
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.GITHUB_TOKEN }}
         failure-mode: warnings
         args: --all --all-targets -- -D warnings

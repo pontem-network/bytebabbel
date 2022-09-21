@@ -27,9 +27,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - uses: ./.github/actions/tests
+      - name: Install
+        uses: ./.github/actions/tests
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUNNER_OS: ${{ runner.os }}
 
-      - uses: ./.github/actions/clippyfmt
+      - name: Test
+        run: RUST_BACKTRACE=1 cargo test --offline
+        shell: bash
+
+      - name: Clippy + Fmt
+        uses: ./.github/actions/clippyfmt

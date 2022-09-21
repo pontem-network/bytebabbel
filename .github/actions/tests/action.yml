@@ -30,7 +30,3 @@ runs:
       with:
         token: ${{ inputs.GITHUB_TOKEN }}
 
-    - name: Test
-      run: RUST_BACKTRACE=1 cargo test --offline
-      shell: bash
-
