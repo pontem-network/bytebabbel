@@ -6,6 +6,15 @@ on:
       - master
       - main
 
+  workflow_call:
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+    runner:
+      os:
+        required: true
+
 env:
   RUSTUP_MAX_RETRIES: 10
   CARGO_INCREMENTAL: 1
