@@ -10,6 +10,6 @@ runs:
       uses: actions-rs/clippy-check@v1
       with:
         name: Clippy Report
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ GITHUB_TOKEN }}
         failure-mode: warnings
         args: --all --all-targets -- -D warnings
