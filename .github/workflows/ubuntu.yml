@@ -39,3 +39,5 @@ jobs:
 
       - name: Clippy + Fmt
         uses: ./.github/actions/clippyfmt
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
