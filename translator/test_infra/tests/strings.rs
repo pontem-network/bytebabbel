@@ -1,4 +1,3 @@
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
@@ -28,7 +27,6 @@ pub fn test_strings() {
     let res = vm
         .run("0x42::Strings::const_str", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(hello)", res);
+    assert_eq!("String(\"hello\")", res);
 }

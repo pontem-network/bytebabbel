@@ -144,8 +144,14 @@ impl MoveExecutor {
             .iter()
             .map(|(val, tp)| match tp {
                 MoveTypeLayout::Bool => bcs::from_bytes::<bool>(&val).map(|val| Token::Bool(val)),
-                MoveTypeLayout::U8 | MoveTypeLayout::U64 | MoveTypeLayout::U128 => {
+                MoveTypeLayout::U8 => {
                     bcs::from_bytes::<u8>(&val).map(|val| Token::Uint(U256::from(val)))
+                }
+                MoveTypeLayout::U64 => {
+                    bcs::from_bytes::<u64>(&val).map(|val| Token::Uint(U256::from(val)))
+                }
+                MoveTypeLayout::U128 => {
+                    bcs::from_bytes::<u128>(&val).map(|val| Token::Uint(U256::from(val)))
                 }
                 MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(&val)
                     .map(|val| Token::Address(H160::from(to_eth_address(val.as_ref())))),

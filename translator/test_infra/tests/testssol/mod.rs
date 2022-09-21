@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use anyhow::{anyhow, ensure, Error, Result};
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
@@ -95,22 +96,25 @@ impl STest {
         use crate::testssol::env::revm::REvm;
 
         let abi = self.contract.abi()?;
-        let ent = abi
+        let func = abi
             .functions_by_name(&self.test.func)?
             .first()
             .ok_or_else(|| anyhow!("function not found in abi"))?;
-        let tx = ent.call_by_str(&self.test.params)?;
+        let tx = func.call_by_str(&self.test.params)?;
 
         let mut evm = REvm::try_from(&self.contract)?;
         evm.construct(vec![])?;
         let result_bytes = evm.run_tx(tx)?;
         log::trace!("emv result_bytes: {result_bytes:?}");
 
-        todo!();
-        // let return_value = callfn.decode_return(result_bytes)?.to_result_str();
-        // log::trace!("emv result_string: {return_value:?}");
+        let return_value = func
+            .decode_output(&result_bytes)?
+            .iter()
+            .map(|data| format!("{data:?}"))
+            .join(", ");
+        log::trace!("emv result_string: {return_value:?}");
 
-        // Ok(format!("{return_value}"))
+        Ok(format!("{return_value}"))
     }
 
     fn module_address(&self) -> String {

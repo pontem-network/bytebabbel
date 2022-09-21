@@ -1,7 +1,6 @@
 use eth::Flags;
 use test_infra::init_log;
 
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
@@ -32,14 +31,12 @@ pub fn test_address_support() {
     let res = vm
         .run("0x42::AddressSupport::is_owner", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(true)", res);
+    assert_eq!("Bool(true)", res);
 
     let res = vm
         .run("0x42::AddressSupport::is_owner", "0x44", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(false)", res);
+    assert_eq!("Bool(false)", res);
 }

@@ -1,4 +1,3 @@
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
@@ -76,9 +75,8 @@ pub fn test_for_users() {
                 Some(""),
             )
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!(res, "(2)");
+        assert_eq!(res, "Uint(2)");
 
         let res = vm
             .run(
@@ -87,9 +85,8 @@ pub fn test_for_users() {
                 Some(""),
             )
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!(res, "(1)");
+        assert_eq!(res, "Uint(1)");
 
         let res = vm
             .run(
@@ -98,9 +95,8 @@ pub fn test_for_users() {
                 Some(""),
             )
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!("(true)", res);
+        assert_eq!("Bool(true)", res);
 
         let res = vm
             .run(
@@ -109,23 +105,20 @@ pub fn test_for_users() {
                 Some(""),
             )
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!("(false)", res);
+        assert_eq!("Bool(false)", res);
 
         let res = vm
             .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0", Some(""))
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!("(10000000000000000000000000000)", res);
+        assert_eq!("Uint(10000000000000000000000000000)", res);
 
         let res = vm
             .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!("(0)", res);
+        assert_eq!("Uint(0)", res);
 
         let res = vm
             .run(
@@ -161,16 +154,14 @@ pub fn test_for_users() {
         let res = vm
             .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0", Some(""))
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!("(9999999999999999999999999000)", res);
+        assert_eq!("Uint(9999999999999999999999999000)", res);
 
         let res = vm
             .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!("(1000)", res);
+        assert_eq!("Uint(1000)", res);
 
         let res = vm
             .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""));

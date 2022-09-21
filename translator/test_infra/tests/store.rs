@@ -1,4 +1,3 @@
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
@@ -27,9 +26,8 @@ pub fn test_empty_constructor() {
     let res = vm
         .run("0x42::empty::get_val", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(42)", res);
+    assert_eq!("Uint(42)", res);
 }
 
 #[test]
@@ -57,9 +55,8 @@ pub fn test_constructor_with_data() {
         let res = vm
             .run("0x42::with_data::get_val", "0x42", Some(""))
             .unwrap()
-            .returns
             .to_result_str();
-        assert_eq!(format!("({})", val), res);
+        assert_eq!(format!("Uint({})", val), res);
     }
 }
 
@@ -97,8 +94,11 @@ pub fn test_store() {
     let res = vm
         .run("0x42::load_store::get_all", "0x42", Some(""))
         .unwrap()
-        .returns;
-    assert_eq!(format!("({}, {}, {}, {})", a, b, c, f), res.to_result_str());
+        .to_result_str();
+    assert_eq!(
+        format!("Uint({}), Uint({}), Bool({}), Bool({})", a, b, c, f),
+        res
+    );
 
     let a = rand::random::<u128>();
     let b = rand::random::<u128>();
@@ -117,30 +117,26 @@ pub fn test_store() {
     let actual_a = vm
         .run("0x42::load_store::get_a", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", a), actual_a);
+    assert_eq!(format!("Uint({})", a), actual_a);
 
     let actual_b = vm
         .run("0x42::load_store::get_b", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", b), actual_b);
+    assert_eq!(format!("Uint({})", b), actual_b);
 
     let actual_c = vm
         .run("0x42::load_store::get_c", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", c), actual_c);
+    assert_eq!(format!("Bool({})", c), actual_c);
 
     let actual_f = vm
         .run("0x42::load_store::get_flag", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", f), actual_f);
+    assert_eq!(format!("Bool({})", f), actual_f);
 }
 
 #[test]
@@ -164,9 +160,8 @@ pub fn test_bool_store() {
     let actual_f = vm
         .run("0x42::bool_store::load", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", false), actual_f);
+    assert_eq!("Bool(false)", actual_f);
 
     vm.run("0x42::bool_store::store", "0x42", Some("true"))
         .unwrap();
@@ -174,9 +169,8 @@ pub fn test_bool_store() {
     let actual_f = vm
         .run("0x42::bool_store::load", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", true), actual_f);
+    assert_eq!("Bool(true)", actual_f);
 
     vm.run("0x42::bool_store::store", "0x42", Some("false"))
         .unwrap();
@@ -184,7 +178,6 @@ pub fn test_bool_store() {
     let actual_f = vm
         .run("0x42::bool_store::load", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!(format!("({})", false), actual_f);
+    assert_eq!(format!("Bool({})", false), actual_f);
 }
