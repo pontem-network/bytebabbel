@@ -165,7 +165,7 @@ mod test {
         let tx = call.encode(true).unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_bool().unwrap(), true);
+        assert!(result[0].to_bool().unwrap());
 
         // without_params_bool
 
@@ -180,7 +180,7 @@ mod test {
             .unwrap();
         let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_bool().unwrap(), true);
+        assert!(result[0].to_bool().unwrap());
     }
 
     #[test]

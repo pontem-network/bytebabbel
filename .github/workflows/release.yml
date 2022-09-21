@@ -1,0 +1,212 @@
+name: CI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-linux-binary:
+    name: "Build Linux binary"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: cargo
+
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Main build
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
+
+      - uses: vimtor/action-zip@v1
+        with:
+          files: target/release/e2m
+          dest: e2m-cli-${{ env.RELEASE_VERSION }}-Linux-x86_64.zip
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: cli-builds
+          path: e2m-cli-${{ env.RELEASE_VERSION }}-Linux-x86_64.zip
+
+  build-os-x-binary-x86-64:
+    name: "Build OS X binary (x86_64)"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          target: x86_64-apple-darwin
+          toolchain: nightly
+          override: true
+          components: cargo
+
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Main build
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
+
+      - uses: vimtor/action-zip@v1
+        with:
+          files: target/release/e2m
+          dest: e2m-cli-${{ env.RELEASE_VERSION }}-MacOSX-x86_64.zip
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: cli-builds
+          path: e2m-cli-${{ env.RELEASE_VERSION }}-MacOSX-x86_64.zip
+
+  build-os-x-binary-aarch64:
+    name: "Build OS X binary (aarch64)"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          target: aarch64-apple-darwin
+          toolchain: nightly
+          override: true
+          components: cargo
+
+      - name: Solc latest version
+        uses: pontem-network/get-solc@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aptos latest version
+        uses: pontem-network/get-aptos@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Main build
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --path cli/e2m --features=deploy
+
+      - uses: vimtor/action-zip@v1
+        with:
+          files: target/release/e2m
+          dest: e2m-cli-${{ env.RELEASE_VERSION }}-MacOSX-aarch64.zip
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: cli-builds
+          path: e2m-cli-${{ env.RELEASE_VERSION }}-MacOSX-aarch64.zip
+
+  # To make releases for windows we need:
+  # - update get-solc/get-aptos actions (so sad)
+  # - or build here solc/aptos from source (even more sad)
+  
+  # build-windows-binary:
+  #   name: "Build Windows binary"
+  #   runs-on: windows-latest
+
+  release-binaries:
+    name: "Release binaries"
+    needs:
+      - build-linux-binary
+      - build-os-x-binary-aarch64
+      - build-os-x-binary-x86-64
+      # - build-windows-binary
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "write"
+      pull-requests: "read"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Node isntall
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Download prebuilt binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: cli-builds
+
+      - shell: bash
+        name: Display structure of downloaded files
+        run: |
+          pwd
+          echo "debug" > tmp.txt
+          ls
+
+      - shell: bash
+        name: Create GitHub Release
+        env:
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          APP_ID: ${{ secrets.APP_ID }}
+        run: |
+          pwd
+          tree
+          cat tmp.txt
+
+          npm -g install github-app-installation-token
+
+          export RELEASE_VERSION=${GITHUB_REF#refs/*/}
+          export TAG_MESSAGE=$(git tag -l --format='%(contents:subject)'${GITHUB_REF#refs/*/})
+
+          echo "Release version: $RELEASE_VERSION"
+          echo "Tag message: $TAG_MESSAGE"
+
+          echo "$GH_APP_PRIVATE_KEY" > public-release.pem
+          github-app-installation-token --appId $APP_ID --installationId $INSTALLATION_ID --privateKeyLocation public-release.pem > .my_token
+          rm public-release.pem
+
+          gh auth login --with-token < .my_token
+          gh auth status
+          rm .my_token
+
+          gh release create $RELEASE_VERSION ./e2m-cli-*.zip --notes "$TAG_MESSAGE" -t "E2M CLI Release $RELEASE_VERSION" -d -R https://github.com/pontem-network/eth2move-samples
