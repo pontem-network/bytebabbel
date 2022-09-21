@@ -7,10 +7,11 @@ on:
       - main
 
   workflow_call:
-    GITHUB_TOKEN:
-      required: true
-    OS:
-      required: true
+    inputs:
+      github_token:
+        required: true
+      os:
+        required: true
 
 env:
   RUSTUP_MAX_RETRIES: 10
