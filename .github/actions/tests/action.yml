@@ -1,3 +1,11 @@
+on:
+  workflow_dispatch:
+    inputs:
+      runner_os:
+        required: true
+      github_token:
+        required: true
+
 runs:
   using: composite
 
@@ -8,7 +16,7 @@ runs:
         path: |
           ~/.solc
         #            ~/.aptos
-        key: ${{ inputs.RUNNER_OS }}-compile
+        key: ${{ inputs.runner_os }}-compile
 
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
@@ -23,10 +31,10 @@ runs:
     - name: Solc latest version
       uses: pontem-network/get-solc@master
       with:
-        token: ${{ inputs.GITHUB_TOKEN }}
+        token: ${{ inputs.github_token }}
 
     - name: Aptos latest version
       uses: pontem-network/get-aptos@main
       with:
-        token: ${{ inputs.GITHUB_TOKEN }}
+        token: ${{ inputs.github_token }}
 
