@@ -17,7 +17,7 @@ runs:
       with:
         path: |
           ~/.solc
-        #            ~/.aptos
+          ~/.aptos
         key: ${{ github.event.inputs.os }}-compile
 
     - name: Install Rust toolchain
