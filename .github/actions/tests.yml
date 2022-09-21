@@ -1,0 +1,52 @@
+runs:
+  using: composite
+
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.solc
+        #            ~/.aptos
+        key: ${{ runner.os }}-compile
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+
+    - name: Restore Rust cache
+      uses: Swatinem/rust-cache@v1
+
+    - name: Solc latest version
+      uses: pontem-network/get-solc@master
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Aptos latest version
+      uses: pontem-network/get-aptos@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Formatting
+      if: runner.os == 'Linux'
+      run: cargo fmt -- --check
+      shell: bash
+
+    - name: Test
+      run: RUST_BACKTRACE=1 cargo test --offline
+      shell: bash
+
+    - name: Clippy
+      if: runner.os == 'Linux'
+      uses: actions-rs/clippy-check@v1
+      with:
+        name: Clippy Report
+        token: ${{ secrets.GITHUB_TOKEN }}
+        failure-mode: warnings
+        args: --all --all-targets -- -D warnings

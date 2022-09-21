@@ -1,0 +1,35 @@
+name: Tests
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+
+env:
+  RUSTUP_MAX_RETRIES: 10
+  CARGO_INCREMENTAL: 1
+  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  RUNNER_ARCH: x64
+
+jobs:
+  tests:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    if: !contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci')
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+#          - macos-latest
+
+    steps:
+      - uses: ./.github/actions/tests.yml
+      - uses: ./.github/actions/clippyfmt.yml
