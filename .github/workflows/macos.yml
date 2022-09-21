@@ -1,0 +1,36 @@
+name: Tests on MacOS
+on:
+  push:
+    branches:
+      - master
+      - main
+
+env:
+  RUSTUP_MAX_RETRIES: 10
+  CARGO_INCREMENTAL: 1
+  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  RUNNER_ARCH: x64
+
+jobs:
+  tests:
+    name: Tests on MacOS
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install
+        uses: ./.github/actions/preinstall
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          os: ${{ runner.os }}
+
+      - name: Test
+        run: RUST_BACKTRACE=1 cargo test --offline
+        shell: bash

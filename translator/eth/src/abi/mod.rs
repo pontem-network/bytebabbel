@@ -1,14 +1,13 @@
 pub mod call;
-pub mod entries;
-pub mod inc_ret_param;
-pub mod types;
 
-use crate::abi::entries::{AbiEntries, Entry, FunHash, FunctionData};
-use crate::abi::inc_ret_param::Param;
+use std::collections::{HashMap, HashSet};
+
+use anyhow::{Context, Error};
+use ethabi::{Contract, Param};
+
+use crate::abi::call::FunHash;
 use crate::bytecode::types::EthType;
 use crate::Function;
-use anyhow::{Context, Error};
-use std::collections::{HashMap, HashSet};
 
 pub struct MoveAbi {
     name: String,
@@ -17,19 +16,13 @@ pub struct MoveAbi {
 }
 
 impl MoveAbi {
-    pub fn new(name: &str, abi: &AbiEntries) -> Result<MoveAbi, Error> {
+    pub fn new(name: &str, abi: &Contract) -> Result<MoveAbi, Error> {
         let (functions, identifiers) = abi
-            .entries
-            .iter()
-            .filter_map(|entry| {
-                let hash = FunHash::from(entry);
-                if let Entry::Function(fun) = entry {
-                    Some((hash, fun))
-                } else {
-                    None
-                }
+            .functions()
+            .map(|fun| {
+                let hash = FunHash::from(fun.short_signature());
+                (hash, map_function(hash, fun))
             })
-            .map(|(hash, fun)| (hash, map_function(hash, fun)))
             .fold((HashMap::new(), HashSet::new()), |mut acc, (hash, fun)| {
                 acc.1.insert(fun.name.to_string());
                 acc.0.insert(hash, fun);
@@ -63,17 +56,20 @@ fn map_types(types: Vec<Param>) -> Result<Vec<EthType>, Error> {
         .collect()
 }
 
-fn map_function(hash: FunHash, fun: &FunctionData) -> Function {
+fn map_function(hash: FunHash, fun: &ethabi::Function) -> Function {
     let move_input = vec![EthType::Address, EthType::Bytes];
     let move_output = vec![EthType::Bytes];
-    let eth_input = map_types(fun.inputs.clone().unwrap_or_default())
+
+    let eth_input = map_types(fun.inputs.clone())
         .context("Input mapping")
         .unwrap();
-    let eth_output = map_types(fun.outputs.clone().unwrap_or_default())
+
+    let eth_output = map_types(fun.outputs.clone())
         .context("Output mapping")
         .unwrap();
+
     Function {
-        name: fun.name.clone().unwrap_or_else(|| "anonymous".to_string()),
+        name: fun.name.clone(),
         eth_input: move_input,
         hash,
         eth_output: move_output,

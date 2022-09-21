@@ -1,8 +1,6 @@
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
-use eth::abi::entries::AbiEntries;
 use eth::Flags;
 use test_infra::init_log;
 
@@ -22,14 +20,13 @@ pub fn test_strings() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::Strings::constructor", "0x42", None).unwrap();
     let res = vm
         .run("0x42::Strings::const_str", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(hello)", res);
+    assert_eq!("String(\"hello\")", res);
 }

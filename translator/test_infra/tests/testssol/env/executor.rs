@@ -13,10 +13,10 @@ use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
 use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
-use eth::abi::call::{CallFn, ToCall};
-use eth::abi::entries::AbiEntries;
-use eth::abi::inc_ret_param::value::ParamValue;
+use eth::abi::call::{to_eth_address, EthEncodeByString};
 use eth::Flags;
+use ethabi::{Contract, Token};
+use itertools::Itertools;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
@@ -26,7 +26,7 @@ use move_vm_runtime::session::LoadedFunctionInstantiation;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::OnceCell;
-use primitive_types::U256;
+use primitive_types::{H160, U256};
 use serde::Deserialize;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
@@ -35,12 +35,12 @@ pub struct MoveExecutor {
     resolver: Resolver,
     vm: MoveVmExt,
     seq: u64,
-    entries: AbiEntries,
+    entries: Contract,
     flags: Flags,
 }
 
 impl MoveExecutor {
-    pub fn new(entries: AbiEntries, flags: Flags) -> MoveExecutor {
+    pub fn new(entries: Contract, flags: Flags) -> MoveExecutor {
         let resolver = INSTANCE
             .get_or_init(|| {
                 let mut resolver = Resolver::default();
@@ -111,14 +111,13 @@ impl MoveExecutor {
 
         let adapter = StorageAdapter::new(&self.resolver);
         let mut session = self.vm.new_session(&adapter, id);
-
-        let entry = self.eth_call(ident.as_str())?;
+        let fn_name = ident.as_str();
 
         let args = if self.flags.native_input {
             let fun = session.load_function(&module_id, &ident, &[]);
             self.prepare_move_args(signer, params, &fun.unwrap())?
         } else {
-            self.prepare_eth_args(signer, params, &entry)?
+            self.prepare_eth_args(signer, params, fn_name)?
         };
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
@@ -131,10 +130,8 @@ impl MoveExecutor {
             vec![]
         } else if self.flags.native_output {
             self.decode_result_move(returns)?
-        } else if let Some(entry) = entry {
-            self.decode_result_eth(returns, entry)?
         } else {
-            vec![]
+            self.decode_result_eth(returns, fn_name)?
         };
 
         self.resolver.apply(output);
@@ -142,50 +139,51 @@ impl MoveExecutor {
         Ok(ExecutionResult { returns, events })
     }
 
-    fn decode_result_move(
-        &self,
-        result: Vec<(Vec<u8>, MoveTypeLayout)>,
-    ) -> Result<Vec<ParamValue>> {
+    fn decode_result_move(&self, result: Vec<(Vec<u8>, MoveTypeLayout)>) -> Result<Vec<Token>> {
         result
             .iter()
             .map(|(val, tp)| match tp {
-                MoveTypeLayout::Bool => bcs::from_bytes::<bool>(val).map(ParamValue::Bool),
-                MoveTypeLayout::U8 => bcs::from_bytes::<u8>(val).map(|val| ParamValue::UInt {
-                    size: 32,
-                    value: U256::from(val),
-                }),
-                MoveTypeLayout::U64 => bcs::from_bytes::<u64>(val).map(|val| ParamValue::UInt {
-                    size: 32,
-                    value: U256::from(val),
-                }),
-                MoveTypeLayout::U128 => bcs::from_bytes::<u128>(val).map(|val| ParamValue::UInt {
-                    size: 32,
-                    value: U256::from(val),
-                }),
+                MoveTypeLayout::Bool => bcs::from_bytes::<bool>(val).map(Token::Bool),
+                MoveTypeLayout::U8 => {
+                    bcs::from_bytes::<u8>(val).map(|val| Token::Uint(U256::from(val)))
+                }
+                MoveTypeLayout::U64 => {
+                    bcs::from_bytes::<u64>(val).map(|val| Token::Uint(U256::from(val)))
+                }
+                MoveTypeLayout::U128 => {
+                    bcs::from_bytes::<u128>(val).map(|val| Token::Uint(U256::from(val)))
+                }
                 MoveTypeLayout::Address => bcs::from_bytes::<AccountAddress>(val)
-                    .map(|val| ParamValue::Address(val.into_bytes())),
+                    .map(|val| Token::Address(H160::from(to_eth_address(val.as_ref())))),
                 MoveTypeLayout::Vector(_) => {
                     todo!()
                 }
                 MoveTypeLayout::Struct(_) => {
-                    bcs::from_bytes::<U256Wrapper>(val).map(|val| ParamValue::UInt {
-                        size: 32,
-                        value: U256(val.0),
-                    })
+                    bcs::from_bytes::<U256Wrapper>(val).map(|val| Token::Uint(U256(val.0)))
                 }
                 _ => unreachable!(),
             })
-            .collect::<Result<Vec<ParamValue>, _>>()
+            .collect::<Result<Vec<Token>, _>>()
             .map_err(|e| anyhow!(e))
     }
 
     fn decode_result_eth(
         &self,
         result: Vec<(Vec<u8>, MoveTypeLayout)>,
-        callfn: CallFn,
-    ) -> Result<Vec<ParamValue>> {
-        let result: Vec<u8> = bcs::from_bytes(&result[0].0).map_err(|e| anyhow!(e))?;
-        callfn.decode_return(result)
+        fn_name: &str,
+    ) -> Result<Vec<Token>> {
+        if fn_name == "constructor" {
+            Ok(Vec::new())
+        } else {
+            let result: Vec<u8> = bcs::from_bytes(&result[0].0).map_err(|e| anyhow!(e))?;
+            let result = self
+                .entries
+                .functions_by_name(fn_name)?
+                .first()
+                .ok_or_else(|| anyhow!("Fn {fn_name:?} not found "))?
+                .decode_output(&result)?;
+            Ok(result)
+        }
     }
 
     fn prepare_ident(ident: &str) -> (ModuleId, Identifier) {
@@ -202,15 +200,22 @@ impl MoveExecutor {
         &self,
         signer: &str,
         args: Option<&str>,
-        entry: &Option<CallFn>,
+        fn_name: &str,
     ) -> Result<Vec<Vec<u8>>> {
         let signer = bcs::to_bytes(&AccountAddress::from_hex_literal(signer).unwrap())?;
+
         if let Some(args) = args {
-            if let Some(call) = entry {
-                let mut call = call.clone();
-                call.parse_and_set_inputs(args)?;
-                let request = call.encode(false)?;
-                Ok(vec![signer, bcs::to_bytes(&request)?])
+            let request = if fn_name == "constructor" {
+                self.entries.constructor().map(|fun| fun.call_by_str(args))
+            } else {
+                self.entries
+                    .functions_by_name(fn_name)?
+                    .first()
+                    .map(|fun| fun.call_by_str(args))
+            };
+            if let Some(req) = request {
+                let request = req?;
+                Ok(vec![signer, bcs::to_bytes(&request[4..])?])
             } else {
                 Ok(vec![signer])
             }
@@ -267,12 +272,9 @@ impl MoveExecutor {
         }
     }
 
-    fn eth_call(&self, ident: &str) -> Result<Option<CallFn>> {
-        let entry = self.entries.by_name(ident).map(ToCall::try_call);
-        match entry {
-            None => Ok(None),
-            Some(res) => Ok(Some(res?)),
-        }
+    fn eth_call(&self, ident: &str) -> Result<Option<&ethabi::Function>> {
+        let entry = self.entries.functions_by_name(ident)?.first();
+        Ok(entry)
     }
 }
 
@@ -281,8 +283,14 @@ pub struct U256Wrapper([u64; 4]);
 
 #[derive(Debug)]
 pub struct ExecutionResult {
-    pub returns: Vec<ParamValue>,
+    pub returns: Vec<Token>,
     pub events: Vec<Event>,
+}
+
+impl ExecutionResult {
+    pub fn to_result_str(&self) -> String {
+        self.returns.iter().map(|val| format!("{val:?}")).join(", ")
+    }
 }
 
 #[derive(Default, Clone)]

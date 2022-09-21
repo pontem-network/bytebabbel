@@ -1,12 +1,14 @@
 use anyhow::Error;
-use eth::abi::entries::AbiEntries;
+
+use ethabi::Contract;
+use move_core_types::account_address::AccountAddress;
+use primitive_types::U256;
+
 use eth::transpile_program;
 pub use eth::Flags;
 use intrinsic::toml_template;
-use move_core_types::account_address::AccountAddress;
 use mv::mv_ir::interface::move_interface;
 use mv::translator::MvIrTranslator;
-use primitive_types::U256;
 
 pub const MAX_MEMORY: u64 = 1024 * 32;
 
@@ -25,7 +27,8 @@ impl<'a> Config<'a> {
 }
 
 pub fn translate(bytecode: &str, abi: &str, config: Config) -> Result<Target, Error> {
-    let abi = AbiEntries::try_from(abi)?;
+    let abi: Contract = serde_json::from_str(abi)?;
+
     let program = transpile_program(
         config.name,
         bytecode,
@@ -34,6 +37,7 @@ pub fn translate(bytecode: &str, abi: &str, config: Config) -> Result<Target, Er
         config.encoded_address(),
         config.flags,
     )?;
+
     let mvir = MvIrTranslator::new(config.contract_addr, MAX_MEMORY, program, config.flags);
     let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;

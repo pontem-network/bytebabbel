@@ -1,22 +1,25 @@
-use crate::abi::call::ToCall;
-use crate::bytecode::mir::constructor::make_constructor;
-use crate::{AbiEntries, Mir};
+use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
+
 use anyhow::{bail, Error};
+use ethabi::Contract;
 use evm::backend::{MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm::{Config, Context, ExitReason, Runtime};
 use primitive_types::{H160, H256, U256};
-use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
+
+use crate::abi::call::EthEncodeByString;
+use crate::bytecode::mir::constructor::make_constructor;
+use crate::Mir;
 
 pub fn static_initialization(
     bytecode: &str,
-    abi: &AbiEntries,
+    abi: &Contract,
     args_str: &str,
     contract_addr: U256,
 ) -> Result<(Vec<u8>, Mir), Error> {
     let mut code = hex::decode(bytecode)?;
-    let params = encode_params(abi, args_str)?;
+    let params = constructor_encode_params(abi, args_str)?;
     if !params.is_empty() {
         code.extend(&params[4..]);
     }
@@ -89,13 +92,12 @@ fn vicinity() -> MemoryVicinity {
     }
 }
 
-fn encode_params(abi: &AbiEntries, args_str: &str) -> Result<Vec<u8>, Error> {
-    Ok(if let Some(constructor) = abi.constructor() {
-        let mut call = constructor.try_call()?;
-        call.parse_and_set_inputs(args_str)?.encode(true)?
+fn constructor_encode_params(abi: &Contract, args_str: &str) -> Result<Vec<u8>, Error> {
+    if let Some(constructor) = abi.constructor() {
+        constructor.call_by_str(args_str)
     } else {
-        vec![]
-    })
+        Ok(vec![])
+    }
 }
 
 fn map_addr(addr: U256) -> H160 {

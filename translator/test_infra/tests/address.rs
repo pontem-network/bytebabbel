@@ -1,8 +1,6 @@
-use eth::abi::entries::AbiEntries;
 use eth::Flags;
 use test_infra::init_log;
 
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
@@ -11,7 +9,6 @@ use crate::testssol::make_move_module;
 mod testssol;
 
 #[test]
-#[ignore]
 pub fn test_address_support() {
     init_log();
 
@@ -25,21 +22,21 @@ pub fn test_address_support() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(AbiEntries::try_from(evm.abi()).unwrap(), Flags::default());
+
+    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
     vm.deploy("0x42", bytecode);
     vm.run("0x42::AddressSupport::constructor", "0x42", None)
         .unwrap();
+
     let res = vm
         .run("0x42::AddressSupport::is_owner", "0x42", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(true)", res);
+    assert_eq!("Bool(true)", res);
 
     let res = vm
         .run("0x42::AddressSupport::is_owner", "0x44", Some(""))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(false)", res);
+    assert_eq!("Bool(false)", res);
 }

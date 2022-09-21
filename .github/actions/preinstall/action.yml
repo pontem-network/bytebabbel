@@ -1,0 +1,42 @@
+on:
+  workflow_dispatch:
+    inputs:
+      github_token:
+        type: string
+        required: true
+      os:
+        type: string
+        required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.solc
+          ~/.aptos
+        key: ${{ github.event.inputs.os }}-compile
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+
+    - name: Restore Rust cache
+      uses: Swatinem/rust-cache@v1
+
+    - name: Solc latest version
+      uses: pontem-network/get-solc@master
+      with:
+        token: ${{ github.event.inputs.github_token }}
+
+    - name: Aptos latest version
+      uses: pontem-network/get-aptos@main
+      with:
+        token: ${{ github.event.inputs.github_token }}
+

@@ -1,6 +1,9 @@
 //! Simple EVM-bytecode disassembler.
 
-use crate::abi::entries::{AbiEntries, FunHash};
+use anyhow::Error;
+use log::{log_enabled, trace};
+
+use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
@@ -10,12 +13,12 @@ use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
 use crate::vm::static_initialization;
-use anyhow::Error;
+
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
 use bytecode::pre_processing::swarm::remove_swarm_hash;
-use log::{log_enabled, trace};
+use ethabi::Contract;
 use primitive_types::U256;
 use program::Program;
 use std::collections::HashMap;
@@ -29,7 +32,7 @@ pub fn transpile_program(
     name: &str,
     bytecode_str: &str,
     init_args: &str,
-    abi_entries: &AbiEntries,
+    abi_entries: &Contract,
     contract_addr: U256,
     flags: Flags,
 ) -> Result<Program, Error> {

@@ -125,21 +125,21 @@ impl TryFrom<&EvmPack> for REvm {
 #[allow(unused_imports)]
 #[cfg(test)]
 mod test {
+    use ethabi::{Contract, Token};
     use evm::utils::I256;
+    use itertools::Itertools;
     use std::ops::Deref;
     use std::path::PathBuf;
     use std::sync::Mutex;
 
+    use anyhow::{anyhow, Result};
+    use eth::abi::call::EthEncodeByString;
     use lazy_static::lazy_static;
     use primitive_types::U256;
 
     use crate::testssol::env::revm::REvm;
     use crate::testssol::env::sol::build_sol_by_path;
     use crate::testssol::EvmPack;
-    use eth::abi::call::ToCall;
-    use eth::abi::entries::AbiEntries;
-    use eth::abi::inc_ret_param::value::conv::ParamValueToRustType;
-    use eth::abi::inc_ret_param::value::ParamValue;
     use test_infra::init_log;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
@@ -149,170 +149,70 @@ mod test {
             Mutex::new(build_sol_by_path(&PathBuf::from(TEST_SOL_FILE)).unwrap());
     }
 
+    fn run_by(fn_name: &str, params: &[&str]) -> Result<String> {
+        let sol = TESTFILE.lock().map_err(|err| anyhow!("{err}"))?;
+        let abi: Contract = sol.abi()?;
+
+        let mut vm = REvm::try_from(sol.deref())?;
+        vm.construct(vec![])?;
+
+        let fn_abi = &abi.functions_by_name(fn_name)?[0];
+
+        let tx = fn_abi.call_by_vec_str(params)?;
+        let result = vm.run_tx(tx)?;
+        let result_token = fn_abi.decode_output(&result).unwrap();
+        Ok(output_to_string(&result_token))
+    }
+
+    fn output_to_string(data: &[Token]) -> String {
+        data.iter().map(|val| format!("{val:?}")).join(", ")
+    }
+
     #[test]
     fn test_bool() {
         init_log();
 
-        let sol = TESTFILE.lock().unwrap();
-        let abi = sol.abi().unwrap();
+        let output = run_by("without_params_bool", &[]).unwrap();
+        assert_eq!(output, "Bool(true)");
 
-        let vm = REvm::try_from(sol.deref()).unwrap();
-
-        // without_params_bool
-
-        let fn_abi = abi.by_name("without_params_bool").unwrap();
-        let call = fn_abi.try_call().unwrap();
-        let tx = call.encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-        assert!(result[0].to_bool().unwrap());
-
-        // without_params_bool
-
-        let fn_abi = abi.by_name("param_bool").unwrap();
-        let mut call = fn_abi.try_call().unwrap();
-        let tx = call
-            .set_input(0, true)
-            .unwrap()
-            .set_input(1, true)
-            .unwrap()
-            .encode(true)
-            .unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-        assert!(result[0].to_bool().unwrap());
+        let output = run_by("param_bool", &["true", "true"]).unwrap();
+        assert_eq!(output, "Bool(true)");
+        let output = run_by("param_bool", &["true", "false"]).unwrap();
+        assert_eq!(output, "Bool(false)");
     }
 
     #[test]
     fn test_num() {
         init_log();
 
-        let sol = TESTFILE.lock().unwrap();
-        let abi = sol.abi().unwrap();
-
-        let mut vm = REvm::try_from(sol.deref()).unwrap();
-        vm.construct(vec![]).unwrap();
-
         // with_uint
-
-        let fn_abi = abi.by_name("with_uint").unwrap();
-        let mut call = fn_abi.try_call().unwrap();
-
-        let tx = call.set_input(0, 2usize).unwrap().encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_i256().unwrap(), I256::from(U256::from(4)));
-
-        let tx = call.set_input(0, 4u8).unwrap().encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].to_i256().unwrap(), I256::from(U256::from(16)));
+        assert_eq!(run_by("with_uint", &["2"]).unwrap(), "Uint(4)");
+        assert_eq!(run_by("with_uint", &["11"]).unwrap(), "Uint(121)");
 
         // max_num_tuple
-
-        let fn_abi = abi.by_name("max_num_tuple").unwrap();
-        let mut call = fn_abi.try_call().unwrap();
-
-        let tx = call
-            .set_input(0, 1i8)
-            .unwrap()
-            .set_input(1, 2i16)
-            .unwrap()
-            .set_input(2, 3u32)
-            .unwrap()
-            .set_input(3, 4u64)
-            .unwrap()
-            .encode(true)
-            .unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 2);
-        assert_eq!(result[0].to_i256().unwrap(), I256::from(U256::from(2)));
-        assert_eq!(result[1].to_u256().unwrap(), U256::from(4));
+        let output = run_by("max_num_tuple", &["1", "2", "3", "4"]).unwrap();
+        assert_eq!(output, "Int(2), Uint(4)");
     }
 
     #[test]
     fn test_array() {
         init_log();
 
-        let sol = TESTFILE.lock().unwrap();
-        let abi: AbiEntries = sol.abi().unwrap();
-        let mut vm = REvm::try_from(sol.deref()).unwrap();
-        vm.construct(vec![]).unwrap();
-        // array_bool_3
-
-        let fn_abi = abi.by_name("array_bool_3").unwrap();
-        let call = fn_abi.try_call().unwrap();
-
-        let tx = call.encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-
         assert_eq!(
-            result[0],
-            ParamValue::Array(vec![
-                ParamValue::Bool(true),
-                ParamValue::Bool(true),
-                ParamValue::Bool(false)
-            ])
-        );
-
-        // array_bool_dyn
-
-        let fn_abi = abi.by_name("array_bool_dyn").unwrap();
-        let call = fn_abi.try_call().unwrap();
-
-        let tx = call.encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(
-            result[0],
-            ParamValue::Array(vec![
-                ParamValue::Bool(true),
-                ParamValue::Bool(false),
-                ParamValue::Bool(false),
-                ParamValue::Bool(true),
-            ])
-        );
-
-        // array_bool_dyn2
-
-        let fn_abi = abi.by_name("array_bool_dyn2").unwrap();
-        let call = fn_abi.try_call().unwrap();
-
-        let tx = call.encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(
-            result[0],
-            ParamValue::Array(vec![
-                ParamValue::Array(vec![ParamValue::Bool(false), ParamValue::Bool(true),]),
-                ParamValue::Array(vec![ParamValue::Bool(true),])
-            ])
-        );
-
-        // array_bool_dyn3
-
-        let fn_abi = abi.by_name("array_bool_dyn3").unwrap();
-        let call = fn_abi.try_call().unwrap();
-
-        let tx = call.encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-        assert_eq!(result.len(), 2);
-        assert_eq!(
-            result[0],
-            ParamValue::Array(vec![
-                ParamValue::Bool(true),
-                ParamValue::Bool(false),
-                ParamValue::Bool(false),
-                ParamValue::Bool(true),
-            ])
+            run_by("array_bool_3", &[]).unwrap(),
+            "FixedArray([Bool(true), Bool(true), Bool(false)])"
         );
         assert_eq!(
-            result[1],
-            ParamValue::Array(vec![
-                ParamValue::Array(vec![ParamValue::Bool(false), ParamValue::Bool(true),]),
-                ParamValue::Array(vec![ParamValue::Bool(true),])
-            ])
+            run_by("array_bool_dyn", &[]).unwrap(),
+            "Array([Bool(true), Bool(false), Bool(false), Bool(true)])"
+        );
+        assert_eq!(
+            run_by("array_bool_dyn2", &[]).unwrap(),
+            "Array([Array([Bool(false), Bool(true)]), Array([Bool(true)])])"
+        );
+        assert_eq!(
+            run_by("array_bool_dyn3", &[]).unwrap(),
+            "Array([Bool(true), Bool(false), Bool(false), Bool(true)]), Array([Array([Bool(false), Bool(true)]), Array([Bool(true)])])"
         );
     }
 
@@ -320,32 +220,9 @@ mod test {
     fn test_bytes() {
         init_log();
 
-        let sol = TESTFILE.lock().unwrap();
-        let abi = sol.abi().unwrap();
-
-        let mut vm = REvm::try_from(sol.deref()).unwrap();
-        vm.construct(vec![]).unwrap();
-
-        // array_bool_3
-
-        let fn_abi = abi.by_name("byte_tuple").unwrap();
-        let call = fn_abi.try_call().unwrap();
-
-        let tx = call.encode(true).unwrap();
-        let result = call.decode_return(vm.run_tx(tx).unwrap()).unwrap();
-
         assert_eq!(
-            result,
-            vec![
-                ParamValue::Bytes(vec![48, 49]),
-                ParamValue::Byte(vec![49, 50, 51]),
-                ParamValue::Array(vec![ParamValue::Byte(vec![48]), ParamValue::Byte(vec![49])]),
-                ParamValue::Array(vec![
-                    ParamValue::Byte(vec![48, 48]),
-                    ParamValue::Byte(vec![48, 49]),
-                    ParamValue::Byte(vec![48, 50]),
-                ])
-            ]
+            run_by("byte_tuple", &[]).unwrap(),
+            "Bytes([48, 49]), FixedBytes([49, 50, 51]), FixedArray([FixedBytes([48]), FixedBytes([49])]), Array([FixedBytes([48, 48]), FixedBytes([48, 49]), FixedBytes([48, 50])])"
         );
     }
 }

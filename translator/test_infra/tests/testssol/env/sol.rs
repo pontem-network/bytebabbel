@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::{fs, io};
 
 use anyhow::{anyhow, ensure, Error, Result};
-use eth::abi::entries::AbiEntries;
+use ethabi::Contract;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Sha3_256};
@@ -192,8 +192,8 @@ impl EvmPack {
         &self.modules
     }
 
-    pub fn abi(&self) -> Result<AbiEntries> {
-        let abi = AbiEntries::try_from(self.contract.abi.as_str())?;
+    pub fn abi(&self) -> Result<Contract> {
+        let abi = serde_json::from_str(self.contract.abi.as_str())?;
         Ok(abi)
     }
 
