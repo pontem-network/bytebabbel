@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install
-        uses: ./.github/actions/tests
+        uses: ./.github/actions/preinstall
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           os: ${{ runner.os }}
@@ -36,7 +36,13 @@ jobs:
         run: RUST_BACKTRACE=1 cargo test --offline
         shell: bash
 
-      - name: Clippy + fmt
-        uses: ./.github/actions/clippyfmt
+      - run: cargo fmt -- --check
+        shell: bash
+
+      - name: Clippy
+        uses: actions-rs/clippy-check@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          name: Clippy Report
+          token: ${{ inputs.github_token }}
+          failure-mode: warnings
+          args: --all --all-targets -- -D warnings
