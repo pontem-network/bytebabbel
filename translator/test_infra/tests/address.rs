@@ -1,6 +1,4 @@
-use eth::abi::entries::AbiEntries;
 use eth::Flags;
-use ethabi::Contract;
 use test_infra::init_log;
 
 use crate::testssol::convert::ResultToString;

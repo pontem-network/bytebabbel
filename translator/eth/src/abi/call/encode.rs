@@ -315,6 +315,12 @@ fn to_token(data: &(ethabi::ParamType, &str)) -> Result<Token, ethabi::Error> {
     }
 }
 
+pub fn to_eth_address(data: &[u8]) -> [u8; 20] {
+    let mut result = [0u8; 20];
+    result[20 - data.len()..20].copy_from_slice(data);
+    result
+}
+
 #[cfg(test)]
 mod test {
     use crate::abi::call::encode::EthEncodeByString;

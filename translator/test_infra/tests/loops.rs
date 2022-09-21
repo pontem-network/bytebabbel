@@ -1,4 +1,3 @@
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
@@ -28,7 +27,6 @@ pub fn test_for_loop() {
     let res = vm
         .run("0x42::ForLoop::sum", "0x42", Some("9, 9"))
         .unwrap()
-        .returns
         .to_result_str();
-    assert_eq!("(81)", res);
+    assert_eq!("Uint(81)", res);
 }

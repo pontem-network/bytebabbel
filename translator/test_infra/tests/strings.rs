@@ -2,7 +2,6 @@ use crate::testssol::convert::ResultToString;
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
 use crate::testssol::make_move_module;
-use eth::abi::entries::AbiEntries;
 use eth::Flags;
 use test_infra::init_log;
 

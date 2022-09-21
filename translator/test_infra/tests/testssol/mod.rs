@@ -9,7 +9,6 @@ pub mod convert;
 pub mod env;
 pub mod parse;
 
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::call::encode::EthEncodeByString;
@@ -89,7 +88,7 @@ impl STest {
 
     pub fn run_mv(&self) -> Result<String> {
         let result = self.vm_run().map_err(|err| anyhow!("{err}"))?;
-        Ok(result.returns.to_result_str())
+        Ok(result.to_result_str())
     }
 
     pub fn run_evm(&self) -> Result<String> {
