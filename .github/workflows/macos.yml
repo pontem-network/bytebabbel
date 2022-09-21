@@ -14,7 +14,7 @@ env:
 
 jobs:
   tests:
-    name: Test
+    name: Tests on MacOS
     runs-on: macos-latest
 
     defaults:
