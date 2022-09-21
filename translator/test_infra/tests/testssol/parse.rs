@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use ethabi::{Contract, ParamType};
 use rand::Rng;
 
-use eth::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
+use eth::abi::call::fn_params_str_split;
 
 use crate::testssol::env::sol::{build_sol_by_path, EvmPack};
 

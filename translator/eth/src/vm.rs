@@ -8,7 +8,7 @@ use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadat
 use evm::{Config, Context, ExitReason, Runtime};
 use primitive_types::{H160, H256, U256};
 
-use crate::abi::call::encode::EthEncodeByString;
+use crate::abi::call::EthEncodeByString;
 use crate::bytecode::mir::constructor::make_constructor;
 use crate::Mir;
 

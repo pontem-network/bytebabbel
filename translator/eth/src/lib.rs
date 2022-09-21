@@ -3,7 +3,7 @@
 use anyhow::Error;
 use log::{log_enabled, trace};
 
-use crate::abi::entries::FunHash;
+use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;

@@ -1,14 +1,11 @@
 pub mod call;
-pub mod entries;
-pub mod inc_ret_param;
-pub mod types;
 
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{Context, Error};
 use ethabi::{Contract, Param};
 
-use crate::abi::entries::FunHash;
+use crate::abi::call::FunHash;
 use crate::bytecode::types::EthType;
 use crate::Function;
 

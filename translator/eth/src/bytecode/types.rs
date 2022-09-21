@@ -1,9 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 #![allow(clippy::ptr_offset_with_cast)]
 
-use crate::abi::entries::{FunHash, FUN_HASH_LEN};
-use crate::abi::inc_ret_param::types::ParamType;
-use crate::abi::inc_ret_param::Param as AbiType;
+use crate::abi::call::{FunHash, FUN_HASH_LEN};
 use crate::bytecode::hir::stack::FRAME_SIZE;
 use anyhow::{bail, Error};
 use primitive_types::U256;
@@ -110,21 +108,6 @@ pub enum EthType {
     Bool,
     Address,
     Bytes,
-}
-
-impl<'a> TryFrom<&'a AbiType> for EthType {
-    type Error = Error;
-
-    fn try_from(value: &'a AbiType) -> Result<Self, Self::Error> {
-        Ok(match value.tp {
-            ParamType::Bool => EthType::Bool,
-            ParamType::UInt(_) | ParamType::Int(_) => EthType::U256,
-            ParamType::String => EthType::Bytes,
-            ParamType::Address => EthType::Address,
-            ParamType::Byte(_) => EthType::Bytes,
-            _ => bail!("Unknown type: {}", value.tp.to_string()),
-        })
-    }
 }
 
 impl<'a> TryFrom<&'a ethabi::Param> for EthType {

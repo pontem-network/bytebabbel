@@ -1,243 +1,66 @@
-use anyhow::{anyhow, bail, ensure, Result};
-use evm_core::utils::I256;
-use primitive_types::U256;
+use std::fmt::{Debug, Display, Formatter};
+use std::hash::Hash;
+
+use anyhow::{ensure, Result};
 
 use ethabi::token::{LenientTokenizer, Tokenizer};
 use ethabi::{Bytes, Constructor, Function, Token};
 
-use crate::abi::inc_ret_param::types::ParamType;
-use crate::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
-use crate::abi::inc_ret_param::value::ParamValue;
+// =================================================================================================
 
-pub enum ValueEncodeType {
-    // int265[3][2], int265[3], byte3, int, uint, bool
-    Static(Vec<u8>),
-    // int265[3][], int265[], bytes
-    Dynamic(Vec<u8>),
-}
+pub fn fn_params_str_split(params: &str) -> Result<Vec<&str>> {
+    let params = params.trim();
 
-impl ValueEncodeType {
-    pub fn data_ref(&self) -> &Vec<u8> {
-        match self {
-            ValueEncodeType::Dynamic(data) | ValueEncodeType::Static(data) => data,
-        }
-    }
+    let mut lf = 0;
+    let mut quote = false;
+    let mut esc = false;
+    let mut last_pos = 0;
 
-    pub fn len(&self) -> usize {
-        self.data_ref().len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data_ref().is_empty()
-    }
-
-    pub fn as_vec(self) -> Vec<u8> {
-        match self {
-            ValueEncodeType::Dynamic(data) | ValueEncodeType::Static(data) => data,
-        }
-    }
-}
-
-pub fn encode_value(
-    value: &ParamValue,
-    value_type: &ParamType,
-    mut start: usize,
-) -> Result<ValueEncodeType> {
-    match value {
-        ParamValue::Bool(value) => {
-            let mut result = [0u8; 32];
-            result[31] = if *value { 1 } else { 0 };
-            Ok(ValueEncodeType::Static(result.to_vec()))
-        }
-        ParamValue::Int { value, .. } => {
-            let value = U256::from(*value);
-            let mut value_bytes = vec![0u8; 32];
-            value.to_big_endian(&mut value_bytes);
-            Ok(ValueEncodeType::Static(value_bytes))
-        }
-        ParamValue::UInt { value, .. } => {
-            let mut value_bytes = vec![0u8; 32];
-            value.to_big_endian(&mut value_bytes);
-            Ok(ValueEncodeType::Static(value_bytes))
-        }
-        ParamValue::Byte(data) => Ok(ValueEncodeType::Static(pad_right32(data).to_vec())),
-        ParamValue::Bytes(data) | ParamValue::String(data) => {
-            // dynamic
-            let mut result = Vec::new();
-            result.extend(pad_left32(&data.len().to_be_bytes()));
-            for ch in data.chunks(32) {
-                result.extend(pad_right32(ch))
+    let mut result: Vec<&str> = params
+        .chars()
+        .enumerate()
+        .filter_map(|(pos, ch)| match ch {
+            '\\' => {
+                esc = !esc;
+                None
             }
-            Ok(ValueEncodeType::Dynamic(result))
-        }
-        ParamValue::Address(data) => Ok(ValueEncodeType::Static(data.to_vec())),
-        ParamValue::Array(data) => {
-            let sub_type = match value_type {
-                ParamType::Array { tp: subtp, .. } => subtp,
-                _ => bail!("Expected array. Type passed: {value_type:?}"),
-            };
-
-            // static
-            if value_type.is_static_size() {
-                let result = data
-                    .iter()
-                    .map(|item| encode_value(item, sub_type, start))
-                    .collect::<Result<Vec<_>>>()?
-                    .into_iter()
-                    .flat_map(|item| item.as_vec())
-                    .collect::<Vec<u8>>();
-                return Ok(ValueEncodeType::Static(result));
+            _ if esc => {
+                esc = false;
+                None
             }
-
-            // dynamic
-            let mut result = Vec::new();
-
-            result.extend(pad_left32(&data.len().to_be_bytes()));
-            start += 32 * data.len();
-
-            let subvalue = data
-                .iter()
-                .map(|value| {
-                    if !sub_type.is_static_size() {
-                        result.extend(pad_left32(&start.to_be_bytes()));
-                    }
-                    let vec = encode_value(value, sub_type, start)?.as_vec();
-                    start += vec.len();
-                    Ok(vec)
-                })
-                .collect::<Result<Vec<Vec<u8>>>>()?
-                .into_iter()
-                .flatten();
-            result.extend(subvalue);
-            Ok(ValueEncodeType::Dynamic(result))
-        }
-        ParamValue::Custom { .. } => todo!(),
-    }
-}
-
-pub fn decode_value(value: &[u8], value_type: &ParamType) -> Result<ParamValue> {
-    match value_type {
-        ParamType::Bool => {
-            let b = value.last().ok_or_else(|| anyhow!("Value not passed"))?;
-            let result = b != &0;
-            Ok(ParamValue::Bool(result))
-        }
-        ParamType::Int(size) => Ok(ParamValue::Int {
-            size: *size,
-            value: to_i256(value),
-        }),
-        ParamType::UInt(size) => Ok(ParamValue::UInt {
-            size: *size,
-            value: to_u256(value),
-        }),
-        ParamType::Byte(size) => {
-            let data = { &value[0..*size as usize] }.to_vec();
-            ensure!(*size as usize == data.len(), "incorrect length");
-            Ok(ParamValue::Byte(data))
-        }
-        ParamType::Bytes | ParamType::String => {
-            let len = to_u256(&value[0..32]).as_usize();
-            let data = { &value[32..32 + len] }.to_vec();
-            let result = match value_type {
-                ParamType::Bytes => ParamValue::Bytes(data),
-                ParamType::String => ParamValue::String(data),
-                _ => unreachable!(),
-            };
-            Ok(result)
-        }
-        ParamType::Address => {
-            let mut address = [0u8; 32];
-            address.copy_from_slice(&value[..32]);
-            Ok(ParamValue::Address(address))
-        }
-        ParamType::Array {
-            size: len,
-            tp: sub_type,
-        } => {
-            let mut value = value;
-            let len = match len {
-                Some(size) => *size as usize,
-                None => {
-                    let size = to_u256(&value[0..32]);
-                    value = &value[32..];
-                    size.as_usize()
+            '"' => {
+                quote = !quote;
+                None
+            }
+            _ if quote => None,
+            '[' => {
+                lf += 1;
+                None
+            }
+            ']' => {
+                lf -= 1;
+                None
+            }
+            ',' => {
+                if lf != 0 {
+                    None
+                } else {
+                    let arg = params[last_pos..pos].trim();
+                    last_pos = pos + 1;
+                    Some(arg)
                 }
-            };
-
-            // static
-            if sub_type.is_static_size() {
-                let sub_size = sub_type.size_bytes().unwrap_or(32) as usize;
-                let data = value
-                    .chunks(sub_size)
-                    .take(len)
-                    .map(|value| decode_value(value, sub_type))
-                    .collect::<Result<Vec<ParamValue>>>()?;
-
-                return Ok(ParamValue::Array(data));
             }
+            _ => None,
+        })
+        .collect();
 
-            let result = (0..len)
-                .map(|index| {
-                    let offset = to_u256(&value[32 * index..32 * (index + 1)]).as_usize();
-                    decode_value(&value[offset..], sub_type)
-                })
-                .collect::<Result<Vec<ParamValue>>>()?;
+    ensure!(lf == 0, "Error when splitting a params {params}");
 
-            Ok(ParamValue::Array(result))
-        }
-        ParamType::Custom { .. } => todo!(),
+    if params.len() != last_pos {
+        result.push(params[last_pos..params.len()].trim());
     }
-}
 
-fn pad_left32(data: &[u8]) -> [u8; 32] {
-    let mut result = [0u8; 32];
-    result[32 - data.len()..32].copy_from_slice(data);
-    result
-}
-
-fn pad_right32(data: &[u8]) -> [u8; 32] {
-    let mut result = [0u8; 32];
-    result[0..data.len()].copy_from_slice(data);
-    result
-}
-
-pub fn to_u256(data: &[u8]) -> U256 {
-    U256::from_big_endian(data)
-}
-
-fn to_i256(data: &[u8]) -> I256 {
-    U256::from_big_endian(data).into()
-}
-
-pub fn enc_offset(start: u32) -> [u8; 32] {
-    pad_left32(&start.to_be_bytes())
-}
-
-pub trait ParamTypeSize {
-    fn size_bytes(&self) -> Option<u32>;
-}
-
-impl ParamTypeSize for ParamType {
-    fn size_bytes(&self) -> Option<u32> {
-        if !self.is_static_size() {
-            return None;
-        }
-
-        match self {
-            ParamType::Bool => Some(32),
-            ParamType::Int(..) => Some(32),
-            ParamType::UInt(..) => Some(32),
-            ParamType::Byte(..) => Some(32),
-            ParamType::Bytes => None,
-            ParamType::Address => Some(32),
-            ParamType::String => None,
-            ParamType::Array { tp, size } => size.and_then(|mult| {
-                let ch = tp.size_bytes()?;
-                Some(mult * ch)
-            }),
-            ParamType::Custom(..) => todo!(),
-        }
-    }
+    Ok(result)
 }
 
 // =================================================================================================
@@ -321,9 +144,39 @@ pub fn to_eth_address(data: &[u8]) -> [u8; 20] {
     result
 }
 
+// =================================================================================================
+pub const FUN_HASH_LEN: usize = 4;
+
+#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Default)]
+pub struct FunHash([u8; FUN_HASH_LEN]);
+
+impl AsRef<[u8; FUN_HASH_LEN]> for FunHash {
+    fn as_ref(&self) -> &[u8; FUN_HASH_LEN] {
+        &self.0
+    }
+}
+
+impl From<[u8; FUN_HASH_LEN]> for FunHash {
+    fn from(hash: [u8; FUN_HASH_LEN]) -> Self {
+        FunHash(hash)
+    }
+}
+
+impl Debug for FunHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl Display for FunHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::abi::call::encode::EthEncodeByString;
+    use crate::abi::call::EthEncodeByString;
     use ethabi::Contract;
 
     /// Encoding and decoding input/output

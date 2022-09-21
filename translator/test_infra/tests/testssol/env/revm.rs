@@ -133,17 +133,13 @@ mod test {
     use std::sync::Mutex;
 
     use anyhow::{anyhow, Result};
-    use eth::abi::call::encode::EthEncodeByString;
+    use eth::abi::call::EthEncodeByString;
     use lazy_static::lazy_static;
     use primitive_types::U256;
 
     use crate::testssol::env::revm::REvm;
     use crate::testssol::env::sol::build_sol_by_path;
     use crate::testssol::EvmPack;
-    use eth::abi::call::ToCall;
-    use eth::abi::entries::AbiEntries;
-    use eth::abi::inc_ret_param::value::conv::ParamValueToRustType;
-    use eth::abi::inc_ret_param::value::ParamValue;
     use test_infra::init_log;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";

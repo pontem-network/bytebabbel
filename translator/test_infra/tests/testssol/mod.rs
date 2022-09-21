@@ -12,7 +12,7 @@ pub mod parse;
 
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
-use eth::abi::call::encode::EthEncodeByString;
+use eth::abi::call::EthEncodeByString;
 use eth::Flags;
 use parse::{SolFile, SolTest};
 use test_infra::color;
