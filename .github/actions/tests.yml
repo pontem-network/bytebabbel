@@ -2,9 +2,6 @@ runs:
   using: composite
 
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
     - name: Cache
       uses: actions/cache@v3
       with:
@@ -33,20 +30,7 @@ runs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Formatting
-      if: runner.os == 'Linux'
-      run: cargo fmt -- --check
-      shell: bash
-
     - name: Test
       run: RUST_BACKTRACE=1 cargo test --offline
       shell: bash
 
-    - name: Clippy
-      if: runner.os == 'Linux'
-      uses: actions-rs/clippy-check@v1
-      with:
-        name: Clippy Report
-        token: ${{ secrets.GITHUB_TOKEN }}
-        failure-mode: warnings
-        args: --all --all-targets -- -D warnings

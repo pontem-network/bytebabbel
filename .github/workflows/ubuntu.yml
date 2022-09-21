@@ -31,5 +31,8 @@ jobs:
 #          - macos-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - uses: ./.github/actions/tests.yml
       - uses: ./.github/actions/clippyfmt.yml
