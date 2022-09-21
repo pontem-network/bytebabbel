@@ -5,7 +5,6 @@ use std::mem;
 
 pub mod debug;
 pub mod expression;
-pub mod math;
 pub mod statement;
 pub mod types;
 
@@ -16,7 +15,7 @@ pub struct Mir {
 }
 
 impl Mir {
-    pub fn add_statement(&mut self, statement: Statement) {
+    pub fn push(&mut self, statement: Statement) {
         self.statements.push(statement);
     }
 

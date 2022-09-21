@@ -1,5 +1,5 @@
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
+use crate::bytecode::hir::ir::statement::Statement;
+use crate::bytecode::hir::ir::var::{Expr, VarId, Vars};
 use crate::{BlockId, Hir};
 use anyhow::{anyhow, Error};
 use std::collections::{HashMap, HashSet};
@@ -19,7 +19,7 @@ impl UnusedVarClipper {
     }
 
     fn optimize_instructions(
-        inst: Vec<Instruction>,
+        inst: Vec<Statement>,
         analysis: &ReachabilityAnalysis,
         id_mapping: &mut HashMap<VarId, VarId>,
         vars: &mut Vars,
@@ -27,7 +27,7 @@ impl UnusedVarClipper {
     ) -> Result<(), Error> {
         for inst in inst {
             match inst {
-                Instruction::SetVar(id) => {
+                Statement::SetVar(id) => {
                     if analysis.is_reachable(&id) {
                         let var = vars.take(id)?;
                         let var = Self::map_var(var, id_mapping)?;
@@ -35,28 +35,28 @@ impl UnusedVarClipper {
                         id_mapping.insert(id, new_id);
                     }
                 }
-                Instruction::MemStore { addr, var } => {
+                Statement::MemStore { addr, var } => {
                     if analysis.is_reachable(&addr) && analysis.is_reachable(&var) {
                         let addr = Self::map_var_id(addr, id_mapping)?;
                         let var_id = Self::map_var_id(var, id_mapping)?;
                         ir.mstore(addr, var_id);
                     }
                 }
-                Instruction::MemStore8 { addr, var } => {
+                Statement::MemStore8 { addr, var } => {
                     if analysis.is_reachable(&addr) && analysis.is_reachable(&var) {
                         let addr = Self::map_var_id(addr, id_mapping)?;
                         let var_id = Self::map_var_id(var, id_mapping)?;
                         ir.mstore8(addr, var_id);
                     }
                 }
-                Instruction::SStore { addr, var } => {
+                Statement::SStore { addr, var } => {
                     if analysis.is_reachable(&addr) && analysis.is_reachable(&var) {
                         let addr = Self::map_var_id(addr, id_mapping)?;
                         let var_id = Self::map_var_id(var, id_mapping)?;
                         ir.sstore(addr, var_id);
                     }
                 }
-                Instruction::If {
+                Statement::If {
                     condition,
                     true_branch,
                     false_branch,
@@ -69,7 +69,7 @@ impl UnusedVarClipper {
                     let false_br = ir.swap_instruction(inst_before);
                     ir.push_if(condition, true_br, false_br);
                 }
-                Instruction::Loop {
+                Statement::Loop {
                     id,
                     condition_block,
                     condition,
@@ -84,32 +84,32 @@ impl UnusedVarClipper {
                     let loop_br = ir.swap_instruction(inst_before);
                     ir.push_loop(id, condition_block, condition, loop_br, is_true_br_loop);
                 }
-                Instruction::Continue { loop_id, context } => {
+                Statement::Continue { loop_id, context } => {
                     let context = Self::optimize_context(context, loop_id, analysis);
                     let inst_before = ir.swap_instruction(vec![]);
                     Self::optimize_instructions(context, analysis, id_mapping, vars, ir)?;
                     let mapping = ir.swap_instruction(inst_before);
                     ir.push_continue(loop_id, mapping);
                 }
-                Instruction::Result { offset, len } => {
+                Statement::Result { offset, len } => {
                     let offset = Self::map_var_id(offset, id_mapping)?;
                     let len = Self::map_var_id(len, id_mapping)?;
                     ir.result(offset, len);
                 }
-                Instruction::Stop => {
+                Statement::Stop => {
                     ir.stop();
                 }
-                Instruction::Abort(code) => {
+                Statement::Abort(code) => {
                     ir.abort(code);
                 }
-                Instruction::MapVar { id, val } => {
+                Statement::MapVar { id, val } => {
                     if analysis.is_reachable(&id) && analysis.is_reachable(&val) {
                         let id = Self::map_var_id(id, id_mapping)?;
                         let val = Self::map_var_id(val, id_mapping)?;
                         ir.map_var(id, val);
                     }
                 }
-                Instruction::Log {
+                Statement::Log {
                     offset,
                     len,
                     topics,
@@ -128,14 +128,14 @@ impl UnusedVarClipper {
     }
 
     fn optimize_context(
-        context: Vec<Instruction>,
+        context: Vec<Statement>,
         loop_id: BlockId,
         analysis: &ReachabilityAnalysis,
-    ) -> Vec<Instruction> {
+    ) -> Vec<Statement> {
         context
             .into_iter()
             .filter(|inst| match inst {
-                Instruction::MapVar { id, val: _ } => analysis.in_loop_context(loop_id, id),
+                Statement::MapVar { id, val: _ } => analysis.in_loop_context(loop_id, id),
                 _ => unreachable!(),
             })
             .collect()
@@ -148,34 +148,34 @@ impl UnusedVarClipper {
             .ok_or_else(|| anyhow!("{:?} is not found", id))
     }
 
-    fn map_var(var: Eval, id_mapping: &HashMap<VarId, VarId>) -> Result<Eval, Error> {
+    fn map_var(var: Expr, id_mapping: &HashMap<VarId, VarId>) -> Result<Expr, Error> {
         Ok(match var {
-            Eval::Val(val) => Eval::Val(val),
-            Eval::UnaryOp(cmd, op) => Eval::UnaryOp(cmd, Self::map_var_id(op, id_mapping)?),
-            Eval::BinaryOp(cmd, op1, op2) => Eval::BinaryOp(
+            Expr::Val(val) => Expr::Val(val),
+            Expr::UnaryOp(cmd, op) => Expr::UnaryOp(cmd, Self::map_var_id(op, id_mapping)?),
+            Expr::BinaryOp(cmd, op1, op2) => Expr::BinaryOp(
                 cmd,
                 Self::map_var_id(op1, id_mapping)?,
                 Self::map_var_id(op2, id_mapping)?,
             ),
-            Eval::TernaryOp(cmd, op1, op2, op3) => Eval::TernaryOp(
+            Expr::TernaryOp(cmd, op1, op2, op3) => Expr::TernaryOp(
                 cmd,
                 Self::map_var_id(op1, id_mapping)?,
                 Self::map_var_id(op2, id_mapping)?,
                 Self::map_var_id(op3, id_mapping)?,
             ),
-            Eval::MLoad(addr) => {
+            Expr::MLoad(addr) => {
                 let addr = Self::map_var_id(addr, id_mapping)?;
-                Eval::MLoad(addr)
+                Expr::MLoad(addr)
             }
-            Eval::SLoad(addr) => {
+            Expr::SLoad(addr) => {
                 let addr = Self::map_var_id(addr, id_mapping)?;
-                Eval::SLoad(addr)
+                Expr::SLoad(addr)
             }
-            Eval::MSize => Eval::MSize,
-            Eval::Signer => Eval::Signer,
-            Eval::ArgsSize => Eval::ArgsSize,
-            Eval::Args(arg) => Eval::Args(Self::map_var_id(arg, id_mapping)?),
-            Eval::Hash(addr, len) => Eval::Hash(
+            Expr::MSize => Expr::MSize,
+            Expr::Signer => Expr::Signer,
+            Expr::ArgsSize => Expr::ArgsSize,
+            Expr::Args(arg) => Expr::Args(Self::map_var_id(arg, id_mapping)?),
+            Expr::Hash(addr, len) => Expr::Hash(
                 Self::map_var_id(addr, id_mapping)?,
                 Self::map_var_id(len, id_mapping)?,
             ),
@@ -207,25 +207,25 @@ impl VarReachability {
         }
     }
 
-    fn check_instructions(&mut self, ir: &Hir, instructions: &[Instruction]) {
+    fn check_instructions(&mut self, ir: &Hir, instructions: &[Statement]) {
         for instruction in instructions {
             match instruction {
-                Instruction::SetVar(var_id) => {
+                Statement::SetVar(var_id) => {
                     self.insert_var(ir, var_id);
                 }
-                Instruction::MemStore { addr, var } => {
+                Statement::MemStore { addr, var } => {
                     self.mark_var_as_reachable(addr);
                     self.mark_var_as_reachable(var);
                 }
-                Instruction::MemStore8 { addr, var } => {
+                Statement::MemStore8 { addr, var } => {
                     self.mark_var_as_reachable(addr);
                     self.mark_var_as_reachable(var);
                 }
-                Instruction::SStore { addr, var } => {
+                Statement::SStore { addr, var } => {
                     self.mark_var_as_reachable(addr);
                     self.mark_var_as_reachable(var);
                 }
-                Instruction::Loop {
+                Statement::Loop {
                     id: _,
                     condition_block,
                     condition,
@@ -236,7 +236,7 @@ impl VarReachability {
                     self.mark_var_as_reachable(condition);
                     self.check_instructions(ir, loop_br);
                 }
-                Instruction::If {
+                Statement::If {
                     condition,
                     true_branch,
                     false_branch,
@@ -245,25 +245,25 @@ impl VarReachability {
                     self.check_instructions(ir, true_branch);
                     self.check_instructions(ir, false_branch);
                 }
-                Instruction::Stop => {}
-                Instruction::Abort(_) => {}
-                Instruction::Result { offset, len } => {
+                Statement::Stop => {}
+                Statement::Abort(_) => {}
+                Statement::Result { offset, len } => {
                     self.mark_var_as_reachable(offset);
                     self.mark_var_as_reachable(len);
                 }
-                Instruction::Continue {
+                Statement::Continue {
                     loop_id: _,
                     context,
                 } => {
                     self.check_instructions(ir, context);
                 }
-                Instruction::MapVar { id, val } => {
+                Statement::MapVar { id, val } => {
                     self.insert_var(ir, id);
                     self.insert_var(ir, val);
                     self.mark_var_as_reachable(val);
                     self.mark_var_as_reachable(id);
                 }
-                Instruction::Log {
+                Statement::Log {
                     offset,
                     len,
                     topics,
@@ -285,32 +285,32 @@ impl VarReachability {
 
     fn insert_var(&mut self, ir: &Hir, var: &VarId) {
         match ir.var(var) {
-            Eval::Val(_) => {
+            Expr::Val(_) => {
                 self.push_var(var, &[]);
             }
-            Eval::UnaryOp(_, op) => {
+            Expr::UnaryOp(_, op) => {
                 self.push_var(var, &[*op]);
             }
-            Eval::BinaryOp(_, op1, op2) => {
+            Expr::BinaryOp(_, op1, op2) => {
                 self.push_var(var, &[*op1, *op2]);
             }
 
-            Eval::TernaryOp(_, op1, op2, op3) => {
+            Expr::TernaryOp(_, op1, op2, op3) => {
                 self.push_var(var, &[*op1, *op2, *op3]);
             }
-            Eval::MLoad(addr) => {
+            Expr::MLoad(addr) => {
                 self.push_var(var, &[*addr]);
             }
-            Eval::SLoad(addr) => {
+            Expr::SLoad(addr) => {
                 self.push_var(var, &[*addr]);
             }
-            Eval::MSize => {}
-            Eval::Signer => {}
-            Eval::ArgsSize => {}
-            Eval::Args(var_1) => {
+            Expr::MSize => {}
+            Expr::Signer => {}
+            Expr::ArgsSize => {}
+            Expr::Args(var_1) => {
                 self.push_var(var, &[*var_1]);
             }
-            Eval::Hash(var_1, var_2) => {
+            Expr::Hash(var_1, var_2) => {
                 self.push_var(var, &[*var_1, *var_2]);
             }
         }
@@ -343,8 +343,8 @@ impl<'r> ContextAnalyzer<'r> {
         &mut self,
         loops: &[BlockId],
         condition: &VarId,
-        condition_block: &[Instruction],
-        loop_br: &[Instruction],
+        condition_block: &[Statement],
+        loop_br: &[Statement],
         ir: &Hir,
     ) {
         self.push_to_context(loops, condition, ir);
@@ -352,10 +352,10 @@ impl<'r> ContextAnalyzer<'r> {
         self.analyze_block(loops, loop_br, ir);
     }
 
-    fn analyze_block(&mut self, loops: &[BlockId], block: &[Instruction], ir: &Hir) {
+    fn analyze_block(&mut self, loops: &[BlockId], block: &[Statement], ir: &Hir) {
         for inst in block {
             match inst {
-                Instruction::Loop {
+                Statement::Loop {
                     id,
                     condition_block,
                     condition,
@@ -366,26 +366,26 @@ impl<'r> ContextAnalyzer<'r> {
                     loops.push(*id);
                     self.analyze_loop(&loops, condition, condition_block, loop_br, ir);
                 }
-                Instruction::SetVar(var) => {
+                Statement::SetVar(var) => {
                     self.push_to_context(loops, var, ir);
                 }
-                Instruction::MapVar { id, val } => {
+                Statement::MapVar { id, val } => {
                     self.push_to_context(loops, id, ir);
                     self.push_to_context(loops, val, ir);
                 }
-                Instruction::MemStore8 { addr, var } => {
+                Statement::MemStore8 { addr, var } => {
                     self.push_to_context(loops, var, ir);
                     self.push_to_context(loops, addr, ir);
                 }
-                Instruction::MemStore { addr, var } => {
+                Statement::MemStore { addr, var } => {
                     self.push_to_context(loops, var, ir);
                     self.push_to_context(loops, addr, ir);
                 }
-                Instruction::SStore { addr, var } => {
+                Statement::SStore { addr, var } => {
                     self.push_to_context(loops, var, ir);
                     self.push_to_context(loops, addr, ir);
                 }
-                Instruction::If {
+                Statement::If {
                     condition,
                     true_branch,
                     false_branch,
@@ -394,19 +394,19 @@ impl<'r> ContextAnalyzer<'r> {
                     self.analyze_block(loops, true_branch, ir);
                     self.analyze_block(loops, false_branch, ir);
                 }
-                Instruction::Continue {
+                Statement::Continue {
                     loop_id: _,
                     context: _,
                 } => {
                     // no-op
                 }
-                Instruction::Stop => {}
-                Instruction::Abort(_) => {}
-                Instruction::Result { offset, len } => {
+                Statement::Stop => {}
+                Statement::Abort(_) => {}
+                Statement::Result { offset, len } => {
                     self.push_to_context(loops, offset, ir);
                     self.push_to_context(loops, len, ir);
                 }
-                Instruction::Log {
+                Statement::Log {
                     offset,
                     len,
                     topics,
@@ -425,32 +425,32 @@ impl<'r> ContextAnalyzer<'r> {
     fn resolve_ids(&self, var_id: &VarId, ir: &Hir, ids: &mut HashSet<VarId>) {
         ids.insert(*var_id);
         match ir.var(var_id) {
-            Eval::Val(_) => {}
-            Eval::UnaryOp(_, op) => {
+            Expr::Val(_) => {}
+            Expr::UnaryOp(_, op) => {
                 self.resolve_ids(op, ir, ids);
             }
-            Eval::BinaryOp(_, op1, op2) => {
+            Expr::BinaryOp(_, op1, op2) => {
                 self.resolve_ids(op1, ir, ids);
                 self.resolve_ids(op2, ir, ids);
             }
-            Eval::TernaryOp(_, op1, op2, op3) => {
+            Expr::TernaryOp(_, op1, op2, op3) => {
                 self.resolve_ids(op1, ir, ids);
                 self.resolve_ids(op2, ir, ids);
                 self.resolve_ids(op3, ir, ids);
             }
-            Eval::MLoad(addr) => {
+            Expr::MLoad(addr) => {
                 self.resolve_ids(addr, ir, ids);
             }
-            Eval::SLoad(addr) => {
+            Expr::SLoad(addr) => {
                 self.resolve_ids(addr, ir, ids);
             }
-            Eval::MSize => {}
-            Eval::Signer => {}
-            Eval::ArgsSize => {}
-            Eval::Args(var) => {
+            Expr::MSize => {}
+            Expr::Signer => {}
+            Expr::ArgsSize => {}
+            Expr::Args(var) => {
                 self.resolve_ids(var, ir, ids);
             }
-            Eval::Hash(addr, len) => {
+            Expr::Hash(addr, len) => {
                 self.resolve_ids(addr, ir, ids);
                 self.resolve_ids(len, ir, ids);
             }

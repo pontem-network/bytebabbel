@@ -10,12 +10,12 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::instruction::Instruction;
+use crate::bytecode::hir::ir::statement::Statement;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
 use crate::bytecode::tracing::tracer::BlockIO;
-use crate::bytecode::types::{Env, Function};
+use crate::bytecode::types::Function;
 use crate::{BlockId, Flags};
 use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
@@ -50,7 +50,7 @@ impl<'a> HirTranslator<'a> {
         contract_address: U256,
         code_size: u128,
     ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(Env::from(fun), contract_address, code_size, self.flags);
+        let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
         let ir = IrOptimizer::optimize(ir)?;
@@ -92,7 +92,7 @@ impl<'a> HirTranslator<'a> {
         let mapping = ctx.map_stack(stack);
         let context = mapping
             .into_iter()
-            .map(|map| Instruction::MapVar {
+            .map(|map| Statement::MapVar {
                 id: map.origin,
                 val: map.new,
             })

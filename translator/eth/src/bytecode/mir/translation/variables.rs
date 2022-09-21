@@ -1,4 +1,5 @@
 use crate::bytecode::mir::ir::expression::Expression;
+use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType};
 use anyhow::{anyhow, Error};
 use std::cell::RefCell;
@@ -196,5 +197,9 @@ impl Variable {
 
     pub fn expr(&self) -> Expression {
         Expression::Var(*self)
+    }
+
+    pub fn assign(&self, expr: Expression) -> Statement {
+        Statement::Assign(*self, expr)
     }
 }

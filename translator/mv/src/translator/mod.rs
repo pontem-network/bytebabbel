@@ -5,8 +5,8 @@ use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, bail, Error};
 use eth::abi::entries::FunHash;
 use eth::bytecode::block::BlockId;
+use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp};
-use eth::bytecode::mir::ir::math::Operation;
 use eth::bytecode::mir::ir::statement::Statement;
 use eth::bytecode::mir::ir::types::{SType, Value};
 use eth::bytecode::mir::ir::Mir;
@@ -284,7 +284,6 @@ impl MvIrTranslator {
             Expression::Var(var) => {
                 self.code.ld_var(var.index());
             }
-            Expression::Operation(cmd, op, op1) => self.translate_operation(*cmd, op, op1),
             Expression::StackOps(ops) => {
                 for op in &ops.vec {
                     match op {
@@ -366,6 +365,11 @@ impl MvIrTranslator {
                         CallOp::Var(*len),
                     ],
                 );
+            }
+            Expression::Unary(op, arg) => self.translate_unary(op, arg)?,
+            Expression::Binary(op, arg, arg1) => self.translate_binary(op, arg, arg1)?,
+            Expression::Ternary(op, arg, arg1, arg2) => {
+                self.translate_ternary(op, arg, arg1, arg2)?
             }
         }
         Ok(())
@@ -492,32 +496,66 @@ impl MvIrTranslator {
         Ok(())
     }
 
-    fn translate_operation(&mut self, operation: Operation, op1: &Variable, op2: &Variable) {
-        let ops = [CallOp::Var(*op1), CallOp::Var(*op2)];
-        match operation {
-            Operation::Add => self.code.call(Num::Add, &ops),
-            Operation::Sub => self.code.call(Num::Sub, &ops),
-            Operation::Mul => self.code.call(Num::Mul, &ops),
-            Operation::Eq => self.code.call(Num::Eq, &ops),
-            Operation::Lt => self.code.call(Num::Lt, &ops),
-            Operation::Gt => self.code.call(Num::Gt, &ops),
-            Operation::Shr => self.code.call(Num::Shr, &ops),
-            Operation::Shl => self.code.call(Num::Shl, &ops),
-            Operation::Sar => self.code.call(Num::Sar, &ops),
-            Operation::BitAnd => self.code.call(Num::BitAnd, &ops),
-            Operation::BitOr => self.code.call(Num::BitOr, &ops),
-            Operation::BitXor => self.code.call(Num::BitXor, &ops),
-            Operation::Div => self.code.call(Num::Div, &ops),
-            Operation::Byte => self.code.call(Num::Byte, &ops),
-            Operation::Mod => self.code.call(Num::Mod, &ops),
-            Operation::SDiv => self.code.call(Num::SDiv, &ops),
-            Operation::SLt => self.code.call(Num::SLt, &ops),
-            Operation::SGt => self.code.call(Num::SGt, &ops),
-            Operation::SMod => self.code.call(Num::SMod, &ops),
-            Operation::Exp => self.code.call(Num::Exp, &ops),
-            Operation::SignExtend => self.code.call(Num::SignExtend, &ops),
-            Operation::IsZero => self.code.call(Num::IsZero, &[ops[0]]),
-            Operation::BitNot => self.code.call(Num::BitNot, &[ops[0]]),
+    fn translate_unary(&mut self, op: &UnaryOp, arg: &Variable) -> Result<(), Error> {
+        match op {
+            UnaryOp::IsZero => {
+                self.code.call(Num::IsZero, &[CallOp::Var(*arg)]);
+            }
+            UnaryOp::Not => {
+                self.code.call(Num::BitNot, &[CallOp::Var(*arg)]);
+            }
+        }
+        Ok(())
+    }
+
+    fn translate_binary(
+        &mut self,
+        op: &BinaryOp,
+        arg: &Variable,
+        arg1: &Variable,
+    ) -> Result<(), Error> {
+        let args = [CallOp::Var(*arg), CallOp::Var(*arg1)];
+        let index = match op {
+            BinaryOp::Eq => Num::Eq,
+            BinaryOp::Lt => Num::Lt,
+            BinaryOp::Gt => Num::Gt,
+            BinaryOp::Shr => Num::Shr,
+            BinaryOp::Shl => Num::Shl,
+            BinaryOp::Sar => Num::Sar,
+            BinaryOp::Add => Num::Add,
+            BinaryOp::And => Num::BitAnd,
+            BinaryOp::Or => Num::BitOr,
+            BinaryOp::Xor => Num::BitXor,
+            BinaryOp::Mul => Num::Mul,
+            BinaryOp::Sub => Num::Sub,
+            BinaryOp::Div => Num::Div,
+            BinaryOp::SDiv => Num::SDiv,
+            BinaryOp::SLt => Num::SLt,
+            BinaryOp::SGt => Num::SGt,
+            BinaryOp::Byte => Num::Byte,
+            BinaryOp::Mod => Num::Mod,
+            BinaryOp::SMod => Num::SMod,
+            BinaryOp::Exp => Num::Exp,
+            BinaryOp::SignExtend => Num::SignExtend,
+        };
+        self.code.call(index, &args);
+        Ok(())
+    }
+
+    fn translate_ternary(
+        &mut self,
+        op: &TernaryOp,
+        _arg: &Variable,
+        _arg1: &Variable,
+        _arg2: &Variable,
+    ) -> Result<(), Error> {
+        match op {
+            TernaryOp::AddMod => {
+                todo!()
+            }
+            TernaryOp::MulMod => {
+                todo!()
+            }
         }
     }
 }

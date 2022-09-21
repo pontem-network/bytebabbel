@@ -1,6 +1,6 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, UnaryOp};
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::Eval;
+use crate::bytecode::hir::ir::statement::Statement;
+use crate::bytecode::hir::ir::var::Expr;
 use crate::Hir;
 use anyhow::Error;
 use log::log_enabled;
@@ -35,7 +35,7 @@ fn print_buf(ir: &Hir, buf: &mut String, width: usize) -> Result<(), Error> {
 
 fn print_instructions(
     ir: &Hir,
-    inst: &[Instruction],
+    inst: &[Statement],
     buf: &mut String,
     width: usize,
 ) -> Result<(), Error> {
@@ -47,17 +47,17 @@ fn print_instructions(
 
 fn print_instruction(
     ir: &Hir,
-    inst: &Instruction,
+    inst: &Statement,
     buf: &mut String,
     width: usize,
 ) -> Result<(), Error> {
     match inst {
-        Instruction::SetVar(id) => {
+        Statement::SetVar(id) => {
             write!(buf, "{:width$}let {:?} = ", " ", id)?;
             print_ir_var(ir.var(id), buf, 0)?;
             write!(buf, ";")?;
         }
-        Instruction::If {
+        Statement::If {
             condition,
             true_branch,
             false_branch,
@@ -68,16 +68,16 @@ fn print_instruction(
             print_instructions(ir, false_branch, buf, width + 4)?;
             write!(buf, "{:width$}}}", " ",)?;
         }
-        Instruction::Stop => {
+        Statement::Stop => {
             write!(buf, "{:width$}stop!;", " ")?;
         }
-        Instruction::Abort(code) => {
+        Statement::Abort(code) => {
             write!(buf, "{:width$}abort!({});", " ", code)?;
         }
-        Instruction::Result { offset, len } => {
+        Statement::Result { offset, len } => {
             write!(buf, "{:width$}return [{:?}; {:?}];", " ", offset, len)?;
         }
-        Instruction::Loop {
+        Statement::Loop {
             id,
             condition_block,
             condition,
@@ -106,25 +106,25 @@ fn print_instruction(
             }
             write!(buf, "{:width$}}}", " ", width = width + 4)?;
         }
-        Instruction::Continue { loop_id, context } => {
+        Statement::Continue { loop_id, context } => {
             writeln!(buf, "{:width$}{{", " ",)?;
             print_instructions(ir, context, buf, width + 4)?;
             writeln!(buf, "{:width$}}}", " ",)?;
             write!(buf, "{:width$}condition {:?};", " ", loop_id)?;
         }
-        Instruction::MapVar { id, val } => {
+        Statement::MapVar { id, val } => {
             write!(buf, "{:width$}{:?} = {:?};", " ", id, val)?;
         }
-        Instruction::MemStore8 { addr, var } => {
+        Statement::MemStore8 { addr, var } => {
             write!(buf, "{:width$}mem[{:?}] = {:?});", " ", addr, var)?;
         }
-        Instruction::MemStore { addr, var } => {
+        Statement::MemStore { addr, var } => {
             write!(buf, "{:width$}mem[{:?}] = {:?};", " ", addr, var)?;
         }
-        Instruction::SStore { addr, var } => {
+        Statement::SStore { addr, var } => {
             write!(buf, "{:width$}store[{:?}] = {:?};", " ", addr, var)?;
         }
-        Instruction::Log {
+        Statement::Log {
             offset,
             len,
             topics,
@@ -140,46 +140,46 @@ fn print_instruction(
     Ok(())
 }
 
-fn print_ir_var(var: &Eval, buf: &mut String, width: usize) -> Result<(), Error> {
+fn print_ir_var(var: &Expr, buf: &mut String, width: usize) -> Result<(), Error> {
     match var {
-        Eval::Val(val) => {
+        Expr::Val(val) => {
             write!(buf, "{:width$}{:?}", " ", val)?;
         }
-        Eval::UnaryOp(cmd, op1) => {
+        Expr::UnaryOp(cmd, op1) => {
             match cmd {
                 UnaryOp::IsZero => write!(buf, "{:width$}{:?} == 0", " ", op1)?,
                 UnaryOp::Not => write!(buf, "{:width$}!{:?}", " ", op1)?,
             };
         }
-        Eval::BinaryOp(cmd, op1, op2) => {
+        Expr::BinaryOp(cmd, op1, op2) => {
             write!(buf, "{:width$}{:?} {} {:?}", " ", op1, cmd.sign(), op2)?;
         }
-        Eval::TernaryOp(cmd, op1, op2, op3) => {
+        Expr::TernaryOp(cmd, op1, op2, op3) => {
             write!(
                 buf,
                 "{:width$}{:?}({:?}, {:?}, {:?})",
                 " ", cmd, op1, op2, op3
             )?;
         }
-        Eval::MLoad(addr) => {
+        Expr::MLoad(addr) => {
             write!(buf, "{:width$}mem[{:?}]", " ", addr)?;
         }
-        Eval::SLoad(addr) => {
+        Expr::SLoad(addr) => {
             write!(buf, "{:width$}store[{:?}]", " ", addr)?;
         }
-        Eval::MSize => {
+        Expr::MSize => {
             write!(buf, "{:width$}mem.len()", " ",)?;
         }
-        Eval::Signer => {
+        Expr::Signer => {
             write!(buf, "{:width$}signer", " ",)?;
         }
-        Eval::ArgsSize => {
+        Expr::ArgsSize => {
             write!(buf, "{:width$}args.len()", " ",)?;
         }
-        Eval::Args(offset) => {
+        Expr::Args(offset) => {
             write!(buf, "{:width$}args[{:?}]", " ", offset)?;
         }
-        Eval::Hash(offset, len) => {
+        Expr::Hash(offset, len) => {
             write!(buf, "{:width$}hash(memory({:?}, {:?}))", " ", offset, len)?;
         }
     }
@@ -196,7 +196,7 @@ impl BinaryOp {
             BinaryOp::Mod => "%",
             BinaryOp::Lt => "<",
             BinaryOp::Gt => ">",
-            BinaryOp::EQ => "==",
+            BinaryOp::Eq => "==",
             BinaryOp::Shr => ">>",
             BinaryOp::Shl => "<<",
             BinaryOp::Sar => ">!>",

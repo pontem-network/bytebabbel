@@ -1,5 +1,5 @@
+use crate::bytecode::hir::executor::math::TernaryOp;
 use crate::bytecode::mir::ir::expression::{Expression, StackOp};
-use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::Value;
 use crate::bytecode::mir::ir::Mir;
@@ -177,15 +177,6 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             Value::Bool(val) => write!(buf, "{}", val)?,
         },
         Expression::Var(val) => write!(buf, "var_{}", val.index())?,
-        Expression::Operation(cmd, op, op1) => {
-            write!(
-                buf,
-                "(var_{} {} var_{})",
-                op.index(),
-                cmd.sign(),
-                op1.index()
-            )?;
-        }
         Expression::StackOps(ops) => {
             writeln!(buf, "{{")?;
             for op in &ops.vec {
@@ -255,6 +246,38 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
                 len.index()
             )?;
         }
+        Expression::Unary(op, arg) => {
+            write!(buf, "{:?} var_{:?}", op, arg.index())?;
+        }
+        Expression::Binary(op, arg1, arg2) => {
+            write!(
+                buf,
+                "var_{:?} {:?} var_{:?}",
+                arg1.index(),
+                op,
+                arg2.index()
+            )?;
+        }
+        Expression::Ternary(op, arg1, arg2, arg3) => match op {
+            TernaryOp::AddMod => {
+                write!(
+                    buf,
+                    "((var_{:?} + var_{:?}) % var_{:?})",
+                    arg1.index(),
+                    arg2.index(),
+                    arg3.index()
+                )?;
+            }
+            TernaryOp::MulMod => {
+                write!(
+                    buf,
+                    "((var_{:?} * var_{:?}) % var_{:?})",
+                    arg1.index(),
+                    arg2.index(),
+                    arg3.index()
+                )?;
+            }
+        },
     }
     Ok(())
 }
@@ -275,34 +298,4 @@ fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Er
         }
     }
     Ok(())
-}
-
-impl Operation {
-    pub fn sign(&self) -> &str {
-        match self {
-            Operation::Add => "+",
-            Operation::Sub => "-",
-            Operation::Mul => "*",
-            Operation::Div => "/",
-            Operation::Mod => "%",
-            Operation::Lt => "<",
-            Operation::Gt => ">",
-            Operation::Shr => ">>",
-            Operation::Shl => "<<",
-            Operation::BitXor => "^",
-            Operation::BitOr => "|",
-            Operation::BitAnd => "&",
-            Operation::Eq => "==",
-            Operation::Sar => "sar",
-            Operation::Byte => "byte",
-            Operation::SDiv => "sdiv",
-            Operation::SLt => "slt",
-            Operation::SGt => "sgt",
-            Operation::SMod => "smod",
-            Operation::Exp => "exp",
-            Operation::SignExtend => "signextend",
-            Operation::IsZero => " == 0",
-            Operation::BitNot => "!",
-        }
-    }
 }

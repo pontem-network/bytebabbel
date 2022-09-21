@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Eval, VarId};
+use crate::bytecode::hir::ir::var::{Expr, VarId};
 use crate::Hir;
 
 pub enum StorageOp {
@@ -13,7 +13,7 @@ impl InstructionHandler for StorageOp {
         match self {
             StorageOp::SLoad => {
                 let addr = params[0];
-                let id = ir.create_var(Eval::SLoad(addr));
+                let id = ir.create_var(Expr::SLoad(addr));
                 ExecutionResult::Output(vec![id])
             }
             StorageOp::SStore => {

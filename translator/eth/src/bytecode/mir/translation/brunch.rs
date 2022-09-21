@@ -1,4 +1,4 @@
-use crate::bytecode::hir::ir::instruction::Instruction;
+use crate::bytecode::hir::ir::statement::Statement as HirStmt;
 use crate::bytecode::hir::ir::var::{VarId, Vars};
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
 use crate::bytecode::mir::ir::statement::Statement;
@@ -11,10 +11,10 @@ impl<'a> MirTranslator<'a> {
     pub fn translate_loop(
         &mut self,
         id: BlockId,
-        condition_block: &[Instruction],
+        condition_block: &[HirStmt],
         condition: VarId,
         is_true_br_loop: bool,
-        loop_br: &[Instruction],
+        loop_br: &[HirStmt],
         vars: &mut Vars,
     ) -> Result<(), Error> {
         let before = self.mir.swap(Mir::default());
@@ -36,7 +36,7 @@ impl<'a> MirTranslator<'a> {
             cnd.expr()
         };
 
-        self.mir.add_statement(Statement::Loop {
+        self.mir.push(Statement::Loop {
             id,
             cnd_calc: cnd_calc.into_inner(),
             cnd,
@@ -48,8 +48,8 @@ impl<'a> MirTranslator<'a> {
     pub fn translate_if(
         &mut self,
         var: VarId,
-        true_br: &[Instruction],
-        false_br: &[Instruction],
+        true_br: &[HirStmt],
+        false_br: &[HirStmt],
         vars: &mut Vars,
     ) -> Result<(), Error> {
         let before = self.mir.swap(Mir::default());
@@ -62,7 +62,7 @@ impl<'a> MirTranslator<'a> {
         let false_br = self.mir.swap(before);
 
         let cnd = self.cast(cnd, SType::Bool)?;
-        self.mir.add_statement(Statement::IF {
+        self.mir.push(Statement::IF {
             cnd: Expression::Var(cnd),
             true_br: true_br.into_inner(),
             false_br: false_br.into_inner(),

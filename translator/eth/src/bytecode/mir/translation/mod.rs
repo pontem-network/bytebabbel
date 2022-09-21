@@ -1,7 +1,7 @@
-use crate::bytecode::hir::ir::instruction::Instruction;
-use crate::bytecode::hir::ir::var::{Eval, VarId, Vars};
+use crate::bytecode::hir::executor::math::BinaryOp;
+use crate::bytecode::hir::ir::statement::Statement as HirStmt;
+use crate::bytecode::hir::ir::var::{Expr as HirExpr, VarId, Vars};
 use crate::bytecode::mir::ir::expression::Expression;
-use crate::bytecode::mir::ir::math::Operation;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
@@ -11,14 +11,12 @@ use anyhow::{anyhow, bail, ensure, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
 
-pub mod binary;
 pub mod brunch;
 pub mod cast;
 pub mod consts;
+pub mod math;
 pub mod mem;
 pub mod storage;
-pub mod ternary;
-pub mod unary;
 pub mod variables;
 
 pub struct MirTranslator<'a> {
@@ -53,10 +51,10 @@ impl<'a> MirTranslator<'a> {
         let mut mir = Mir::default();
 
         let store_var = variables.borrow_global(SType::Storage);
-        mir.add_statement(Statement::Assign(store_var, Expression::GetStore));
+        mir.push(store_var.assign(Expression::GetStore));
 
         let mem_var = variables.borrow_global(SType::Memory);
-        mir.add_statement(Statement::Assign(mem_var, Expression::GetMem));
+        mir.push(mem_var.assign(Expression::GetMem));
 
         MirTranslator {
             fun,
@@ -86,32 +84,32 @@ impl<'a> MirTranslator<'a> {
 
     fn translate_instructions(
         &mut self,
-        instructions: &[Instruction],
+        instructions: &[HirStmt],
         vars: &mut Vars,
     ) -> Result<(), Error> {
         let _scope = self.variables.create_scope();
         for instruction in instructions {
             match instruction {
-                Instruction::SetVar(id) => {
+                HirStmt::SetVar(id) => {
                     self.translate_set_var(*id, vars)?;
                 }
-                Instruction::MemStore { addr, var } => {
+                HirStmt::MemStore { addr, var } => {
                     self.translate_mem_store(*addr, *var, vars)?;
                 }
-                Instruction::MemStore8 { addr, var } => {
+                HirStmt::MemStore8 { addr, var } => {
                     self.translate_mem_store8(*addr, *var, vars)?;
                 }
-                Instruction::SStore { addr, var } => {
+                HirStmt::SStore { addr, var } => {
                     self.translate_s_store(*addr, *var, vars)?;
                 }
-                Instruction::If {
+                HirStmt::If {
                     condition,
                     true_branch,
                     false_branch,
                 } => {
                     self.translate_if(*condition, true_branch, false_branch, vars)?;
                 }
-                Instruction::Loop {
+                HirStmt::Loop {
                     id,
                     condition_block,
                     condition,
@@ -127,32 +125,32 @@ impl<'a> MirTranslator<'a> {
                         vars,
                     )?;
                 }
-                Instruction::Stop => {
+                HirStmt::Stop => {
                     if !self.fun.native_output.is_empty() {
-                        self.mir.add_statement(Statement::Abort(u8::MAX));
+                        self.mir.push(Statement::Abort(u8::MAX));
                     } else {
                         self.translate_ret_unit()?;
                     }
                 }
-                Instruction::Abort(code) => {
-                    self.mir.add_statement(Statement::Abort(*code));
+                HirStmt::Abort(code) => {
+                    self.mir.push(Statement::Abort(*code));
                 }
-                Instruction::Result { offset, len } => {
+                HirStmt::Result { offset, len } => {
                     self.translate_ret(*offset, *len)?;
                 }
-                Instruction::MapVar { id, val } => {
+                HirStmt::MapVar { id, val } => {
                     let val = self.get_var(*val)?;
                     let id = self.get_var(*id)?;
-                    self.mir.add_statement(Statement::Assign(id, val.expr()));
+                    self.mir.push(Statement::Assign(id, val.expr()));
                 }
-                Instruction::Continue {
+                HirStmt::Continue {
                     loop_id: id,
                     context: inst,
                 } => {
                     self.translate_instructions(inst, vars)?;
-                    self.mir.add_statement(Statement::Continue(*id));
+                    self.mir.push(Statement::Continue(*id));
                 }
-                Instruction::Log {
+                HirStmt::Log {
                     offset,
                     len,
                     topics,
@@ -164,7 +162,7 @@ impl<'a> MirTranslator<'a> {
 
                     let offset = self.get_var(*offset)?;
                     let len = self.get_var(*len)?;
-                    self.mir.add_statement(Statement::Log {
+                    self.mir.push(Statement::Log {
                         storage: self.store_var,
                         memory: self.mem_var,
                         offset,
@@ -180,28 +178,28 @@ impl<'a> MirTranslator<'a> {
     fn translate_set_var(&mut self, id: VarId, vars: &mut Vars) -> Result<(), Error> {
         let var = vars.take(id)?;
         match var {
-            Eval::Val(val) => {
+            HirExpr::Val(val) => {
                 let var = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, var);
 
                 self.mir
-                    .add_statement(Statement::Assign(var, Expression::Const(Value::from(val))));
+                    .push(Statement::Assign(var, Expression::Const(Value::from(val))));
             }
-            Eval::UnaryOp(cmd, op) => {
+            HirExpr::UnaryOp(cmd, op) => {
                 self.translate_unary_op(cmd, op, id)?;
             }
-            Eval::BinaryOp(cmd, op1, op2) => {
+            HirExpr::BinaryOp(cmd, op1, op2) => {
                 self.translate_binary_op(cmd, op1, op2, id)?;
             }
-            Eval::TernaryOp(cmd, op1, op2, op3) => {
+            HirExpr::TernaryOp(cmd, op1, op2, op3) => {
                 self.translate_ternary_op(cmd, op1, op2, op3, id)?;
             }
-            Eval::MLoad(addr) => {
+            HirExpr::MLoad(addr) => {
                 let result = self.variables.borrow(SType::Num);
                 let addr = self.get_var(addr)?;
                 ensure!(addr.s_type() == SType::Num, "address must be of type num");
                 self.mapping.insert(id, result);
-                self.mir.add_statement(Statement::Assign(
+                self.mir.push(Statement::Assign(
                     result,
                     Expression::MLoad {
                         memory: self.mem_var,
@@ -209,13 +207,13 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Eval::SLoad(addr) => {
+            HirExpr::SLoad(addr) => {
                 let result = self.variables.borrow(SType::Num);
                 self.mapping.insert(id, result);
                 let addr = self.get_var(addr)?;
                 ensure!(addr.s_type() == SType::Num, "address must be of type num");
 
-                self.mir.add_statement(Statement::Assign(
+                self.mir.push(Statement::Assign(
                     result,
                     Expression::SLoad {
                         storage: self.store_var,
@@ -223,27 +221,27 @@ impl<'a> MirTranslator<'a> {
                     },
                 ));
             }
-            Eval::MSize => {
+            HirExpr::MSize => {
                 let result = self.variables.borrow(SType::Num);
-                self.mir.add_statement(Statement::Assign(
+                self.mir.push(Statement::Assign(
                     result,
                     Expression::MSize {
                         memory: self.mem_var,
                     },
                 ));
             }
-            Eval::Signer => {
+            HirExpr::Signer => {
                 let signer = self.variables.borrow_param(self.signer_index);
                 let result = self.cast(signer, SType::Num)?;
                 self.mapping.insert(id, result);
             }
-            Eval::ArgsSize => {
+            HirExpr::ArgsSize => {
                 self.translate_args_size(id)?;
             }
-            Eval::Args(offset) => {
+            HirExpr::Args(offset) => {
                 self.translate_args(offset, id)?;
             }
-            Eval::Hash(offset, len) => {
+            HirExpr::Hash(offset, len) => {
                 let result = self.variables.borrow(SType::Num);
 
                 let offset = self.get_var(offset)?;
@@ -252,7 +250,7 @@ impl<'a> MirTranslator<'a> {
                 ensure!(len.s_type() == SType::Num, "len must be of type num");
                 self.mapping.insert(id, result);
 
-                self.mir.add_statement(Statement::Assign(
+                self.mir.push(Statement::Assign(
                     result,
                     Expression::Hash {
                         mem: self.mem_var,
@@ -275,17 +273,17 @@ impl<'a> MirTranslator<'a> {
 
     fn translate_ret_unit(&mut self) -> Result<(), Error> {
         if self.flags.hidden_output || self.flags.native_output {
-            self.mir.add_statement(Statement::Result(vec![]));
+            self.mir.push(Statement::Result(vec![]));
             return Ok(());
         }
 
         let unit = self.variables.borrow(SType::Bytes);
         let len = self.variables.borrow(SType::Num);
-        self.mir.add_statement(Statement::Assign(
+        self.mir.push(Statement::Assign(
             len,
             Expression::Const(Value::from(U256::zero())),
         ));
-        self.mir.add_statement(Statement::Assign(
+        self.mir.push(Statement::Assign(
             unit,
             Expression::MSlice {
                 memory: self.mem_var,
@@ -293,13 +291,13 @@ impl<'a> MirTranslator<'a> {
                 len,
             },
         ));
-        self.mir.add_statement(Statement::Result(vec![unit]));
+        self.mir.push(Statement::Result(vec![unit]));
         Ok(())
     }
 
     fn translate_ret(&mut self, offset: VarId, len: VarId) -> Result<(), Error> {
         if self.flags.hidden_output {
-            self.mir.add_statement(Statement::Result(vec![]));
+            self.mir.push(Statement::Result(vec![]));
             return Ok(());
         }
 
@@ -307,14 +305,14 @@ impl<'a> MirTranslator<'a> {
             let mut results = vec![];
             let offset = self.get_var(offset)?;
             let word_size = self.variables.borrow(SType::Num);
-            self.mir.add_statement(Statement::Assign(
+            self.mir.push(Statement::Assign(
                 word_size,
                 Expression::Const(Value::from(U256::from(32))),
             ));
             let mut tmp = self.variables.borrow(SType::Num);
 
             for tp in &self.fun.native_output {
-                self.mir.add_statement(Statement::Assign(
+                self.mir.push(Statement::Assign(
                     tmp,
                     Expression::MLoad {
                         memory: self.mem_var,
@@ -326,17 +324,17 @@ impl<'a> MirTranslator<'a> {
                     tmp = self.variables.borrow(SType::Num);
                 }
                 results.push(result);
-                self.mir.add_statement(Statement::Assign(
+                self.mir.push(Statement::Assign(
                     offset,
-                    Expression::Operation(Operation::Add, offset, word_size),
+                    Expression::Binary(BinaryOp::Add, offset, word_size),
                 ));
             }
-            self.mir.add_statement(Statement::Result(results));
+            self.mir.push(Statement::Result(results));
         } else {
             let offset = self.get_var(offset)?;
             let len = self.get_var(len)?;
             let result = self.variables.borrow(SType::Bytes);
-            self.mir.add_statement(Statement::Assign(
+            self.mir.push(Statement::Assign(
                 result,
                 Expression::MSlice {
                     memory: self.mem_var,
@@ -344,7 +342,7 @@ impl<'a> MirTranslator<'a> {
                     len,
                 },
             ));
-            self.mir.add_statement(Statement::Result(vec![result]));
+            self.mir.push(Statement::Result(vec![result]));
         }
         Ok(())
     }
@@ -357,7 +355,7 @@ impl<'a> MirTranslator<'a> {
             let args = self.variables.borrow_param(self.args_index);
             ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
             self.mir
-                .add_statement(Statement::Assign(result, Expression::BytesLen(args)));
+                .push(Statement::Assign(result, Expression::BytesLen(args)));
             self.mapping.insert(id, result);
         }
         Ok(())
@@ -374,7 +372,7 @@ impl<'a> MirTranslator<'a> {
             ensure!(offset.s_type() == SType::Num, "offset must be of type num");
             ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
 
-            self.mir.add_statement(Statement::Assign(
+            self.mir.push(Statement::Assign(
                 result,
                 Expression::ReadNum { data, offset },
             ));

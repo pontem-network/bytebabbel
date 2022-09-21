@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Eval, VarId};
+use crate::bytecode::hir::ir::var::{Expr, VarId};
 use crate::Hir;
 
 #[derive(Debug, Clone)]
@@ -16,7 +16,7 @@ impl InstructionHandler for MemoryOp {
         match self {
             MemoryOp::MLoad => {
                 let addr = params[0];
-                let id = ir.create_var(Eval::MLoad(addr));
+                let id = ir.create_var(Expr::MLoad(addr));
                 ExecutionResult::Output(vec![id])
             }
             MemoryOp::MStore => {
@@ -32,7 +32,7 @@ impl InstructionHandler for MemoryOp {
                 ExecutionResult::None
             }
             MemoryOp::MSize => {
-                let id = ir.create_var(Eval::MSize);
+                let id = ir.create_var(Expr::MSize);
                 ExecutionResult::Output(vec![id])
             }
         }

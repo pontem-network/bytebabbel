@@ -1,16 +1,14 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
-use crate::bytecode::types::Env;
-use crate::{BlockId, Flags};
+use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
-pub struct Context {
+pub struct Context<'a> {
     address: U256,
     stack: Stack,
-    env: Rc<Env>,
+    fun: &'a Function,
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
     static_analysis: bool,
@@ -18,12 +16,17 @@ pub struct Context {
     flags: Flags,
 }
 
-impl Context {
-    pub fn new(env: Env, contract_address: U256, code_size: u128, flags: Flags) -> Context {
+impl<'a> Context<'a> {
+    pub fn new(
+        fun: &'a Function,
+        contract_address: U256,
+        code_size: u128,
+        flags: Flags,
+    ) -> Context {
         Context {
             address: contract_address,
             stack: Stack::default(),
-            env: Rc::new(env),
+            fun,
             loop_input: Default::default(),
             loop_stack_size: 0,
             static_analysis: true,
@@ -48,8 +51,8 @@ impl Context {
         self.stack.push(to_push)
     }
 
-    pub fn env(&self) -> &Env {
-        self.env.as_ref()
+    pub fn fun(&self) -> &Function {
+        self.fun
     }
 
     pub fn address(&self) -> U256 {
