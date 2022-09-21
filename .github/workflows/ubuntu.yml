@@ -9,9 +9,11 @@ on:
   workflow_call:
     inputs:
       github_token:
+        value: ${{ secrets.GITHUB_TOKEN }}
         type: string
         required: true
       os:
+        value: ${{ runner.os }}
         type: string
         required: true
 
