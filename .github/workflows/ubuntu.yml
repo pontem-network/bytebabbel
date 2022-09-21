@@ -1,7 +1,6 @@
 name: Tests on Ubuntu
 on:
   pull_request:
-  push:
     branches:
       - master
       - main
@@ -37,7 +36,7 @@ jobs:
         run: RUST_BACKTRACE=1 cargo test --offline
         shell: bash
 
-      - name: Clippy + Fmt
+      - name: Clippy + fmt
         uses: ./.github/actions/clippyfmt
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -5,15 +5,6 @@ on:
       - master
       - main
 
-  workflow_call:
-    inputs:
-      github_token:
-        type: string
-        required: true
-      os:
-        type: string
-        required: true
-
 env:
   RUSTUP_MAX_RETRIES: 10
   CARGO_INCREMENTAL: 1
@@ -36,6 +27,9 @@ jobs:
 
       - name: Install
         uses: ./.github/actions/tests
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          os: ${{ runner.os }}
 
       - name: Test
         run: RUST_BACKTRACE=1 cargo test --offline
