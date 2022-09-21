@@ -28,4 +28,9 @@ jobs:
         uses: actions/checkout@v2
 
       - uses: ./.github/actions/tests
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUNNER_OS: ${{ runner.os }}
+
+
       - uses: ./.github/actions/clippyfmt

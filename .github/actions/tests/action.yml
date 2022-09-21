@@ -8,7 +8,7 @@ runs:
         path: |
           ~/.solc
         #            ~/.aptos
-        key: ${{ runner.os }}-compile
+        key: ${{ RUNNER_OS }}-compile
 
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
@@ -23,12 +23,12 @@ runs:
     - name: Solc latest version
       uses: pontem-network/get-solc@master
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ GITHUB_TOKEN }}
 
     - name: Aptos latest version
       uses: pontem-network/get-aptos@main
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ GITHUB_TOKEN }}
 
     - name: Test
       run: RUST_BACKTRACE=1 cargo test --offline
