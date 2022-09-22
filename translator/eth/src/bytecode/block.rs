@@ -73,7 +73,7 @@ impl BlockId {
 
 impl Debug for BlockId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.0.to_be_bytes()[6..]))
+        write!(f, "{}", hex::encode(&self.0.to_be_bytes()[14..]))
     }
 }
 

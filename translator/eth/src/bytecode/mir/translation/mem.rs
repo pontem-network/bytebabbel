@@ -18,7 +18,7 @@ impl<'a> MirTranslator<'a> {
             addr.s_type() == SType::Num,
             "Expected Number type for memory address"
         );
-        self.mir.add_statement(Statement::MStore {
+        self.mir.push(Statement::MStore {
             memory: self.mem_var,
             offset: addr,
             val: var,
@@ -40,7 +40,7 @@ impl<'a> MirTranslator<'a> {
             addr.s_type() == SType::Num,
             "Expected Number type for memory address"
         );
-        self.mir.add_statement(Statement::MStore8 {
+        self.mir.push(Statement::MStore8 {
             memory: self.mem_var,
             offset: addr,
             val: var,

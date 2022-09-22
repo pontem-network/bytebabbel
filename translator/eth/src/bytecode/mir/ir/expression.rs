@@ -1,4 +1,4 @@
-use crate::bytecode::mir::ir::math::Operation;
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::{anyhow, ensure, Error};
@@ -25,7 +25,9 @@ pub enum Expression {
     },
     Const(Value),
     Var(Variable),
-    Operation(Operation, Variable, Variable),
+    Unary(UnaryOp, Variable),
+    Binary(BinaryOp, Variable, Variable),
+    Ternary(TernaryOp, Variable, Variable, Variable),
     StackOps(StackOps),
     Cast(Variable, Cast),
     BytesLen(Variable),
@@ -181,11 +183,5 @@ impl StackOpsBuilder {
             ));
         }
         Ok(Expression::StackOps(StackOps { vec: self.vec }))
-    }
-}
-
-impl Operation {
-    pub fn expr(self, op1: Variable, op2: Variable) -> Expression {
-        Expression::Operation(self, op1, op2)
     }
 }

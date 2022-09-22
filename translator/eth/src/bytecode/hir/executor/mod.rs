@@ -52,7 +52,7 @@ impl InstructionHandler for Instruction {
             OpCode::Gt => BinaryOp::Gt.handle(params, ir, context),
             OpCode::SLt => BinaryOp::SLt.handle(params, ir, context),
             OpCode::SGt => BinaryOp::SGt.handle(params, ir, context),
-            OpCode::EQ => BinaryOp::EQ.handle(params, ir, context),
+            OpCode::EQ => BinaryOp::Eq.handle(params, ir, context),
             OpCode::And => BinaryOp::And.handle(params, ir, context),
             OpCode::Or => BinaryOp::Or.handle(params, ir, context),
             OpCode::Xor => BinaryOp::Xor.handle(params, ir, context),

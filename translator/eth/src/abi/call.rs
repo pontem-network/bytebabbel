@@ -5,6 +5,7 @@ use anyhow::{ensure, Result};
 
 use ethabi::token::{LenientTokenizer, Tokenizer};
 use ethabi::{Bytes, Constructor, Function, Token};
+use primitive_types::U256;
 
 // =================================================================================================
 
@@ -149,6 +150,14 @@ pub const FUN_HASH_LEN: usize = 4;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Default)]
 pub struct FunHash([u8; FUN_HASH_LEN]);
+
+impl FunHash {
+    pub fn as_frame(&self) -> U256 {
+        let mut buf = [0u8; 32];
+        buf[0..4].copy_from_slice(&self.0);
+        U256::from(&buf)
+    }
+}
 
 impl AsRef<[u8; FUN_HASH_LEN]> for FunHash {
     fn as_ref(&self) -> &[u8; FUN_HASH_LEN] {

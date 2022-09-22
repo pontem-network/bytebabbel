@@ -7,54 +7,54 @@ use std::fmt::{Debug, Formatter};
 
 #[derive(Default, Debug)]
 pub struct Vars {
-    inner: HashMap<VarId, Eval>,
+    inner: HashMap<VarId, Expr>,
 }
 
 impl Vars {
-    pub fn create(&mut self, var: Eval) -> VarId {
+    pub fn create(&mut self, var: Expr) -> VarId {
         let id = VarId(self.inner.len() as u64);
         self.inner.insert(id, var);
         id
     }
 
-    pub fn set_val(&mut self, id: VarId, var: Eval) {
+    pub fn set_val(&mut self, id: VarId, var: Expr) {
         self.inner.insert(id, var);
     }
 
-    pub fn get(&self, id: &VarId) -> &Eval {
+    pub fn get(&self, id: &VarId) -> &Expr {
         self.inner.get(id).unwrap()
     }
 
     pub fn resolve_var(&self, id: VarId) -> Option<U256> {
         match self.inner.get(&id) {
-            Some(Eval::Val(val)) => Some(*val),
+            Some(Expr::Val(val)) => Some(*val),
             None => None,
-            Some(Eval::UnaryOp(cmd, op)) => {
+            Some(Expr::UnaryOp(cmd, op)) => {
                 let val = self.resolve_var(*op)?;
                 Some(cmd.calc(val))
             }
-            Some(Eval::BinaryOp(cmd, op1, op2)) => {
+            Some(Expr::BinaryOp(cmd, op1, op2)) => {
                 let op1 = self.resolve_var(*op1)?;
                 let op2 = self.resolve_var(*op2)?;
                 Some(cmd.calc(op1, op2))
             }
-            Some(Eval::TernaryOp(cmd, op1, op2, op3)) => {
+            Some(Expr::TernaryOp(cmd, op1, op2, op3)) => {
                 let op1 = self.resolve_var(*op1)?;
                 let op2 = self.resolve_var(*op2)?;
                 let op3 = self.resolve_var(*op3)?;
                 Some(cmd.calc(op1, op2, op3))
             }
-            Some(Eval::MLoad(_)) => None,
-            Some(Eval::SLoad(_)) => None,
-            Some(Eval::MSize) => None,
-            Some(Eval::Signer) => None,
-            Some(Eval::ArgsSize) => None,
-            Some(Eval::Args(_)) => None,
-            Some(Eval::Hash(_, _)) => None,
+            Some(Expr::MLoad(_)) => None,
+            Some(Expr::SLoad(_)) => None,
+            Some(Expr::MSize) => None,
+            Some(Expr::Signer) => None,
+            Some(Expr::ArgsSize) => None,
+            Some(Expr::Args(_)) => None,
+            Some(Expr::Hash(_, _)) => None,
         }
     }
 
-    pub fn take(&mut self, id: VarId) -> Result<Eval, Error> {
+    pub fn take(&mut self, id: VarId) -> Result<Expr, Error> {
         self.inner
             .remove(&id)
             .ok_or_else(|| anyhow!("VarId not found: {:?}", id))
@@ -62,7 +62,7 @@ impl Vars {
 }
 
 #[derive(Debug)]
-pub enum Eval {
+pub enum Expr {
     Val(U256),
     MLoad(VarId),
     SLoad(VarId),

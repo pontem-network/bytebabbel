@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Eval, VarId};
+use crate::bytecode::hir::ir::var::{Expr, VarId};
 use crate::Hir;
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
@@ -34,18 +34,18 @@ impl InstructionHandler for UnaryOp {
         if !ctx.is_in_loop() {
             let param = ir.resolve_var(params[0]);
             if let Some(param) = param {
-                let id = ir.create_var(Eval::Val(self.calc(param)));
+                let id = ir.create_var(Expr::Val(self.calc(param)));
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Eval::UnaryOp(*self, params[0]));
+        let id = ir.create_var(Expr::UnaryOp(*self, params[0]));
         ExecutionResult::Output(vec![id])
     }
 }
 
 #[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
 pub enum BinaryOp {
-    EQ,
+    Eq,
     Lt,
     Gt,
     Shr,
@@ -78,17 +78,17 @@ impl InstructionHandler for BinaryOp {
                 let b = ir.resolve_var(b);
                 if let (Some(a), Some(b)) = (a, b) {
                     let res = self.calc(a, b);
-                    let id = ir.create_var(Eval::Val(res));
+                    let id = ir.create_var(Expr::Val(res));
                     return ExecutionResult::Output(vec![id]);
                 }
             }
-            if self == &BinaryOp::EQ && a == b {
-                let id = ir.create_var(Eval::Val(U256::one()));
+            if self == &BinaryOp::Eq && a == b {
+                let id = ir.create_var(Expr::Val(U256::one()));
                 return ExecutionResult::Output(vec![id]);
             }
         }
 
-        let id = ir.create_var(Eval::BinaryOp(*self, a, b));
+        let id = ir.create_var(Expr::BinaryOp(*self, a, b));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -96,7 +96,7 @@ impl InstructionHandler for BinaryOp {
 impl BinaryOp {
     pub fn calc(&self, mut a: U256, mut b: U256) -> U256 {
         match self {
-            BinaryOp::EQ => {
+            BinaryOp::Eq => {
                 if a == b {
                     U256::one()
                 } else {
@@ -237,11 +237,11 @@ impl InstructionHandler for TernaryOp {
             let op3 = ir.resolve_var(op3);
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
-                let id = ir.create_var(Eval::Val(res));
+                let id = ir.create_var(Expr::Val(res));
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Eval::TernaryOp(self.clone(), op1, op2, op3));
+        let id = ir.create_var(Expr::TernaryOp(self.clone(), op1, op2, op3));
         ExecutionResult::Output(vec![id])
     }
 }

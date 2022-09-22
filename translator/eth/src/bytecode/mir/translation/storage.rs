@@ -20,7 +20,7 @@ impl<'a> MirTranslator<'a> {
             "Expected Number type for storage address"
         );
 
-        self.mir.add_statement(Statement::SStore {
+        self.mir.push(Statement::SStore {
             storage: self.store_var,
             key: addr,
             val: var,
