@@ -6,7 +6,7 @@ use anyhow::{anyhow, bail, Error};
 use eth::abi::call::FunHash;
 use eth::bytecode::block::BlockId;
 use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp, TypedExpression};
+use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp, TypedExpr};
 use eth::bytecode::mir::ir::statement::Statement;
 use eth::bytecode::mir::ir::types::{SType, Value};
 use eth::bytecode::mir::ir::Mir;
@@ -168,7 +168,7 @@ impl MvIrTranslator {
     fn translate_statement(&mut self, st: &Statement) -> Result<(), Error> {
         match st {
             Statement::Assign(var, exp) => {
-                self.translate_expr(exp)?;
+                self.translate_expr(&exp.expr)?;
                 self.code.set_var(var.index());
             }
             Statement::IF {
@@ -176,7 +176,7 @@ impl MvIrTranslator {
                 true_br,
                 false_br,
             } => {
-                self.translate_if(cnd, true_br, false_br)?;
+                self.translate_if(&cnd.expr, true_br, false_br)?;
             }
             Statement::Loop {
                 id,
@@ -429,7 +429,7 @@ impl MvIrTranslator {
         Ok(())
     }
 
-    fn translate_cast(&mut self, arg: &TypedExpression, cast: &Cast) -> Result<(), Error> {
+    fn translate_cast(&mut self, arg: &TypedExpr, cast: &Cast) -> Result<(), Error> {
         let arg = self.call_args(arg)?;
         match cast {
             Cast::BoolToNum => self.code.call(Num::FromBool, vec![arg]),
@@ -501,7 +501,7 @@ impl MvIrTranslator {
         Ok(())
     }
 
-    fn translate_unary(&mut self, op: &UnaryOp, arg: &TypedExpression) -> Result<(), Error> {
+    fn translate_unary(&mut self, op: &UnaryOp, arg: &TypedExpr) -> Result<(), Error> {
         let args = self.call_args(arg)?;
         match op {
             UnaryOp::IsZero => {
@@ -517,8 +517,8 @@ impl MvIrTranslator {
     fn translate_binary(
         &mut self,
         op: &BinaryOp,
-        arg: &TypedExpression,
-        arg1: &TypedExpression,
+        arg: &TypedExpr,
+        arg1: &TypedExpr,
     ) -> Result<(), Error> {
         let args = vec![self.call_args(arg)?, self.call_args(arg1)?];
         let index = match op {
@@ -551,9 +551,9 @@ impl MvIrTranslator {
     fn translate_ternary(
         &mut self,
         op: &TernaryOp,
-        _arg: &TypedExpression,
-        _arg1: &TypedExpression,
-        _arg2: &TypedExpression,
+        _arg: &TypedExpr,
+        _arg1: &TypedExpr,
+        _arg2: &TypedExpr,
     ) -> Result<(), Error> {
         match op {
             TernaryOp::AddMod => {
@@ -565,7 +565,7 @@ impl MvIrTranslator {
         }
     }
 
-    fn call_args(&mut self, args: &TypedExpression) -> Result<CallOp, Error> {
+    fn call_args(&mut self, args: &TypedExpr) -> Result<CallOp, Error> {
         let code = self.code.swap(Code::default());
         self.translate_expr(&args.expr)?;
         let mut args = self.code.swap(code);

@@ -1,4 +1,4 @@
-use crate::bytecode::mir::ir::expression::{Expression, TypedExpression};
+use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType};
 use anyhow::{anyhow, Error};
@@ -195,11 +195,11 @@ impl Variable {
         self.0
     }
 
-    pub fn expr(&self) -> TypedExpression {
+    pub fn expr(&self) -> TypedExpr {
         Expression::Var(*self).ty(self.1)
     }
 
-    pub fn assign(&self, expr: Expression) -> Statement {
+    pub fn assign(&self, expr: TypedExpr) -> Statement {
         Statement::Assign(*self, expr)
     }
 }

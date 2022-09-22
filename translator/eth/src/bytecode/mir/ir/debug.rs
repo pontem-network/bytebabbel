@@ -51,7 +51,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
                 var.index(),
                 var.ty()
             )?;
-            print_expr(value, buf, width + 4)?;
+            print_expr(&value.expr, buf, width + 4)?;
             writeln!(buf, ";")?;
         }
         Statement::IF {
@@ -60,7 +60,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
             false_br,
         } => {
             write!(buf, "{:width$}if ", " ")?;
-            print_expr(cnd, buf, width + 4)?;
+            print_expr(&cnd.expr, buf, width + 4)?;
             writeln!(buf, " {{")?;
             print_statements(true_br, buf, width + 4)?;
             writeln!(buf, "{:width$}}} else {{", " ",)?;

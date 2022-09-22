@@ -1,11 +1,11 @@
 use crate::bytecode::hir::ir::var::{Expr, VarId};
-use crate::bytecode::mir::ir::expression::{Expression, TypedExpression};
+use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
 use anyhow::{bail, ensure, Error};
 
 impl<'a> MirTranslator<'a> {
-    pub fn translate_expr(&mut self, expr: &Expr) -> Result<TypedExpression, Error> {
+    pub fn translate_expr(&mut self, expr: &Expr) -> Result<TypedExpr, Error> {
         Ok(match expr {
             Expr::Val(val) => val.into(),
             Expr::Var(var) => {
@@ -62,7 +62,7 @@ impl<'a> MirTranslator<'a> {
         })
     }
 
-    fn args_size(&mut self) -> Result<TypedExpression, Error> {
+    fn args_size(&mut self) -> Result<TypedExpr, Error> {
         if self.flags.native_input {
             bail!("args_size is not supported in native input mode");
         } else {
@@ -72,7 +72,7 @@ impl<'a> MirTranslator<'a> {
         }
     }
 
-    fn args(&mut self, offset: VarId) -> Result<TypedExpression, Error> {
+    fn args(&mut self, offset: VarId) -> Result<TypedExpr, Error> {
         Ok(if self.flags.native_input {
             let param = self.variables.borrow_param(offset.local_index());
             Expression::Var(param).ty(param.ty())

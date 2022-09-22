@@ -26,11 +26,11 @@ pub enum Expression {
     },
     Const(Value),
     Var(Variable),
-    Unary(UnaryOp, TypedExpression),
-    Binary(BinaryOp, TypedExpression, TypedExpression),
-    Ternary(TernaryOp, TypedExpression, TypedExpression, TypedExpression),
+    Unary(UnaryOp, TypedExpr),
+    Binary(BinaryOp, TypedExpr, TypedExpr),
+    Ternary(TernaryOp, TypedExpr, TypedExpr, TypedExpr),
     StackOps(StackOps),
-    Cast(TypedExpression, Cast),
+    Cast(TypedExpr, Cast),
     BytesLen(Variable),
     ReadNum {
         data: Variable,
@@ -44,8 +44,8 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn ty(self, ty: SType) -> TypedExpression {
-        TypedExpression {
+    pub fn ty(self, ty: SType) -> TypedExpr {
+        TypedExpr {
             expr: Box::new(self),
             ty,
         }
@@ -53,12 +53,12 @@ impl Expression {
 }
 
 #[derive(Debug, Clone)]
-pub struct TypedExpression {
+pub struct TypedExpr {
     pub expr: Box<Expression>,
     pub ty: SType,
 }
 
-impl From<&U256> for TypedExpression {
+impl From<&U256> for TypedExpr {
     fn from(val: &U256) -> Self {
         Expression::Const(Value::Number(*val)).ty(SType::Num)
     }
@@ -125,7 +125,7 @@ pub struct StackOps {
 
 #[derive(Debug, Clone)]
 pub enum StackOp {
-    PushExpr(TypedExpression),
+    PushExpr(TypedExpr),
     PushBoolVar(Variable),
     PushBool(bool),
     Eq,
@@ -150,7 +150,7 @@ impl StackOpsBuilder {
         Ok(self)
     }
 
-    pub fn push_expr(mut self, expr: TypedExpression) -> Result<StackOpsBuilder, Error> {
+    pub fn push_expr(mut self, expr: TypedExpr) -> Result<StackOpsBuilder, Error> {
         self.stack.push(expr.ty);
         self.vec.push(StackOp::PushExpr(expr));
         Ok(self)

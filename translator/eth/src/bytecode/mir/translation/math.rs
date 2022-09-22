@@ -1,6 +1,6 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir::ir::var::Expr;
-use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpression};
+use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
 use anyhow::{anyhow, Error};
@@ -11,7 +11,7 @@ impl<'a> MirTranslator<'a> {
         op: BinaryOp,
         arg: &Expr,
         arg1: &Expr,
-    ) -> Result<TypedExpression, Error> {
+    ) -> Result<TypedExpr, Error> {
         let arg = self.translate_expr(arg)?;
         let arg1 = self.translate_expr(arg1)?;
 
@@ -45,7 +45,7 @@ impl<'a> MirTranslator<'a> {
         arg: &Expr,
         arg1: &Expr,
         arg2: &Expr,
-    ) -> Result<TypedExpression, Error> {
+    ) -> Result<TypedExpr, Error> {
         let arg = self.translate_expr(arg)?;
         let arg1 = self.translate_expr(arg1)?;
         let arg2 = self.translate_expr(arg2)?;
@@ -62,7 +62,7 @@ impl<'a> MirTranslator<'a> {
         &mut self,
         op: UnaryOp,
         arg: &Expr,
-    ) -> Result<TypedExpression, Error> {
+    ) -> Result<TypedExpr, Error> {
         let expr = self.translate_expr(arg)?;
         match expr.ty {
             SType::Num => Ok(self.unary_with_num(op, expr)),
@@ -75,18 +75,14 @@ impl<'a> MirTranslator<'a> {
         }
     }
 
-    fn unary_with_num(&mut self, op: UnaryOp, arg: TypedExpression) -> TypedExpression {
+    fn unary_with_num(&mut self, op: UnaryOp, arg: TypedExpr) -> TypedExpr {
         match op {
             UnaryOp::IsZero => Expression::Unary(UnaryOp::IsZero, arg).ty(SType::Bool),
             UnaryOp::Not => Expression::Unary(UnaryOp::Not, arg).ty(SType::Num),
         }
     }
 
-    fn unary_with_bool(
-        &mut self,
-        op: UnaryOp,
-        args: TypedExpression,
-    ) -> Result<TypedExpression, Error> {
+    fn unary_with_bool(&mut self, op: UnaryOp, args: TypedExpr) -> Result<TypedExpr, Error> {
         Ok(match op {
             UnaryOp::IsZero => StackOpsBuilder::default()
                 .push_expr(args)?

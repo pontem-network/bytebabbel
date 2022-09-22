@@ -52,10 +52,10 @@ impl<'a> MirTranslator<'a> {
         let mut mir = Mir::default();
 
         let store_var = variables.borrow_global(SType::Storage);
-        mir.push(store_var.assign(Expression::GetStore));
+        mir.push(store_var.assign(Expression::GetStore.ty(SType::Storage)));
 
         let mem_var = variables.borrow_global(SType::Memory);
-        mir.push(mem_var.assign(Expression::GetMem));
+        mir.push(mem_var.assign(Expression::GetMem.ty(SType::Memory)));
 
         MirTranslator {
             fun,
@@ -136,7 +136,7 @@ impl<'a> MirTranslator<'a> {
                 HirStmt::MapVar { id, val } => {
                     let val = self.get_var(*val)?;
                     let id = self.get_var(*id)?;
-                    self.mir.push(Statement::Assign(id, *val.expr().expr));
+                    self.mir.push(Statement::Assign(id, val.expr()));
                 }
                 HirStmt::Continue {
                     loop_id: id,
@@ -174,7 +174,7 @@ impl<'a> MirTranslator<'a> {
         let expr = self.translate_expr(&vars.take(id)?)?;
         let var = self.variables.borrow(expr.ty);
         self.mapping.insert(id, var);
-        self.mir.push(var.assign(*expr.expr));
+        self.mir.push(var.assign(expr));
         Ok(())
     }
 
@@ -196,7 +196,7 @@ impl<'a> MirTranslator<'a> {
         let len = self.variables.borrow(SType::Num);
         self.mir.push(Statement::Assign(
             len,
-            Expression::Const(Value::from(U256::zero())),
+            Expression::Const(Value::from(U256::zero())).ty(SType::Num),
         ));
         self.mir.push(Statement::Assign(
             unit,
@@ -204,7 +204,8 @@ impl<'a> MirTranslator<'a> {
                 memory: self.mem_var,
                 offset: len,
                 len,
-            },
+            }
+            .ty(SType::Bytes),
         ));
         self.mir.push(Statement::Result(vec![unit]));
         Ok(())
@@ -222,7 +223,7 @@ impl<'a> MirTranslator<'a> {
             let word_size = self.variables.borrow(SType::Num);
             self.mir.push(Statement::Assign(
                 word_size,
-                Expression::Const(Value::from(U256::from(32))),
+                Expression::Const(Value::from(U256::from(32))).ty(SType::Num),
             ));
             let mut tmp = self.variables.borrow(SType::Num);
 
@@ -232,7 +233,8 @@ impl<'a> MirTranslator<'a> {
                     Expression::MLoad {
                         memory: self.mem_var,
                         offset,
-                    },
+                    }
+                    .ty(SType::Num),
                 ));
                 let result = self.cast(tmp, SType::from_eth_type(tp, self.flags.u128_io))?;
                 if result.is_num() {
@@ -241,7 +243,8 @@ impl<'a> MirTranslator<'a> {
                 results.push(result);
                 self.mir.push(Statement::Assign(
                     offset,
-                    Expression::Binary(BinaryOp::Add, offset.expr(), word_size.expr()),
+                    Expression::Binary(BinaryOp::Add, offset.expr(), word_size.expr())
+                        .ty(SType::Num),
                 ));
             }
             self.mir.push(Statement::Result(results));
@@ -255,7 +258,8 @@ impl<'a> MirTranslator<'a> {
                     memory: self.mem_var,
                     offset,
                     len,
-                },
+                }
+                .ty(SType::Bytes),
             ));
             self.mir.push(Statement::Result(vec![result]));
         }
