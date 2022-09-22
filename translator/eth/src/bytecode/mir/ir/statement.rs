@@ -1,11 +1,11 @@
-use crate::bytecode::mir::ir::expression::Expression;
+use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::translation::variables::Variable;
 use crate::BlockId;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
     InitStorage(Variable),
-    Assign(Variable, Expression),
+    Assign(Variable, TypedExpr),
     MStore {
         memory: Variable,
         offset: Variable,
@@ -22,7 +22,7 @@ pub enum Statement {
         val: Variable,
     },
     IF {
-        cnd: Expression,
+        cnd: TypedExpr,
         true_br: Vec<Statement>,
         false_br: Vec<Statement>,
     },

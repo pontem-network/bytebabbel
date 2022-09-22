@@ -26,31 +26,35 @@ impl Vars {
     }
 
     pub fn resolve_var(&self, id: VarId) -> Option<U256> {
-        match self.inner.get(&id) {
-            Some(Expr::Val(val)) => Some(*val),
-            None => None,
-            Some(Expr::UnaryOp(cmd, op)) => {
-                let val = self.resolve_var(*op)?;
+        self.resolve_expr(self.inner.get(&id)?)
+    }
+
+    pub fn resolve_expr(&self, expr: &Expr) -> Option<U256> {
+        match expr {
+            Expr::Val(val) => Some(*val),
+            Expr::UnaryOp(cmd, arg) => {
+                let val = self.resolve_expr(arg)?;
                 Some(cmd.calc(val))
             }
-            Some(Expr::BinaryOp(cmd, op1, op2)) => {
-                let op1 = self.resolve_var(*op1)?;
-                let op2 = self.resolve_var(*op2)?;
+            Expr::BinaryOp(cmd, arg1, arg2) => {
+                let op1 = self.resolve_expr(arg1)?;
+                let op2 = self.resolve_expr(arg2)?;
                 Some(cmd.calc(op1, op2))
             }
-            Some(Expr::TernaryOp(cmd, op1, op2, op3)) => {
-                let op1 = self.resolve_var(*op1)?;
-                let op2 = self.resolve_var(*op2)?;
-                let op3 = self.resolve_var(*op3)?;
+            Expr::TernaryOp(cmd, arg1, arg2, arg3) => {
+                let op1 = self.resolve_expr(arg1)?;
+                let op2 = self.resolve_expr(arg2)?;
+                let op3 = self.resolve_expr(arg3)?;
                 Some(cmd.calc(op1, op2, op3))
             }
-            Some(Expr::MLoad(_)) => None,
-            Some(Expr::SLoad(_)) => None,
-            Some(Expr::MSize) => None,
-            Some(Expr::Signer) => None,
-            Some(Expr::ArgsSize) => None,
-            Some(Expr::Args(_)) => None,
-            Some(Expr::Hash(_, _)) => None,
+            Expr::MLoad(_) => None,
+            Expr::SLoad(_) => None,
+            Expr::MSize => None,
+            Expr::Signer => None,
+            Expr::ArgsSize => None,
+            Expr::Args(_) => None,
+            Expr::Hash(_, _) => None,
+            Expr::Var(id) => self.resolve_var(*id),
         }
     }
 
@@ -61,23 +65,30 @@ impl Vars {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Val(U256),
+    Var(VarId),
     MLoad(VarId),
     SLoad(VarId),
     Signer,
     MSize,
     ArgsSize,
     Args(VarId),
-    UnaryOp(UnaryOp, VarId),
-    BinaryOp(BinaryOp, VarId, VarId),
-    TernaryOp(TernaryOp, VarId, VarId, VarId),
+    UnaryOp(UnaryOp, Box<Expr>),
+    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
+    TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
     Hash(VarId, VarId),
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Default)]
 pub struct VarId(u64);
+
+impl VarId {
+    pub fn expr(&self) -> Box<Expr> {
+        Box::new(Expr::Var(*self))
+    }
+}
 
 impl From<VarId> for u64 {
     fn from(id: VarId) -> u64 {

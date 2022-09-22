@@ -38,7 +38,9 @@ impl InstructionHandler for UnaryOp {
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Expr::UnaryOp(*self, params[0]));
+
+        let expr = ir.var(&params[0]);
+        let id = ir.create_var(Expr::UnaryOp(*self, Box::new(expr.clone())));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -88,7 +90,11 @@ impl InstructionHandler for BinaryOp {
             }
         }
 
-        let id = ir.create_var(Expr::BinaryOp(*self, a, b));
+        let id = ir.create_var(Expr::BinaryOp(
+            *self,
+            Box::new(Expr::Var(a)),
+            Box::new(Expr::Var(b)),
+        ));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -219,7 +225,7 @@ impl BinaryOp {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum TernaryOp {
     AddMod,
     MulMod,
@@ -241,7 +247,16 @@ impl InstructionHandler for TernaryOp {
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Expr::TernaryOp(self.clone(), op1, op2, op3));
+        let op1 = ir.var(&op1).clone();
+        let op2 = ir.var(&op2).clone();
+        let op3 = ir.var(&op3).clone();
+
+        let id = ir.create_var(Expr::TernaryOp(
+            *self,
+            Box::new(op1),
+            Box::new(op2),
+            Box::new(op3),
+        ));
         ExecutionResult::Output(vec![id])
     }
 }

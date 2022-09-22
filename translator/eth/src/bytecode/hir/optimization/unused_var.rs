@@ -151,17 +151,19 @@ impl UnusedVarClipper {
     fn map_var(var: Expr, id_mapping: &HashMap<VarId, VarId>) -> Result<Expr, Error> {
         Ok(match var {
             Expr::Val(val) => Expr::Val(val),
-            Expr::UnaryOp(cmd, op) => Expr::UnaryOp(cmd, Self::map_var_id(op, id_mapping)?),
+            Expr::UnaryOp(cmd, arg) => {
+                Expr::UnaryOp(cmd, Box::new(Self::map_var(*arg, id_mapping)?))
+            }
             Expr::BinaryOp(cmd, op1, op2) => Expr::BinaryOp(
                 cmd,
-                Self::map_var_id(op1, id_mapping)?,
-                Self::map_var_id(op2, id_mapping)?,
+                Box::new(Self::map_var(*op1, id_mapping)?),
+                Box::new(Self::map_var(*op2, id_mapping)?),
             ),
             Expr::TernaryOp(cmd, op1, op2, op3) => Expr::TernaryOp(
                 cmd,
-                Self::map_var_id(op1, id_mapping)?,
-                Self::map_var_id(op2, id_mapping)?,
-                Self::map_var_id(op3, id_mapping)?,
+                Box::new(Self::map_var(*op1, id_mapping)?),
+                Box::new(Self::map_var(*op2, id_mapping)?),
+                Box::new(Self::map_var(*op3, id_mapping)?),
             ),
             Expr::MLoad(addr) => {
                 let addr = Self::map_var_id(addr, id_mapping)?;
@@ -179,6 +181,10 @@ impl UnusedVarClipper {
                 Self::map_var_id(addr, id_mapping)?,
                 Self::map_var_id(len, id_mapping)?,
             ),
+            Expr::Var(var) => {
+                let var = Self::map_var_id(var, id_mapping)?;
+                Expr::Var(var)
+            }
         })
     }
 }
@@ -190,12 +196,10 @@ struct VarReachability {
 }
 
 impl VarReachability {
-    fn push_var(&mut self, var: &VarId, ops: &[VarId]) {
+    fn push_var(&mut self, var: &VarId, ops: Vec<VarId>) {
         let entry = self.vars.entry(*var).or_insert_with(HashSet::new);
         entry.insert(*var);
-        for op in ops {
-            entry.insert(*op);
-        }
+        entry.extend(ops);
     }
 
     fn mark_var_as_reachable(&mut self, var: &VarId) {
@@ -283,37 +287,35 @@ impl VarReachability {
         }
     }
 
-    fn insert_var(&mut self, ir: &Hir, var: &VarId) {
-        match ir.var(var) {
-            Expr::Val(_) => {
-                self.push_var(var, &[]);
-            }
-            Expr::UnaryOp(_, op) => {
-                self.push_var(var, &[*op]);
-            }
-            Expr::BinaryOp(_, op1, op2) => {
-                self.push_var(var, &[*op1, *op2]);
-            }
-
+    fn expr(&mut self, expr: &Expr) -> Vec<VarId> {
+        match expr {
+            Expr::UnaryOp(_, op) => self.expr(op),
+            Expr::BinaryOp(_, op1, op2) => [self.expr(op1), self.expr(op2)].concat(),
             Expr::TernaryOp(_, op1, op2, op3) => {
-                self.push_var(var, &[*op1, *op2, *op3]);
+                [self.expr(op1), self.expr(op2), self.expr(op3)].concat()
             }
             Expr::MLoad(addr) => {
-                self.push_var(var, &[*addr]);
+                vec![*addr]
             }
             Expr::SLoad(addr) => {
-                self.push_var(var, &[*addr]);
+                vec![*addr]
             }
-            Expr::MSize => {}
-            Expr::Signer => {}
-            Expr::ArgsSize => {}
+            Expr::MSize | Expr::Signer | Expr::ArgsSize | Expr::Val(_) => vec![],
             Expr::Args(var_1) => {
-                self.push_var(var, &[*var_1]);
+                vec![*var_1]
             }
             Expr::Hash(var_1, var_2) => {
-                self.push_var(var, &[*var_1, *var_2]);
+                vec![*var_1, *var_2]
+            }
+            Expr::Var(var_1) => {
+                vec![*var_1]
             }
         }
+    }
+
+    fn insert_var(&mut self, ir: &Hir, var: &VarId) {
+        let vars = self.expr(ir.var(var));
+        self.push_var(var, vars);
     }
 
     fn finalize(self) -> HashSet<VarId> {
@@ -424,19 +426,23 @@ impl<'r> ContextAnalyzer<'r> {
     #[allow(clippy::only_used_in_recursion)]
     fn resolve_ids(&self, var_id: &VarId, ir: &Hir, ids: &mut HashSet<VarId>) {
         ids.insert(*var_id);
-        match ir.var(var_id) {
+        self.resolve_ids_expr(ir.var(var_id), ir, ids);
+    }
+
+    fn resolve_ids_expr(&self, expr: &Expr, ir: &Hir, ids: &mut HashSet<VarId>) {
+        match expr {
             Expr::Val(_) => {}
             Expr::UnaryOp(_, op) => {
-                self.resolve_ids(op, ir, ids);
+                self.resolve_ids_expr(op, ir, ids);
             }
             Expr::BinaryOp(_, op1, op2) => {
-                self.resolve_ids(op1, ir, ids);
-                self.resolve_ids(op2, ir, ids);
+                self.resolve_ids_expr(op1, ir, ids);
+                self.resolve_ids_expr(op2, ir, ids);
             }
             Expr::TernaryOp(_, op1, op2, op3) => {
-                self.resolve_ids(op1, ir, ids);
-                self.resolve_ids(op2, ir, ids);
-                self.resolve_ids(op3, ir, ids);
+                self.resolve_ids_expr(op1, ir, ids);
+                self.resolve_ids_expr(op2, ir, ids);
+                self.resolve_ids_expr(op3, ir, ids);
             }
             Expr::MLoad(addr) => {
                 self.resolve_ids(addr, ir, ids);
@@ -453,6 +459,9 @@ impl<'r> ContextAnalyzer<'r> {
             Expr::Hash(addr, len) => {
                 self.resolve_ids(addr, ir, ids);
                 self.resolve_ids(len, ir, ids);
+            }
+            Expr::Var(id) => {
+                self.resolve_ids(id, ir, ids);
             }
         }
     }

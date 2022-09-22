@@ -16,7 +16,7 @@ impl<'a> MirTranslator<'a> {
         let var = self.cast(var, SType::Num)?;
 
         ensure!(
-            addr.s_type() == SType::Num,
+            addr.ty() == SType::Num,
             "Expected Number type for storage address"
         );
 

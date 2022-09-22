@@ -182,6 +182,9 @@ fn print_ir_var(var: &Expr, buf: &mut String, width: usize) -> Result<(), Error>
         Expr::Hash(offset, len) => {
             write!(buf, "{:width$}hash(memory({:?}, {:?}))", " ", offset, len)?;
         }
+        Expr::Var(var) => {
+            write!(buf, "{:width$}var_{:?}", " ", var)?;
+        }
     }
     Ok(())
 }

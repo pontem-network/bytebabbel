@@ -15,7 +15,7 @@ impl<'a> MirTranslator<'a> {
         let addr = self.get_var(addr)?;
         let var = self.cast(var, SType::Num)?;
         ensure!(
-            addr.s_type() == SType::Num,
+            addr.ty() == SType::Num,
             "Expected Number type for memory address"
         );
         self.mir.push(Statement::MStore {
@@ -37,7 +37,7 @@ impl<'a> MirTranslator<'a> {
         let var = self.cast(var, SType::Num)?;
 
         ensure!(
-            addr.s_type() == SType::Num,
+            addr.ty() == SType::Num,
             "Expected Number type for memory address"
         );
         self.mir.push(Statement::MStore8 {
