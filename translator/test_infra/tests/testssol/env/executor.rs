@@ -73,6 +73,7 @@ impl MoveExecutor {
         MoveVmExt::new(
             NativeGasParameters::zeros(),
             AbstractValueSizeGasParameters::zeros(),
+            false,
         )
         .unwrap()
     }

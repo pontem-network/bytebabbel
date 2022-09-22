@@ -3,7 +3,7 @@ name = "###NAME###"
 version = "0.0.0"
 
 [dependencies]
-AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7" }
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "23896f357ed5810744842a528e8060dd1200894b" }
 
 [addresses]
 Std = "0x1"
