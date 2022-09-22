@@ -252,7 +252,7 @@ impl InstructionHandler for TernaryOp {
         let op3 = ir.var(&op3).clone();
 
         let id = ir.create_var(Expr::TernaryOp(
-            self.clone(),
+            *self,
             Box::new(op1),
             Box::new(op2),
             Box::new(op3),
