@@ -33,7 +33,7 @@ jobs:
           os: ${{ runner.os }}
 
       - name: Test
-        run: RUST_BACKTRACE=1 cargo test --offline
+        run: RUST_BACKTRACE=1 cargo test
         shell: bash
 
       - run: cargo fmt -- --check
