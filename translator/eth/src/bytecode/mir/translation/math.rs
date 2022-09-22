@@ -1,5 +1,5 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir::ir::var::{Expr, VarId};
+use crate::bytecode::hir::ir::var::Expr;
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpression};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
@@ -9,21 +9,24 @@ impl<'a> MirTranslator<'a> {
     pub(super) fn translate_binary_op(
         &mut self,
         op: BinaryOp,
-        arg: VarId,
-        arg1: VarId,
+        arg: &Expr,
+        arg1: &Expr,
     ) -> Result<TypedExpression, Error> {
-        let arg = self.get_var(arg)?;
-        let arg1 = self.get_var(arg1)?;
+        let arg = self.translate_expr(arg)?;
+        let arg1 = self.translate_expr(arg1)?;
 
         let (arg, arg1) = if op == BinaryOp::Eq {
-            if arg.ty() == SType::Bool && arg1.ty() == SType::Bool {
+            if arg.ty == SType::Bool && arg1.ty == SType::Bool {
                 (arg, arg1)
             } else {
-                (self.cast(arg, SType::Num)?, self.cast(arg1, SType::Num)?)
+                (
+                    self.cast_expr(arg, SType::Num)?,
+                    self.cast_expr(arg1, SType::Num)?,
+                )
             }
         } else {
-            let arg = self.cast(arg, SType::Num)?;
-            let arg1 = self.cast(arg1, SType::Num)?;
+            let arg = self.cast_expr(arg, SType::Num)?;
+            let arg1 = self.cast_expr(arg1, SType::Num)?;
             (arg, arg1)
         };
 
@@ -39,14 +42,20 @@ impl<'a> MirTranslator<'a> {
     pub(super) fn translate_ternary_op(
         &mut self,
         op: TernaryOp,
-        arg: VarId,
-        arg1: VarId,
-        arg2: VarId,
+        arg: &Expr,
+        arg1: &Expr,
+        arg2: &Expr,
     ) -> Result<TypedExpression, Error> {
-        let arg = self.get_var(arg)?;
-        let arg1 = self.get_var(arg1)?;
-        let arg2 = self.get_var(arg2)?;
-        Ok(Expression::Ternary(op, arg, arg1, arg2).ty(SType::Num))
+        let arg = self.translate_expr(arg)?;
+        let arg1 = self.translate_expr(arg1)?;
+        let arg2 = self.translate_expr(arg2)?;
+        Ok(Expression::Ternary(
+            op,
+            self.cast_expr(arg, SType::Num)?,
+            self.cast_expr(arg1, SType::Num)?,
+            self.cast_expr(arg2, SType::Num)?,
+        )
+        .ty(SType::Num))
     }
 
     pub(super) fn translate_unary_op(

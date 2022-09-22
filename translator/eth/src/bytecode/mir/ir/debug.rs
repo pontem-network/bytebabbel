@@ -211,7 +211,8 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             write!(buf, "borrow_storage()")?;
         }
         Expression::Cast(var, cast) => {
-            write!(buf, "var_{:?} as {:?}", var.index(), cast.to())?;
+            print_expr(&var.expr, buf, width)?;
+            write!(buf, "as {:?}", cast.to())?;
         }
         Expression::MSlice {
             memory,
@@ -251,32 +252,28 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             print_expr(&arg.expr, buf, width)?;
         }
         Expression::Binary(op, arg1, arg2) => {
-            write!(
-                buf,
-                "var_{:?} {:?} var_{:?}",
-                arg1.index(),
-                op,
-                arg2.index()
-            )?;
+            print_expr(&arg1.expr, buf, width)?;
+            write!(buf, " {:?} ", op)?;
+            print_expr(&arg2.expr, buf, width)?;
         }
         Expression::Ternary(op, arg1, arg2, arg3) => match op {
             TernaryOp::AddMod => {
-                write!(
-                    buf,
-                    "((var_{:?} + var_{:?}) % var_{:?})",
-                    arg1.index(),
-                    arg2.index(),
-                    arg3.index()
-                )?;
+                write!(buf, "((")?;
+                print_expr(&arg1.expr, buf, width)?;
+                write!(buf, " + ")?;
+                print_expr(&arg2.expr, buf, width)?;
+                write!(buf, ") % ")?;
+                print_expr(&arg3.expr, buf, width)?;
+                write!(buf, ")")?;
             }
             TernaryOp::MulMod => {
-                write!(
-                    buf,
-                    "((var_{:?} * var_{:?}) % var_{:?})",
-                    arg1.index(),
-                    arg2.index(),
-                    arg3.index()
-                )?;
+                write!(buf, "((")?;
+                print_expr(&arg1.expr, buf, width)?;
+                write!(buf, " * ")?;
+                print_expr(&arg2.expr, buf, width)?;
+                write!(buf, ") % ")?;
+                print_expr(&arg3.expr, buf, width)?;
+                write!(buf, ")")?;
             }
         },
     }

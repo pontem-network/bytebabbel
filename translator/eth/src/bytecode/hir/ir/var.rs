@@ -37,14 +37,14 @@ impl Vars {
                 Some(cmd.calc(val))
             }
             Expr::BinaryOp(cmd, arg1, arg2) => {
-                let op1 = self.resolve_var(*arg1)?;
-                let op2 = self.resolve_var(*arg2)?;
+                let op1 = self.resolve_expr(arg1)?;
+                let op2 = self.resolve_expr(arg2)?;
                 Some(cmd.calc(op1, op2))
             }
             Expr::TernaryOp(cmd, arg1, arg2, arg3) => {
-                let op1 = self.resolve_var(*arg1)?;
-                let op2 = self.resolve_var(*arg2)?;
-                let op3 = self.resolve_var(*arg3)?;
+                let op1 = self.resolve_expr(arg1)?;
+                let op2 = self.resolve_expr(arg2)?;
+                let op3 = self.resolve_expr(arg3)?;
                 Some(cmd.calc(op1, op2, op3))
             }
             Expr::MLoad(_) => None,
@@ -76,8 +76,8 @@ pub enum Expr {
     ArgsSize,
     Args(VarId),
     UnaryOp(UnaryOp, Box<Expr>),
-    BinaryOp(BinaryOp, VarId, VarId),
-    TernaryOp(TernaryOp, VarId, VarId, VarId),
+    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
+    TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
     Hash(VarId, VarId),
 }
 

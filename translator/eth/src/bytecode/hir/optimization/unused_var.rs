@@ -156,14 +156,14 @@ impl UnusedVarClipper {
             }
             Expr::BinaryOp(cmd, op1, op2) => Expr::BinaryOp(
                 cmd,
-                Self::map_var_id(op1, id_mapping)?,
-                Self::map_var_id(op2, id_mapping)?,
+                Box::new(Self::map_var(*op1, id_mapping)?),
+                Box::new(Self::map_var(*op2, id_mapping)?),
             ),
             Expr::TernaryOp(cmd, op1, op2, op3) => Expr::TernaryOp(
                 cmd,
-                Self::map_var_id(op1, id_mapping)?,
-                Self::map_var_id(op2, id_mapping)?,
-                Self::map_var_id(op3, id_mapping)?,
+                Box::new(Self::map_var(*op1, id_mapping)?),
+                Box::new(Self::map_var(*op2, id_mapping)?),
+                Box::new(Self::map_var(*op3, id_mapping)?),
             ),
             Expr::MLoad(addr) => {
                 let addr = Self::map_var_id(addr, id_mapping)?;
@@ -290,12 +290,9 @@ impl VarReachability {
     fn expr(&mut self, expr: &Expr) -> Vec<VarId> {
         match expr {
             Expr::UnaryOp(_, op) => self.expr(op),
-            Expr::BinaryOp(_, op1, op2) => {
-                vec![*op1, *op2]
-            }
-
+            Expr::BinaryOp(_, op1, op2) => [self.expr(op1), self.expr(op2)].concat(),
             Expr::TernaryOp(_, op1, op2, op3) => {
-                vec![*op1, *op2, *op3]
+                [self.expr(op1), self.expr(op2), self.expr(op3)].concat()
             }
             Expr::MLoad(addr) => {
                 vec![*addr]
@@ -439,13 +436,13 @@ impl<'r> ContextAnalyzer<'r> {
                 self.resolve_ids_expr(op, ir, ids);
             }
             Expr::BinaryOp(_, op1, op2) => {
-                self.resolve_ids(op1, ir, ids);
-                self.resolve_ids(op2, ir, ids);
+                self.resolve_ids_expr(op1, ir, ids);
+                self.resolve_ids_expr(op2, ir, ids);
             }
             Expr::TernaryOp(_, op1, op2, op3) => {
-                self.resolve_ids(op1, ir, ids);
-                self.resolve_ids(op2, ir, ids);
-                self.resolve_ids(op3, ir, ids);
+                self.resolve_ids_expr(op1, ir, ids);
+                self.resolve_ids_expr(op2, ir, ids);
+                self.resolve_ids_expr(op3, ir, ids);
             }
             Expr::MLoad(addr) => {
                 self.resolve_ids(addr, ir, ids);

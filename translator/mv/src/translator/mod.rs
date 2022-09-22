@@ -429,28 +429,29 @@ impl MvIrTranslator {
         Ok(())
     }
 
-    fn translate_cast(&mut self, var: &Variable, cast: &Cast) -> Result<(), Error> {
+    fn translate_cast(&mut self, arg: &TypedExpression, cast: &Cast) -> Result<(), Error> {
+        let arg = self.call_args(arg)?;
         match cast {
-            Cast::BoolToNum => self.code.call(Num::FromBool, vec![CallOp::Var(*var)]),
-            Cast::SignerToNum => self.code.call(Num::FromSigner, vec![CallOp::Var(*var)]),
+            Cast::BoolToNum => self.code.call(Num::FromBool, vec![arg]),
+            Cast::SignerToNum => self.code.call(Num::FromSigner, vec![arg]),
             Cast::BytesToNum => {
                 self.code
-                    .call(Num::FromBytes, vec![CallOp::Var(*var), CallOp::ConstU64(0)]);
+                    .call(Num::FromBytes, vec![arg, CallOp::ConstU64(0)]);
             }
             Cast::NumToBool => {
-                self.code.call(Num::ToBool, vec![CallOp::Var(*var)]);
+                self.code.call(Num::ToBool, vec![arg]);
             }
             Cast::AddressToNum => {
-                self.code.call(Num::FromAddress, vec![CallOp::Var(*var)]);
+                self.code.call(Num::FromAddress, vec![arg]);
             }
             Cast::NumToAddress => {
-                self.code.call(Num::ToAddress, vec![CallOp::Var(*var)]);
+                self.code.call(Num::ToAddress, vec![arg]);
             }
             Cast::RawNumToNum => {
-                self.code.call(Num::FromU128, vec![CallOp::Var(*var)]);
+                self.code.call(Num::FromU128, vec![arg]);
             }
             Cast::NumToRawNum => {
-                self.code.call(Num::ToU128, vec![CallOp::Var(*var)]);
+                self.code.call(Num::ToU128, vec![arg]);
             }
         }
         Ok(())
@@ -516,10 +517,10 @@ impl MvIrTranslator {
     fn translate_binary(
         &mut self,
         op: &BinaryOp,
-        arg: &Variable,
-        arg1: &Variable,
+        arg: &TypedExpression,
+        arg1: &TypedExpression,
     ) -> Result<(), Error> {
-        let args = vec![CallOp::Var(*arg), CallOp::Var(*arg1)];
+        let args = vec![self.call_args(arg)?, self.call_args(arg1)?];
         let index = match op {
             BinaryOp::Eq => Num::Eq,
             BinaryOp::Lt => Num::Lt,
@@ -550,9 +551,9 @@ impl MvIrTranslator {
     fn translate_ternary(
         &mut self,
         op: &TernaryOp,
-        _arg: &Variable,
-        _arg1: &Variable,
-        _arg2: &Variable,
+        _arg: &TypedExpression,
+        _arg1: &TypedExpression,
+        _arg2: &TypedExpression,
     ) -> Result<(), Error> {
         match op {
             TernaryOp::AddMod => {

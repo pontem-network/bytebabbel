@@ -136,7 +136,7 @@ impl<'a> MirTranslator<'a> {
                 HirStmt::MapVar { id, val } => {
                     let val = self.get_var(*val)?;
                     let id = self.get_var(*id)?;
-                    self.mir.push(Statement::Assign(id, val.expr()));
+                    self.mir.push(Statement::Assign(id, *val.expr().expr));
                 }
                 HirStmt::Continue {
                     loop_id: id,
@@ -241,7 +241,7 @@ impl<'a> MirTranslator<'a> {
                 results.push(result);
                 self.mir.push(Statement::Assign(
                     offset,
-                    Expression::Binary(BinaryOp::Add, offset, word_size),
+                    Expression::Binary(BinaryOp::Add, offset.expr(), word_size.expr()),
                 ));
             }
             self.mir.push(Statement::Result(results));

@@ -33,7 +33,7 @@ impl<'a> MirTranslator<'a> {
                 .build(SType::Bool)?
         } else {
             // false branch
-            cnd.expr()
+            *cnd.expr().expr
         };
 
         self.mir.push(Statement::Loop {

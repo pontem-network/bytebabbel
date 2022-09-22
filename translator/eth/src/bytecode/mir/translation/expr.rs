@@ -42,9 +42,9 @@ impl<'a> MirTranslator<'a> {
             Expr::ArgsSize => self.args_size()?,
             Expr::Args(offset) => self.args(*offset)?,
             Expr::UnaryOp(op, arg) => self.translate_unary_op(*op, arg)?,
-            Expr::BinaryOp(op, arg, arg1) => self.translate_binary_op(*op, *arg, *arg1)?,
+            Expr::BinaryOp(op, arg, arg1) => self.translate_binary_op(*op, arg, arg1)?,
             Expr::TernaryOp(op, arg1, arg2, arg3) => {
-                self.translate_ternary_op(*op, *arg1, *arg2, *arg3)?
+                self.translate_ternary_op(*op, arg1, arg2, arg3)?
             }
             Expr::Hash(offset, len) => {
                 let offset = self.get_var(*offset)?;

@@ -27,10 +27,10 @@ pub enum Expression {
     Const(Value),
     Var(Variable),
     Unary(UnaryOp, TypedExpression),
-    Binary(BinaryOp, Variable, Variable),
-    Ternary(TernaryOp, Variable, Variable, Variable),
+    Binary(BinaryOp, TypedExpression, TypedExpression),
+    Ternary(TernaryOp, TypedExpression, TypedExpression, TypedExpression),
     StackOps(StackOps),
-    Cast(Variable, Cast),
+    Cast(TypedExpression, Cast),
     BytesLen(Variable),
     ReadNum {
         data: Variable,

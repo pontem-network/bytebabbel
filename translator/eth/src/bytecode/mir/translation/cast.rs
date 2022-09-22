@@ -1,5 +1,4 @@
-use crate::bytecode::mir::ir::expression::{Cast, Expression};
-use crate::bytecode::mir::ir::statement::Statement;
+use crate::bytecode::mir::ir::expression::{Cast, Expression, TypedExpression};
 use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
@@ -11,10 +10,21 @@ impl<'a> MirTranslator<'a> {
             return Ok(from);
         }
 
-        let cast = Cast::make(from.ty(), to)?;
+        let res = self.cast_expr(from.expr(), to)?;
         let var = self.variables.borrow_global(to);
-        self.mir
-            .push(Statement::Assign(var, Expression::Cast(from, cast)));
+        self.mir.push(var.assign(*res.expr));
         Ok(var)
+    }
+
+    pub fn cast_expr(
+        &mut self,
+        from: TypedExpression,
+        to: SType,
+    ) -> Result<TypedExpression, Error> {
+        if from.ty == to {
+            return Ok(from);
+        }
+        let cast = Cast::make(from.ty, to)?;
+        Ok(Expression::Cast(from, cast).ty(to))
     }
 }
