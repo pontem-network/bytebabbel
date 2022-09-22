@@ -38,7 +38,7 @@ impl InstructionHandler for UnaryOp {
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Expr::UnaryOp(*self, params[0]));
+        let id = ir.create_var(Expr::UnaryOp(*self, Box::new(Expr::Var(params[0]))));
         ExecutionResult::Output(vec![id])
     }
 }
@@ -219,7 +219,7 @@ impl BinaryOp {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum TernaryOp {
     AddMod,
     MulMod,

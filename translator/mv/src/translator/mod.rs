@@ -1,12 +1,12 @@
 use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, signer, SignatureWriter};
-use crate::translator::writer::{CallOp, Writer};
+use crate::translator::writer::{CallOp, Code};
 use anyhow::{anyhow, bail, Error};
 use eth::abi::call::FunHash;
 use eth::bytecode::block::BlockId;
 use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp};
+use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp, TypedExpression};
 use eth::bytecode::mir::ir::statement::Statement;
 use eth::bytecode::mir::ir::types::{SType, Value};
 use eth::bytecode::mir::ir::Mir;
@@ -27,7 +27,7 @@ pub mod writer;
 
 pub struct MvIrTranslator {
     sign_writer: SignatureWriter,
-    code: Writer,
+    code: Code,
     template: CompiledModule,
     max_memory: u64,
     program: Option<Program>,
@@ -205,7 +205,7 @@ impl MvIrTranslator {
             } => {
                 self.code.call(
                     Mem::Store,
-                    &[
+                    vec![
                         CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
                         CallOp::Var(*val),
@@ -219,7 +219,7 @@ impl MvIrTranslator {
             } => {
                 self.code.call(
                     Mem::Store8,
-                    &[
+                    vec![
                         CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
                         CallOp::Var(*val),
@@ -233,7 +233,7 @@ impl MvIrTranslator {
             } => {
                 self.code.call(
                     Persist::Store,
-                    &[
+                    vec![
                         CallOp::Var(*storage),
                         CallOp::Var(*offset),
                         CallOp::Var(*val),
@@ -241,7 +241,8 @@ impl MvIrTranslator {
                 );
             }
             Statement::InitStorage(var) => {
-                self.code.call(Persist::InitContract, &[CallOp::Var(*var)]);
+                self.code
+                    .call(Persist::InitContract, vec![CallOp::Var(*var)]);
             }
             Statement::Log {
                 storage,
@@ -264,7 +265,7 @@ impl MvIrTranslator {
                         let parts = val.0;
                         self.code.call(
                             Num::FromU64s,
-                            &[
+                            vec![
                                 CallOp::ConstU64(parts[0]),
                                 CallOp::ConstU64(parts[1]),
                                 CallOp::ConstU64(parts[2]),
@@ -303,12 +304,15 @@ impl MvIrTranslator {
                         StackOp::Eq => {
                             self.code.write(Bytecode::Eq);
                         }
+                        StackOp::PushExpr(expr) => {
+                            self.translate_expr(&expr.expr)?;
+                        }
                     }
                 }
             }
             Expression::GetMem => {
                 self.code
-                    .call(Mem::New, &[CallOp::ConstU64(self.max_memory)]);
+                    .call(Mem::New, vec![CallOp::ConstU64(self.max_memory)]);
             }
             Expression::GetStore => {
                 self.code
@@ -319,17 +323,17 @@ impl MvIrTranslator {
             Expression::MLoad { memory, offset } => {
                 self.code.call(
                     Mem::Load,
-                    &[CallOp::MutBorrow(*memory), CallOp::Var(*offset)],
+                    vec![CallOp::MutBorrow(*memory), CallOp::Var(*offset)],
                 );
             }
             Expression::SLoad { storage, offset } => {
                 self.code.call(
                     Persist::Load,
-                    &[CallOp::Var(*storage), CallOp::Var(*offset)],
+                    vec![CallOp::Var(*storage), CallOp::Var(*offset)],
                 );
             }
             Expression::MSize { memory } => {
-                self.code.call(Mem::Size, &[CallOp::MutBorrow(*memory)]);
+                self.code.call(Mem::Size, vec![CallOp::MutBorrow(*memory)]);
             }
             Expression::MSlice {
                 memory,
@@ -338,7 +342,7 @@ impl MvIrTranslator {
             } => {
                 self.code.call(
                     Mem::Slice,
-                    &[
+                    vec![
                         CallOp::MutBorrow(*memory),
                         CallOp::Var(*offset),
                         CallOp::Var(*len),
@@ -348,18 +352,18 @@ impl MvIrTranslator {
             Expression::Cast(var, cast) => self.translate_cast(var, cast)?,
             Expression::BytesLen(bytes) => {
                 self.code
-                    .call(Mem::RequestBufferLen, &[CallOp::Borrow(*bytes)]);
+                    .call(Mem::RequestBufferLen, vec![CallOp::Borrow(*bytes)]);
             }
             Expression::ReadNum { data, offset } => {
                 self.code.call(
                     Mem::ReadRequestBuffer,
-                    &[CallOp::Borrow(*data), CallOp::Var(*offset)],
+                    vec![CallOp::Borrow(*data), CallOp::Var(*offset)],
                 );
             }
             Expression::Hash { mem, offset, len } => {
                 self.code.call(
                     Mem::Hash,
-                    &[
+                    vec![
                         CallOp::MutBorrow(*mem),
                         CallOp::Var(*offset),
                         CallOp::Var(*len),
@@ -382,9 +386,9 @@ impl MvIrTranslator {
         false_br: &[Statement],
     ) -> Result<(), Error> {
         self.translate_expr(cnd)?;
-        let before = self.code.swap(Writer::default());
+        let before = self.code.swap(Code::default());
         self.translate_statements(true_br)?;
-        let true_br = self.code.swap(Writer::default());
+        let true_br = self.code.swap(Code::default());
         self.translate_statements(false_br)?;
         let mut false_br = self.code.swap(before);
 
@@ -414,7 +418,7 @@ impl MvIrTranslator {
         self.translate_statements(cnd_calc)?;
         self.translate_expr(cnd)?;
 
-        let before = self.code.swap(Writer::default());
+        let before = self.code.swap(Code::default());
         self.translate_statements(body)?;
         let loop_br = self.code.swap(before);
 
@@ -427,26 +431,26 @@ impl MvIrTranslator {
 
     fn translate_cast(&mut self, var: &Variable, cast: &Cast) -> Result<(), Error> {
         match cast {
-            Cast::BoolToNum => self.code.call(Num::FromBool, &[CallOp::Var(*var)]),
-            Cast::SignerToNum => self.code.call(Num::FromSigner, &[CallOp::Var(*var)]),
+            Cast::BoolToNum => self.code.call(Num::FromBool, vec![CallOp::Var(*var)]),
+            Cast::SignerToNum => self.code.call(Num::FromSigner, vec![CallOp::Var(*var)]),
             Cast::BytesToNum => {
                 self.code
-                    .call(Num::FromBytes, &[CallOp::Var(*var), CallOp::ConstU64(0)]);
+                    .call(Num::FromBytes, vec![CallOp::Var(*var), CallOp::ConstU64(0)]);
             }
             Cast::NumToBool => {
-                self.code.call(Num::ToBool, &[CallOp::Var(*var)]);
+                self.code.call(Num::ToBool, vec![CallOp::Var(*var)]);
             }
             Cast::AddressToNum => {
-                self.code.call(Num::FromAddress, &[CallOp::Var(*var)]);
+                self.code.call(Num::FromAddress, vec![CallOp::Var(*var)]);
             }
             Cast::NumToAddress => {
-                self.code.call(Num::ToAddress, &[CallOp::Var(*var)]);
+                self.code.call(Num::ToAddress, vec![CallOp::Var(*var)]);
             }
             Cast::RawNumToNum => {
-                self.code.call(Num::FromU128, &[CallOp::Var(*var)]);
+                self.code.call(Num::FromU128, vec![CallOp::Var(*var)]);
             }
             Cast::NumToRawNum => {
-                self.code.call(Num::ToU128, &[CallOp::Var(*var)]);
+                self.code.call(Num::ToU128, vec![CallOp::Var(*var)]);
             }
         }
         Ok(())
@@ -492,17 +496,18 @@ impl MvIrTranslator {
             }
             _ => bail!("too many topics"),
         };
-        self.code.call(fun, &args);
+        self.code.call(fun, args);
         Ok(())
     }
 
-    fn translate_unary(&mut self, op: &UnaryOp, arg: &Variable) -> Result<(), Error> {
+    fn translate_unary(&mut self, op: &UnaryOp, arg: &TypedExpression) -> Result<(), Error> {
+        let args = self.call_args(arg)?;
         match op {
             UnaryOp::IsZero => {
-                self.code.call(Num::IsZero, &[CallOp::Var(*arg)]);
+                self.code.call(Num::IsZero, vec![args]);
             }
             UnaryOp::Not => {
-                self.code.call(Num::BitNot, &[CallOp::Var(*arg)]);
+                self.code.call(Num::BitNot, vec![args]);
             }
         }
         Ok(())
@@ -514,7 +519,7 @@ impl MvIrTranslator {
         arg: &Variable,
         arg1: &Variable,
     ) -> Result<(), Error> {
-        let args = [CallOp::Var(*arg), CallOp::Var(*arg1)];
+        let args = vec![CallOp::Var(*arg), CallOp::Var(*arg1)];
         let index = match op {
             BinaryOp::Eq => Num::Eq,
             BinaryOp::Lt => Num::Lt,
@@ -538,7 +543,7 @@ impl MvIrTranslator {
             BinaryOp::Exp => Num::Exp,
             BinaryOp::SignExtend => Num::SignExtend,
         };
-        self.code.call(index, &args);
+        self.code.call(index, args);
         Ok(())
     }
 
@@ -557,5 +562,12 @@ impl MvIrTranslator {
                 todo!()
             }
         }
+    }
+
+    fn call_args(&mut self, args: &TypedExpression) -> Result<CallOp, Error> {
+        let code = self.code.swap(Code::default());
+        self.translate_expr(&args.expr)?;
+        let mut args = self.code.swap(code);
+        Ok(CallOp::Expr(args.freeze()?))
     }
 }

@@ -2,6 +2,7 @@ use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 use anyhow::{anyhow, ensure, Error};
+use primitive_types::U256;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -25,7 +26,7 @@ pub enum Expression {
     },
     Const(Value),
     Var(Variable),
-    Unary(UnaryOp, Variable),
+    Unary(UnaryOp, TypedExpression),
     Binary(BinaryOp, Variable, Variable),
     Ternary(TernaryOp, Variable, Variable, Variable),
     StackOps(StackOps),
@@ -40,6 +41,27 @@ pub enum Expression {
         offset: Variable,
         len: Variable,
     },
+}
+
+impl Expression {
+    pub fn ty(self, ty: SType) -> TypedExpression {
+        TypedExpression {
+            expr: Box::new(self),
+            ty,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TypedExpression {
+    pub expr: Box<Expression>,
+    pub ty: SType,
+}
+
+impl From<&U256> for TypedExpression {
+    fn from(val: &U256) -> Self {
+        Expression::Const(Value::Number(*val)).ty(SType::Num)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -103,6 +125,7 @@ pub struct StackOps {
 
 #[derive(Debug, Clone)]
 pub enum StackOp {
+    PushExpr(TypedExpression),
     PushBoolVar(Variable),
     PushBool(bool),
     Eq,
@@ -118,12 +141,18 @@ pub struct StackOpsBuilder {
 impl StackOpsBuilder {
     pub fn push_bool(mut self, var: Variable) -> Result<StackOpsBuilder, Error> {
         ensure!(
-            var.s_type() == SType::Bool,
+            var.ty() == SType::Bool,
             "Can't push bool from {:?}",
-            var.s_type()
+            var.ty()
         );
-        self.stack.push(var.s_type());
+        self.stack.push(var.ty());
         self.vec.push(StackOp::PushBoolVar(var));
+        Ok(self)
+    }
+
+    pub fn push_expr(mut self, expr: TypedExpression) -> Result<StackOpsBuilder, Error> {
+        self.stack.push(expr.ty);
+        self.vec.push(StackOp::PushExpr(expr));
         Ok(self)
     }
 

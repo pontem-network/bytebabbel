@@ -1,19 +1,20 @@
 use crate::bytecode::hir::executor::math::BinaryOp;
 use crate::bytecode::hir::ir::statement::Statement as HirStmt;
-use crate::bytecode::hir::ir::var::{Expr as HirExpr, VarId, Vars};
+use crate::bytecode::hir::ir::var::{VarId, Vars};
 use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
 use crate::{Flags, Function, Hir};
-use anyhow::{anyhow, bail, ensure, Error};
+use anyhow::{anyhow, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
 
 pub mod brunch;
 pub mod cast;
 pub mod consts;
+pub mod expr;
 pub mod math;
 pub mod mem;
 pub mod storage;
@@ -74,12 +75,6 @@ impl<'a> MirTranslator<'a> {
         self.translate_instructions(&instructions, &mut vars)?;
         self.mir.set_locals(self.variables.locals());
         Ok(self.mir)
-    }
-
-    pub(super) fn map_var(&mut self, var_id: VarId, tp: SType) -> Variable {
-        let var = self.variables.borrow(tp);
-        self.mapping.insert(var_id, var);
-        var
     }
 
     fn translate_instructions(
@@ -176,90 +171,10 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn translate_set_var(&mut self, id: VarId, vars: &mut Vars) -> Result<(), Error> {
-        let var = vars.take(id)?;
-        match var {
-            HirExpr::Val(val) => {
-                let var = self.variables.borrow(SType::Num);
-                self.mapping.insert(id, var);
-
-                self.mir
-                    .push(Statement::Assign(var, Expression::Const(Value::from(val))));
-            }
-            HirExpr::UnaryOp(cmd, op) => {
-                self.translate_unary_op(cmd, op, id)?;
-            }
-            HirExpr::BinaryOp(cmd, op1, op2) => {
-                self.translate_binary_op(cmd, op1, op2, id)?;
-            }
-            HirExpr::TernaryOp(cmd, op1, op2, op3) => {
-                self.translate_ternary_op(cmd, op1, op2, op3, id)?;
-            }
-            HirExpr::MLoad(addr) => {
-                let result = self.variables.borrow(SType::Num);
-                let addr = self.get_var(addr)?;
-                ensure!(addr.s_type() == SType::Num, "address must be of type num");
-                self.mapping.insert(id, result);
-                self.mir.push(Statement::Assign(
-                    result,
-                    Expression::MLoad {
-                        memory: self.mem_var,
-                        offset: addr,
-                    },
-                ));
-            }
-            HirExpr::SLoad(addr) => {
-                let result = self.variables.borrow(SType::Num);
-                self.mapping.insert(id, result);
-                let addr = self.get_var(addr)?;
-                ensure!(addr.s_type() == SType::Num, "address must be of type num");
-
-                self.mir.push(Statement::Assign(
-                    result,
-                    Expression::SLoad {
-                        storage: self.store_var,
-                        offset: addr,
-                    },
-                ));
-            }
-            HirExpr::MSize => {
-                let result = self.variables.borrow(SType::Num);
-                self.mir.push(Statement::Assign(
-                    result,
-                    Expression::MSize {
-                        memory: self.mem_var,
-                    },
-                ));
-            }
-            HirExpr::Signer => {
-                let signer = self.variables.borrow_param(self.signer_index);
-                let result = self.cast(signer, SType::Num)?;
-                self.mapping.insert(id, result);
-            }
-            HirExpr::ArgsSize => {
-                self.translate_args_size(id)?;
-            }
-            HirExpr::Args(offset) => {
-                self.translate_args(offset, id)?;
-            }
-            HirExpr::Hash(offset, len) => {
-                let result = self.variables.borrow(SType::Num);
-
-                let offset = self.get_var(offset)?;
-                let len = self.get_var(len)?;
-                ensure!(offset.s_type() == SType::Num, "offset must be of type num");
-                ensure!(len.s_type() == SType::Num, "len must be of type num");
-                self.mapping.insert(id, result);
-
-                self.mir.push(Statement::Assign(
-                    result,
-                    Expression::Hash {
-                        mem: self.mem_var,
-                        offset,
-                        len,
-                    },
-                ));
-            }
-        }
+        let expr = self.translate_expr(&vars.take(id)?)?;
+        let var = self.variables.borrow(expr.ty);
+        self.mapping.insert(id, var);
+        self.mir.push(var.assign(*expr.expr));
         Ok(())
     }
 
@@ -343,40 +258,6 @@ impl<'a> MirTranslator<'a> {
                 },
             ));
             self.mir.push(Statement::Result(vec![result]));
-        }
-        Ok(())
-    }
-
-    fn translate_args_size(&mut self, id: VarId) -> Result<(), Error> {
-        if self.flags.native_input {
-            bail!("args_size is not supported in native input mode");
-        } else {
-            let result = self.variables.borrow(SType::Num);
-            let args = self.variables.borrow_param(self.args_index);
-            ensure!(args.s_type() == SType::Bytes, "args must be of type bytes");
-            self.mir
-                .push(Statement::Assign(result, Expression::BytesLen(args)));
-            self.mapping.insert(id, result);
-        }
-        Ok(())
-    }
-
-    fn translate_args(&mut self, offset: VarId, id: VarId) -> Result<(), Error> {
-        if self.flags.native_input {
-            let param = self.variables.borrow_param(offset.local_index());
-            self.mapping.insert(id, param);
-        } else {
-            let result = self.variables.borrow(SType::Num);
-            let data = self.variables.borrow_param(self.args_index);
-            let offset = self.get_var(offset)?;
-            ensure!(offset.s_type() == SType::Num, "offset must be of type num");
-            ensure!(data.s_type() == SType::Bytes, "args must be of type bytes");
-
-            self.mir.push(Statement::Assign(
-                result,
-                Expression::ReadNum { data, offset },
-            ));
-            self.mapping.insert(id, result);
         }
         Ok(())
     }

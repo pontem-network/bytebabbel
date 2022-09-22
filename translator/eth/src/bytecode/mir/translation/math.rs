@@ -1,9 +1,7 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir::ir::var::VarId;
-use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
-use crate::bytecode::mir::ir::statement::Statement;
+use crate::bytecode::hir::ir::var::{Expr, VarId};
+use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpression};
 use crate::bytecode::mir::ir::types::SType;
-use crate::bytecode::mir::translation::variables::Variable;
 use crate::MirTranslator;
 use anyhow::{anyhow, Error};
 
@@ -13,13 +11,12 @@ impl<'a> MirTranslator<'a> {
         op: BinaryOp,
         arg: VarId,
         arg1: VarId,
-        result: VarId,
-    ) -> Result<(), Error> {
+    ) -> Result<TypedExpression, Error> {
         let arg = self.get_var(arg)?;
         let arg1 = self.get_var(arg1)?;
 
         let (arg, arg1) = if op == BinaryOp::Eq {
-            if arg.s_type() == SType::Bool && arg1.s_type() == SType::Bool {
+            if arg.ty() == SType::Bool && arg1.ty() == SType::Bool {
                 (arg, arg1)
             } else {
                 (self.cast(arg, SType::Num)?, self.cast(arg1, SType::Num)?)
@@ -30,15 +27,13 @@ impl<'a> MirTranslator<'a> {
             (arg, arg1)
         };
 
-        let result = match op {
+        let ty = match op {
             BinaryOp::Eq | BinaryOp::Lt | BinaryOp::Gt | BinaryOp::SLt | BinaryOp::SGt => {
-                self.map_var(result, SType::Bool)
+                SType::Bool
             }
-            _ => self.map_var(result, SType::Num),
+            _ => SType::Num,
         };
-        self.mir
-            .push(Statement::Assign(result, Expression::Binary(op, arg, arg1)));
-        Ok(())
+        Ok(Expression::Binary(op, arg, arg1).ty(ty))
     }
 
     pub(super) fn translate_ternary_op(
@@ -47,70 +42,54 @@ impl<'a> MirTranslator<'a> {
         arg: VarId,
         arg1: VarId,
         arg2: VarId,
-        result: VarId,
-    ) -> Result<(), Error> {
+    ) -> Result<TypedExpression, Error> {
         let arg = self.get_var(arg)?;
         let arg1 = self.get_var(arg1)?;
         let arg2 = self.get_var(arg2)?;
-        let result = self.map_var(result, SType::Num);
-        self.mir
-            .push(result.assign(Expression::Ternary(op, arg, arg1, arg2)));
-        Ok(())
+        Ok(Expression::Ternary(op, arg, arg1, arg2).ty(SType::Num))
     }
 
     pub(super) fn translate_unary_op(
         &mut self,
         op: UnaryOp,
-        arg: VarId,
-        result: VarId,
-    ) -> Result<(), Error> {
-        let var = self.get_var(arg)?;
-        match var.s_type() {
-            SType::Num => self.unary_with_num(op, var, result),
-            SType::Bool => self.unary_with_bool(op, var, result),
+        arg: &Expr,
+    ) -> Result<TypedExpression, Error> {
+        let expr = self.translate_expr(arg)?;
+        match expr.ty {
+            SType::Num => Ok(self.unary_with_num(op, expr)),
+            SType::Bool => self.unary_with_bool(op, expr),
             _ => Err(anyhow!(
                 "Unary operation {:?} not supported for type {:?}",
                 op,
-                var.s_type()
+                expr.ty
             )),
         }
     }
 
-    fn unary_with_num(&mut self, op: UnaryOp, arg: Variable, result: VarId) -> Result<(), Error> {
+    fn unary_with_num(&mut self, op: UnaryOp, arg: TypedExpression) -> TypedExpression {
         match op {
-            UnaryOp::IsZero => {
-                let result = self.map_var(result, SType::Bool);
-                self.mir
-                    .push(result.assign(Expression::Unary(UnaryOp::IsZero, arg)));
-            }
-            UnaryOp::Not => {
-                let result = self.map_var(result, SType::Num);
-                self.mir
-                    .push(result.assign(Expression::Unary(UnaryOp::Not, arg)));
-            }
+            UnaryOp::IsZero => Expression::Unary(UnaryOp::IsZero, arg).ty(SType::Bool),
+            UnaryOp::Not => Expression::Unary(UnaryOp::Not, arg).ty(SType::Num),
         }
-        Ok(())
     }
 
-    fn unary_with_bool(&mut self, op: UnaryOp, args: Variable, result: VarId) -> Result<(), Error> {
-        let result = self.map_var(result, SType::Bool);
-        match op {
-            UnaryOp::IsZero => {
-                let ops = StackOpsBuilder::default()
-                    .push_bool(args)?
-                    .push_const_bool(false)
-                    .eq()?
-                    .build(SType::Bool)?;
-                self.mir.push(Statement::Assign(result, ops));
-            }
-            UnaryOp::Not => {
-                let ops = StackOpsBuilder::default()
-                    .push_bool(args)?
-                    .not()?
-                    .build(SType::Bool)?;
-                self.mir.push(Statement::Assign(result, ops));
-            }
-        }
-        Ok(())
+    fn unary_with_bool(
+        &mut self,
+        op: UnaryOp,
+        args: TypedExpression,
+    ) -> Result<TypedExpression, Error> {
+        Ok(match op {
+            UnaryOp::IsZero => StackOpsBuilder::default()
+                .push_expr(args)?
+                .push_const_bool(false)
+                .eq()?
+                .build(SType::Bool)?
+                .ty(SType::Bool),
+            UnaryOp::Not => StackOpsBuilder::default()
+                .push_expr(args)?
+                .not()?
+                .build(SType::Bool)?
+                .ty(SType::Bool),
+        })
     }
 }

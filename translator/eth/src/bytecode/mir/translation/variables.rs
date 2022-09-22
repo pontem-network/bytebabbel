@@ -167,7 +167,7 @@ impl Drop for Scope {
         let mut vars = self.vars.inner.borrow_mut();
         if let Some(scope) = vars.scopes.pop() {
             for var in scope {
-                if let Some(locals) = vars.locals.get_mut(&var.s_type()) {
+                if let Some(locals) = vars.locals.get_mut(&var.ty()) {
                     locals.release(var.0);
                 }
             }
@@ -183,7 +183,7 @@ impl Variable {
         Variable(0, SType::Signer)
     }
 
-    pub fn s_type(&self) -> SType {
+    pub fn ty(&self) -> SType {
         self.1
     }
 

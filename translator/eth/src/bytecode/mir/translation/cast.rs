@@ -7,11 +7,11 @@ use anyhow::Error;
 
 impl<'a> MirTranslator<'a> {
     pub fn cast(&mut self, from: Variable, to: SType) -> Result<Variable, Error> {
-        if from.s_type() == to {
+        if from.ty() == to {
             return Ok(from);
         }
 
-        let cast = Cast::make(from.s_type(), to)?;
+        let cast = Cast::make(from.ty(), to)?;
         let var = self.variables.borrow_global(to);
         self.mir
             .push(Statement::Assign(var, Expression::Cast(from, cast)));

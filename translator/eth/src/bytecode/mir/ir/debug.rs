@@ -49,7 +49,7 @@ fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(
                 "{:width$}let var_{:?}: {} = ",
                 " ",
                 var.index(),
-                var.s_type()
+                var.ty()
             )?;
             print_expr(value, buf, width + 4)?;
             writeln!(buf, ";")?;
@@ -247,7 +247,8 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             )?;
         }
         Expression::Unary(op, arg) => {
-            write!(buf, "{:?} var_{:?}", op, arg.index())?;
+            write!(buf, "{:?}", op)?;
+            print_expr(&arg.expr, buf, width)?;
         }
         Expression::Binary(op, arg1, arg2) => {
             write!(
@@ -295,6 +296,10 @@ fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Er
         }
         StackOp::Eq => {
             write!(buf, "{:width$}eq", " ")?;
+        }
+        StackOp::PushExpr(expr) => {
+            write!(buf, "{:width$}push ", " ")?;
+            print_expr(&expr.expr, buf, width)?;
         }
     }
     Ok(())
