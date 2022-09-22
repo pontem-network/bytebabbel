@@ -65,7 +65,7 @@ impl Vars {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Val(U256),
     Var(VarId),

@@ -38,7 +38,9 @@ impl InstructionHandler for UnaryOp {
                 return ExecutionResult::Output(vec![id]);
             }
         }
-        let id = ir.create_var(Expr::UnaryOp(*self, Box::new(Expr::Var(params[0]))));
+
+        let expr = ir.var(&params[0]);
+        let id = ir.create_var(Expr::UnaryOp(*self, Box::new(expr.clone())));
         ExecutionResult::Output(vec![id])
     }
 }
