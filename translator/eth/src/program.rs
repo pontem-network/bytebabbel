@@ -1,4 +1,4 @@
-use crate::abi::entries::FunHash;
+use crate::abi::call::FunHash;
 use crate::{Function, Mir, MoveAbi};
 use anyhow::Error;
 use std::collections::{HashMap, HashSet};

@@ -3,7 +3,7 @@ use crate::mv_ir::Module;
 use crate::translator::signature::{map_signature, signer, SignatureWriter};
 use crate::translator::writer::{CallOp, Writer};
 use anyhow::{anyhow, bail, Error};
-use eth::abi::entries::FunHash;
+use eth::abi::call::FunHash;
 use eth::bytecode::block::BlockId;
 use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp};

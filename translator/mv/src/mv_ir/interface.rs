@@ -1,14 +1,15 @@
+use std::fmt::Write;
+
 use anyhow::Error;
-use eth::abi::entries::{AbiEntries, Entry, FunctionData};
-use eth::abi::inc_ret_param::Param;
+use ethabi::{Contract, Function};
+use move_binary_format::CompiledModule;
+
 use eth::bytecode::types::EthType;
 use eth::Flags;
-use move_binary_format::CompiledModule;
-use std::fmt::Write;
 
 pub fn move_interface(
     module: &CompiledModule,
-    abi: &AbiEntries,
+    abi: &Contract,
     flags: Flags,
 ) -> Result<String, Error> {
     let mut buff = String::new();
@@ -25,12 +26,7 @@ pub fn move_interface(
     write_constants(&mut buff)?;
     writeln!(buff)?;
 
-    abi.entries
-        .iter()
-        .filter_map(|e| match e {
-            Entry::Function(f) => Some(f),
-            _ => None,
-        })
+    abi.functions()
         .map(|f| write_function(&mut buff, f, module, flags))
         .collect::<Result<Vec<_>, Error>>()?;
 
@@ -53,20 +49,16 @@ fn write_constants(buff: &mut String) -> Result<(), Error> {
 
 fn write_function(
     buff: &mut String,
-    fun: &FunctionData,
+    fun: &Function,
     _module: &CompiledModule,
     flags: Flags,
 ) -> Result<(), Error> {
     let args = if flags.native_input {
-        if let Some(input) = &fun.inputs {
-            input
-                .iter()
-                .map(|p| map_param(p, &flags))
-                .collect::<Vec<_>>()
-                .join(", ")
-        } else {
-            String::default()
-        }
+        fun.inputs
+            .iter()
+            .map(|p| map_param(p, &flags))
+            .collect::<Vec<_>>()
+            .join(", ")
     } else {
         "args: &vector<u8>".to_string()
     };
@@ -74,21 +66,20 @@ fn write_function(
     let ret = if flags.native_output {
         if flags.hidden_output {
             "".to_string()
-        } else if let Some(output) = &fun.outputs {
-            let params = output
+        } else {
+            let params = fun
+                .outputs
                 .iter()
                 .map(|p| map_type(&EthType::try_from(p).unwrap(), &flags))
                 .collect::<Vec<_>>()
                 .join(", ");
-            if output.is_empty() {
+            if fun.outputs.is_empty() {
                 params
-            } else if output.len() == 1 {
+            } else if fun.outputs.len() == 1 {
                 format!(": {}", params)
             } else {
                 format!(": ({})", params)
             }
-        } else {
-            String::default()
         }
     } else {
         ": vector<u8>".to_string()
@@ -98,7 +89,7 @@ fn write_function(
         buff,
         "{:width$}public native fun {}(account_address: &signer,{}){};",
         "",
-        fun.name.as_deref().unwrap_or("anonymous"),
+        fun.name,
         args,
         ret,
         width = 4
@@ -137,7 +128,7 @@ fn write_u256(buff: &mut String) -> Result<(), Error> {
     Ok(())
 }
 
-fn map_param(p: &Param, flags: &Flags) -> String {
+fn map_param(p: &ethabi::Param, flags: &Flags) -> String {
     let ty = map_type(&EthType::try_from(p).unwrap(), flags);
     format!("{}: {}", p.name, ty)
 }

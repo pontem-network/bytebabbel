@@ -1,0 +1,48 @@
+name: Tests on Ubuntu
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+
+env:
+  RUSTUP_MAX_RETRIES: 10
+  CARGO_INCREMENTAL: 1
+  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  RUNNER_ARCH: x64
+
+jobs:
+  tests:
+    name: Tests on Ubuntu
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci')"
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install
+        uses: ./.github/actions/preinstall
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          os: ${{ runner.os }}
+
+      - name: Test
+        run: RUST_BACKTRACE=1 cargo test --offline
+        shell: bash
+
+      - run: cargo fmt -- --check
+        shell: bash
+
+      - name: Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          name: Clippy Report
+          token: ${{ secrets.GITHUB_TOKEN }}
+          failure-mode: warnings
+          args: --all --all-targets -- -D warnings

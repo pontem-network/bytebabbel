@@ -4,10 +4,10 @@ use std::path::{Path, PathBuf};
 use std::{fmt, fs, usize};
 
 use anyhow::{anyhow, bail, Result};
-use eth::abi::entries::AbiEntries;
-use eth::abi::inc_ret_param::types::ParamType;
-use eth::abi::inc_ret_param::value::type_to_value::fn_params_str_split;
+use ethabi::{Contract, ParamType};
 use rand::Rng;
+
+use eth::abi::call::fn_params_str_split;
 
 use crate::testssol::env::sol::{build_sol_by_path, EvmPack};
 
@@ -162,7 +162,7 @@ impl fmt::Debug for SolTest {
 }
 
 impl SolTest {
-    pub fn try_from_with_fuzzing(instruction: &str, abi: &AbiEntries) -> Result<Vec<SolTest>> {
+    pub fn try_from_with_fuzzing(instruction: &str, abi: &Contract) -> Result<Vec<SolTest>> {
         let ins = SolTest::try_from(instruction)?;
         let params = fn_params_str_split(&ins.params)?;
         if params.is_empty() || !params.contains(&"*") {
@@ -170,21 +170,19 @@ impl SolTest {
         }
 
         let call = abi
-            .by_name(&ins.func)
+            .functions_by_name(&ins.func)?
+            .first()
             .ok_or_else(|| anyhow!("Not found fn {}", &ins.func))?;
-        let inputs = call
-            .inputs()
-            .ok_or_else(|| anyhow!("This function has no parameters {}", &ins.func))?;
 
         let variants = params
             .iter()
-            .zip(inputs)
+            .zip(&call.inputs)
             .map(|(val, inp)| {
                 if val != &"*" {
                     return vec![val.to_string()];
                 }
 
-                randparam_for_tp(&inp.tp)
+                randparam_for_tp(&inp.kind)
             })
             .collect::<Vec<Vec<_>>>();
 
@@ -246,7 +244,7 @@ fn randparam_for_tp(tp: &ParamType) -> Vec<String> {
             }
             result
         }
-        ParamType::UInt(size) => {
+        ParamType::Uint(size) => {
             let (min, max) = match size {
                 8 => (u8::MIN as usize, u8::MAX as usize),
                 16 => (u16::MIN as usize, u16::MAX as usize),
@@ -262,7 +260,7 @@ fn randparam_for_tp(tp: &ParamType) -> Vec<String> {
             }
             result
         }
-        ParamType::Byte(size) => {
+        ParamType::FixedBytes(size) => {
             let mut result = Vec::default();
 
             let mut val = (0..*size).map(|_| u8::MIN).collect::<Vec<u8>>();
@@ -280,7 +278,7 @@ fn randparam_for_tp(tp: &ParamType) -> Vec<String> {
 
             result
         }
-        ParamType::Address => randparam_for_tp(&ParamType::Byte(32)),
+        ParamType::Address => randparam_for_tp(&ParamType::FixedBytes(32)),
         ParamType::Bytes => {
             let mut result = Vec::default();
             result.push("0x42".to_string());
@@ -317,10 +315,7 @@ fn randparam_for_tp(tp: &ParamType) -> Vec<String> {
 
             result
         }
-        ParamType::Array { .. } => {
-            todo!()
-        }
-        ParamType::Custom(_) => {
+        _ => {
             todo!()
         }
     }

@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use anyhow::{anyhow, ensure, Error, Result};
-use eth::abi::call::ToCall;
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
@@ -10,9 +10,9 @@ pub mod convert;
 pub mod env;
 pub mod parse;
 
-use crate::testssol::convert::ResultToString;
 use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
+use eth::abi::call::EthEncodeByString;
 use eth::Flags;
 use parse::{SolFile, SolTest};
 use test_infra::color;
@@ -89,27 +89,29 @@ impl STest {
 
     pub fn run_mv(&self) -> Result<String> {
         let result = self.vm_run().map_err(|err| anyhow!("{err}"))?;
-        Ok(result.returns.to_result_str())
+        Ok(result.to_result_str())
     }
 
     pub fn run_evm(&self) -> Result<String> {
         use crate::testssol::env::revm::REvm;
 
         let abi = self.contract.abi()?;
-        let ent = abi
-            .by_name(&self.test.func)
+        let func = abi
+            .functions_by_name(&self.test.func)?
+            .first()
             .ok_or_else(|| anyhow!("function not found in abi"))?;
-        let mut callfn = ent.try_call()?;
-        let tx = callfn
-            .parse_and_set_inputs(&self.test.params)?
-            .encode(true)?;
+        let tx = func.call_by_str(&self.test.params)?;
 
         let mut evm = REvm::try_from(&self.contract)?;
         evm.construct(vec![])?;
         let result_bytes = evm.run_tx(tx)?;
         log::trace!("emv result_bytes: {result_bytes:?}");
 
-        let return_value = callfn.decode_return(result_bytes)?.to_result_str();
+        let return_value = func
+            .decode_output(&result_bytes)?
+            .iter()
+            .map(|data| format!("{data:?}"))
+            .join(", ");
         log::trace!("emv result_string: {return_value:?}");
 
         Ok(return_value)
