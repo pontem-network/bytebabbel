@@ -38,8 +38,10 @@ pub struct Args {
     #[clap(long = "args", short = 'a', default_value = "")]
     init_args: String,
 
+    #[cfg(feature = "deploy")]
     #[clap(flatten)]
     deploy_flags: flags::DeployFlags,
+
     #[clap(flatten)]
     translation_flags: flags::TranslationFlags,
 }
