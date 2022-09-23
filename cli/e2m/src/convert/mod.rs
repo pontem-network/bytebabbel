@@ -46,10 +46,15 @@ pub struct CmdConvert {
 
     #[cfg(feature = "deploy")]
     #[clap(flatten)]
-    pub(crate) deploy_flags: flags::DeployFlags,
+    pub(crate) deploy_flags: crate::txflags::TransactionFlags,
+
+    /// Publishes the modules in a Move package to the Aptos blockchain
+    #[cfg(feature = "deploy")]
+    #[clap(long = "deploy", short = 'd', value_parser)]
+    pub deploy: bool,
 
     #[clap(flatten)]
-    translation_flags: flags::TranslationFlags,
+    translation_flags: flags::ConvertFlags,
 }
 
 impl Cmd for CmdConvert {
@@ -57,7 +62,7 @@ impl Cmd for CmdConvert {
         let result = self.convert()?;
 
         #[cfg(feature = "deploy")]
-        if self.deploy_flags.deploy {
+        if self.deploy {
             return self.publish(&result);
         }
 

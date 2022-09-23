@@ -1,9 +1,12 @@
+use crate::call::CmdCall;
 use anyhow::Result;
 use clap::Parser;
 use test_infra::init_log;
 
+pub mod call;
 pub mod convert;
 pub mod profile;
+pub mod txflags;
 
 use crate::convert::CmdConvert;
 
@@ -19,8 +22,8 @@ pub enum Args {
 
     // "aptos" is used for the call
     #[cfg(feature = "deploy")]
-    /// @todo Call a Move function
-    Call,
+    /// Run a Move function
+    Call(CmdCall),
 
     // "aptos" is used for the view resources
     #[cfg(feature = "deploy")]
@@ -32,7 +35,7 @@ impl Cmd for Args {
     fn execute(&self) -> Result<String> {
         match self {
             Args::Convert(data) => data.execute(),
-            Args::Call => {
+            Args::Call(..) => {
                 todo!()
             }
             Args::Resources => {
