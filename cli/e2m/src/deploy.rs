@@ -37,7 +37,8 @@ impl Args {
                 "--profile",
                 profile,
                 "--max-gas",
-                "5000",
+                &self.deploy_flags.max_gas.to_string(),
+                "--assume-yes",
             ])
             .map_err(|_| anyhow!("Invalid profile parameter. "))?;
 
