@@ -1,10 +1,12 @@
-use std::collections::HashMap;
 use std::fs;
+use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 use std::process::Command as cli;
+use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
 use clap::Parser;
+use eth::compile::{Evm, EvmPack};
 use move_core_types::account_address::AccountAddress;
 
 use crate::{profile, Cmd};
@@ -71,23 +73,17 @@ impl Cmd for CmdConvert {
 
 impl CmdConvert {
     pub fn convert(&self) -> Result<ResultConvert> {
-        let paths = path_to_abibin(&self.path)?;
+        let pack = path_to_abibin(&self.path)?;
         let mv_path = self
             .output_path
             .clone()
-            .unwrap_or_else(|| {
-                let filename = path_to_filename(&paths.abi).unwrap();
-                PathBuf::from("./").join(filename)
-            })
+            .unwrap_or_else(|| PathBuf::from("./").join(pack.name()))
             .with_extension("mv");
 
         let interface_path = self
             .output_path
             .clone()
-            .unwrap_or_else(|| {
-                let filename = path_to_filename(&paths.abi).unwrap();
-                PathBuf::from("./").join(filename)
-            })
+            .unwrap_or_else(|| PathBuf::from("./").join(pack.name()))
             .with_extension("move");
 
         let address = self.profile_or_address.to_address()?;
@@ -101,10 +97,7 @@ impl CmdConvert {
         let module_name = self
             .move_module_name
             .clone()
-            .unwrap_or(path_to_filename(&paths.abi)?);
-
-        let abi_content = fs::read_to_string(&paths.abi)?;
-        let eth_content = fs::read_to_string(&paths.bin)?;
+            .unwrap_or_else(|| pack.name().to_string());
 
         let cfg = translator::Config {
             contract_addr: address,
@@ -118,15 +111,13 @@ impl CmdConvert {
                 package_interface: self.translation_flags.interface_package,
             },
         };
-        let mv = translate(&eth_content, &abi_content, cfg)?;
+        let mv = translate(pack.bin_contract(), pack.abi_str(), cfg)?;
         fs::write(&mv_path, &mv.bytecode)?;
         save_interface(
             &interface_path,
             &mv,
             self.translation_flags.interface_package,
         )?;
-
-        paths.delete_tmp_dir();
 
         let move_path = if self.translation_flags.interface_package {
             interface_path.with_extension("")
@@ -183,68 +174,23 @@ fn path_to_filename(path: &Path) -> Result<String> {
 ///     sol - compiled into "bin" and "abi" and stored in a temporary directory
 ///     bin - searches next to "abi" with the same name and returns paths to them
 ///     abi - searches next to "bin" with the same name and returns paths to them
-fn path_to_abibin(path: &Path) -> Result<SolPaths> {
+fn path_to_abibin(path: &Path) -> Result<EvmPack> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
         .ok_or_else(|| anyhow!("solidity file was expected {path:?}\nPath: "))?;
 
     match ext {
-        "sol" => compile_sol(path),
+        "sol" => {
+            if !check_solc() {
+                bail!("solc command was not found.\n\
+                    Please install solc on your computer. See: https://docs.soliditylang.org/en/develop/installing-solidity.html")
+            }
+            eth::compile::build_sol_by_path(path)
+        }
         "bin" | "abi" => find_abibin(path),
         _ => bail!("A file with the extension bin, abi or sol was expected.\nPath: {path:?}"),
     }
-}
-
-/// Compile the sol file and return the paths
-///     return: (abi path, bin path)
-fn compile_sol(path: &Path) -> Result<SolPaths> {
-    todo!();
-
-    let path = path.canonicalize()?;
-
-    if !check_solc() {
-        bail!("solc command was not found.\n\
-        Please install solc on your computer. See: https://docs.soliditylang.org/en/develop/installing-solidity.html")
-    }
-
-    let tmp_folder = tempfile::TempDir::new()?.into_path();
-    log::debug!("tmp_dir: {tmp_folder:?}");
-
-    let result = cli::new("solc")
-        .args([
-            "-o",
-            &tmp_folder.to_string_lossy(),
-            "--optimize-runs=0",
-            "--abi",
-            "--bin",
-            "--ast-compact-json",
-            "--asm",
-            path.to_string_lossy().to_string().as_str(),
-        ])
-        .output()?;
-    let result = output_to_result(result)?;
-    log::info!("{result}");
-
-    let files: HashMap<String, PathBuf> = fs::read_dir(&tmp_folder)?
-        .filter_map(|item| item.ok())
-        .map(|item| item.path())
-        .filter(|item| item.is_file())
-        .filter_map(|item| {
-            let ext = item
-                .extension()
-                .map(|ext| ext.to_string_lossy().to_string())?;
-            Some((ext, item))
-        })
-        .filter(|(name, _)| ["abi", "bin"].contains(&name.as_str()))
-        .collect();
-    log::debug!("finded: {files:?}");
-
-    Ok(SolPaths {
-        abi: files["abi"].to_owned(),
-        bin: files["bin"].to_owned(),
-        tmp_dir: Some(tmp_folder),
-    })
 }
 
 /// Checking whether "solc" is installed on this computer
@@ -280,7 +226,7 @@ fn output_to_result(output: std::process::Output) -> Result<String> {
     Ok(String::from_utf8(output.stdout).unwrap_or_default())
 }
 
-fn find_abibin(path: &Path) -> Result<SolPaths> {
+fn find_abibin(path: &Path) -> Result<EvmPack> {
     let filename = path_to_filename(path)?;
     let dir = path
         .parent()
@@ -296,38 +242,17 @@ fn find_abibin(path: &Path) -> Result<SolPaths> {
         bail!("Couldn't find bin.\nPath:{bin_path:?}");
     }
 
-    Ok(SolPaths {
-        abi: abi_path,
-        bin: bin_path,
-        tmp_dir: None,
-    })
-}
+    let bin = read_to_string(&bin_path)?;
+    let abi = read_to_string(&abi_path)?;
 
-#[derive(Debug)]
-struct SolPaths {
-    abi: PathBuf,
-    bin: PathBuf,
-    tmp_dir: Option<PathBuf>,
-}
-
-impl SolPaths {
-    pub fn delete_tmp_dir(&self) {
-        if let Some(path) = &self.tmp_dir {
-            log::debug!("Deleting a temporary directory {path:?}");
-            if !path.exists() {
-                log::error!("The path does not exist {path:?}");
-                return;
-            }
-            if !path.is_dir() {
-                log::error!("The path is not a directory {path:?}");
-                return;
-            }
-            if let Err(err) = fs::remove_dir_all(path) {
-                log::error!("{err:?}");
-            }
-            log::debug!("Temporary directory deleted");
-        }
-    }
+    Ok(EvmPack::from((
+        Evm {
+            name: Arc::new(filename),
+            bin: Arc::new(bin),
+            abi: Arc::new(abi),
+        },
+        Vec::new(),
+    )))
 }
 
 pub struct ResultConvert {
