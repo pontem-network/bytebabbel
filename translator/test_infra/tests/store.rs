@@ -1,6 +1,6 @@
 use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::env::sol::{build_sol, Evm};
 use crate::testssol::make_move_module;
+use eth::compile::{build_sol, Evm};
 use eth::Flags;
 use test_infra::init_log;
 

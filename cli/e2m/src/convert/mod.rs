@@ -199,6 +199,8 @@ fn path_to_abibin(path: &Path) -> Result<SolPaths> {
 /// Compile the sol file and return the paths
 ///     return: (abi path, bin path)
 fn compile_sol(path: &Path) -> Result<SolPaths> {
+    todo!();
+
     let path = path.canonicalize()?;
 
     if !check_solc() {

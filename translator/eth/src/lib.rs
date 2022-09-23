@@ -25,6 +25,7 @@ use std::collections::HashMap;
 
 pub mod abi;
 pub mod bytecode;
+pub mod compile;
 pub mod program;
 pub mod vm;
 

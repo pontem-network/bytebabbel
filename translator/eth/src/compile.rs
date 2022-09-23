@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Sha3_256};
 
-use eth::bytecode::pre_processing::swarm::remove_swarm_hash;
+use crate::bytecode::pre_processing::swarm::remove_swarm_hash;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evm {
