@@ -39,7 +39,7 @@ pub struct TranslationFlags {
     pub u128_io: bool,
 
     /// Generate an interface project
-    #[clap(long = "interface_package", short = 'i', default_value = "false")]
+    #[clap(long = "interface_package", short = 'i')]
     pub interface_package: bool,
 }
 
