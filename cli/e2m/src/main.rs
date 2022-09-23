@@ -3,7 +3,6 @@ use clap::Parser;
 use test_infra::init_log;
 
 pub mod convert;
-
 pub mod profile;
 
 use crate::convert::CmdConvert;
@@ -18,9 +17,13 @@ pub enum Args {
     /// Converting a sol script to move binary code.
     Convert(CmdConvert),
 
+    // "aptos" is used for the call
+    #[cfg(feature = "deploy")]
     /// @todo Call a Move function
     Call,
 
+    // "aptos" is used for the view resources
+    #[cfg(feature = "deploy")]
     /// @todo Command to list resources, modules, or other items owned by an address
     Resources,
 }
