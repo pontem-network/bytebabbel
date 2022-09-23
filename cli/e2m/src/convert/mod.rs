@@ -4,12 +4,71 @@ use std::path::{Path, PathBuf};
 use std::process::Command as cli;
 
 use anyhow::{anyhow, bail, Result};
+use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 
-use crate::Args;
+use crate::{flags, profile, Cmd};
 use translator::{translate, Flags, Target};
 
-impl Args {
+#[cfg(feature = "deploy")]
+mod deploy;
+
+#[derive(Parser, Debug)]
+pub struct CmdConvert {
+    /// Path to the file. Specify the path to sol file or abi|bin.
+    #[clap(value_parser)]
+    path: PathBuf,
+
+    /// Where to save the converted move binary code
+    #[clap(short, long = "output", display_order = 3, value_parser)]
+    output_path: Option<PathBuf>,
+
+    /// The name of the Move module. If not specified, the name will be taken from the abi path
+    #[clap(long = "module", display_order = 4, value_parser)]
+    move_module_name: Option<String>,
+
+    /// Profile name or address. The address must start with "0x". Needed for the module address
+    #[clap(
+        long = "profile",
+        display_order = 5,
+        short = 'p',
+        default_value = "default",
+        value_parser
+    )]
+    pub(crate) profile_or_address: profile::ProfileValue,
+
+    /// Parameters for initialization
+    #[clap(long = "args", short = 'a', default_value = "")]
+    init_args: String,
+
+    #[cfg(feature = "deploy")]
+    #[clap(flatten)]
+    pub(crate) deploy_flags: flags::DeployFlags,
+
+    #[clap(flatten)]
+    translation_flags: flags::TranslationFlags,
+}
+
+impl Cmd for CmdConvert {
+    fn execute(&self) -> Result<String> {
+        let result = self.convert()?;
+
+        #[cfg(feature = "deploy")]
+        if self.deploy_flags.deploy {
+            return self.publish(&result);
+        }
+
+        self.translation_flags.check()?;
+
+        Ok(format!(
+            "{}\n{}",
+            result.mv_path.to_string_lossy(),
+            result.move_path.to_string_lossy()
+        ))
+    }
+}
+
+impl CmdConvert {
     pub fn convert(&self) -> Result<ResultConvert> {
         let paths = path_to_abibin(&self.path)?;
         let mv_path = self

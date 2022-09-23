@@ -4,16 +4,16 @@ use std::future::Future;
 use anyhow::{anyhow, Result};
 
 use crate::convert::ResultConvert;
-use crate::Args;
+use crate::CmdConvert;
 use framework::natives::code::{
     ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy,
 };
 use framework::zip_metadata_str;
 use move_binary_format::access::ModuleAccess;
 
-const TEMPLATE_MOVE_TOML: &str = include_str!("../resources/template_move.toml");
+const TEMPLATE_MOVE_TOML: &str = include_str!("../../resources/template_move.toml");
 
-impl Args {
+impl CmdConvert {
     /// Publish in aptos node
     /// Access keys are taken from profiles (.aptos/config.yaml).
     pub fn publish(&self, result_convert: &ResultConvert) -> Result<String> {
