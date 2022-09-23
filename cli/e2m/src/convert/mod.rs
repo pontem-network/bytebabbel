@@ -7,11 +7,12 @@ use anyhow::{anyhow, bail, Result};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 
-use crate::{flags, profile, Cmd};
+use crate::{profile, Cmd};
 use translator::{translate, Flags, Target};
 
 #[cfg(feature = "deploy")]
 mod deploy;
+pub mod flags;
 
 #[derive(Parser, Debug)]
 pub struct CmdConvert {

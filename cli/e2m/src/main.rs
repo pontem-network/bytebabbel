@@ -4,7 +4,6 @@ use test_infra::init_log;
 
 pub mod convert;
 
-pub mod flags;
 pub mod profile;
 
 use crate::convert::CmdConvert;
