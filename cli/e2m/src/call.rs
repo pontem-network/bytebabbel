@@ -110,7 +110,7 @@ impl Cmd for CmdCall {
     }
 }
 
-fn args_encode(args: &Vec<String>) -> Result<String> {
+fn args_encode(args: &[String]) -> Result<String> {
     let eth_data = args
         .iter()
         .map(|row| {
@@ -125,7 +125,7 @@ fn args_encode(args: &Vec<String>) -> Result<String> {
                 val_str = ProfileValue::from_str(&val_str)
                     .and_then(|prof| prof.to_address())
                     .map(|add| hex::encode(add.as_ref()))
-                    .unwrap_or(val_str.to_string());
+                    .unwrap_or_else(|_| val_str.to_string());
                 val_str = format!("0x{}", val_str);
             }
 
