@@ -1,8 +1,9 @@
-use std::future::Future;
-
 use anyhow::Result;
 use clap::Parser;
 use test_infra::init_log;
+
+#[cfg(feature = "deploy")]
+use std::future::Future;
 
 pub mod convert;
 pub mod profile;
