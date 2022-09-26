@@ -123,7 +123,7 @@ impl EthEncodeByString for Constructor {
     }
 }
 
-fn to_token(data: &(ethabi::ParamType, &str)) -> Result<Token, ethabi::Error> {
+pub fn to_token(data: &(ethabi::ParamType, &str)) -> Result<Token, ethabi::Error> {
     match data.0 {
         ethabi::ParamType::Address => {
             let value = data.1.trim_start_matches("0x");

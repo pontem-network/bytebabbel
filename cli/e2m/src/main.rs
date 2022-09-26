@@ -1,11 +1,15 @@
-use crate::call::CmdCall;
+use std::future::Future;
+
 use anyhow::Result;
 use clap::Parser;
 use test_infra::init_log;
 
-pub mod call;
 pub mod convert;
 pub mod profile;
+
+#[cfg(feature = "deploy")]
+pub mod call;
+#[cfg(feature = "deploy")]
 pub mod txflags;
 
 use crate::convert::CmdConvert;
@@ -20,27 +24,18 @@ pub enum Args {
     /// Converting a sol script to move binary code.
     Convert(CmdConvert),
 
-    // "aptos" is used for the call
-    #[cfg(feature = "deploy")]
     /// Run a Move function
-    Call(CmdCall),
-
-    // "aptos" is used for the view resources
     #[cfg(feature = "deploy")]
-    /// @todo Command to list resources, modules, or other items owned by an address
-    Resources,
+    Call(crate::call::CmdCall),
 }
 
 impl Cmd for Args {
     fn execute(&self) -> Result<String> {
         match self {
             Args::Convert(data) => data.execute(),
-            Args::Call(..) => {
-                todo!()
-            }
-            Args::Resources => {
-                todo!()
-            }
+
+            #[cfg(feature = "deploy")]
+            Args::Call(data) => data.execute(),
         }
     }
 }
@@ -56,4 +51,12 @@ fn main() {
             println!("Error: {err:?}");
         }
     }
+}
+
+pub fn wait<F: Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
 }

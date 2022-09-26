@@ -1,6 +1,5 @@
 use clap::Args;
 
-#[cfg(feature = "deploy")]
 #[derive(Args, Debug)]
 pub struct TransactionFlags {
     /// Maximum amount of gas units to be used to send this transaction

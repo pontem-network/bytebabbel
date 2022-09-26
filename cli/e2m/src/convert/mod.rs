@@ -46,7 +46,7 @@ pub struct CmdConvert {
 
     #[cfg(feature = "deploy")]
     #[clap(flatten)]
-    pub(crate) deploy_flags: crate::txflags::TransactionFlags,
+    pub(crate) transaction_flags: crate::txflags::TransactionFlags,
 
     /// Publishes the modules in a Move package to the Aptos blockchain
     #[cfg(feature = "deploy")]
@@ -54,7 +54,7 @@ pub struct CmdConvert {
     pub deploy: bool,
 
     #[clap(flatten)]
-    translation_flags: flags::ConvertFlags,
+    convertion_flags: flags::ConvertFlags,
 }
 
 impl Cmd for CmdConvert {
@@ -66,7 +66,7 @@ impl Cmd for CmdConvert {
             return self.publish(&result);
         }
 
-        self.translation_flags.check()?;
+        self.convertion_flags.check()?;
 
         Ok(format!(
             "{}\n{}",
@@ -109,11 +109,11 @@ impl CmdConvert {
             name: &module_name,
             initialization_args: &init_args,
             flags: Flags {
-                native_input: self.translation_flags.native_input,
-                native_output: self.translation_flags.native_output,
-                hidden_output: self.translation_flags.hide_output,
-                u128_io: self.translation_flags.u128_io,
-                package_interface: self.translation_flags.interface_package,
+                native_input: self.convertion_flags.native_input,
+                native_output: self.convertion_flags.native_output,
+                hidden_output: self.convertion_flags.hide_output,
+                u128_io: self.convertion_flags.u128_io,
+                package_interface: self.convertion_flags.interface_package,
             },
         };
         let mv = translate(pack.bin_contract(), pack.abi_str(), cfg)?;
@@ -121,10 +121,10 @@ impl CmdConvert {
         save_interface(
             &interface_path,
             &mv,
-            self.translation_flags.interface_package,
+            self.convertion_flags.interface_package,
         )?;
 
-        let move_path = if self.translation_flags.interface_package {
+        let move_path = if self.convertion_flags.interface_package {
             interface_path.with_extension("")
         } else {
             interface_path

@@ -1,10 +1,9 @@
 use std::fs;
-use std::future::Future;
 
 use anyhow::{anyhow, Result};
 
 use crate::convert::ResultConvert;
-use crate::CmdConvert;
+use crate::{wait, CmdConvert};
 use framework::natives::code::{
     ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy,
 };
@@ -37,10 +36,10 @@ impl CmdConvert {
                 "--profile",
                 profile,
                 "--max-gas",
-                &self.deploy_flags.max_gas.to_string(),
+                &self.transaction_flags.max_gas.to_string(),
                 "--assume-yes",
             ])
-            .map_err(|_| anyhow!("Invalid profile parameter. "))?;
+            .map_err(|err| anyhow!("Invalid profile parameter. {err}"))?;
 
         let binarycode = fs::read(&result_convert.mv_path)?;
 
@@ -63,14 +62,6 @@ impl CmdConvert {
             &result,
         )?)?)
     }
-}
-
-fn wait<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 fn gen_meta(result_convert: &ResultConvert, binarycode: &[u8]) -> Result<PackageMetadata> {
