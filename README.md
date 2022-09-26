@@ -64,8 +64,8 @@ e2m convert --help
 * `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
 * `-a`, `--args`        Parameters for initialization
 * `-i`, `--interface_package`   Generate an interface project
-* `--native_input`      Input params of native type
-* `--native_output`     Output value of native type
+* `--native-input`      Input params of native type
+* `--native-output`     Output value of native type
 * `--u128_io`           Use u128 instead of u256
 * `-d`, `--deploy`      Deploying the module in aptos node
 * `--max-gas`           Maximum amount of gas units to be used to send this transaction
@@ -259,11 +259,45 @@ e2m convert examples/two_functions.sol -d
 e2m convert examples/APlusB.abi -o ./module.mv --profile demo --deploy
 ```
 
+#### Generate an interface project
+##### examples/APlusB.abi
+```bash
+e2m convert examples/a_plus_b.sol \
+    -o ./aplusb.mv \
+    -i
+```
+
+A "move" project will be created in the current directory. This interface is necessary for accessing the published module.
+
+##### Native types. examples/APlusB.abi
+By default, the module uses "Ethereum" types for data input and output.
+`--native-input`, `--native-output` - by setting these flags, the functions in the module will use the "move" types as input and output parameters. 
+`--u128-io` - Use u128 instead of u256
+
+##### U256
+```bash
+e2m convert examples/a_plus_b.sol \
+    --native-input \
+    --native-output \
+    -i
+```
+
+##### U128
+```bash
+e2m convert examples/a_plus_b.sol \
+    --native-input \
+    --native-output \
+    --u128-io \
+    -i
+```
+
 ## Call. 
+
 See help:
 ```bash
 e2m call --help
 ```
+
 ### Input parameters
 * `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
 * `-a`, `--args`        Arguments combined with their type separated by spaces. Supported types \
