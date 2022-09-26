@@ -7,7 +7,7 @@ contract APlusB {
         return plus_1(13, 14);
     }
 
-    function plus_1(uint a, uint b) internal pure returns (uint) {
+    function plus_1(uint a, uint b) public pure returns (uint) {
         return a + b;
     }
 

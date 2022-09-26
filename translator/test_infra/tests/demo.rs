@@ -1,4 +1,4 @@
-use crate::testssol::env::sol::build_sol;
+use eth::compile::build_sol;
 use test_infra::init_log;
 
 #[allow(dead_code)]

@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Sha3_256};
 
-use eth::bytecode::pre_processing::swarm::remove_swarm_hash;
+use crate::bytecode::pre_processing::swarm::remove_swarm_hash;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evm {
-    name: Arc<String>,
-    bin: Arc<String>,
-    abi: Arc<String>,
+    pub name: Arc<String>,
+    pub bin: Arc<String>,
+    pub abi: Arc<String>,
 }
 
 impl Evm {
@@ -37,7 +37,7 @@ pub fn build_sol_by_path(path: &Path) -> Result<EvmPack> {
     let path = path.canonicalize()?;
     let sol_contetnt = fs::read_to_string(&path)?;
 
-    let tmp_dir_path = std::env::temp_dir().join(sha_name(sol_contetnt.as_bytes()) + "0");
+    let tmp_dir_path = std::env::temp_dir().join(sha_from_string(sol_contetnt.as_bytes()) + "0");
     let contract_compile_path = tmp_dir_path.join("compiled.json");
 
     if !tmp_dir_path.exists() || !contract_compile_path.exists() {
@@ -109,7 +109,7 @@ pub fn build_sol_by_path(path: &Path) -> Result<EvmPack> {
 }
 
 pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
-    let tmp_dir = std::env::temp_dir().join(sha_name(sol));
+    let tmp_dir = std::env::temp_dir().join(sha_from_string(sol));
     if !tmp_dir.exists() || fs::read_dir(&tmp_dir)?.count() != 2 {
         fs::create_dir_all(&tmp_dir)?;
 
@@ -169,7 +169,7 @@ pub fn build_sol(sol: &[u8]) -> Result<Evm, Error> {
     })
 }
 
-fn sha_name(cont: &[u8]) -> String {
+fn sha_from_string(cont: &[u8]) -> String {
     let mut hasher = Sha3_256::new();
     hasher.update(cont);
     let value_hash = hasher.finalize();
@@ -195,6 +195,10 @@ impl EvmPack {
     pub fn abi(&self) -> Result<Contract> {
         let abi = serde_json::from_str(self.contract.abi.as_str())?;
         Ok(abi)
+    }
+
+    pub fn bin_contract(&self) -> &str {
+        self.contract.bin()
     }
 
     pub fn abi_str(&self) -> &str {
