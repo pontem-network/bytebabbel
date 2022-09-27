@@ -138,9 +138,8 @@ mod test {
     use primitive_types::U256;
 
     use crate::testssol::env::revm::REvm;
-    use crate::testssol::env::sol::build_sol;
     use crate::testssol::EvmPack;
-    use eth::compile::build_sol_by_path;
+    use eth::compile::build_sol;
     use test_infra::init_log;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";

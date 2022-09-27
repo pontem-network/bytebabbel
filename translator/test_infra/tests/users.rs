@@ -1,6 +1,6 @@
 use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::env::sol::build_sol;
 use crate::testssol::{make_move_module, sol_path};
+use eth::compile::build_sol;
 use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
