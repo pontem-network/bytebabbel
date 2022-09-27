@@ -2,7 +2,7 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::instruction::Offset;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Context as ErrContext, Error};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -28,7 +28,7 @@ impl<'a> Tracer<'a> {
                 let mut lp = lp.clone();
                 self.fill_io(&mut lp, &loops).map(|_| (*id, lp))
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<_, Error>>()?;
         let funcs = self.clone().find_funcs(&loops);
         Ok(FlowTrace { io, funcs, loops })
     }
@@ -242,9 +242,9 @@ impl<'a> Tracer<'a> {
             let next = exec.exec(block);
             match next {
                 Next::Jmp(jmp) => {
-                    let jmp = jmp.as_positive()?;
+                    let jmp = jmp.as_positive().context("Invalid jmp")?;
                     if lp.root == jmp {
-                        lp.loop_ctx = dbg!(LoopCtx::new(block_id, &exec));
+                        lp.loop_ctx = LoopCtx::new(block_id, &exec);
                         break;
                     }
 
@@ -261,8 +261,8 @@ impl<'a> Tracer<'a> {
                     }
                 }
                 Next::Cnd(true_br, false_br) => {
-                    let true_br = true_br.as_positive()?;
-                    let false_br = false_br.as_positive()?;
+                    let true_br = true_br.as_positive().context("Invalid true branch")?;
+                    let false_br = false_br.as_positive().context("Invalid false branch")?;
 
                     if true_br == exit {
                         block_id = false_br;

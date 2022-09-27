@@ -2,7 +2,7 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
-use crate::bytecode::tracing::tracer::{BlockIO, FlowTrace, Tracer};
+use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, OpCode};
 use anyhow::Error;
 use primitive_types::U256;
@@ -121,8 +121,8 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn block_io(self) -> HashMap<BlockId, BlockIO> {
-        self.flow_trace.io
+    pub fn flow_trace(self) -> FlowTrace {
+        self.flow_trace
     }
 
     fn pop_stack(&mut self, count: usize) -> Vec<BlockId> {

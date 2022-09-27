@@ -25,10 +25,7 @@ impl InstructionHandler for CodeOp {
                 let id = ir.create_var(Expr::Val(U256::from(ctx.code_size())));
                 ExecutionResult::Output(vec![id])
             }
-            CodeOp::CallDataCopy => {
-                let id = ir.create_var(Expr::Val(U256::from(42)));
-                ExecutionResult::Output(vec![id])
-            }
+            CodeOp::CallDataCopy => ExecutionResult::Output(vec![]),
             CodeOp::CodeCopy => {
                 let offset = ir.resolve_var(ops[1]).unwrap_or_default();
                 ir.code_copy(BlockId::from(offset));

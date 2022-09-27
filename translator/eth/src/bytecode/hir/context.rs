@@ -1,8 +1,9 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
+use crate::bytecode::tracing::exec::StackItem;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct Context<'a> {
@@ -72,17 +73,33 @@ impl<'a> Context<'a> {
         self.loop_input.get(block_id).map(|(stack, _)| stack)
     }
 
-    pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
-        let mut mapping = Vec::with_capacity(origin.stack.len());
+    pub fn map_stack(&self, origin: &Stack, input: &HashSet<StackItem>) -> Vec<MapStackItem> {
+        // let mut mapping = Vec::with_capacity(input.len());
 
-        mapping.push(MapStackItem {
-            origin: origin.stack[origin.stack.len() - 1],
-            new: self.stack.stack[self.stack.stack.len() - 1],
-        });
-        mapping.push(MapStackItem {
-            origin: origin.stack[origin.stack.len() - 2],
-            new: self.stack.stack[self.stack.stack.len() - 2],
-        });
+        input
+            .iter()
+            .enumerate()
+            .map(|(idx, _item)| {
+                let idx = idx + 1;
+                MapStackItem {
+                    origin: origin.stack[origin.stack.len() - idx],
+                    new: self.stack.stack[self.stack.stack.len() - idx],
+                }
+            })
+            .collect()
+
+        // mapping.push(MapStackItem {
+        //     origin: origin.stack[origin.stack.len() - 1],
+        //     new: self.stack.stack[self.stack.stack.len() - 1],
+        // });
+        // mapping.push(MapStackItem {
+        //     origin: origin.stack[origin.stack.len() - 2],
+        //     new: self.stack.stack[self.stack.stack.len() - 2],
+        // });
+        // mapping.push(MapStackItem {
+        //     origin: origin.stack[origin.stack.len() - 3],
+        //     new: self.stack.stack[self.stack.stack.len() - 3],
+        // });
         // let mut last_origin_index = origin.stack.len() - 1;
         // let mut last_new_index = self.stack.stack.len() - 1;
         // loop {
@@ -106,7 +123,7 @@ impl<'a> Context<'a> {
         //     last_new_index -= 1;
         // }
 
-        mapping
+        // mapping
     }
 
     pub fn is_in_loop(&self) -> bool {

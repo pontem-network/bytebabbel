@@ -28,5 +28,5 @@ pub fn test_for_loop() {
         .run("0x42::ForLoop::sum", "0x42", Some("9, 9"))
         .unwrap()
         .to_result_str();
-    assert_eq!("Uint(81)", res);
+    assert_eq!("Uint(81), Uint(9999999999999991)", res);
 }

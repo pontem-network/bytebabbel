@@ -51,8 +51,8 @@ pub fn transpile_program(
 
     let mut flow_builder = FlowBuilder::new(&contract)?;
     let contract_flow = flow_builder.make_flow();
-    let block_io = flow_builder.block_io();
-    let hir = HirTranslator::new(&contract, contract_flow, block_io, flags);
+    let flow_trace = flow_builder.flow_trace();
+    let hir = HirTranslator::new(&contract, contract_flow, flow_trace, flags);
 
     let functions = abi
         .functions()
