@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use anyhow::{anyhow, ensure, Error, Result};
 use itertools::Itertools;
@@ -177,4 +180,8 @@ fn return_val_to_string(val: Result<String>) -> String {
             "!panic".to_string()
         }
     }
+}
+
+pub fn sol_path() -> PathBuf {
+    PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("sol")
 }

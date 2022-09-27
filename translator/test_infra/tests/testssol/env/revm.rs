@@ -139,14 +139,14 @@ mod test {
 
     use crate::testssol::env::revm::REvm;
     use crate::testssol::EvmPack;
-    use eth::compile::build_sol_by_path;
+    use eth::compile::build_sol;
     use test_infra::init_log;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
 
     lazy_static! {
         static ref TESTFILE: Mutex<EvmPack> =
-            Mutex::new(build_sol_by_path(&PathBuf::from(TEST_SOL_FILE)).unwrap());
+            Mutex::new(build_sol(PathBuf::from(TEST_SOL_FILE)).unwrap());
     }
 
     fn run_by(fn_name: &str, params: &[&str]) -> Result<String> {

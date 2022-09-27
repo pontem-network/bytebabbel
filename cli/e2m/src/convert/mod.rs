@@ -191,7 +191,7 @@ fn path_to_abibin(path: &Path) -> Result<EvmPack> {
                 bail!("solc command was not found.\n\
                     Please install solc on your computer. See: https://docs.soliditylang.org/en/develop/installing-solidity.html")
             }
-            eth::compile::build_sol_by_path(path)
+            eth::compile::build_sol(path)
         }
         "bin" | "abi" => find_abibin(path),
         _ => bail!("A file with the extension bin, abi or sol was expected.\nPath: {path:?}"),

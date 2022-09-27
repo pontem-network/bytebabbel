@@ -41,6 +41,14 @@ impl Executor {
         }
     }
 
+    pub fn negative_item_used(&self) -> &HashSet<StackItem> {
+        &self.negative_item_used
+    }
+
+    pub fn call_stack(&self) -> &Vec<StackItem> {
+        &self.call_stack
+    }
+
     pub fn exec(&mut self, block: &InstructionBlock) -> Next {
         if let Some(inst) = block.first() {
             self.path.push(BlockId::from(inst.0));

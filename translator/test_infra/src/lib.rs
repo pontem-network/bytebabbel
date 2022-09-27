@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-use std::fs;
-use std::io::Write;
-use std::path::PathBuf;
-use std::sync::Mutex;
-
 use lazy_static::lazy_static;
 use log::{Metadata, Record};
+use std::cell::RefCell;
+use std::io::Write;
+use std::path::PathBuf;
+use std::{fs, mem};
 
 pub mod color;
 pub mod env;
@@ -14,34 +12,30 @@ pub static CUST_LOGGER: CustLogger = CustLogger;
 
 lazy_static! {
     static ref REG_FOR_NAME: regex::Regex = regex::Regex::new(r#"(?i)[^a-z\d]+"#).unwrap();
-    static ref LOG_BUFF: Mutex<HashMap<String, (ThreadSettings, Vec<String>)>> =
-        Mutex::new(HashMap::new());
+}
+
+thread_local! {
+    static LOG_BUF: RefCell<Option<(ThreadSettings, Vec<String>)>> = RefCell::new(None);
 }
 
 pub struct CustLogger;
 
 impl CustLogger {
     fn set_setting(settings: ThreadSettings) {
-        match LOG_BUFF.lock().as_deref_mut() {
-            Ok(logbuff_mut) => {
-                logbuff_mut
-                    .entry(thread_name_id())
-                    .and_modify(|item| *item = (settings.clone(), Vec::new()))
-                    .or_insert((settings, Vec::new()));
-            }
-            Err(err) => output_error(err),
-        };
+        LOG_BUF.with(|buf| {
+            *buf.borrow_mut() = Some((settings, vec![]));
+        });
     }
 
     fn settings() -> ThreadSettings {
-        LOG_BUFF
-            .lock()
-            .ok()
-            .and_then(|buff| buff.get(&thread_name_id()).cloned().map(|sett| sett.0))
-            .unwrap_or_else(|| {
+        LOG_BUF.with(|buf| {
+            if let Some((settings, _)) = buf.borrow().as_ref() {
+                settings.clone()
+            } else {
                 output_error(format!("Settings not found. {}", thread_name_id()));
                 ThreadSettings::default()
-            })
+            }
+        })
     }
 
     fn write(content: String) {
@@ -72,34 +66,24 @@ impl CustLogger {
     }
 
     fn write_to_buff(content: String) {
-        match LOG_BUFF.lock().as_mut() {
-            Ok(buff) => buff.get_mut(&thread_name_id()).map_or_else(
-                || output_error(format!("Not found buff. {}", thread_name_id())),
-                |item| item.1.push(content),
-            ),
-            Err(err) => output_error(err),
-        }
+        LOG_BUF.with(|buf| {
+            if let Some((_, buff)) = buf.borrow_mut().as_mut() {
+                buff.push(content);
+            } else {
+                output_error(format!("Buffer not found. {}", thread_name_id()));
+            }
+        });
     }
 
-    pub fn flushbuff_and_get() -> String {
-        match LOG_BUFF.lock().as_mut() {
-            Ok(buff) => {
-                let data = buff
-                    .get_mut(&thread_name_id())
-                    .map(|item| {
-                        let list = item.1.to_owned();
-                        item.1 = Vec::new();
-                        list
-                    })
-                    .unwrap_or_default();
-                let output: String = data.join("\n");
-                output
-            }
-            Err(err) => {
-                output_error(err);
+    pub fn flush_and_get() -> String {
+        LOG_BUF.with(|buf| {
+            if let Some((_, buff)) = buf.borrow_mut().as_mut() {
+                let buff = mem::take(buff);
+                buff.join("\n")
+            } else {
                 String::new()
             }
-        }
+        })
     }
 }
 
@@ -120,7 +104,7 @@ impl log::Log for CustLogger {
     }
 
     fn flush(&self) {
-        let output = CustLogger::flushbuff_and_get();
+        let output = CustLogger::flush_and_get();
         println!("{output}");
     }
 }

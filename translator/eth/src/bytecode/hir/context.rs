@@ -2,6 +2,7 @@ use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
+use std::cmp::min;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -73,39 +74,16 @@ impl<'a> Context<'a> {
     }
 
     pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
-        let mut mapping = Vec::with_capacity(origin.stack.len());
-
-        mapping.push(MapStackItem {
-            origin: origin.stack[origin.stack.len() - 1],
-            new: self.stack.stack[self.stack.stack.len() - 1],
-        });
-        mapping.push(MapStackItem {
-            origin: origin.stack[origin.stack.len() - 2],
-            new: self.stack.stack[self.stack.stack.len() - 2],
-        });
-        // let mut last_origin_index = origin.stack.len() - 1;
-        // let mut last_new_index = self.stack.stack.len() - 1;
-        // loop {
-        //     let new = self.stack.stack.get(last_new_index);
-        //     let origin = origin.stack.get(last_origin_index);
-        //
-        //     if let (Some(new), Some(origin)) = (new, origin) {
-        //         if new != origin {
-        //             mapping.push(MapStackItem {
-        //                 origin: *origin,
-        //                 new: *new,
-        //             });
-        //         }
-        //     } else {
-        //         break;
-        //     }
-        //     if last_origin_index == 0 || last_new_index == 0 {
-        //         break;
-        //     }
-        //     last_origin_index -= 1;
-        //     last_new_index -= 1;
-        // }
-
+        let original_len = origin.stack.len();
+        let continue_len = self.stack.stack.len();
+        let mapping_size = min(original_len, continue_len);
+        let mut mapping = Vec::with_capacity(mapping_size);
+        for idx in 0..mapping_size {
+            mapping.push(MapStackItem {
+                origin: origin.stack[original_len - 1 - idx],
+                new: self.stack.stack[continue_len - 1 - idx],
+            });
+        }
         mapping
     }
 

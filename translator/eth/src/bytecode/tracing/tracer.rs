@@ -2,7 +2,7 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::instruction::Offset;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Context as ErrContext, Error};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
@@ -21,7 +21,14 @@ impl<'a> Tracer<'a> {
 
     pub fn trace(&mut self) -> Result<FlowTrace, Error> {
         let io = self.calculate_io()?;
-        let loops = self.clone().find_loops()?;
+        let mut loops = self.clone().find_loops()?;
+        loops = loops
+            .iter()
+            .map(|(id, lp)| {
+                let mut lp = lp.clone();
+                self.fill_io(&mut lp, &loops).map(|_| (*id, lp))
+            })
+            .collect::<Result<_, Error>>()?;
         let funcs = self.clone().find_funcs(&loops);
         Ok(FlowTrace { io, funcs, loops })
     }
@@ -139,6 +146,7 @@ impl<'a> Tracer<'a> {
                                             continuous: *lp.last().unwrap(),
                                             breaks: HashSet::new(),
                                             fork: fork.clone(),
+                                            loop_ctx: Default::default(),
                                         },
                                     );
                                     breaks.insert(loop_exit, *id);
@@ -222,6 +230,77 @@ impl<'a> Tracer<'a> {
         }
         Ok(io)
     }
+
+    pub fn fill_io(&self, lp: &mut Loop, loops: &HashMap<BlockId, Loop>) -> Result<(), Error> {
+        let mut exec = Executor::default();
+        let mut block_id = lp.root;
+        let exit = lp.loop_exit;
+
+        let mut ctx: Vec<Context> = vec![];
+        loop {
+            let block = self.blocks.get(&block_id).unwrap();
+            let next = exec.exec(block);
+            match next {
+                Next::Jmp(jmp) => {
+                    let jmp = jmp.as_positive().context("Invalid jmp")?;
+                    if lp.root == jmp {
+                        lp.loop_ctx = LoopCtx::new(block_id, &exec);
+                        break;
+                    }
+
+                    if let Some(_lp) = loops.get(&jmp) {
+                        todo!("Loop inside loop");
+                    } else {
+                        block_id = jmp;
+                    }
+                }
+                Next::Stop => {
+                    if let Some(ctx) = ctx.pop() {
+                        exec = ctx.executor;
+                        block_id = ctx.false_br;
+                    }
+                }
+                Next::Cnd(true_br, false_br) => {
+                    let true_br = true_br.as_positive().context("Invalid true branch")?;
+                    let false_br = false_br.as_positive().context("Invalid false branch")?;
+
+                    if true_br == exit {
+                        block_id = false_br;
+                        continue;
+                    }
+
+                    ctx.push(Context {
+                        executor: exec.clone(),
+                        false_br,
+                    });
+                    block_id = true_br;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct LoopCtx {
+    pub block: BlockId,
+    pub output: Vec<StackItem>,
+    pub input: HashSet<StackItem>,
+}
+
+impl LoopCtx {
+    pub fn new(block: BlockId, exec: &Executor) -> Self {
+        LoopCtx {
+            block,
+            output: exec.call_stack().clone(),
+            input: exec.negative_item_used().clone(),
+        }
+    }
+}
+
+pub struct Context {
+    pub executor: Executor,
+    pub false_br: BlockId,
 }
 
 #[derive(Debug)]
@@ -244,7 +323,7 @@ pub struct Fork {
     pub next_br: Option<BlockId>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Loop {
     pub root: BlockId,
     pub loop_exit: BlockId,
@@ -252,6 +331,7 @@ pub struct Loop {
     pub continuous: BlockId,
     pub breaks: HashSet<BlockId>,
     pub fork: Fork,
+    pub loop_ctx: LoopCtx,
 }
 
 #[derive(Debug)]

@@ -12,7 +12,7 @@ fn run_test(name: &str, test: &STest) -> Result<()> {
 
     test.run().map_err(|err| {
         log::error!("{err:?}");
-        anyhow!("{}", CustLogger::flushbuff_and_get())
+        anyhow!("{}", CustLogger::flush_and_get())
     })
 }
 
