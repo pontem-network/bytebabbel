@@ -1,10 +1,9 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
-use crate::bytecode::tracing::exec::StackItem;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
 use std::cmp::min;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Context<'a> {

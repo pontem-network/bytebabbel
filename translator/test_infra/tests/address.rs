@@ -11,19 +11,21 @@ mod testssol;
 #[test]
 pub fn test_address_support() {
     init_log();
-
-    let evm = build_sol(include_bytes!("../sol/demo/address_support.sol")).unwrap();
+    let evm = build_sol("sol/demo/address_support.sol").unwrap();
 
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
-        evm.bin(),
+        evm.contract().bin(),
         "",
-        evm.abi(),
+        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
 
-    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(
+        serde_json::from_str(evm.contract().abi()).unwrap(),
+        Flags::default(),
+    );
     vm.deploy("0x42", bytecode);
     vm.run("0x42::AddressSupport::constructor", "0x42", None)
         .unwrap();

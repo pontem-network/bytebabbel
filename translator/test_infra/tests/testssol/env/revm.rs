@@ -138,7 +138,7 @@ mod test {
     use primitive_types::U256;
 
     use crate::testssol::env::revm::REvm;
-    use crate::testssol::env::sol::build_sol_by_path;
+    use crate::testssol::env::sol::build_sol;
     use crate::testssol::EvmPack;
     use test_infra::init_log;
 
@@ -146,7 +146,7 @@ mod test {
 
     lazy_static! {
         static ref TESTFILE: Mutex<EvmPack> =
-            Mutex::new(build_sol_by_path(&PathBuf::from(TEST_SOL_FILE)).unwrap());
+            Mutex::new(build_sol(PathBuf::from(TEST_SOL_FILE)).unwrap());
     }
 
     fn run_by(fn_name: &str, params: &[&str]) -> Result<String> {

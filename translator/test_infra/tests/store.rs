@@ -11,16 +11,19 @@ mod testssol;
 pub fn test_empty_constructor() {
     init_log();
 
-    let evm = build_sol(include_bytes!("../sol/constructors/empty.sol")).unwrap();
+    let evm = build_sol("sol/constructors/empty.sol").unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
-        evm.bin(),
+        evm.contract().bin(),
         "",
-        evm.abi(),
+        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(
+        serde_json::from_str(evm.contract().abi()).unwrap(),
+        Flags::default(),
+    );
     vm.deploy("0x42", bytecode);
     vm.run("0x42::empty::constructor", "0x42", None).unwrap();
     let res = vm
@@ -34,10 +37,10 @@ pub fn test_empty_constructor() {
 pub fn test_constructor_with_data() {
     init_log();
 
-    let evm = build_sol(include_bytes!("../sol/constructors/with_data.sol")).unwrap();
+    let evm = build_sol("sol/constructors/with_data.sol").unwrap();
 
-    test(&evm, "1000, true", 1000);
-    test(&evm, "1000, false", 42);
+    test(evm.contract(), "1000, true", 1000);
+    test(evm.contract(), "1000, false", 42);
 
     fn test(evm: &Evm, init_args: &str, val: u128) {
         let bytecode = make_move_module(
@@ -64,16 +67,19 @@ pub fn test_constructor_with_data() {
 pub fn test_store() {
     init_log();
 
-    let evm = build_sol(include_bytes!("../sol/store/load_store.sol")).unwrap();
+    let evm = build_sol("sol/store/load_store.sol").unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
-        evm.bin(),
+        evm.contract().bin(),
         "",
-        evm.abi(),
+        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(
+        serde_json::from_str(evm.contract().abi()).unwrap(),
+        Flags::default(),
+    );
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::load_store::constructor", "0x42", None)
@@ -143,16 +149,19 @@ pub fn test_store() {
 pub fn test_bool_store() {
     init_log();
 
-    let evm = build_sol(include_bytes!("../sol/store/bool_store.sol")).unwrap();
+    let evm = build_sol("sol/store/bool_store.sol").unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
-        evm.bin(),
+        evm.contract().bin(),
         "",
-        evm.abi(),
+        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
+    let mut vm = MoveExecutor::new(
+        serde_json::from_str(evm.contract().abi()).unwrap(),
+        Flags::default(),
+    );
     vm.deploy("0x42", bytecode);
     vm.run("0x42::bool_store::constructor", "0x42", None)
         .unwrap();
