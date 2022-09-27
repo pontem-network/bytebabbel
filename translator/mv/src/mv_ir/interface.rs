@@ -60,7 +60,7 @@ fn write_function(
             .collect::<Vec<_>>()
             .join(", ")
     } else {
-        "args: &vector<u8>".to_string()
+        "args: vector<u8>".to_string()
     };
 
     let ret = if flags.native_output {
@@ -87,7 +87,7 @@ fn write_function(
 
     writeln!(
         buff,
-        "{:width$}public native fun {}(account_address: &signer,{}){};",
+        "{:width$}public native fun {}(account_address: &signer, {}){};",
         "",
         fun.name,
         args,

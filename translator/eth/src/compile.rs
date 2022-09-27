@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tempdir::TempDir;
 
-use eth::bytecode::pre_processing::swarm::remove_swarm_hash;
+use crate::bytecode::pre_processing::swarm::remove_swarm_hash;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Evm {
-    name: Arc<String>,
-    bin: Arc<String>,
-    abi: Arc<String>,
+    pub name: Arc<String>,
+    pub bin: Arc<String>,
+    pub abi: Arc<String>,
 }
 
 impl Evm {
@@ -118,6 +118,10 @@ impl EvmPack {
     pub fn abi(&self) -> Result<Contract> {
         let abi = serde_json::from_str(self.contract.abi.as_str())?;
         Ok(abi)
+    }
+
+    pub fn bin_contract(&self) -> &str {
+        self.contract.bin()
     }
 
     pub fn abi_str(&self) -> &str {

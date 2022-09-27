@@ -13,9 +13,9 @@ pub mod convert;
 pub mod env;
 pub mod parse;
 
-use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::call::EthEncodeByString;
+use eth::compile::EvmPack;
 use eth::Flags;
 use parse::{SolFile, SolTest};
 use test_infra::color;

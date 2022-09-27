@@ -4,7 +4,7 @@ use std::rc::Rc;
 use anyhow::{bail, Error, Result};
 use primitive_types::{H160, U256};
 
-use crate::testssol::env::sol::EvmPack;
+use eth::compile::EvmPack;
 use evm::backend::{MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm::{Config, Context, ExitReason, Runtime};
@@ -140,6 +140,7 @@ mod test {
     use crate::testssol::env::revm::REvm;
     use crate::testssol::env::sol::build_sol;
     use crate::testssol::EvmPack;
+    use eth::compile::build_sol_by_path;
     use test_infra::init_log;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";

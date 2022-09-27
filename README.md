@@ -2,18 +2,18 @@
 
 EVM to Move static bytecode translator.
 
-## e2m
+# e2m
 Converts **solidity file** to **binary move** code. You can convert from **abi + bin** files or a **sol** file
 
 > **! IMPORTANT**\
 > To convert from a **sol** file, **solc** must be installed on the computer and accessible from the terminal using the short command **solc**.\
 > To publish, you need the installed **aptos** utility and **e2m** build with the flag `--features=deploy`
 
-### Install solc
+## Install solc
 
 How to install **solc**, [see the documentation](https://docs.soliditylang.org/en/develop/installing-solidity.html)
 
-#### Checking solc
+## Checking solc
 
 The **solc** version must be at least **0.8.15**
 
@@ -23,11 +23,11 @@ solc --version
 > **! IMPORTANT**\
 > If this command is not available for execution from the terminal, e2m will not work.
 
-### Install aptos
+## Install aptos
 
 How to install **aptos**, [see the documentation](https://aptos.dev/cli-tools/aptos-cli-tool/install-aptos-cli)
 
-#### Checking aptos
+## Checking aptos
 
 The **aptos** version must be at least **0.2.3**
 
@@ -35,7 +35,7 @@ The **aptos** version must be at least **0.2.3**
 aptos --version
 ```
 
-### Installation e2m
+## Installation e2m
 Cloning the repository and installing e2m:
 
 ```bash
@@ -48,13 +48,27 @@ cargo +nightly install --path cli/e2m --features=deploy
 e2m --help
 ```
 
-#### Input parameters
+#### Subcommands
+* `convert`    Converting a sol script to move binary code
+* `call`       Run a Move function
+
+## Convert
+```bash
+e2m convert --help
+```
+
+### Input parameters
 * `<PATH>`              Path to the file. Specify the path to sol file or abi | bin
 * `-o`, `--output`      Where to save the converted Move binary file
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
 * `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
-* `-m`, `--math`        Math backend u128 or u256 [default: u128]
+* `-a`, `--args`        Parameters for initialization
+* `-i`, `--interface_package`   Generate an interface project
+* `--native-input`      Input params of native type
+* `--native-output`     Output value of native type
+* `--u128_io`           Use u128 instead of u256
 * `-d`, `--deploy`      Deploying the module in aptos node
+* `--max-gas`           Maximum amount of gas units to be used to send this transaction
 
 ### Example
 You can find the files from the examples in the [eth2move/examples](https://github.com/pontem-network/eth2move/tree/master/examples) folder
@@ -85,7 +99,7 @@ By default, the file is saved to the current directory.
 
 ##### examples/a_plus_b.sol
 ```bash
-e2m examples/a_plus_b.sol 
+e2m convert examples/a_plus_b.sol 
 ```
 
 ###### Result:
@@ -96,10 +110,10 @@ Move module name: **APlusB**
 
 ##### examples/APlusB.abi
 ```bash
-e2m examples/APlusB.abi
+e2m convert examples/APlusB.abi
 ```
 
-##### Result:
+###### Result:
 > Saved in "./APlusB.mv"
 
 Move module address: **Address from the "default" profile**\
@@ -108,7 +122,7 @@ Move module name: **APlusB**
 
 ##### examples/APlusB.bin
 ```bash
-e2m examples/APlusB.bin
+e2m convert examples/APlusB.bin
 ```
 
 ###### Result:
@@ -120,7 +134,7 @@ Move module name: **APlusB**
 
 ##### ! Fail: examples/BinNotFound.abi
 ```bash
-e2m examples/BinNotFound.abi
+e2m convert examples/BinNotFound.abi
 ```
 
 ###### Result:
@@ -130,13 +144,13 @@ Path:"examples/BinNotFound.bin"
 > **! IMPORTANT**\
 > A successful broadcast always requires a **bin** and an **abi** **solidity library**
 
-#### Path to save
+##### Path to save
 The `-o`, `--output` parameter is responsible for specifying the location where the converted file will be saved.
 
-##### examples/const_fn.sol
+###### examples/const_fn.sol
 
 ```bash
-e2m examples/const_fn.sol -o ./Test.mv
+e2m convert examples/const_fn.sol -o ./Test.mv
 ```
 
 ###### Result:
@@ -149,7 +163,7 @@ Move module name: **Cons**
 ##### examples/APlusB.bin
 
 ```bash
-e2m examples/APlusB.bin -o ./AB.mv
+e2m convert examples/APlusB.bin -o ./AB.mv
 ```
 
 ###### Result:
@@ -164,7 +178,7 @@ The `--module` argument is responsible for explicitly specifying the move module
 ##### examples/APlusB.abi
 
 ```bash
-e2m examples/APlusB.abi --module ApB
+e2m convert examples/APlusB.abi --module ApB
 ```
 
 ###### Result:
@@ -176,7 +190,7 @@ Move module name: **ApB**
 ##### examples/two_functions.sol
 
 ```bash
-e2m examples/two_functions.sol --module TF
+e2m convert examples/two_functions.sol --module TF
 ```
 
 ###### Result:
@@ -193,7 +207,7 @@ Profile data will be taken from **.aptos/config.yaml**
 ##### examples/const_fn.sol
 
 ```bash
-e2m examples/const_fn.sol -p 0x3
+e2m convert examples/const_fn.sol -p 0x3
 ```
 
 ###### Result:
@@ -205,7 +219,7 @@ Move module name: **ConstFn**
 ##### examples/two_functions.sol
 
 ```bash
-e2m examples/two_functions.sol --profile demo
+e2m convert examples/two_functions.sol --profile demo
 ```
 
 ###### Result:
@@ -217,7 +231,7 @@ Move module name: **TwoFunctions**
 #### Combined arguments
 
 ```bash
- e2m examples/const_fn.sol -o ./MyMove.mv --module DemoName --profile 0x3 
+ e2m convert examples/const_fn.sol -o ./MyMove.mv --module DemoName --profile 0x3 
 ```
 
 ###### Result:
@@ -227,7 +241,7 @@ Move module address: **0x3** \
 Move module name: **DemoName**
 
 
-### Convert and publish the module
+#### Convert and publish the module
 In order for the module to be published on the aptos node after conversion, use the `-d`, `--deploy` flag.\
 After successful publication, you will receive complete information in json format about the completed process.
 
@@ -235,16 +249,72 @@ After successful publication, you will receive complete information in json form
 > When you try to re-publish the module, you will see the message "DUPLICATE_MODULE_NAME"
 
 
-#### examples/two_functions.sol
+##### examples/two_functions.sol
 ```bash
-e2m examples/two_functions.sol -d
+e2m convert examples/two_functions.sol -d
 ```
 
-#### examples/APlusB.abi
+##### examples/APlusB.abi
 ```bash
-e2m examples/APlusB.abi -o ./module.mv --profile demo --deploy
+e2m convert examples/APlusB.abi -o ./module.mv --profile demo --deploy
 ```
 
-## What the converter can already do.
+#### Generate an interface project
+##### examples/APlusB.abi
+```bash
+e2m convert examples/a_plus_b.sol \
+    -o ./aplusb.mv \
+    -i
+```
+
+A "move" project will be created in the current directory. This interface is necessary for accessing the published module.
+
+##### Native types. examples/APlusB.abi
+By default, the module uses "Ethereum" types for data input and output.
+`--native-input`, `--native-output` - by setting these flags, the functions in the module will use the "move" types as input and output parameters. 
+`--u128-io` - Use u128 instead of u256
+
+##### U256
+```bash
+e2m convert examples/a_plus_b.sol \
+    --native-input \
+    --native-output \
+    -i
+```
+
+##### U128
+```bash
+e2m convert examples/a_plus_b.sol \
+    --native-input \
+    --native-output \
+    --u128-io \
+    -i
+```
+
+## Call. 
+
+See help:
+```bash
+e2m call --help
+```
+
+### Input parameters
+* `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
+* `-a`, `--args`        Arguments combined with their type separated by spaces. Supported types \
+  **[u8, u64, u128, bool, hex, string, address, raw]** \
+  Example: \
+  address:0x1 bool:true u8:0
+* `-f`, `--function-id` Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>` \
+  Example: \
+  0x02::message::set_message \
+  default::message::set_message
+* `--max-gas`           Maximum amount of gas units to be used to send this transaction
+* `--sandbox`           Display only. The request will not be sent to the aptos node
+
+
+### Example
+[see](https://github.com/pontem-network/eth2move-samples#readme)
+
+# What the converter can already do.
 
 See the [folder](https://github.com/pontem-network/eth2move/tree/master/translator/test_infra/sol)

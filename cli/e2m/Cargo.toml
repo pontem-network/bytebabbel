@@ -18,11 +18,12 @@ tempfile = "3.3"
 serde_yaml = "0.9.11"
 
 #
-move-core-types = { git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675" , features = ["address32"] }
+move-core-types = { git = "https://github.com/move-language/move", rev = "0fe2e6ce5af811d68b8a995b7da3f4c4ecc485fa", features = ["address32"] }
 
 # local
 translator = { path = "../../translator" }
 test_infra = { path = "../../translator/test_infra" }
+eth = { path = "../../translator/eth" }
 
 
 # FEATURE DEPLOY
@@ -30,28 +31,29 @@ test_infra = { path = "../../translator/test_infra" }
 # You need to download a working client from https://github.com/aptos-labs/aptos-core/releases
 #   test it and find out the commit using "aptos info".
 
-bcs = {version = "0.1.3", optional = true }
+bcs = { version = "0.1.3", optional = true }
 sha2 = { version = "0.10.5", optional = true }
 hex = { version = "0.4", optional = true }
 tokio = { version = "1.21", features = ["full"], optional = true }
 serde_json = { version = "1.0.82", optional = true }
+ethabi = { version = "17.2", optional = true }
 
-aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "75b3da75326075041b1987fc0edad436d3fd9ac7", optional = true }
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
+cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
 
-move-binary-format = {git = "https://github.com/move-language/move", rev = "4bdf8d3e76ffaab5c83eda2fa55dfe136c380675", optional = true }
+move-binary-format = { git = "https://github.com/move-language/move", rev = "0fe2e6ce5af811d68b8a995b7da3f4c4ecc485fa", optional = true }
 
 [features]
 deploy = [
     "bcs",
     "sha2",
     "hex",
+    "ethabi",
     "tokio",
     "serde_json",
-
     "aptos",
     "aptos-vm",
     "aptos-types",
