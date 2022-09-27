@@ -32,16 +32,16 @@ library  Loop {
 //        return val + bff;
 //    }
 
-    function for_loop(uint128 inc, uint128 limit) public pure returns (uint128) {
-        uint128 result = 0;
-        do {
-            --limit;
-            result += inc;
-        }
-        while (limit > 0);
-
-        return result;
-    }
+//    function for_loop(uint128 inc, uint128 limit) public pure returns (uint128) {
+//        uint128 result = 0;
+//        do {
+//            --limit;
+//            result += inc;
+//        }
+//        while (limit > 0);
+//
+//        return result;
+//    }
 
 //    function for_loop(uint128 i) public pure returns (uint128) {
 //        uint128 val = 1000;

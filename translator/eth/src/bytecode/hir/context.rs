@@ -3,6 +3,7 @@ use crate::bytecode::hir::stack::Stack;
 use crate::bytecode::tracing::exec::StackItem;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
+use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
@@ -73,57 +74,18 @@ impl<'a> Context<'a> {
         self.loop_input.get(block_id).map(|(stack, _)| stack)
     }
 
-    pub fn map_stack(&self, origin: &Stack, input: &HashSet<StackItem>) -> Vec<MapStackItem> {
-        // let mut mapping = Vec::with_capacity(input.len());
-
-        input
-            .iter()
-            .enumerate()
-            .map(|(idx, _item)| {
-                let idx = idx + 1;
-                MapStackItem {
-                    origin: origin.stack[origin.stack.len() - idx],
-                    new: self.stack.stack[self.stack.stack.len() - idx],
-                }
-            })
-            .collect()
-
-        // mapping.push(MapStackItem {
-        //     origin: origin.stack[origin.stack.len() - 1],
-        //     new: self.stack.stack[self.stack.stack.len() - 1],
-        // });
-        // mapping.push(MapStackItem {
-        //     origin: origin.stack[origin.stack.len() - 2],
-        //     new: self.stack.stack[self.stack.stack.len() - 2],
-        // });
-        // mapping.push(MapStackItem {
-        //     origin: origin.stack[origin.stack.len() - 3],
-        //     new: self.stack.stack[self.stack.stack.len() - 3],
-        // });
-        // let mut last_origin_index = origin.stack.len() - 1;
-        // let mut last_new_index = self.stack.stack.len() - 1;
-        // loop {
-        //     let new = self.stack.stack.get(last_new_index);
-        //     let origin = origin.stack.get(last_origin_index);
-        //
-        //     if let (Some(new), Some(origin)) = (new, origin) {
-        //         if new != origin {
-        //             mapping.push(MapStackItem {
-        //                 origin: *origin,
-        //                 new: *new,
-        //             });
-        //         }
-        //     } else {
-        //         break;
-        //     }
-        //     if last_origin_index == 0 || last_new_index == 0 {
-        //         break;
-        //     }
-        //     last_origin_index -= 1;
-        //     last_new_index -= 1;
-        // }
-
-        // mapping
+    pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
+        let original_len = origin.stack.len();
+        let continue_len = self.stack.stack.len();
+        let mapping_size = min(original_len, continue_len);
+        let mut mapping = Vec::with_capacity(mapping_size);
+        for idx in 0..mapping_size {
+            mapping.push(MapStackItem {
+                origin: origin.stack[original_len - 1 - idx],
+                new: self.stack.stack[continue_len - 1 - idx],
+            });
+        }
+        mapping
     }
 
     pub fn is_in_loop(&self) -> bool {

@@ -53,6 +53,7 @@ impl<'a> HirTranslator<'a> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
+        ir.print(&fun.name);
         let ir = IrOptimizer::optimize(ir)?;
         ir.print(&fun.name);
         Ok(ir)
@@ -83,14 +84,7 @@ impl<'a> HirTranslator<'a> {
         let stack = ctx
             .get_loop(block)
             .ok_or_else(|| anyhow!("loop not found"))?;
-        let loop_input = &self
-            .trace
-            .loops
-            .get(block)
-            .ok_or_else(|| anyhow!("loop not found"))?
-            .loop_ctx
-            .input;
-        let mapping = ctx.map_stack(stack, loop_input);
+        let mapping = ctx.map_stack(stack);
         let context = mapping
             .into_iter()
             .map(|map| Statement::MapVar {
