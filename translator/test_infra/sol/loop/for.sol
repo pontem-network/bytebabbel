@@ -27,13 +27,4 @@ library ForLoop {
         }
         return result;
     }
-
-//    function sum(uint128 inc, uint128 limit) public pure returns (uint128, uint256) {
-//        uint128 result = 0;
-//        while (limit > 0) {
-//            --limit;
-//            result += inc;
-//        }
-//        return (result, 10000000000000000 - 9);
-//    }
 }

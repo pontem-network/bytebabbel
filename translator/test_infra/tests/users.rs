@@ -1,6 +1,6 @@
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
-use crate::testssol::make_move_module;
+use crate::testssol::{make_move_module, sol_path};
 use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
@@ -195,7 +195,7 @@ pub fn test_for_users_with_hidden_result() {
         u128_io: false,
         package_interface: false,
     };
-    let evm = build_sol("sol/demo/users.sol").unwrap();
+    let evm = build_sol(sol_path().join("demo/users.sol")).unwrap();
     let bytecode = make_move_module(
         &format!(
             "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::{}",

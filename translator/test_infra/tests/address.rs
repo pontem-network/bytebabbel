@@ -3,7 +3,7 @@ use test_infra::init_log;
 
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::build_sol;
-use crate::testssol::make_move_module;
+use crate::testssol::{make_move_module, sol_path};
 
 #[allow(dead_code)]
 mod testssol;
@@ -11,7 +11,7 @@ mod testssol;
 #[test]
 pub fn test_address_support() {
     init_log();
-    let evm = build_sol("sol/demo/address_support.sol").unwrap();
+    let evm = build_sol(sol_path().join("demo/address_support.sol")).unwrap();
 
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),

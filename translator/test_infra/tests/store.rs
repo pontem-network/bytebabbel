@@ -1,6 +1,6 @@
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::env::sol::{build_sol, Evm};
-use crate::testssol::make_move_module;
+use crate::testssol::{make_move_module, sol_path};
 use eth::Flags;
 use test_infra::init_log;
 
@@ -11,7 +11,7 @@ mod testssol;
 pub fn test_empty_constructor() {
     init_log();
 
-    let evm = build_sol("sol/constructors/empty.sol").unwrap();
+    let evm = build_sol(sol_path().join("constructors/empty.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
         evm.contract().bin(),
@@ -37,7 +37,7 @@ pub fn test_empty_constructor() {
 pub fn test_constructor_with_data() {
     init_log();
 
-    let evm = build_sol("sol/constructors/with_data.sol").unwrap();
+    let evm = build_sol(sol_path().join("constructors/with_data.sol")).unwrap();
 
     test(evm.contract(), "1000, true", 1000);
     test(evm.contract(), "1000, false", 42);
@@ -67,7 +67,7 @@ pub fn test_constructor_with_data() {
 pub fn test_store() {
     init_log();
 
-    let evm = build_sol("sol/store/load_store.sol").unwrap();
+    let evm = build_sol(sol_path().join("store/load_store.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
         evm.contract().bin(),
@@ -149,7 +149,7 @@ pub fn test_store() {
 pub fn test_bool_store() {
     init_log();
 
-    let evm = build_sol("sol/store/bool_store.sol").unwrap();
+    let evm = build_sol(sol_path().join("store/bool_store.sol")).unwrap();
     let bytecode = make_move_module(
         &format!("0x42::{}", evm.name()),
         evm.contract().bin(),
