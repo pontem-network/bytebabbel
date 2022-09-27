@@ -55,7 +55,7 @@ impl CmdConvert {
         let size = bcs::serialized_size(&payload)?;
         println!("package size {} bytes", size);
 
-        let fut = txn_options.submit_transaction(payload, None);
+        let fut = txn_options.submit_transaction(payload);
         let result = wait(fut).map(aptos::common::types::TransactionSummary::from)?;
 
         Ok(serde_json::to_string_pretty(&serde_json::to_value(
