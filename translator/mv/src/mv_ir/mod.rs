@@ -53,10 +53,7 @@ impl Module {
     }
 }
 
-fn print_move_module(module: &CompiledModule) {
-    if !log_enabled!(Level::Trace) {
-        return;
-    }
+pub fn print_move_module(module: &CompiledModule) {
     let source_mapping = SourceMapping::new_from_view(
         BinaryIndexedView::Module(module),
         Spanned::unsafe_no_loc(()).loc,
@@ -64,5 +61,5 @@ fn print_move_module(module: &CompiledModule) {
     .unwrap();
     let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
     let dissassemble_string = disassembler.disassemble().unwrap();
-    log::trace!("{}", dissassemble_string);
+    println!("{}", dissassemble_string);
 }

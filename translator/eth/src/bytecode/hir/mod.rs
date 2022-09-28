@@ -53,7 +53,6 @@ impl<'a> HirTranslator<'a> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
-        ir.print(&fun.name);
         let ir = IrOptimizer::optimize(ir)?;
         ir.print(&fun.name);
         Ok(ir)

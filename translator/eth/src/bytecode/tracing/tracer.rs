@@ -21,14 +21,8 @@ impl<'a> Tracer<'a> {
 
     pub fn trace(&mut self) -> Result<FlowTrace, Error> {
         let io = self.calculate_io()?;
-        let mut loops = self.clone().find_loops()?;
-        loops = loops
-            .iter()
-            .map(|(id, lp)| {
-                let mut lp = lp.clone();
-                self.fill_io(&mut lp, &loops).map(|_| (*id, lp))
-            })
-            .collect::<Result<_, Error>>()?;
+        let loops = self.clone().find_loops()?;
+        dbg!(&loops);
         let funcs = self.clone().find_funcs(&loops);
         Ok(FlowTrace { io, funcs, loops })
     }

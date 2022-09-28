@@ -2,6 +2,7 @@ pub mod block;
 pub mod flow_graph;
 pub mod hir;
 pub mod instruction;
+pub mod lir;
 pub mod loc;
 pub mod mir;
 pub mod ops;
