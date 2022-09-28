@@ -14,6 +14,8 @@ pub mod profile;
 #[cfg(feature = "deploy")]
 pub mod call;
 #[cfg(feature = "deploy")]
+pub mod resources;
+#[cfg(feature = "deploy")]
 pub mod txflags;
 
 pub trait Cmd {
@@ -29,6 +31,10 @@ pub enum Args {
     /// Run a Move function
     #[cfg(feature = "deploy")]
     Call(crate::call::CmdCall),
+
+    /// Command to list resources, modules, or other items owned by an address
+    #[cfg(feature = "deploy")]
+    Resources(crate::resources::CmdResources),
 }
 
 impl Cmd for Args {
@@ -38,6 +44,9 @@ impl Cmd for Args {
 
             #[cfg(feature = "deploy")]
             Args::Call(data) => data.execute(),
+
+            #[cfg(feature = "deploy")]
+            Args::Resources(data) => data.execute(),
         }
     }
 }
