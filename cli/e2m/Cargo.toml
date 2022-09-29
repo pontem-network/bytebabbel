@@ -26,6 +26,9 @@ test_infra = { path = "../../translator/test_infra" }
 eth = { path = "../../translator/eth" }
 
 
+# @todo
+primitive-types = "0.12"
+
 # FEATURE DEPLOY
 # It is necessary to monitor the relevance. At the moment, this particular client is working with devnet
 # You need to download a working client from https://github.com/aptos-labs/aptos-core/releases

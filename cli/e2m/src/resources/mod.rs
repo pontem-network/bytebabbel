@@ -7,6 +7,7 @@ use aptos::common::types::{CliCommand, ProfileOptions, RestOptions};
 use aptos_types::account_address::AccountAddress;
 use clap::Parser;
 use reqwest::Url;
+use serde_json::Value;
 
 use query::ListQuery;
 use resource_path::ResourcePath;
@@ -101,10 +102,7 @@ impl CmdResources {
             Passed parameter {}",
             resource_path.to_string()
         );
-        let url: Url = self.request_url()?;
-        dbg!(url);
-
-        todo!()
+        self.load_as_str()
     }
 
     fn events(&self) -> Result<String> {
@@ -115,14 +113,12 @@ impl CmdResources {
             Passed parameter {}",
             resource_path.to_string()
         );
-        let url: Url = self.request_url()?;
-        dbg!(url);
-        todo!()
+        todo!();
     }
 }
 
 impl CmdResources {
-    fn request_url(&self) -> Result<Url> {
+    fn url(&self) -> Result<Url> {
         let resource_path: &ResourcePath = self.resource_path_must()?;
         let profile = &self.profile_options.profile;
 
@@ -157,6 +153,22 @@ impl CmdResources {
             )
         })
     }
+
+    fn load(&self) -> Result<Value> {
+        let url = self.url()?;
+        log::debug!("url: {url}");
+        dbg!(&url);
+        let response: Value = reqwest::blocking::get(url)?.json()?;
+        log::debug!("response: {response:?}");
+        Ok(response)
+    }
+
+    fn load_as_str(&self) -> Result<String> {
+        let json = self.load()?;
+        let json_string = serde_json::to_string_pretty(&json)?;
+        log::debug!("json: {json_string}");
+        Ok(json_string)
+    }
 }
 
 #[inline]
@@ -168,5 +180,77 @@ fn show_ignored_message(show: bool, name_args: &str) {
             arg = bold(name_args),
             event = bold("--query events"),
         )
+    }
+}
+
+fn replace_u256_to_numstring(json: &mut Value) -> Result<()> {
+    match json {
+        Value::Array(val) => val
+            .iter_mut()
+            .map(replace_u256_to_numstring)
+            .collect::<Result<_>>()?,
+        Value::Object(val) => {
+            if is_object_u256(val) {
+                *json = Value::String(object_to_u256(val)?.to_string());
+            } else {
+                val.iter_mut()
+                    .map(|(.., val)| replace_u256_to_numstring(val))
+                    .collect::<Result<_>>()?
+            }
+        }
+        _ => (),
+    };
+    Ok(())
+}
+
+fn is_object_u256(val: &serde_json::Map<String, Value>) -> bool {
+    let keys: Vec<&String> = val.keys().collect();
+    keys == vec!["v0", "v1", "v2", "v3"]
+}
+
+fn object_to_u256(val: &serde_json::Map<String, Value>) -> Result<primitive_types::U256> {
+    let list_u64 = val
+        .iter()
+        .filter_map(|(.., value)| value.as_str())
+        .map(|val: &str| val.parse::<u64>())
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| anyhow!("{err}.\nParsed to u256: {val:?}"))?;
+    ensure!(list_u64.len() == 4, "Parsed to u256: {val:?}");
+
+    let mut k = [0; 4];
+    k.copy_from_slice(&list_u64);
+    Ok(primitive_types::U256(k))
+}
+
+#[cfg(test)]
+mod test {
+    use serde_json::Value;
+
+    use crate::resources::replace_u256_to_numstring;
+
+    const JSON_U256_TO_NUMSTRING: &str = r#"[
+        {
+          "v0": "1",
+          "v1": "0",
+          "v2": "0",
+          "v3": "0"
+        },
+        {
+          "v0": "4477988020393345024",
+          "v1": "542101086",
+          "v2": "0",
+          "v3": "0"
+        }
+    ]"#;
+
+    #[test]
+    fn test_replace_u256() {
+        let mut resp = serde_json::from_str(JSON_U256_TO_NUMSTRING).unwrap();
+        replace_u256_to_numstring(&mut resp).unwrap();
+
+        assert_eq!(
+            resp,
+            serde_json::from_str::<Value>(r#"[ "1", "10000000000000000000000000000"]"#).unwrap()
+        );
     }
 }
