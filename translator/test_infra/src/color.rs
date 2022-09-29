@@ -1,3 +1,5 @@
+use std::string::String;
+
 use termion::color::{Blue, Fg, Green, Red, Reset as ResetColor, Yellow};
 use termion::style::{Bold, Reset as RESET_STYLE};
 
@@ -18,7 +20,7 @@ pub fn font_reset() -> String {
 }
 
 pub fn font_yellow(text: &str) -> String {
-    format!("{}{text}{}", Fg(Yellow), font_reset())
+    format!("{}{text}{}", Fg(Yellow), &font_reset())
 }
 
 pub fn bold(text: &str) -> String {
