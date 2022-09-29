@@ -1,0 +1,653 @@
+module self::u256_tests {
+    #[test_only]
+    use std::vector;
+
+    /// Max `u64` value.
+    const U64_MAX: u128 = 18446744073709551615;
+
+    /// Max `u128` value.
+    const U128_MAX: u128 = 340282366920938463463374607431768211455;
+
+    #[test_only]
+    use self::u256::read_u64;
+
+    #[test]
+    fun test_read_u64() {
+        // taking vector with len < 8 leads to panic
+        let vec: vector<u8> = vector::empty();
+        let i = 0u64;
+
+        while (i < 10) {
+            vector::push_back(&mut vec, (i as u8));
+            i = i + 1;
+        };
+
+        // 00 01 02 03 04 05 06 07 -> 283686952306183
+        assert!(read_u64(&vec, 0) == 283686952306183u64, 0);
+        assert!(read_u64(&vec, 1) == 283686952306183u64 << 8 | 8, 1);
+        assert!(read_u64(&vec, 2) == (283686952306183u64 << 8 | 8) << 8 | 9, 2);
+    }
+
+    #[test_only]
+    use self::u256::to_bytes_u64;
+
+    #[test]
+    fun test_to_bytes_u64() {
+        let vec: vector<u8> = vector::empty();
+
+        to_bytes_u64(4096, &mut vec);
+
+        assert!(*vector::borrow(&vec, 6) == 16u8, 0);
+        assert!(*vector::borrow(&vec, 7) == 0, 1);
+
+        
+    }
+
+    #[test_only]
+    use self::u256::write_u64;
+
+    #[test]
+    fun test_write_u64() {
+        let vec: vector<u8> = vector[0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        write_u64(4096, &mut vec, 1);
+
+        assert!(*vector::borrow(&vec, 7) == 16u8, 0);
+        assert!(*vector::borrow(&vec, 8) == 0, 1);
+    }
+
+    #[test_only]
+    use self::u256::overflowing_add_u64;
+
+    #[test]
+    fun test_overflowing_add() {
+        let (n, z) = overflowing_add_u64(10, 10);
+        assert!(n == 20, 0);
+        assert!(!z, 1);
+
+        (n, z) = overflowing_add_u64((U64_MAX as u64), 1);
+        assert!(n == 0, 2);
+        assert!(z, 3);
+
+        (n, z) = overflowing_add_u64((U64_MAX as u64), 10);
+        assert!(n == 9, 4);
+        assert!(z, 5);
+
+        (n, z) = overflowing_add_u64(5, 8);
+        assert!(n == 13, 6);
+        assert!(!z, 7);
+    }
+
+    #[test_only]
+    use self::u256::overflowing_sub_u64;
+
+    #[test]
+    fun test_overflowing_sub() {
+        let (n, z) = overflowing_sub_u64(10, 5);
+        assert!(n == 5, 0);
+        assert!(!z, 1);
+
+        (n, z) = overflowing_sub_u64(0, 1);
+        assert!(n == (U64_MAX as u64), 2);
+        assert!(z, 3);
+
+        (n, z) = overflowing_sub_u64(10, 10);
+        assert!(n == 0, 4);
+        assert!(!z, 5);
+    }
+
+    #[test_only]
+    use self::u256::split_u128;
+
+    #[test]
+    fun test_split_u128() {
+        let (a1, a2) = split_u128(100);
+        assert!(a1 == 0, 0);
+        assert!(a2 == 100, 1);
+
+        (a1, a2) = split_u128(U64_MAX + 1);
+        assert!(a1 == 1, 2);
+        assert!(a2 == 0, 3);
+    }
+
+    #[test_only]
+    use self::u256::leading_zeros_u64;
+
+    #[test]
+    fun test_leading_zeros_u64() {
+        let a = leading_zeros_u64(0);
+        assert!(a == 64, 0);
+
+        let a = leading_zeros_u64(1);
+        assert!(a == 63, 1);
+
+        // TODO: more tests.
+    }
+
+    #[test_only]
+    use self::u256::{from_bool, from_u128};
+
+    #[test]
+    fun test_from_bool() {
+        assert!(from_bool(true) == from_u128(1), 0);
+        assert!(from_bool(false) == from_u128(0), 0);
+    }
+
+    #[test_only]
+    use self::u256::{as_u64, as_u128};
+
+    #[test]
+    fun test_as_u64() {
+        let a = from_u128(0);
+        let b = as_u64(a);
+        assert!(b == 0, 0);
+
+        let a = from_u128(1);
+        let b = as_u64(a);
+        assert!(b == 1, 1);
+
+        let a = from_u128(0xffffffffffffffff);
+        let b = as_u64(a);
+        assert!(b == 0xffffffffffffffff, 2);
+
+        let a = from_u128(0x10000000000000000);
+        let b = as_u64(a);
+        assert!(b == 0, 3);
+    }
+
+    #[test_only]
+    use self::u256::{zero, get};
+
+    #[test]
+    fun test_zero() {
+        let a = as_u128(zero());
+        assert!(a == 0, 0);
+
+        let a = zero();
+        assert!(get(&a, 0) == 0, 1);
+        assert!(get(&a, 1) == 0, 2);
+        assert!(get(&a, 2) == 0, 3);
+        assert!(get(&a, 3) == 0, 4);
+    }
+
+    #[test_only]
+    use self::u256::div;
+
+    #[test]
+    fun test_div() {
+        let a = from_u128(100);
+        let b = from_u128(5);
+        let d = div(a, b);
+
+        assert!(as_u128(d) == 20, 0);
+
+        let a = from_u128(U64_MAX);
+        let b = from_u128(U128_MAX);
+        let d = div(a, b);
+        assert!(as_u128(d) == 0, 1);
+
+        let a = from_u128(U64_MAX);
+        let b = from_u128(U128_MAX);
+        let d = div(a, b);
+        assert!(as_u128(d) == 0, 2);
+
+        let a = from_u128(U128_MAX);
+        let b = from_u128(U64_MAX);
+        let d = div(a, b);
+        assert!(as_u128(d) == 18446744073709551617, 2);
+    }
+
+    #[test_only]
+    use self::u256::slt;
+
+    #[test]
+    fun test_slt() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = slt(a, b);
+        assert!(c == true, 0);
+
+        let a = from_u128(1);
+        let b = from_u128(0);
+        let c = slt(a, b);
+        assert!(c == false, 1);
+
+        let a = from_u128(128);
+        let b = from_u128(128);
+        let c = slt(a, b);
+        assert!(c == false, 2);
+    }
+
+    #[test_only]
+    use self::u256::bitor;
+
+    #[test]
+    fun test_or() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = bitor(a, b);
+        assert!(as_u128(c) == 1, 0);
+
+        let a = from_u128(0x0f0f0f0f0f0f0f0fu128);
+        let b = from_u128(0xf0f0f0f0f0f0f0f0u128);
+        let c = bitor(a, b);
+        assert!(as_u128(c) == 0xffffffffffffffffu128, 1);
+    }
+
+    #[test_only]
+    use self::u256::bitand;
+
+    #[test]
+    fun test_and() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = bitand(a, b);
+        assert!(as_u128(c) == 0, 0);
+
+        let a = from_u128(0x0f0f0f0f0f0f0f0fu128);
+        let b = from_u128(0xf0f0f0f0f0f0f0f0u128);
+        let c = bitand(a, b);
+        assert!(as_u128(c) == 0, 1);
+
+        let a = from_u128(0x0f0f0f0f0f0f0f0fu128);
+        let b = from_u128(0x0f0f0f0f0f0f0f0fu128);
+        let c = bitand(a, b);
+        assert!(as_u128(c) == 0x0f0f0f0f0f0f0f0fu128, 1);
+    }
+
+    #[test_only]
+    use self::u256::bitxor;
+
+    #[test]
+    fun test_xor() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = bitxor(a, b);
+        assert!(as_u128(c) == 1, 0);
+
+        let a = from_u128(0x0f0f0f0f0f0f0f0fu128);
+        let b = from_u128(0xf0f0f0f0f0f0f0f0u128);
+        let c = bitxor(a, b);
+        assert!(as_u128(c) == 0xffffffffffffffffu128, 1);
+    }
+
+    #[test_only]
+    use self::u256::shr_u8;
+
+    #[test]
+    fun test_shift_right() {
+        let a = from_u128(100);
+        let b = shr_u8(a, 2);
+
+        assert!(as_u128(b) == 25, 0);
+    }
+
+    #[test]
+    fun test_div_by_zero() {
+        let a = from_u128(1);
+        let z = div(a, from_u128(0));
+        assert!(as_u128(z) == 0, 0);
+    }
+
+    #[test_only]
+    use self::u256::mod;
+
+    #[test]
+    fun test_mod() {
+        let a = from_u128(100);
+        let b = from_u128(5);
+        let d = mod(a, b);
+        assert!(as_u128(d) == 0, 0);
+
+        let a = from_u128(100);
+        let b = from_u128(0);
+        let d = mod(a, b);
+        assert!(as_u128(d) == 0, 0);
+
+        let a = from_u128(100);
+        let b = from_u128(51);
+        let d = mod(a, b);
+        assert!(as_u128(d) == 49, 0);
+    }
+
+    #[test_only]
+    use self::u256::shl_u8;
+
+    #[test]
+    fun test_shift_left() {
+        let a = from_u128(100);
+        let b = shl_u8(a, 2);
+
+        assert!(as_u128(b) == 400, 0);
+    }
+
+    #[test_only]
+    use self::u256::bits;
+
+    #[test]
+    fun test_bits() {
+        let a = bits(&from_u128(0));
+        assert!(a == 0, 0);
+
+        a = bits(&from_u128(255));
+        assert!(a == 8, 1);
+
+        a = bits(&from_u128(256));
+        assert!(a == 9, 2);
+
+        a = bits(&from_u128(300));
+        assert!(a == 9, 3);
+
+        a = bits(&from_u128(60000));
+        assert!(a == 16, 4);
+
+        a = bits(&from_u128(70000));
+        assert!(a == 17, 5);
+
+        let b = from_u128(70000);
+        let sh = shl_u8(b, 100);
+        assert!(bits(&sh) == 117, 6);
+
+        let sh = shl_u8(sh, 100);
+        assert!(bits(&sh) == 217, 7);
+
+        let sh = shl_u8(sh, 100);
+        assert!(bits(&sh) == 0, 8);
+    }
+
+    #[test_only]
+    use self::u256::compare;
+
+    #[test]
+    fun test_compare() {
+        let a = from_u128(1000);
+        let b = from_u128(50);
+
+        let cmp = compare(&a, &b);
+        assert!(cmp == 2, 0);
+
+        a = from_u128(100);
+        b = from_u128(100);
+        cmp = compare(&a, &b);
+
+        assert!(cmp == 0, 1);
+
+        a = from_u128(50);
+        b = from_u128(75);
+
+        cmp = compare(&a, &b);
+        assert!(cmp == 1, 2);
+    }
+
+    #[test_only]
+    use self::u256::exp;
+
+    #[test]
+    fun test_exp() {
+        let a = from_u128(2);
+        let b = from_u128(3);
+        let c = exp(a, b);
+        assert!(c == from_u128(8), 0);
+    }
+
+    #[test_only]
+    use self::u256::new_u256;
+
+    #[test]
+    fun test_get() {
+        let a = new_u256(1, 2, 3, 4);
+
+        assert!(get(&a, 0) == 1, 0);
+        assert!(get(&a, 1) == 2, 1);
+        assert!(get(&a, 2) == 3, 2);
+        assert!(get(&a, 3) == 4, 3);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun test_get_aborts() {
+        let _ = get(&zero(), 4);
+    }
+
+    #[test_only]
+    use self::u256::put;
+
+    #[test]
+    fun test_put() {
+        let a = zero();
+        put(&mut a, 0, 255);
+        assert!(get(&a, 0) == 255, 0);
+
+        put(&mut a, 1, (U64_MAX as u64));
+        assert!(get(&a, 1) == (U64_MAX as u64), 1);
+
+        put(&mut a, 2, 100);
+        assert!(get(&a, 2) == 100, 2);
+
+        put(&mut a, 3, 3);
+        assert!(get(&a, 3) == 3, 3);
+
+        put(&mut a, 2, 0);
+        assert!(get(&a, 2) == 0, 4);
+    }
+
+    #[test_only]
+    use self::u256::{eq, one};
+
+    #[test]
+    fun test_one() {
+        let a = one();
+        assert!(eq(a, from_u128(1)), 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun test_put_overflow() {
+        let a = zero();
+        put(&mut a, 6, 255);
+    }
+
+    #[test]
+    fun test_from_u128() {
+        let i = 0;
+        while (i < 1024) {
+            let big = from_u128(i);
+            assert!(as_u128(big) == i, 0);
+            i = i + 1;
+        };
+    }
+
+    #[test_only]
+    use self::u256::overflowing_add;
+
+    #[test]
+    fun test_add() {
+        let a = from_u128(1000);
+        let b = from_u128(500);
+
+        let s = as_u128(overflowing_add(a, b));
+        assert!(s == 1500, 0);
+
+        a = from_u128(U64_MAX);
+        b = from_u128(U64_MAX);
+
+        s = as_u128(overflowing_add(a, b));
+        assert!(s == (U64_MAX + U64_MAX), 1);
+    }
+
+    #[test]
+    fun test_add_overflow() {
+        let max = (U64_MAX as u64);
+
+        let a = new_u256(max, max, max, max);
+
+        let _ = overflowing_add(a, from_u128(1));
+    }
+
+    #[test_only]
+    use self::u256::overflowing_sub;
+
+    #[test]
+    fun test_sub() {
+        let a = from_u128(1000);
+        let b = from_u128(500);
+
+        let s = as_u128(overflowing_sub(a, b));
+        assert!(s == 500, 0);
+    }
+
+    #[test_only]
+    use self::u256::overflowing_mul;
+
+    #[test]
+    fun test_mul() {
+        let a = from_u128(285);
+        let b = from_u128(375);
+
+        let c = as_u128(overflowing_mul(a, b));
+        assert!(c == 106875, 0);
+
+        a = from_u128(0);
+        b = from_u128(1);
+
+        c = as_u128(overflowing_mul(a, b));
+
+        assert!(c == 0, 1);
+
+        a = from_u128(U64_MAX);
+        b = from_u128(2);
+
+        c = as_u128(overflowing_mul(a, b));
+
+        assert!(c == 36893488147419103230, 2);
+
+        a = from_u128(U128_MAX);
+        b = from_u128(U128_MAX);
+
+        let z = overflowing_mul(a, b);
+        assert!(bits(&z) == 256, 3);
+    }
+
+    #[test]
+    fun test_mul_overflow() {
+        let max = (U64_MAX as u64);
+
+        let a = new_u256(max, max, max, max);
+
+        let _ = overflowing_mul(a, from_u128(2));
+    }
+
+    #[test_only]
+    use self::u256::{from_bytes, to_bytes, write, from_signer};
+
+    #[test(self = @0xffeeddccbbaa99887766554433221100f0e0d0c0b0a090807060504030201000)]
+    fun test_encode_decode(self: &signer) {
+        let addr = from_signer(self);
+        let bytes = to_bytes(&addr);
+        let val = *std::vector::borrow(&bytes, 7);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
+        write(&addr, &mut bytes, 0);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, 1);
+    }
+
+    #[test(self = @0x4213421342134213)]
+    fun test_address_to_u128_2(self: &signer) {
+        assert!(from_signer(self) == from_u128(0x4213421342134213), 0);
+        let addr = from_signer(self);
+        let bytes = to_bytes(&addr);
+        let val = *std::vector::borrow(&bytes, 7);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
+        write(&addr, &mut bytes, 0);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
+    }
+
+    #[test(self = @0x42)]
+    fun test_address_to_u128_1(self: &signer) {
+        assert!(from_signer(self) == from_u128(0x42), 0);
+        let addr = from_signer(self);
+        let bytes = to_bytes(&addr);
+        let val = *std::vector::borrow(&bytes, 7);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
+        write(&addr, &mut bytes, 0);
+        assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
+    }
+
+    #[test_only]
+    use self::u256::{new_du256, du256_to_u256, get_d, put_d};
+
+    #[test]
+    fun test_du256_to_u256() {
+        let a = new_du256(255, 100, 50, 300, 0, 0, 0, 0);
+
+        let (m, overflow) = du256_to_u256(a);
+        assert!(!overflow, 0);
+        assert!(get(&m, 0) == get_d(&a, 0), 1);
+        assert!(get(&m, 1) == get_d(&a, 1), 2);
+        assert!(get(&m, 2) == get_d(&a, 2), 3);
+        assert!(get(&m, 3) == get_d(&a, 3), 4);
+
+        put_d(&mut a, 4, 100);
+        put_d(&mut a, 5, 5);
+
+        let (m, overflow) = du256_to_u256(a);
+        assert!(overflow, 5);
+        assert!(get(&m, 0) == get_d(&a, 0), 6);
+        assert!(get(&m, 1) == get_d(&a, 1), 7);
+        assert!(get(&m, 2) == get_d(&a, 2), 8);
+        assert!(get(&m, 3) == get_d(&a, 3), 9);
+    }
+
+
+    #[test]
+    fun test_get_d() {
+        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+
+        assert!(get_d(&a, 0) == 1, 0);
+        assert!(get_d(&a, 1) == 2, 1);
+        assert!(get_d(&a, 2) == 3, 2);
+        assert!(get_d(&a, 3) == 4, 3);
+        assert!(get_d(&a, 4) == 5, 4);
+        assert!(get_d(&a, 5) == 6, 5);
+        assert!(get_d(&a, 6) == 7, 6);
+        assert!(get_d(&a, 7) == 8, 7);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun test_get_d_overflow() {
+        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+
+        get_d(&a, 8);
+    }
+
+    #[test]
+    fun test_put_d() {
+        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+
+        put_d(&mut a, 0, 10);
+        put_d(&mut a, 1, 20);
+        put_d(&mut a, 2, 30);
+        put_d(&mut a, 3, 40);
+        put_d(&mut a, 4, 50);
+        put_d(&mut a, 5, 60);
+        put_d(&mut a, 6, 70);
+        put_d(&mut a, 7, 80);
+
+        assert!(get_d(&a, 0) == 10, 0);
+        assert!(get_d(&a, 1) == 20, 1);
+        assert!(get_d(&a, 2) == 30, 2);
+        assert!(get_d(&a, 3) == 40, 3);
+        assert!(get_d(&a, 4) == 50, 4);
+        assert!(get_d(&a, 5) == 60, 5);
+        assert!(get_d(&a, 6) == 70, 6);
+        assert!(get_d(&a, 7) == 80, 7);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun test_put_d_overflow() {
+        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+
+        put_d(&mut a, 8, 0);
+    }
+}

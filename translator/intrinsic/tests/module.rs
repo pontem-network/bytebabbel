@@ -9,7 +9,7 @@ use intrinsic::{self_address_index, template, Function};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
-    StructHandleIndex,
+    StructHandleIndex, Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
@@ -91,6 +91,21 @@ pub fn test_intrinsic_signature_token_mem_store() {
         Num::token(),
         SignatureToken::Struct(find_struct_by_name(&template, "U256"))
     );
+}
+
+#[test]
+pub fn test_intrinsic_function_visibility() {
+    let address = AccountAddress::random();
+    let template = template(address, "template_module", &HashSet::new());
+    let public_functions = vec![Num::FromU128.handler(), Num::ToU128.handler()];
+
+    for fun in &template.function_defs {
+        if public_functions.contains(&fun.function) {
+            assert_eq!(fun.visibility, Visibility::Public);
+        } else {
+            assert_eq!(fun.visibility, Visibility::Private);
+        }
+    }
 }
 
 #[test]

@@ -1,7 +1,7 @@
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken,
 };
-use move_binary_format::CompiledModule;
+use move_binary_format::{file_format::Visibility, CompiledModule};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
@@ -41,6 +41,19 @@ pub fn template(
                 handle.address.0 = 0;
             }
         }
+    }
+
+    let public_functions = vec![
+        table::U256::FromU128.handler(),
+        table::U256::ToU128.handler(),
+    ];
+    for fun in &mut module.function_defs {
+        if public_functions.contains(&fun.function) {
+            (*fun).visibility = Visibility::Public;
+            continue;
+        }
+
+        (*fun).visibility = Visibility::Private;
     }
 
     for ident in &mut module.identifiers {
