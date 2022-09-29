@@ -1,12 +1,10 @@
-#[cfg(feature = "deploy")]
-use std::future::Future;
-
 use anyhow::Result;
 use clap::Parser;
-
+use test_infra::color::font_red;
 use test_infra::init_log;
 
-use crate::convert::CmdConvert;
+#[cfg(feature = "deploy")]
+use std::future::Future;
 
 pub mod convert;
 pub mod profile;
@@ -17,6 +15,8 @@ pub mod call;
 pub mod resources;
 #[cfg(feature = "deploy")]
 pub mod txflags;
+
+use crate::convert::CmdConvert;
 
 pub trait Cmd {
     fn execute(&self) -> Result<String>;
@@ -59,7 +59,7 @@ fn main() {
             println!("{result}");
         }
         Err(err) => {
-            println!("Error: {err:?}");
+            println!("[{}]: {err:?}", font_red("Error"));
         }
     }
 }
