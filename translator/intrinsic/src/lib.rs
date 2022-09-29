@@ -1,7 +1,7 @@
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken,
 };
-use move_binary_format::{CompiledModule, file_format::Visibility,};
+use move_binary_format::{file_format::Visibility, CompiledModule};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
@@ -43,7 +43,10 @@ pub fn template(
         }
     }
 
-    let public_functions = vec![table::U256::FromU128.handler(), table::U256::ToU128.handler()];
+    let public_functions = vec![
+        table::U256::FromU128.handler(),
+        table::U256::ToU128.handler(),
+    ];
     for fun in &mut module.function_defs {
         if public_functions.contains(&fun.function) {
             (*fun).visibility = Visibility::Public;
