@@ -1,8 +1,9 @@
 use std::str::FromStr;
 use std::string::{String, ToString};
 
-use crate::profile::ProfileValue;
 use anyhow::{anyhow, Error};
+
+use crate::profile::ProfileValue;
 
 #[derive(Debug)]
 pub(crate) struct ResourcePath {

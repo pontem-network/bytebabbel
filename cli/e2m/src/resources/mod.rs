@@ -1,22 +1,22 @@
-pub mod query;
-pub mod resource_path;
-
 use std::str::FromStr;
 use std::string::ToString;
 
 use anyhow::{anyhow, ensure, Result};
-use clap::Parser;
-use reqwest::Url;
-
 use aptos::account::list::ListAccount;
 use aptos::common::types::{CliCommand, ProfileOptions, RestOptions};
 use aptos_types::account_address::AccountAddress;
+use clap::Parser;
+use reqwest::Url;
 
-use crate::profile::ProfileValue;
-use crate::{wait, Cmd};
 use query::ListQuery;
 use resource_path::ResourcePath;
 use test_infra::color::{bold, font_yellow};
+
+use crate::profile::ProfileValue;
+use crate::{wait, Cmd};
+
+pub mod query;
+pub mod resource_path;
 
 #[derive(Parser, Debug)]
 pub struct CmdResources {
