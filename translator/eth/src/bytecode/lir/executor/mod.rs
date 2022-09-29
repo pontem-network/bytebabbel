@@ -1,6 +1,5 @@
-use crate::bytecode::hir::context::Context;
-use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::instruction::Instruction;
+use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::call::CallOp;
 use crate::bytecode::lir::executor::code::CodeOp;
 use crate::bytecode::lir::executor::control_flow::ControlFlow;
@@ -106,8 +105,7 @@ impl InstructionHandler for Instruction {
             OpCode::SStore => StorageOp::SStore.handle(params, ir, context),
 
             OpCode::Push(val) => StackOp::Push(val.to_vec()).handle(params, ir, context),
-            OpCode::Dup(val) => StackOp::Dup(*val).handle(params, ir, context),
-            OpCode::Swap(val) => StackOp::Swap(*val).handle(params, ir, context),
+            OpCode::Dup(_) | OpCode::Swap(_) => unreachable!(),
             OpCode::Pop => StackOp::Pop.handle(params, ir, context),
 
             OpCode::Log(size) => EventOp(*size).handle(params, ir, context),
@@ -131,15 +129,15 @@ impl InstructionHandler for Instruction {
 pub enum ExecutionResult {
     Abort(u8),
     None,
-    Output(Vec<Expr>),
+    Output(Expr),
     Result {
-        offset: VarId,
-        len: VarId,
+        offset: Expr,
+        len: Expr,
     },
     Stop,
-    Jmp(VarId, BlockId),
+    Jmp(BlockId),
     CndJmp {
-        cnd: VarId,
+        cnd: Expr,
         true_br: BlockId,
         false_br: BlockId,
     },

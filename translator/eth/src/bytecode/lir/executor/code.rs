@@ -1,5 +1,5 @@
-use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::lir::ir::{Expr, Lir};
 use crate::BlockId;
@@ -24,13 +24,13 @@ impl InstructionHandler for CodeOp {
         match self {
             CodeOp::CodeSize => {
                 // let id = ir.create_var(Expr::Val(U256::from(ctx.code_size())));
-                ExecutionResult::Output(vec![Expr::Val(U256::from(ctx.code_size()))])
+                ExecutionResult::Output(Expr::Val(U256::from(ctx.code_size())))
             }
-            CodeOp::CallDataCopy => ExecutionResult::Output(vec![]),
+            CodeOp::CallDataCopy => ExecutionResult::None,
             CodeOp::CodeCopy => {
                 // let offset = ir.resolve_var(ops[1].clone()).unwrap_or_default();
                 // ir.code_copy(BlockId::from(offset));
-                ExecutionResult::Output(vec![])
+                ExecutionResult::None
             }
             CodeOp::ExtCodeSize => {
                 todo!()

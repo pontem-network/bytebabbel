@@ -11,7 +11,7 @@ use tempdir::TempDir;
 
 use crate::bytecode::pre_processing::swarm::remove_swarm_hash;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Evm {
     pub name: Arc<String>,
     pub bin: Arc<String>,
@@ -100,7 +100,7 @@ pub fn build_sol<P: AsRef<Path>>(path: P) -> Result<EvmPack> {
     Ok(EvmPack::from((r_contracts.remove(0), r_modules)))
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct EvmPack {
     contract: Evm,
     modules: Vec<Evm>,

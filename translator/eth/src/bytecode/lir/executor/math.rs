@@ -1,5 +1,5 @@
-use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::lir::ir::{Expr, Lir};
 use evm_core::eval::arithmetic;
@@ -30,19 +30,8 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
-        // if !ctx.is_in_loop() {
-        //     let param = ir.resolve_var(params[0].clone());
-        //     if let Some(param) = param {
-        //         let id = ir.create_var(Expr::Val(self.calc(param)));
-        //         return ExecutionResult::Output(vec![id]);
-        //     }
-        // }
-        //
-        // let expr = ir.var(&params[0]);
-        // let id = ir.create_var(Expr::UnaryOp(*self, Box::new(expr.clone())));
-        // ExecutionResult::Output(vec![id])
-        todo!()
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Lir, _: &mut Context) -> ExecutionResult {
+        ExecutionResult::Output(Expr::UnaryOp(*self, Box::new(params.remove(0))))
     }
 }
 
@@ -227,7 +216,7 @@ impl BinaryOp {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum TernaryOp {
     AddMod,
     MulMod,

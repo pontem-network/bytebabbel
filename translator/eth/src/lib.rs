@@ -14,6 +14,7 @@ use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
 use crate::vm::static_initialization;
 
+use crate::bytecode::lir::IrBuilder;
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;
@@ -53,14 +54,21 @@ pub fn transpile_program(
     let mut flow_builder = FlowBuilder::new(&contract)?;
     let contract_flow = flow_builder.make_flow();
     let flow_trace = flow_builder.flow_trace();
+    let lir = IrBuilder::new(contract.clone(), flags)?;
     let hir = HirTranslator::new(&contract, contract_flow, flow_trace, flags);
-
     let functions = abi
         .functions()
         .iter()
         .map(|(hash, fun)| {
-            translate_function(&hir, fun, contract_addr, contract_code_len as u128, flags)
-                .map(|mir| (*hash, mir))
+            translate_function(
+                &hir,
+                &lir,
+                fun,
+                contract_addr,
+                contract_code_len as u128,
+                flags,
+            )
+            .map(|mir| (*hash, mir))
         })
         .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
     Program::new(constructor, functions, abi)
@@ -68,12 +76,14 @@ pub fn transpile_program(
 
 pub fn translate_function(
     hir_translator: &HirTranslator,
+    lir: &IrBuilder,
     fun: &Function,
     contract_addr: U256,
     code_size: u128,
     flags: Flags,
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
+    let lir = lir.translate_fun(fun, contract_addr, code_size)?;
     let mir_translator = MirTranslator::new(fun, flags);
     let mir = mir_translator.translate(hir)?;
     mir.print(&fun.name);

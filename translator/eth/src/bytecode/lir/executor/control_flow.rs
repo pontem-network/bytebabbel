@@ -1,5 +1,5 @@
-use crate::bytecode::hir::context::Context;
 use crate::bytecode::instruction::Instruction;
+use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::lir::ir::{Expr, Lir};
 

@@ -27,27 +27,3 @@ impl Stack {
         self.stack.extend(to_push.into_iter().rev());
     }
 }
-
-// pub struct NegativeStack {
-//     negative_stack: Vec<VarId>,
-//     stack: Vec<VarId>,
-// }
-//
-// impl NegativeStack {
-//     pub fn pop(&mut self, count: usize) -> Vec<VarId> {
-//         let mut res = Vec::with_capacity(count);
-//
-//         for _ in 0..count {
-//             if let Some(item) = self.stack.pop() {
-//                 res.push(item);
-//             } else {
-//                 self.negative_stack.push(VarId::from(0));
-//             }
-//         }
-//         res
-//     }
-//
-//     pub fn push(&mut self, to_push: Vec<VarId>) {
-//         self.stack.extend(to_push.into_iter().rev());
-//     }
-// }
