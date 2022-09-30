@@ -1,11 +1,13 @@
-use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::{make_move_module, sol_path};
-use eth::compile::build_sol;
-use eth::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag};
+
+use eth::compile::build_sol;
+use eth::Flags;
 use test_infra::init_log;
+
+use crate::testssol::env::executor::MoveExecutor;
+use crate::testssol::{make_move_module, sol_path};
 
 #[allow(dead_code)]
 mod testssol;
@@ -63,7 +65,7 @@ pub fn test_for_users() {
                 .unwrap(),
                 module: Identifier::new("Users").unwrap(),
                 name: Identifier::new("Event").unwrap(),
-                type_params: vec![]
+                type_params: vec![],
             }),
             new_user_event.2
         );
@@ -146,7 +148,7 @@ pub fn test_for_users() {
                 .unwrap(),
                 module: Identifier::new("Users").unwrap(),
                 name: Identifier::new("Event").unwrap(),
-                type_params: vec![]
+                type_params: vec![],
             }),
             new_user_event.2
         );

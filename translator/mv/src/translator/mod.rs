@@ -1,8 +1,9 @@
-use crate::mv_ir::func::Func;
-use crate::mv_ir::Module;
-use crate::translator::signature::{map_signature, signer, SignatureWriter};
-use crate::translator::writer::{CallOp, Code};
 use anyhow::{anyhow, bail, Error};
+use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
+use move_binary_format::CompiledModule;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
+
 use eth::abi::call::FunHash;
 use eth::bytecode::block::BlockId;
 use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
@@ -16,10 +17,11 @@ use eth::program::Program;
 use eth::Flags;
 use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
 use intrinsic::template;
-use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
-use move_binary_format::CompiledModule;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::Identifier;
+
+use crate::mv_ir::func::Func;
+use crate::mv_ir::Module;
+use crate::translator::signature::{map_signature, signer, SignatureWriter};
+use crate::translator::writer::{CallOp, Code};
 
 pub mod bytecode;
 pub mod signature;

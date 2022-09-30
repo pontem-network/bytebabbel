@@ -1,12 +1,13 @@
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::resolver::MoveResolver;
 use move_vm_runtime::session::Session;
 use move_vm_types::gas::UnmeteredGasMeter;
-use std::collections::BTreeMap;
-use std::fs;
-use std::path::{Path, PathBuf};
 
 pub fn publish_std<S: MoveResolver>(session: &mut Session<'_, '_, S>) {
     publish(session, "MoveStdlib");

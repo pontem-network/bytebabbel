@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use anyhow::{bail, Error, Result};
-use primitive_types::{H160, U256};
-
-use eth::compile::EvmPack;
 use evm::backend::{MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm::{Config, Context, ExitReason, Runtime};
+use primitive_types::{H160, U256};
+
+use eth::compile::EvmPack;
 
 fn memory_vicinity() -> Result<MemoryVicinity> {
     Ok(MemoryVicinity {
@@ -103,6 +103,7 @@ impl REvm {
         }
     }
 }
+
 impl TryFrom<Vec<u8>> for REvm {
     type Error = Error;
 
@@ -125,22 +126,23 @@ impl TryFrom<&EvmPack> for REvm {
 #[allow(unused_imports)]
 #[cfg(test)]
 mod test {
-    use ethabi::{Contract, Token};
-    use evm::utils::I256;
-    use itertools::Itertools;
     use std::ops::Deref;
     use std::path::PathBuf;
     use std::sync::Mutex;
 
     use anyhow::{anyhow, Result};
-    use eth::abi::call::EthEncodeByString;
+    use ethabi::{Contract, Token};
+    use evm::utils::I256;
+    use itertools::Itertools;
     use lazy_static::lazy_static;
     use primitive_types::U256;
 
-    use crate::testssol::env::revm::REvm;
-    use crate::testssol::EvmPack;
+    use eth::abi::call::EthEncodeByString;
     use eth::compile::build_sol;
     use test_infra::init_log;
+
+    use crate::testssol::env::revm::REvm;
+    use crate::testssol::EvmPack;
 
     const TEST_SOL_FILE: &str = "sol/evm.sol";
 

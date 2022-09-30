@@ -1,14 +1,14 @@
 use std::fs;
 
 use anyhow::{anyhow, Result};
-
-use crate::convert::ResultConvert;
-use crate::{wait, CmdConvert};
 use framework::natives::code::{
     ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy,
 };
 use framework::zip_metadata_str;
 use move_binary_format::access::ModuleAccess;
+
+use crate::convert::ResultConvert;
+use crate::{wait, CmdConvert};
 
 const TEMPLATE_MOVE_TOML: &str = include_str!("../../resources/template_move.toml");
 

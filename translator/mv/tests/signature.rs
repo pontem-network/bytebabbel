@@ -1,4 +1,5 @@
 use move_binary_format::file_format::{Signature, SignatureToken};
+
 use mv::translator::signature::SignatureWriter;
 
 #[test]
@@ -51,7 +52,7 @@ pub fn test_signature() {
             ]),
             Signature(vec![SignatureToken::Vector(Box::new(
                 SignatureToken::Address,
-            ))])
+            ))]),
         ]
     );
 }

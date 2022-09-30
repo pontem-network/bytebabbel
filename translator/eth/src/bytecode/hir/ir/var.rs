@@ -1,9 +1,11 @@
-use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::mir::ir::types::LocalIndex;
-use anyhow::{anyhow, Error};
-use primitive_types::U256;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+
+use anyhow::{anyhow, Error};
+use primitive_types::U256;
+
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::mir::ir::types::LocalIndex;
 
 #[derive(Default, Debug)]
 pub struct Vars {

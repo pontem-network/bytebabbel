@@ -9,10 +9,6 @@ use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
 
-pub mod convert;
-pub mod env;
-pub mod parse;
-
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::call::EthEncodeByString;
 use eth::compile::EvmPack;
@@ -20,6 +16,10 @@ use eth::Flags;
 use parse::{SolFile, SolTest};
 use test_infra::color;
 use translator::translate;
+
+pub mod convert;
+pub mod env;
+pub mod parse;
 
 const TEST_NAME: &str = "sol";
 

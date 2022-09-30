@@ -1,8 +1,10 @@
+use std::fmt::{Debug, Display, Formatter};
+
+use primitive_types::U256;
+
 use crate::bytecode::instruction::{Instruction, Offset};
 use crate::bytecode::loc::Loc;
 use crate::OpCode;
-use primitive_types::U256;
-use std::fmt::{Debug, Display, Formatter};
 
 pub type InstructionBlock = Loc<Vec<Instruction>>;
 

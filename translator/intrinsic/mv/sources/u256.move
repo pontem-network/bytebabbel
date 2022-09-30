@@ -897,8 +897,8 @@ module self::u256 {
         v7: u64,
     }
 
-    public fun new_du256(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64):DU256{
-        DU256{
+    public fun new_du256(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64): DU256 {
+        DU256 {
             v0,
             v1,
             v2,
@@ -956,16 +956,16 @@ module self::u256 {
         }
     }
 
-    public fun zero_d():DU256{
-        DU256{
-            v0:0,
-            v1:0,
-            v2:0,
-            v3:0,
-            v4:0,
-            v5:0,
-            v6:0,
-            v7:0,
+    public fun zero_d(): DU256 {
+        DU256 {
+            v0: 0,
+            v1: 0,
+            v2: 0,
+            v3: 0,
+            v4: 0,
+            v5: 0,
+            v6: 0,
+            v7: 0,
         }
     }
 }

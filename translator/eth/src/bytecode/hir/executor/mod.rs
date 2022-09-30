@@ -1,13 +1,3 @@
-pub mod call;
-pub mod code;
-pub mod control_flow;
-pub mod dependency;
-pub mod event;
-pub mod math;
-pub mod memory;
-pub mod stack;
-pub mod storage;
-
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::call::CallOp;
 use crate::bytecode::hir::executor::code::CodeOp;
@@ -21,6 +11,16 @@ use crate::bytecode::hir::executor::storage::StorageOp;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::instruction::Instruction;
 use crate::{BlockId, Hir, OpCode};
+
+pub mod call;
+pub mod code;
+pub mod control_flow;
+pub mod dependency;
+pub mod event;
+pub mod math;
+pub mod memory;
+pub mod stack;
+pub mod storage;
 
 pub trait InstructionHandler {
     fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult;

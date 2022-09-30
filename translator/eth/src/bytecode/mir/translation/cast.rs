@@ -1,8 +1,9 @@
+use anyhow::Error;
+
 use crate::bytecode::mir::ir::expression::{Cast, Expression, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
-use anyhow::Error;
 
 impl<'a> MirTranslator<'a> {
     pub fn cast(&mut self, from: Variable, to: SType) -> Result<Variable, Error> {

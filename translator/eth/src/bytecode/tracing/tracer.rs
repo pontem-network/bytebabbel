@@ -1,9 +1,11 @@
+use std::collections::{BTreeMap, HashMap, HashSet};
+
+use anyhow::{anyhow, Context as ErrContext, Error};
+
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::instruction::Offset;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
 use crate::{BlockId, OpCode, U256};
-use anyhow::{anyhow, Context as ErrContext, Error};
-use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Debug)]
 pub struct Tracer<'a> {

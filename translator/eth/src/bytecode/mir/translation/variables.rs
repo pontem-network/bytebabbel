@@ -1,10 +1,12 @@
-use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
-use crate::bytecode::mir::ir::statement::Statement;
-use crate::bytecode::mir::ir::types::{LocalIndex, SType};
-use anyhow::{anyhow, Error};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+
+use anyhow::{anyhow, Error};
+
+use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
+use crate::bytecode::mir::ir::statement::Statement;
+use crate::bytecode::mir::ir::types::{LocalIndex, SType};
 
 #[derive(Debug)]
 pub struct Variables {

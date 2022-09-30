@@ -8,13 +8,13 @@ contract TwoFunctions {
         assert(false);
     }
 
-//    // # do_nothing()
-//    // # do_nothing(123) void !panic
-//    function do_nothing() public {}
-//
-//    // # boo(true)
-//    // # boo(false)
-//    // # boo(123) !panic
-//    function boo(bool s) public {
-//    }
+    //    // # do_nothing()
+    //    // # do_nothing(123) void !panic
+    //    function do_nothing() public {}
+    //
+    //    // # boo(true)
+    //    // # boo(false)
+    //    // # boo(123) !panic
+    //    function boo(bool s) public {
+    //    }
 }

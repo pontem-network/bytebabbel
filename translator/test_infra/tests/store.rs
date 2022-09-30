@@ -1,8 +1,9 @@
-use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::{make_move_module, sol_path};
 use eth::compile::{build_sol, Evm};
 use eth::Flags;
 use test_infra::init_log;
+
+use crate::testssol::env::executor::MoveExecutor;
+use crate::testssol::{make_move_module, sol_path};
 
 #[allow(dead_code)]
 mod testssol;

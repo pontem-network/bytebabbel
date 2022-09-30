@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+use std::mem;
+
 use anyhow::{bail, Error};
+use move_binary_format::file_format::{Bytecode, CodeOffset};
+
 use eth::bytecode::block::BlockId;
 use eth::bytecode::mir::translation::variables::Variable;
 use intrinsic::Function;
-use move_binary_format::file_format::{Bytecode, CodeOffset};
-use std::collections::HashMap;
-use std::mem;
 
 #[derive(Default, Debug)]
 pub struct Code {

@@ -11,7 +11,7 @@ library ForLoop {
     function for_loop(uint128 inc, uint128 limit) public pure returns (uint128, uint256) {
         uint128 result = 0;
         uint256 j = 10000000000000000;
-        for(uint128 i = 0; i < limit; i++) {
+        for (uint128 i = 0; i < limit; i++) {
             result += inc;
             j -= 1;
         }
@@ -22,7 +22,7 @@ library ForLoop {
     // # for_static ()
     function for_static() public pure returns (uint128) {
         uint128 result = 0;
-        for(uint128 i = 0; i < 10; i++) {
+        for (uint128 i = 0; i < 10; i++) {
             result += 1;
         }
         return result;

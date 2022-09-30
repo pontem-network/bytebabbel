@@ -1,9 +1,10 @@
-use lazy_static::lazy_static;
-use log::{Metadata, Record};
 use std::cell::RefCell;
 use std::io::Write;
 use std::path::PathBuf;
 use std::{fs, mem};
+
+use lazy_static::lazy_static;
+use log::{Metadata, Record};
 
 pub mod color;
 pub mod env;

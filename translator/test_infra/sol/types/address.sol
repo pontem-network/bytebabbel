@@ -8,6 +8,6 @@ contract Simple {
     function f_address() public pure {
         address a = 0x111122223333444455556666777788889999aAaa;
         address b = 0x777788889999AaAAbBbbCcccddDdeeeEfFFfCcCc;
-        assert(a!=b);
+        assert(a != b);
     }
 }

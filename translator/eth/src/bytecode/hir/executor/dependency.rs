@@ -1,8 +1,9 @@
+use primitive_types::U256;
+
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::var::{Expr, VarId};
 use crate::Hir;
-use primitive_types::U256;
 
 pub struct Sha3;
 

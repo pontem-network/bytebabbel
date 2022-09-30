@@ -1,5 +1,3 @@
-pub mod call;
-
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{Context, Error};
@@ -8,6 +6,8 @@ use ethabi::{Contract, Param};
 use crate::abi::call::FunHash;
 use crate::bytecode::types::EthType;
 use crate::Function;
+
+pub mod call;
 
 pub struct MoveAbi {
     name: String,

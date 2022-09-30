@@ -1,9 +1,11 @@
-use crate::bytecode::flow_graph::flow::Flow;
-use crate::bytecode::flow_graph::LoopBr;
+use std::fmt::Write;
+
 use anyhow::Error;
 use log::log_enabled;
 use log::Level;
-use std::fmt::Write;
+
+use crate::bytecode::flow_graph::flow::Flow;
+use crate::bytecode::flow_graph::LoopBr;
 
 pub fn log_flow(flow: &Flow) {
     if log_enabled!(Level::Trace) {

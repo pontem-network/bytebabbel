@@ -1,9 +1,8 @@
 module self::persist_tests {
     #[test_only]
-    use self::u256::{from_u128, as_u128, U256, from_bytes, zero, eq};
-
+    use self::persist::{request_buffer_len, new_mem, mload, mstore, effective_len, mstore8, hash};
     #[test_only]
-    use self::persist::{request_buffer_len};
+    use self::u256::{from_u128, as_u128, U256, from_bytes, zero, eq};
 
     #[test]
     fun test_buff_len() {
@@ -18,9 +17,6 @@ module self::persist_tests {
         let len = as_u128(request_buffer_len(&buff));
         assert!(len == 7 + 4, 1);
     }
-
-    #[test_only]
-    use self::persist::{new_mem, mload, mstore};
 
     #[test]
     fun test_random_access() {
@@ -37,9 +33,6 @@ module self::persist_tests {
         let value = as_u128(value);
         assert!(value == 0, 2);
     }
-
-    #[test_only]
-    use self::persist::effective_len;
 
     #[test]
     fun load_store_with_same_offset() {
@@ -89,9 +82,6 @@ module self::persist_tests {
         from_bytes(&encoded, zero())
     }
 
-    #[test_only]
-    use self::persist::mstore8;
-
     #[test(
         v1 = @0xAA00000000000000000000000000000000000000000000000000000000000000,
         v2 = @0xAAFF000000000000000000000000000000000000000000000000000000000000,
@@ -136,9 +126,6 @@ module self::persist_tests {
         let expected = read_signer(v5);
         assert!(eq(val, expected), 5);
     }
-
-    #[test_only]
-    use self::persist::hash;
 
     #[test(
         s1 = @0x6261be5de65349dedcf98dad3041f331b4a397546079ef17542df4fbbf359787,
@@ -201,5 +188,4 @@ module self::persist_tests {
     //     sstore(persist, from_u128(1), from_u128(1));
     //     assert!(as_u128(sload(persist, from_u128(1))) == 1, 0);
     // }
-
 }

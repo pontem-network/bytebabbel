@@ -14,13 +14,13 @@ regex = "1.6"
 ethabi = "17.2"
 
 [dev-dependencies]
-mv = {path = "../mv"}
-eth = {path = "../eth" }
-translator = {path = ".."}
-intrinsic = {path = "../intrinsic"}
+mv = { path = "../mv" }
+eth = { path = "../eth" }
+translator = { path = ".." }
+intrinsic = { path = "../intrinsic" }
 
-move-bytecode-source-map = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
-move-ir-types = {git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c"  }
+move-bytecode-source-map = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
+move-ir-types = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
 #
 evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
@@ -28,17 +28,17 @@ primitive-types = { version = "0.11", default-features = false, features = ["rlp
 rand = "0.8.5"
 hex = "0.4"
 bcs = "0.1.3"
-serde = {version = "1.0.138", features = ["derive"]}
+serde = { version = "1.0.138", features = ["derive"] }
 serde_json = "1.0.82"
 once_cell = "1.13.1"
 itertools = "0.10.3"
 tempdir = "0.3.7"
 
-move-vm-runtime = {git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["testing"]  }
-move-vm-types = {git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5"  }
-move-core-types = {git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5" , features = ["address32"] }
-move-binary-format = {git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5"  }
-move-stdlib = {git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["testing"] }
+move-vm-runtime = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["testing"] }
+move-vm-types = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5" }
+move-core-types = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["address32"] }
+move-binary-format = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5" }
+move-stdlib = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["testing"] }
 
 aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
 aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }

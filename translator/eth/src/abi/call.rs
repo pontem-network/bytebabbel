@@ -2,7 +2,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
 use anyhow::{ensure, Result};
-
 use ethabi::token::{LenientTokenizer, Tokenizer};
 use ethabi::{Bytes, Constructor, Function, Token};
 use primitive_types::U256;
@@ -185,8 +184,9 @@ impl Display for FunHash {
 
 #[cfg(test)]
 mod test {
-    use crate::abi::call::EthEncodeByString;
     use ethabi::Contract;
+
+    use crate::abi::call::EthEncodeByString;
 
     /// Encoding and decoding input/output
     ///

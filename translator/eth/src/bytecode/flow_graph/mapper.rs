@@ -1,9 +1,10 @@
+use std::collections::BTreeMap;
+
 use crate::bytecode::flow_graph::builder::CndBranch;
 use crate::bytecode::flow_graph::debug::log_flow;
 use crate::bytecode::flow_graph::flow::{Flow, IfFlow, LoopFlow};
 use crate::bytecode::flow_graph::LoopBr;
 use crate::BlockId;
-use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 struct Mapper {

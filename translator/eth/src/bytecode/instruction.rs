@@ -1,6 +1,7 @@
-use crate::OpCode;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
+
+use crate::OpCode;
 
 pub type Offset = u64;
 
