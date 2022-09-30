@@ -21,7 +21,7 @@ fn main() {
 
     let filter_str = std::env::var("E2M_SOL_TEST").ok();
 
-    let mut tests = STest::from_sol_dir_with_filter(filter_str)
+    let mut tests = STest::from_sol_dir_with_filter(filter_str.as_ref())
         .unwrap()
         .into_iter()
         .enumerate()
