@@ -3,9 +3,8 @@ use std::string::ToString;
 
 use anyhow::{anyhow, bail, ensure, Error, Result};
 use clap::ArgEnum;
-use serde_json::Value;
-
 use move_core_types::account_address::AccountAddress;
+use serde_json::Value;
 
 #[derive(ArgEnum, Clone, Copy, Debug)]
 pub(crate) enum U256Decode {
