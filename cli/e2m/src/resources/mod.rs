@@ -9,17 +9,17 @@ use clap::Parser;
 use reqwest::Url;
 use serde_json::Value;
 
-use decode::U256Decode;
-use query::ListQuery;
-use resource_path::ResourcePath;
 use test_infra::color::{bold, font_yellow};
-
-use crate::profile::ProfileValue;
-use crate::{wait, Cmd};
 
 pub mod decode;
 pub mod query;
 pub mod resource_path;
+
+use crate::profile::ProfileValue;
+use crate::{wait, Cmd};
+use decode::decode;
+use query::ListQuery;
+use resource_path::ResourcePath;
 
 #[derive(Parser, Debug)]
 pub struct CmdResources {
@@ -31,6 +31,12 @@ pub struct CmdResources {
     #[clap(long, default_value_t = ListQuery::Resources)]
     query: ListQuery,
 
+    #[clap(flatten)]
+    rest_options: RestOptions,
+
+    #[clap(flatten)]
+    profile_options: ProfileOptions,
+
     /// Query `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>(::<FIELD_NAME>)?`
     ///
     /// Example:
@@ -39,19 +45,10 @@ pub struct CmdResources {
     #[clap(short, long)]
     resource_path: Option<ResourcePath>,
 
-    #[clap(flatten)]
-    rest_options: RestOptions,
-
-    #[clap(flatten)]
-    profile_options: ProfileOptions,
-
     /// Types for decoding.
     /// Used for decoding EVENTS
-    #[clap(long)]
-    decode_types: Option<String>,
-
-    #[clap(long)]
-    u256: Option<U256Decode>,
+    #[clap(long, multiple = true)]
+    decode_types: Vec<String>,
 }
 
 impl Cmd for CmdResources {
@@ -70,7 +67,7 @@ impl CmdResources {
     /// run $ aptos account list ..
     fn parent(&self) -> Result<String> {
         show_ignored_message(self.resource_path.is_some(), "--resource_path");
-        show_ignored_message(self.decode_types.is_some(), "--decode-types");
+        show_ignored_message(!self.decode_types.is_empty(), "--decode-types");
 
         let profile = self.profile_options.profile.clone();
 
@@ -164,14 +161,11 @@ impl CmdResources {
         log::debug!("url: {url}");
 
         let mut response: Value = reqwest::blocking::get(url)?.json()?;
-        log::debug!("response: {response:?}");
 
-        if let Some(usetting) = self.u256 {
-            match usetting {
-                U256Decode::String => decode::replace_u256_to_numstring(&mut response),
-                U256Decode::Address => decode::replace_u256_to_address(&mut response),
-            }?
+        if !self.decode_types.is_empty() {
+            response = decode(response, &self.decode_types)?;
         }
+        log::debug!("response: {response:?}");
 
         Ok(response)
     }
