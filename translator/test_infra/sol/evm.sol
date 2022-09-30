@@ -59,7 +59,7 @@ contract Demo {
         return val;
     }
 
-    function array_bool_dyn3() public pure returns (bool[] memory,bool[][] memory){
+    function array_bool_dyn3() public pure returns (bool[] memory, bool[][] memory){
         return (array_bool_dyn(), array_bool_dyn2());
     }
 
@@ -67,7 +67,7 @@ contract Demo {
         bytes memory bs_dyn = new bytes(2);
         bs_dyn = "01";
         bytes3 bs3 = "123";
-        bytes1[2] memory bs1 = [bytes1("0"),"1"];
+        bytes1[2] memory bs1 = [bytes1("0"), "1"];
         bytes2[] memory bs2 = new bytes2[](3);
         bs2[0] = "00";
         bs2[1] = "01";

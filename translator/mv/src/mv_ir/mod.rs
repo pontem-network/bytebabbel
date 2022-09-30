@@ -1,7 +1,3 @@
-pub mod func;
-pub mod interface;
-
-use crate::mv_ir::func::Func;
 use anyhow::{anyhow, Error};
 use log::log_enabled;
 use log::Level;
@@ -13,6 +9,11 @@ use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_disassembler::disassembler::Disassembler;
 use move_disassembler::disassembler::DisassemblerOptions;
 use move_ir_types::location::Spanned;
+
+use crate::mv_ir::func::Func;
+
+pub mod func;
+pub mod interface;
 
 #[derive(Debug)]
 pub struct Module {

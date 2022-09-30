@@ -1,9 +1,11 @@
+use std::collections::HashSet;
+use std::mem;
+
+use anyhow::{anyhow, Error};
+
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::instruction::Offset;
 use crate::{BlockId, OpCode, U256};
-use anyhow::{anyhow, Error};
-use std::collections::HashSet;
-use std::mem;
 
 #[derive(Debug, Clone, Default)]
 pub struct Executor {

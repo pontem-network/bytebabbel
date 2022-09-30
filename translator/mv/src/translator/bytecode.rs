@@ -1,5 +1,6 @@
-use crate::translator::writer::Code;
 use move_binary_format::file_format::{Bytecode, LocalIndex};
+
+use crate::translator::writer::Code;
 
 impl Code {
     pub fn ld_var(&mut self, idx: LocalIndex) {

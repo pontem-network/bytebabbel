@@ -1,8 +1,10 @@
+use std::collections::{HashMap, HashSet};
+
+use anyhow::{anyhow, Error};
+
 use crate::bytecode::hir::ir::statement::Statement;
 use crate::bytecode::hir::ir::var::{Expr, VarId, Vars};
 use crate::{BlockId, Hir};
-use anyhow::{anyhow, Error};
-use std::collections::{HashMap, HashSet};
 
 pub struct UnusedVarClipper;
 

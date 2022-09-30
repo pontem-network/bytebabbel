@@ -1,8 +1,9 @@
+use anyhow::{anyhow, ensure, Error};
+use primitive_types::U256;
+
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
-use anyhow::{anyhow, ensure, Error};
-use primitive_types::U256;
 
 #[derive(Debug, Clone)]
 pub enum Expression {

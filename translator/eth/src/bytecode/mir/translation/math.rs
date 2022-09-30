@@ -1,9 +1,10 @@
+use anyhow::{anyhow, Error};
+
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir::ir::var::Expr;
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
-use anyhow::{anyhow, Error};
 
 impl<'a> MirTranslator<'a> {
     pub(super) fn translate_binary_op(

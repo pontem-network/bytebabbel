@@ -7,11 +7,11 @@ contract Strings {
         return "hello";
     }
 
-//    function get_state() public view returns (string memory) {
-//        return state;
-//    }
+    //    function get_state() public view returns (string memory) {
+    //        return state;
+    //    }
 
-//    function set_state(string memory s) public {
-//        state = s;
-//    }
+    //    function set_state(string memory s) public {
+    //        state = s;
+    //    }
 }

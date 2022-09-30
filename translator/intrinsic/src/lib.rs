@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use move_binary_format::file_format::{
     Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken,
 };
@@ -5,7 +7,6 @@ use move_binary_format::{file_format::Visibility, CompiledModule};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::CORE_CODE_ADDRESS;
-use std::collections::HashSet;
 
 pub mod table;
 

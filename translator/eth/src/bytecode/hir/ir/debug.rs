@@ -1,11 +1,13 @@
+use std::fmt::Write;
+
+use anyhow::Error;
+use log::log_enabled;
+use log::Level;
+
 use crate::bytecode::hir::executor::math::{BinaryOp, UnaryOp};
 use crate::bytecode::hir::ir::statement::Statement;
 use crate::bytecode::hir::ir::var::Expr;
 use crate::Hir;
-use anyhow::Error;
-use log::log_enabled;
-use log::Level;
-use std::fmt::Write;
 
 pub fn print_ir(ir: &Hir, name: &str) {
     if log_enabled!(Level::Trace) {

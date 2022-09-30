@@ -1,7 +1,8 @@
+use move_binary_format::file_format::{Signature, SignatureIndex, SignatureToken};
+
 use eth::bytecode::types::EthType;
 use eth::Flags;
 use intrinsic::table::U256 as Num;
-use move_binary_format::file_format::{Signature, SignatureIndex, SignatureToken};
 
 pub fn map_signature(eth_types: &[EthType], is_native: bool, flags: &Flags) -> Vec<SignatureToken> {
     eth_types
