@@ -19,7 +19,9 @@ fn run_test(name: &str, test: &STest) -> Result<()> {
 fn main() {
     init_log();
 
-    let mut tests = STest::from_sol_dir()
+    let filter_str = std::env::var("E2M_SOL_TEST").ok();
+
+    let mut tests = STest::from_sol_dir_with_filter(filter_str)
         .unwrap()
         .into_iter()
         .enumerate()

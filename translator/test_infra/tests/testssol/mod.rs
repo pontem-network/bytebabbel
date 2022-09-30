@@ -54,6 +54,22 @@ impl STest {
             .collect();
         Ok(list)
     }
+
+    pub fn from_sol_dir_with_filter(filter_str: Option<String>) -> Result<Vec<STest>> {
+        let list = SolFile::from_sol_dir()?
+            .into_iter()
+            .filter(|file| {
+                if let Some(filter_str) = filter_str.as_ref() {
+                    if !file.name.contains(filter_str) {
+                        return false;
+                    }
+                }
+                !file.tests.is_empty()
+            })
+            .flat_map(STest::from_file)
+            .collect();
+        Ok(list)
+    }
 }
 
 impl STest {
