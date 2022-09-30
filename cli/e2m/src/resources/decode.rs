@@ -37,17 +37,13 @@ impl FromStr for U256Decode {
 
 pub(crate) fn replace_u256_to_numstring(json: &mut Value) -> Result<()> {
     match json {
-        Value::Array(val) => val
-            .iter_mut()
-            .map(replace_u256_to_numstring)
-            .collect::<Result<_>>()?,
+        Value::Array(val) => val.iter_mut().try_for_each(replace_u256_to_numstring)?,
         Value::Object(val) => {
             if is_object_u256(val) {
                 *json = Value::String(object_to_u256(val)?.to_string());
             } else {
                 val.iter_mut()
-                    .map(|(.., val)| replace_u256_to_numstring(val))
-                    .collect::<Result<_>>()?
+                    .try_for_each(|(.., val)| replace_u256_to_numstring(val))?
             }
         }
         _ => (),
@@ -57,17 +53,13 @@ pub(crate) fn replace_u256_to_numstring(json: &mut Value) -> Result<()> {
 
 pub(crate) fn replace_u256_to_address(json: &mut Value) -> Result<()> {
     match json {
-        Value::Array(val) => val
-            .iter_mut()
-            .map(replace_u256_to_address)
-            .collect::<Result<_>>()?,
+        Value::Array(val) => val.iter_mut().try_for_each(replace_u256_to_address)?,
         Value::Object(val) => {
             if is_object_u256(val) {
                 *json = Value::String(object_to_u256_address(val)?.to_hex_literal());
             } else {
                 val.iter_mut()
-                    .map(|(.., val)| replace_u256_to_address(val))
-                    .collect::<Result<_>>()?
+                    .try_for_each(|(.., val)| replace_u256_to_address(val))?
             }
         }
         _ => (),
@@ -104,11 +96,7 @@ fn object_to_u256_address(val: &serde_json::Map<String, Value>) -> Result<Accoun
     ensure!(list_u64.len() == 4, "Parsed to u256: {val:?}");
     list_u64.reverse();
 
-    let addres_bytes: Vec<u8> = list_u64
-        .into_iter()
-        .map(|v| v.to_be_bytes())
-        .flatten()
-        .collect();
+    let addres_bytes: Vec<u8> = list_u64.into_iter().flat_map(|v| v.to_be_bytes()).collect();
     Ok(AccountAddress::from_bytes(&addres_bytes)?)
 }
 
