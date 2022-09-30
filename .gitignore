@@ -7,3 +7,9 @@ Cargo.lock
 translator/intrinsic/mv/template.mv
 .idea
 .aptos
+.*.~undo-tree~
+**/*.rs.bk
+*~
+\#*\#
+.\#*
+.emacs.desktop
