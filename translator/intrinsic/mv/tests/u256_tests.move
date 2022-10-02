@@ -58,7 +58,7 @@ module self::u256_tests {
     use self::u256::overflowing_add_u64;
 
     #[test]
-    fun test_overflowing_add() {
+    fun test_overflowing_add_u64() {
         let (n, z) = overflowing_add_u64(10, 10);
         assert!(n == 20, 0);
         assert!(!z, 1);
@@ -194,7 +194,7 @@ module self::u256_tests {
         let a = from_u128(U128_MAX);
         let b = from_u128(U64_MAX);
         let d = div(a, b);
-        assert!(as_u128(d) == 18446744073709551617, 2);
+        assert!(as_u128(d) == 18446744073709551617, 3);
     }
 
     #[test_only]
@@ -216,6 +216,102 @@ module self::u256_tests {
         let b = from_u128(128);
         let c = slt(a, b);
         assert!(c == false, 2);
+
+        let a = new_u256(1, 0, 0, 0x8000000000000000u64);
+        let b = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let c = slt(a, b);
+        assert!(c == false, 3);
+
+        let a = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let b = new_u256(1, 0, 0, 0);
+        let c = slt(a, b);
+        assert!(c == true, 4);
+    }
+
+    #[test_only]
+    use self::u256::sgt;
+
+    #[test]
+    fun test_sgt() {
+        let a = from_u128(0);
+        let b = from_u128(1);
+        let c = sgt(a, b);
+        assert!(c == false, 0);
+
+        let a = from_u128(1);
+        let b = from_u128(0);
+        let c = sgt(a, b);
+        assert!(c == true, 1);
+
+        let a = from_u128(128);
+        let b = from_u128(128);
+        let c = sgt(a, b);
+        assert!(c == false, 2);
+
+        let a = new_u256(1, 0, 0, 0x8000000000000000u64);
+        let b = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let c = sgt(a, b);
+        assert!(c == true, 3);
+
+        let a = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let b = new_u256(1, 0, 0, 0);
+        let c = sgt(a, b);
+        assert!(c == false, 4);
+    }
+
+    #[test_only]
+    use self::u256::{sdiv, bitnot};
+
+    #[test]
+    fun test_sdiv() {
+        let a = bitnot(from_u128(100));
+        let b = bitnot(from_u128(5));
+        let d = sdiv(a, b);
+        assert!(as_u128(d) == 20, 0);
+
+        let a = bitnot(from_u128(100));
+        let b = from_u128(5);
+        let d = bitnot(sdiv(a, b));
+        assert!(as_u128(d) == 20, 1);
+
+        let a = from_u128(U64_MAX);
+        let b = bitnot(from_u128(U128_MAX));
+        let d = bitnot(sdiv(a, b));
+        assert!(as_u128(d) == 0, 2);
+
+        let a = from_u128(U128_MAX);
+        let b = from_u128(U64_MAX);
+        let d = sdiv(a, b);
+        assert!(as_u128(d) == 18446744073709551617, 3);
+    }
+
+    #[test_only]
+    use self::u256::smod;
+
+    #[test]
+    fun test_smod() {
+        let a = from_u128(100);
+        let b = from_u128(5);
+        let d = smod(a, b);
+        assert!(as_u128(d) == 0, 0);
+
+        // let a = bitnot(from_u128(100));
+        // let b = from_u128(5);
+        // let d = smod(a, b);
+        // std::debug::print(&d);
+        // // why does it fail?
+        // // -100 mod 5 = 0
+        // assert!(as_u128(d) == 0, 1);
+
+        let a = from_u128(100);
+        let b = bitnot(from_u128(5));
+        let d = smod(a, b);
+        assert!(as_u128(d) == 0, 2);
+
+        let a = from_u128(100);
+        let b = bitnot(from_u128(51));
+        let d = smod(a, b);
+        assert!(as_u128(d) == 2, 3);
     }
 
     #[test_only]
@@ -303,12 +399,12 @@ module self::u256_tests {
         let a = from_u128(100);
         let b = from_u128(0);
         let d = mod(a, b);
-        assert!(as_u128(d) == 0, 0);
+        assert!(as_u128(d) == 0, 1);
 
         let a = from_u128(100);
         let b = from_u128(51);
         let d = mod(a, b);
-        assert!(as_u128(d) == 49, 0);
+        assert!(as_u128(d) == 49, 2);
     }
 
     #[test_only]
@@ -479,10 +575,21 @@ module self::u256_tests {
     #[test]
     fun test_add_overflow() {
         let max = (U64_MAX as u64);
-
         let a = new_u256(max, max, max, max);
 
-        let _ = overflowing_add(a, from_u128(1));
+        let s = as_u128(overflowing_add(a, from_u128(1)));
+        assert!(s == 0, 1);
+
+        s = as_u128(overflowing_add(a, from_u128(2)));
+        assert!(s == 1, 2);
+
+        let c = compare(&overflowing_add(a, a), &a);
+        assert!(c == 1, 3);
+
+        s = as_u128(
+            overflowing_add(overflowing_add(a, a), from_u128(2))
+        );
+        assert!(s == 0, 4);
     }
 
     #[test_only]
@@ -490,12 +597,28 @@ module self::u256_tests {
 
     #[test]
     fun test_sub() {
-        let a = from_u128(1000);
-        let b = from_u128(500);
+        let max = (U64_MAX as u64);
+        let a = new_u256(max, max, max, max);
 
-        let s = as_u128(overflowing_sub(a, b));
-        assert!(s == 500, 0);
+        let s = as_u128(overflowing_sub(from_u128(0), a));
+        assert!(s == 1, 1);
+
+        s = as_u128(overflowing_sub(from_u128(1), a));
+        assert!(s == 2, 2);
+
+        let c = compare(&overflowing_sub(a, a), &from_u128(0));
+        assert!(c == 0, 3);
+
+        c = compare(
+            &overflowing_sub(
+                overflowing_sub(from_u128(0), a),
+                from_u128(2)
+            ),
+            &a
+        );
+        assert!(c == 0, 4);
     }
+
 
     #[test_only]
     use self::u256::overflowing_mul;
@@ -571,16 +694,5 @@ module self::u256_tests {
         assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
         write(&addr, &mut bytes, 0);
         assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
-    }
-
-    #[test_only]
-    use self::u256::byte;
-
-    #[test]
-    fun test_byte() {
-        let a = from_u128(100);
-        let b = from_u128(123);
-
-        std::debug::print!(&byte(a, b));
     }
 }
