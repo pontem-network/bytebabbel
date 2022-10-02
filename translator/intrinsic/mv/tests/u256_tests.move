@@ -1,5 +1,7 @@
 module self::u256_tests {
     #[test_only]
+    use self::u256::{read_u64, to_bytes_u64, write_u64, overflowing_add_u64, overflowing_sub_u64, split_u128, leading_zeros_u64, from_bool, from_u128, as_u64, as_u128, zero, get, div, slt, sgt, sdiv, bitnot, smod, bitor, bitand, bitxor, shr_u8, mod, shl_u8, bits, compare, exp, new_u256, put, eq, one, overflowing_add, overflowing_sub, overflowing_mul, from_bytes, to_bytes, write, from_signer};
+    #[test_only]
     use std::vector;
 
     /// Max `u64` value.
@@ -7,9 +9,6 @@ module self::u256_tests {
 
     /// Max `u128` value.
     const U128_MAX: u128 = 340282366920938463463374607431768211455;
-
-    #[test_only]
-    use self::u256::read_u64;
 
     #[test]
     fun test_read_u64() {
@@ -28,9 +27,6 @@ module self::u256_tests {
         assert!(read_u64(&vec, 2) == (283686952306183u64 << 8 | 8) << 8 | 9, 2);
     }
 
-    #[test_only]
-    use self::u256::to_bytes_u64;
-
     #[test]
     fun test_to_bytes_u64() {
         let vec: vector<u8> = vector::empty();
@@ -41,9 +37,6 @@ module self::u256_tests {
         assert!(*vector::borrow(&vec, 7) == 0, 1);
     }
 
-    #[test_only]
-    use self::u256::write_u64;
-
     #[test]
     fun test_write_u64() {
         let vec: vector<u8> = vector[0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -53,9 +46,6 @@ module self::u256_tests {
         assert!(*vector::borrow(&vec, 7) == 16u8, 0);
         assert!(*vector::borrow(&vec, 8) == 0, 1);
     }
-
-    #[test_only]
-    use self::u256::overflowing_add_u64;
 
     #[test]
     fun test_overflowing_add_u64() {
@@ -76,9 +66,6 @@ module self::u256_tests {
         assert!(!z, 7);
     }
 
-    #[test_only]
-    use self::u256::overflowing_sub_u64;
-
     #[test]
     fun test_overflowing_sub() {
         let (n, z) = overflowing_sub_u64(10, 5);
@@ -94,9 +81,6 @@ module self::u256_tests {
         assert!(!z, 5);
     }
 
-    #[test_only]
-    use self::u256::split_u128;
-
     #[test]
     fun test_split_u128() {
         let (a1, a2) = split_u128(100);
@@ -107,9 +91,6 @@ module self::u256_tests {
         assert!(a1 == 1, 2);
         assert!(a2 == 0, 3);
     }
-
-    #[test_only]
-    use self::u256::leading_zeros_u64;
 
     #[test]
     fun test_leading_zeros_u64() {
@@ -124,17 +105,11 @@ module self::u256_tests {
         // TODO: more tests.
     }
 
-    #[test_only]
-    use self::u256::{from_bool, from_u128};
-
     #[test]
     fun test_from_bool() {
         assert!(from_bool(true) == from_u128(1), 0);
         assert!(from_bool(false) == from_u128(0), 0);
     }
-
-    #[test_only]
-    use self::u256::{as_u64, as_u128};
 
     #[test]
     fun test_as_u64() {
@@ -155,9 +130,6 @@ module self::u256_tests {
         assert!(b == 0, 3);
     }
 
-    #[test_only]
-    use self::u256::{zero, get};
-
     #[test]
     fun test_zero() {
         let a = as_u128(zero());
@@ -169,9 +141,6 @@ module self::u256_tests {
         assert!(get(&a, 2) == 0, 3);
         assert!(get(&a, 3) == 0, 4);
     }
-
-    #[test_only]
-    use self::u256::div;
 
     #[test]
     fun test_div() {
@@ -196,9 +165,6 @@ module self::u256_tests {
         let d = div(a, b);
         assert!(as_u128(d) == 18446744073709551617, 3);
     }
-
-    #[test_only]
-    use self::u256::slt;
 
     #[test]
     fun test_slt() {
@@ -228,9 +194,6 @@ module self::u256_tests {
         assert!(c == true, 4);
     }
 
-    #[test_only]
-    use self::u256::sgt;
-
     #[test]
     fun test_sgt() {
         let a = from_u128(0);
@@ -259,9 +222,6 @@ module self::u256_tests {
         assert!(c == false, 4);
     }
 
-    #[test_only]
-    use self::u256::{sdiv, bitnot};
-
     #[test]
     fun test_sdiv() {
         let a = bitnot(from_u128(100));
@@ -284,9 +244,6 @@ module self::u256_tests {
         let d = sdiv(a, b);
         assert!(as_u128(d) == 18446744073709551617, 3);
     }
-
-    #[test_only]
-    use self::u256::smod;
 
     #[test]
     fun test_smod() {
@@ -314,9 +271,6 @@ module self::u256_tests {
         assert!(as_u128(d) == 2, 3);
     }
 
-    #[test_only]
-    use self::u256::bitor;
-
     #[test]
     fun test_or() {
         let a = from_u128(0);
@@ -329,9 +283,6 @@ module self::u256_tests {
         let c = bitor(a, b);
         assert!(as_u128(c) == 0xffffffffffffffffu128, 1);
     }
-
-    #[test_only]
-    use self::u256::bitand;
 
     #[test]
     fun test_and() {
@@ -351,9 +302,6 @@ module self::u256_tests {
         assert!(as_u128(c) == 0x0f0f0f0f0f0f0f0fu128, 1);
     }
 
-    #[test_only]
-    use self::u256::bitxor;
-
     #[test]
     fun test_xor() {
         let a = from_u128(0);
@@ -366,9 +314,6 @@ module self::u256_tests {
         let c = bitxor(a, b);
         assert!(as_u128(c) == 0xffffffffffffffffu128, 1);
     }
-
-    #[test_only]
-    use self::u256::shr_u8;
 
     #[test]
     fun test_shift_right() {
@@ -385,9 +330,6 @@ module self::u256_tests {
 
         assert!(as_u128(z) == 0, 0);
     }
-
-    #[test_only]
-    use self::u256::mod;
 
     #[test]
     fun test_mod() {
@@ -407,9 +349,6 @@ module self::u256_tests {
         assert!(as_u128(d) == 49, 2);
     }
 
-    #[test_only]
-    use self::u256::shl_u8;
-
     #[test]
     fun test_shift_left() {
         let a = from_u128(100);
@@ -417,9 +356,6 @@ module self::u256_tests {
 
         assert!(as_u128(b) == 400, 0);
     }
-
-    #[test_only]
-    use self::u256::bits;
 
     #[test]
     fun test_bits() {
@@ -452,9 +388,6 @@ module self::u256_tests {
         assert!(bits(&sh) == 0, 8);
     }
 
-    #[test_only]
-    use self::u256::compare;
-
     #[test]
     fun test_compare() {
         let a = from_u128(1000);
@@ -476,9 +409,6 @@ module self::u256_tests {
         assert!(cmp == 1, 2);
     }
 
-    #[test_only]
-    use self::u256::exp;
-
     #[test]
     fun test_exp() {
         let a = from_u128(2);
@@ -486,9 +416,6 @@ module self::u256_tests {
         let c = exp(a, b);
         assert!(c == from_u128(8), 0);
     }
-
-    #[test_only]
-    use self::u256::new_u256;
 
     #[test]
     fun test_get() {
@@ -505,9 +432,6 @@ module self::u256_tests {
     fun test_get_aborts() {
         let _ = get(&zero(), 4);
     }
-
-    #[test_only]
-    use self::u256::put;
 
     #[test]
     fun test_put() {
@@ -527,9 +451,6 @@ module self::u256_tests {
         put(&mut a, 2, 0);
         assert!(get(&a, 2) == 0, 4);
     }
-
-    #[test_only]
-    use self::u256::{eq, one};
 
     #[test]
     fun test_one() {
@@ -553,9 +474,6 @@ module self::u256_tests {
             i = i + 1;
         };
     }
-
-    #[test_only]
-    use self::u256::overflowing_add;
 
     #[test]
     fun test_add() {
@@ -592,9 +510,6 @@ module self::u256_tests {
         assert!(s == 0, 4);
     }
 
-    #[test_only]
-    use self::u256::overflowing_sub;
-
     #[test]
     fun test_sub() {
         let max = (U64_MAX as u64);
@@ -619,9 +534,6 @@ module self::u256_tests {
         assert!(c == 0, 4);
     }
 
-
-    #[test_only]
-    use self::u256::overflowing_mul;
 
     #[test]
     fun test_mul() {
@@ -660,9 +572,6 @@ module self::u256_tests {
 
         let _ = overflowing_mul(a, from_u128(2));
     }
-
-    #[test_only]
-    use self::u256::{from_bytes, to_bytes, write, from_signer};
 
     #[test(self = @0xffeeddccbbaa99887766554433221100f0e0d0c0b0a090807060504030201000)]
     fun test_encode_decode(self: &signer) {

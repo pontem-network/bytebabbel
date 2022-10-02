@@ -2,6 +2,8 @@ module self::u256 {
     // U256.
     //=================================================================================================================
 
+    use self::du256::{zero_d, get_d, put_d, DU256};
+
     // Errors.
     /// When trying to get or put word into U256 but it's out of index.
     const EWORDS_OVERFLOW: u64 = 1;
@@ -495,8 +497,6 @@ module self::u256 {
         };
         ret
     }
-
-    use self::du256::{zero_d, get_d, put_d, DU256};
 
     // API
     /// Multiples two `U256`.

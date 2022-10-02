@@ -2,9 +2,6 @@ module self::du256_tests {
     #[test_only]
     use self::du256::{new_du256, get_d, put_d};
 
-    #[tets_only]
-    use self::u256::{get, du256_to_u256};
-
     #[test]
     fun test_du256_to_u256() {
         let a = new_du256(255, 100, 50, 300, 0, 0, 0, 0);
