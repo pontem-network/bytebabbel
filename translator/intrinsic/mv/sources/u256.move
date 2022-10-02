@@ -371,7 +371,6 @@ module self::u256 {
 
     // API
     /// Signed lt.
-    /// todo check this)
     public fun slt(a: U256, b: U256): bool {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
@@ -422,7 +421,7 @@ module self::u256 {
     }
 
     // API
-    fun bitnot(a: U256): U256 {
+    public fun bitnot(a: U256): U256 {
         let ret = zero();
         let i = 0;
         while (i < WORDS) {
@@ -433,7 +432,6 @@ module self::u256 {
     }
 
     // API
-    // TEST
     public fun byte(i: U256, x: U256): U256 {
         let shift = 248 - as_u128(i) * 8;
         bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
@@ -461,7 +459,6 @@ module self::u256 {
 
     // API
     /// Adds two `U256` and returns sum.
-    // TEST
     public fun overflowing_add(a: U256, b: U256): U256 {
         let ret = zero();
         let carry = 0u64;
@@ -503,7 +500,6 @@ module self::u256 {
 
     // API
     /// Multiples two `U256`.
-    // TEST
     public fun overflowing_mul(a: U256, b: U256): U256 {
         let ret = zero_d();
 
@@ -557,7 +553,6 @@ module self::u256 {
 
     // API
     /// Subtracts two `U256`, returns result.
-    // TEST
     public fun overflowing_sub(a: U256, b: U256): U256 {
         let ret = zero();
 
@@ -598,8 +593,7 @@ module self::u256 {
 
     // API
     /// Divide `a` by `b` with sign.
-    // TEST
-    fun sdiv(a: U256, b: U256): U256 {
+    public fun sdiv(a: U256, b: U256): U256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
@@ -617,8 +611,7 @@ module self::u256 {
 
     // API
     /// Signed gt.
-    // TEST
-    fun sgt(a: U256, b: U256): bool {
+    public fun sgt(a: U256, b: U256): bool {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
@@ -639,8 +632,9 @@ module self::u256 {
 
     // API
     /// Signed mod.
-    // TEST
-    fun smod(a: U256, b: U256): U256 {
+    // works not quite well
+    // see test_smod
+    public fun smod(a: U256, b: U256): U256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
@@ -659,7 +653,6 @@ module self::u256 {
     // API
     /// Exponentiation.
     /// todo use DU256 for intermediate calculations
-    // TEST
     public fun exp(a: U256, b: U256): U256 {
         let ret = one();
         let i = 0;
@@ -701,7 +694,7 @@ module self::u256 {
         }
     }
 
-    fun is_negative(a: &U256): bool {
+    public fun is_negative(a: &U256): bool {
         let msb = get(a, WORDS - 1);
         msb & 0x8000000000000000 != 0
     }
