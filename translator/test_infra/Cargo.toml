@@ -40,14 +40,14 @@ move-core-types = { git = "https://github.com/move-language/move", rev = "94552a
 move-binary-format = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5" }
 move-stdlib = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["testing"] }
 
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-move-deps = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
-aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671" }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+move-deps = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
+aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9" }
 
 # for test *.sol
 libtest-mimic = "0.4"

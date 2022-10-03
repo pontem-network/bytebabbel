@@ -38,11 +38,11 @@ tokio = { version = "1.21", features = ["full"], optional = true }
 serde_json = { version = "1.0.82", optional = true }
 ethabi = { version = "17.2", optional = true }
 
-aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671", optional = true }
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671", optional = true }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671", optional = true }
-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671", optional = true }
-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "4efdb8191c12e63e2fda74e732ef462f1710d671", optional = true }
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
 
 move-binary-format = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", optional = true }
 
