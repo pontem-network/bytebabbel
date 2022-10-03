@@ -49,6 +49,14 @@ pub struct CmdResources {
     /// Used for decoding EVENTS
     #[clap(long, multiple = true)]
     decode_types: Vec<String>,
+
+    /// Max number of events to retrieve.
+    #[clap(long, default_value = "10", value_parser)]
+    limit: u64,
+
+    /// Starting sequence number of events.
+    #[clap(long, default_value = "0", value_parser)]
+    start: u64,
 }
 
 impl Cmd for CmdResources {
@@ -140,7 +148,7 @@ impl CmdResources {
                 format!("{request_url_base}/accounts/{account_hex}/resource/{path}")
             }
             ListQuery::Events => {
-                format!("{request_url_base}/accounts/{account_hex}/events/{path}")
+                format!("{request_url_base}/accounts/{account_hex}/events/{path}?limit={limit}&start={start}", limit = self.limit, start = self.start)
             }
         };
         let url = Url::from_str(&url_string)?;
