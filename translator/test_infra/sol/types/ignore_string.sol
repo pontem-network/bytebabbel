@@ -6,8 +6,8 @@ contract Simple {
 
     // # f_string()
     function f_string() public pure {
-        string memory  a = "demo";
+        string memory a = "demo";
         string memory b = "demo2";
-        assert(bytes(a)[0]!=bytes(b)[0]);
+        assert(bytes(a)[0] != bytes(b)[0]);
     }
 }

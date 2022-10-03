@@ -1,8 +1,9 @@
+use anyhow::{bail, ensure, Error};
+
 use crate::bytecode::hir::ir::var::{Expr, VarId};
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
-use anyhow::{bail, ensure, Error};
 
 impl<'a> MirTranslator<'a> {
     pub fn translate_expr(&mut self, expr: &Expr) -> Result<TypedExpr, Error> {

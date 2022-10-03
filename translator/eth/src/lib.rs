@@ -1,7 +1,17 @@
 //! Simple EVM-bytecode disassembler.
 
+use std::collections::HashMap;
+
 use anyhow::Error;
+use ethabi::Contract;
 use log::{log_enabled, trace};
+use primitive_types::U256;
+
+use bytecode::block::BlockIter;
+use bytecode::ops::InstructionIter;
+pub use bytecode::ops::OpCode;
+use bytecode::pre_processing::swarm::remove_swarm_hash;
+use program::Program;
 
 use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
@@ -9,20 +19,11 @@ use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirTranslator;
+use crate::bytecode::hir2::IrBuilder;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
 use crate::vm::static_initialization;
-
-use crate::bytecode::hir2::IrBuilder;
-use bytecode::block::BlockIter;
-use bytecode::ops::InstructionIter;
-pub use bytecode::ops::OpCode;
-use bytecode::pre_processing::swarm::remove_swarm_hash;
-use ethabi::Contract;
-use primitive_types::U256;
-use program::Program;
-use std::collections::HashMap;
 
 pub mod abi;
 pub mod bytecode;

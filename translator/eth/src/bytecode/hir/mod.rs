@@ -1,10 +1,10 @@
 #![allow(dead_code)]
-/// High-Level Intermediate Representation
-pub mod context;
-pub mod executor;
-pub mod ir;
-pub mod optimization;
-pub mod stack;
+
+use std::collections::HashMap;
+use std::fmt::Debug;
+
+use anyhow::{anyhow, bail, ensure, Error};
+use primitive_types::U256;
 
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};
@@ -17,10 +17,13 @@ use crate::bytecode::hir::optimization::IrOptimizer;
 use crate::bytecode::tracing::tracer::FlowTrace;
 use crate::bytecode::types::Function;
 use crate::{BlockId, Flags};
-use anyhow::{anyhow, bail, ensure, Error};
-use primitive_types::U256;
-use std::collections::HashMap;
-use std::fmt::Debug;
+
+/// High-Level Intermediate Representation
+pub mod context;
+pub mod executor;
+pub mod ir;
+pub mod optimization;
+pub mod stack;
 
 pub struct HirTranslator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,

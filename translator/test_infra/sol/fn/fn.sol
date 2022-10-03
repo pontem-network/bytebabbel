@@ -37,7 +37,7 @@ library Fn {
     }
 
     // # fn_const()
-    function fn_const() public pure{ }
+    function fn_const() public pure {}
 
     // # test_3 (0, 1, 2) 1
     function test_3(uint128 a, uint128 b, uint128 c) public pure returns (uint128){

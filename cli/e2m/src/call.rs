@@ -3,15 +3,15 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use aptos::common::types::CliCommand;
 use clap::Parser;
-use eth::abi::call::to_token;
 use ethabi::ParamType;
+
+use eth::abi::call::to_token;
 use test_infra::color::font_green;
 
 use crate::profile;
 use crate::profile::ProfileValue;
-use crate::Cmd;
-
 use crate::wait;
+use crate::Cmd;
 
 #[derive(Parser, Debug)]
 pub struct CmdCall {

@@ -1,12 +1,14 @@
+use std::fmt::Write;
+
+use anyhow::Error;
+use log::log_enabled;
+use log::Level;
+
 use crate::bytecode::hir::executor::math::TernaryOp;
 use crate::bytecode::mir::ir::expression::{Expression, StackOp};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::Value;
 use crate::bytecode::mir::ir::Mir;
-use anyhow::Error;
-use log::log_enabled;
-use log::Level;
-use std::fmt::Write;
 
 pub fn print_ir(ir: &Mir, name: &str) {
     if log_enabled!(Level::Trace) {

@@ -1,8 +1,9 @@
+use anyhow::{ensure, Error};
+
 use crate::bytecode::hir::ir::var::{VarId, Vars};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
-use anyhow::{ensure, Error};
 
 impl<'a> MirTranslator<'a> {
     pub(super) fn translate_s_store(

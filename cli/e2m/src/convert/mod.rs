@@ -6,11 +6,12 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
 use clap::Parser;
-use eth::compile::{Evm, EvmPack};
 use move_core_types::account_address::AccountAddress;
 
-use crate::{profile, Cmd};
+use eth::compile::{Evm, EvmPack};
 use translator::{translate, Flags, Target};
+
+use crate::{profile, Cmd};
 
 #[cfg(feature = "deploy")]
 mod deploy;

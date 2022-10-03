@@ -1,8 +1,9 @@
+use std::mem;
+
 use crate::bytecode::hir::ir::debug::print_ir;
 use crate::bytecode::hir::ir::statement::Statement;
 use crate::bytecode::hir::ir::var::{Expr, VarId, Vars};
 use crate::{BlockId, U256};
-use std::mem;
 
 mod debug;
 pub mod statement;

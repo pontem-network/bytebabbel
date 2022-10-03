@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use crate::bytecode::block::{BlockId, InstructionBlock};
 use crate::bytecode::instruction::Offset;
 use crate::bytecode::loc::Move;
-use std::collections::HashMap;
 
 type Blocks = HashMap<BlockId, InstructionBlock>;
 

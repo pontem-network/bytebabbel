@@ -1,8 +1,9 @@
-mod unused_var;
+use anyhow::Error;
 
 use crate::bytecode::hir::optimization::unused_var::UnusedVarClipper;
 use crate::Hir;
-use anyhow::Error;
+
+mod unused_var;
 
 pub struct IrOptimizer;
 

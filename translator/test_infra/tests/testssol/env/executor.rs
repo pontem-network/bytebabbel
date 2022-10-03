@@ -1,4 +1,3 @@
-use crate::testssol::env::stdlib::publish_std;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -13,8 +12,6 @@ use aptos_types::write_set::WriteOp;
 use aptos_vm::data_cache::StorageAdapter;
 use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
-use eth::abi::call::{to_eth_address, EthEncodeByString};
-use eth::Flags;
 use ethabi::{Contract, Token};
 use itertools::Itertools;
 use move_core_types::account_address::AccountAddress;
@@ -28,6 +25,11 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::OnceCell;
 use primitive_types::{H160, U256};
 use serde::Deserialize;
+
+use eth::abi::call::{to_eth_address, EthEncodeByString};
+use eth::Flags;
+
+use crate::testssol::env::stdlib::publish_std;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 

@@ -1,5 +1,4 @@
 use anyhow::Error;
-
 use ethabi::Contract;
 use move_core_types::account_address::AccountAddress;
 use primitive_types::U256;

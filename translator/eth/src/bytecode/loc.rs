@@ -1,6 +1,7 @@
-use crate::bytecode::instruction::{Instruction, Offset};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
+
+use crate::bytecode::instruction::{Instruction, Offset};
 
 pub struct Loc<C> {
     pub start: Offset,

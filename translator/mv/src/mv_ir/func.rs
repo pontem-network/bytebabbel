@@ -1,5 +1,6 @@
+use std::mem;
+
 use anyhow::Error;
-use intrinsic::table::Persist;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
     Bytecode, CodeUnit, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
@@ -7,7 +8,8 @@ use move_binary_format::file_format::{
 };
 use move_binary_format::CompiledModule;
 use move_core_types::identifier::Identifier;
-use std::mem;
+
+use intrinsic::table::Persist;
 
 #[derive(Debug)]
 pub struct Func {

@@ -18,7 +18,7 @@ tempfile = "3.3"
 serde_yaml = "0.9.11"
 
 #
-move-core-types = { git = "https://github.com/move-language/move", rev = "0fe2e6ce5af811d68b8a995b7da3f4c4ecc485fa", features = ["address32"] }
+move-core-types = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["address32"] }
 
 # local
 translator = { path = "../../translator" }
@@ -38,13 +38,13 @@ tokio = { version = "1.21", features = ["full"], optional = true }
 serde_json = { version = "1.0.82", optional = true }
 ethabi = { version = "17.2", optional = true }
 
-aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "27cff42e874d0705faba30b2790963ef93e1e8cd", optional = true }
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
+cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "2a8f88d78a2d140b60d95a6f91cdd97eaaec8ba9", optional = true }
 
-move-binary-format = { git = "https://github.com/move-language/move", rev = "0fe2e6ce5af811d68b8a995b7da3f4c4ecc485fa", optional = true }
+move-binary-format = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", optional = true }
 
 [features]
 deploy = [

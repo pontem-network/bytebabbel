@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
+use primitive_types::U256;
+
 use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variables;
 use crate::Mir;
-use primitive_types::U256;
-use std::collections::HashMap;
 
 pub fn make_constructor(store: HashMap<U256, U256>) -> Mir {
     let mut mir = Mir::default();
