@@ -632,8 +632,6 @@ module self::u256 {
 
     // API
     /// Signed mod.
-    // works not quite well
-    // see test_smod
     public fun smod(a: U256, b: U256): U256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
