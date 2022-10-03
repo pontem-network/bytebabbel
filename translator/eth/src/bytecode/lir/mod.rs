@@ -5,7 +5,6 @@ use crate::bytecode::lir::ir::{Expr, Lir};
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, Flags, Function, OpCode};
 use anyhow::{anyhow, bail, ensure, Error};
-use evm_core::Opcode;
 use primitive_types::U256;
 use std::collections::HashMap;
 
@@ -13,6 +12,7 @@ pub mod context;
 pub mod executor;
 pub mod ir;
 pub mod stack;
+pub mod vars;
 
 pub struct IrBuilder {
     contract: HashMap<BlockId, InstructionBlock>,
@@ -39,15 +39,33 @@ impl IrBuilder {
     ) -> Result<Lir, Error> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Lir::default();
-        let block_id = BlockId::default();
+        self.translate_blocks(BlockId::default(), &mut ir, &mut ctx)?;
+        Ok(ir)
+    }
 
+    fn translate_blocks(
+        &self,
+        start: BlockId,
+        ir: &mut Lir,
+        ctx: &mut Context,
+    ) -> Result<(), Error> {
+        let mut block_id = start;
         loop {
             let block = self.block(&block_id)?;
-            match self.translate_block(block, &mut ir, &mut ctx)? {
-                BlockResult::Jmp(_) => {
-                    bail!("Jmp is not supported yet");
+            match self.translate_block(block, ir, ctx)? {
+                BlockResult::Jmp(block) => {
+                    if self.flow.loops.contains_key(&block) {
+                        bail!("Loop detected");
+                    } else {
+                        block_id = block;
+                    }
                 }
-                BlockResult::CndJmp(_, _, _) => {
+                BlockResult::CndJmp(cmd, _, _) => {
+                    self.flush_context(ctx, ir)?;
+                    println!("CndJmp: {:?}", cmd);
+                    println!("ir: {:?}", ir);
+                    println!("ctx: {:?}", ctx.stack);
+
                     bail!("CndJmp is not supported yet");
                 }
                 BlockResult::Stop => {
@@ -55,8 +73,10 @@ impl IrBuilder {
                 }
             }
         }
+    }
 
-        Ok(ir)
+    fn flush_context(&self, ctx: &mut Context, ir: &mut Lir) -> Result<(), Error> {
+        Ok(())
     }
 
     fn translate_block(
@@ -84,16 +104,8 @@ impl IrBuilder {
                 ExecutionResult::Output(output) => {
                     ctx.stack.push(output);
                 }
-                ExecutionResult::Abort(code) => {
-                    ir.abort(code);
-                    return Ok(BlockResult::Stop);
-                }
                 ExecutionResult::None => {}
-                ExecutionResult::Result { offset, len } => {
-                    ir.result(offset, len);
-                    return Ok(BlockResult::Stop);
-                }
-                ExecutionResult::Stop => {
+                ExecutionResult::End => {
                     return Ok(BlockResult::Stop);
                 }
                 ExecutionResult::Jmp(br) => {

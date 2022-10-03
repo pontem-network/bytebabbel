@@ -2,6 +2,7 @@ use crate::bytecode::instruction::Instruction;
 use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::lir::ir::{Expr, Lir};
+use crate::BlockId;
 
 pub enum ControlFlow {
     Stop,
@@ -13,46 +14,56 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
-        // match self {
-        //     ControlFlow::Stop => ExecutionResult::Stop,
-        //     ControlFlow::Abort(code) => ExecutionResult::Abort(*code),
-        //     ControlFlow::Return => ExecutionResult::Result {
-        //         offset: params[0].clone(),
-        //         len: params[1].clone(),
-        //     },
-        //     ControlFlow::Revert => ExecutionResult::Abort(255),
-        //     ControlFlow::Jump => {
-        //         if let Some(block) = ir.resolve_var(params[0]) {
-        //             ExecutionResult::Jmp(params[0], BlockId::from(block))
-        //         } else {
-        //             panic!("Unsupported dynamic jump");
-        //         }
-        //     }
-        //     ControlFlow::JumpIf(inst) => {
-        //         let true_br = ir
-        //             .resolve_var(params[0])
-        //             .expect("Unsupported dynamic jump if");
-        //         let true_br = BlockId::from(true_br);
-        //         let false_br = BlockId::from(inst.next());
-        //
-        //         let cnd = params[1];
-        //         if !ctx.is_in_loop() {
-        //             if let Some(cnd_val) = ir.resolve_var(cnd) {
-        //                 return ExecutionResult::Jmp(
-        //                     cnd,
-        //                     if cnd_val.is_zero() { false_br } else { true_br },
-        //                 );
-        //             }
-        //         }
-        //
-        //         ExecutionResult::CndJmp {
-        //             cnd,
-        //             true_br,
-        //             false_br,
-        //         }
-        //     }
-        // }
-        todo!()
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+        match self {
+            ControlFlow::Stop => {
+                ir.stop();
+                ExecutionResult::End
+            }
+            ControlFlow::Return => {
+                let len = params.remove(1);
+                let offset = params.remove(0);
+                ir.return_(offset, len);
+                ExecutionResult::End
+            }
+            ControlFlow::Revert => {
+                ir.abort(255);
+                ExecutionResult::End
+            }
+            ControlFlow::Abort(code) => {
+                ir.abort(*code);
+                ExecutionResult::End
+            }
+            ControlFlow::Jump => {
+                let dest = params.remove(0);
+                let dest = dest
+                    .resolve(ir, ctx)
+                    .expect("Jump destination is not a constant");
+                ExecutionResult::Jmp(BlockId::from(dest))
+            }
+            ControlFlow::JumpIf(inst) => {
+                let true_br = params
+                    .remove(0)
+                    .resolve(ir, ctx)
+                    .expect("Unsupported dynamic jump if");
+                let true_br = BlockId::from(true_br);
+                let false_br = BlockId::from(inst.next());
+                let cnd = params.remove(0);
+                if !ctx.is_in_loop() {
+                    if let Some(cnd_val) = cnd.resolve(ir, ctx) {
+                        return ExecutionResult::Jmp(if cnd_val.is_zero() {
+                            false_br
+                        } else {
+                            true_br
+                        });
+                    }
+                }
+                ExecutionResult::CndJmp {
+                    cnd,
+                    true_br,
+                    false_br,
+                }
+            }
+        }
     }
 }

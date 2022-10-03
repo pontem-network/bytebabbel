@@ -1,8 +1,7 @@
-use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::lir::ir::{Expr, Lir};
-use crate::{Hir, U256};
+use crate::U256;
 
 pub enum StackOp {
     Push(Vec<u8>),

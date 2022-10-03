@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, ensure, Result};
 use ethabi::Contract;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tempdir::TempDir;
 

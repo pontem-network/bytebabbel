@@ -1,4 +1,3 @@
-use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::lir::ir::Expr;
 use std::fmt::Debug;
 

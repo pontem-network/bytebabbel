@@ -1,4 +1,5 @@
 use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::BlockId;
 use primitive_types::U256;
@@ -56,6 +57,40 @@ pub enum Expr {
     Hash(Box<Expr>, Box<Expr>),
 }
 
+impl Expr {
+    pub fn resolve(&self, ir: &Lir, ctx: &Context) -> Option<U256> {
+        match self {
+            Expr::Val(val) => Some(*val),
+            Expr::Var(var) => {
+                let expr = ir.get_var(*var, ctx);
+                expr.resolve(ir, ctx)
+            }
+            Expr::MLoad(_) => None,
+            Expr::SLoad(_) => None,
+            Expr::Signer => None,
+            Expr::MSize => None,
+            Expr::ArgsSize => None,
+            Expr::Args(_) => None,
+            Expr::UnaryOp(cnd, arg) => {
+                let arg = arg.resolve(ir, ctx)?;
+                Some(cnd.calc(arg))
+            }
+            Expr::BinaryOp(cnd, arg1, arg2) => {
+                let arg1 = arg1.resolve(ir, ctx)?;
+                let arg2 = arg2.resolve(ir, ctx)?;
+                Some(cnd.calc(arg1, arg2))
+            }
+            Expr::TernaryOp(cnd, arg1, arg2, arg3) => {
+                let arg1 = arg1.resolve(ir, ctx)?;
+                let arg2 = arg2.resolve(ir, ctx)?;
+                let arg3 = arg3.resolve(ir, ctx)?;
+                Some(cnd.calc(arg1, arg2, arg3))
+            }
+            Expr::Hash(_, _) => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Label {
     from: BlockId,
@@ -63,9 +98,22 @@ pub struct Label {
 }
 
 impl Lir {
-    pub fn assign(&mut self, var: VarId, expr: Expr) -> VarId {
+    pub fn assign(&mut self, expr: Expr, ctx: &mut Context) -> VarId {
+        let var = ctx.vars.next_var();
+        let ixd = self.statement.len();
         self.statement.push(IR::Assign(var, expr));
+        ctx.vars.set(var, ixd);
         var
+    }
+
+    pub fn get_var(&self, var: VarId, ctx: &Context) -> &Expr {
+        let assign_idx = ctx.vars.get(&var).expect("var not found");
+        if let IR::Assign(var_id, stmt) = &self.statement[assign_idx] {
+            assert_eq!(*var_id, var);
+            stmt
+        } else {
+            panic!("invalid var assignment");
+        }
     }
 
     pub fn abort(&mut self, code: u8) {
@@ -80,8 +128,16 @@ impl Lir {
         self.statement.push(IR::Stop);
     }
 
+    pub fn return_(&mut self, offset: Expr, len: Expr) {
+        self.statement.push(IR::Result { offset, len });
+    }
+
     pub fn mstore(&mut self, addr: Expr, var: Expr) {
         self.statement.push(IR::MemStore { addr, var });
+    }
+
+    pub fn mstore8(&mut self, addr: Expr, var: Expr) {
+        self.statement.push(IR::MemStore8 { addr, var });
     }
 }
 

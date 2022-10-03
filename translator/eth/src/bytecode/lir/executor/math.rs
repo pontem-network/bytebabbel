@@ -1,4 +1,3 @@
-use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::lir::context::Context;
 use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::lir::ir::{Expr, Lir};
@@ -61,32 +60,23 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
-        // let a = params[0];
-        // let b = params[1];
-        // if !ctx.is_in_loop() {
-        //     {
-        //         let a = ir.resolve_var(a);
-        //         let b = ir.resolve_var(b);
-        //         if let (Some(a), Some(b)) = (a, b) {
-        //             let res = self.calc(a, b);
-        //             let id = ir.create_var(Expr::Val(res));
-        //             return ExecutionResult::Output(vec![id]);
-        //         }
-        //     }
-        //     if self == &BinaryOp::Eq && a == b {
-        //         let id = ir.create_var(Expr::Val(U256::one()));
-        //         return ExecutionResult::Output(vec![id]);
-        //     }
-        // }
-        //
-        // let id = ir.create_var(Expr::BinaryOp(
-        //     *self,
-        //     Box::new(Expr::Var(a)),
-        //     Box::new(Expr::Var(b)),
-        // ));
-        // ExecutionResult::Output(vec![id])
-        todo!()
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+        let b = params.remove(1);
+        let a = params.remove(0);
+        if !ctx.is_in_loop() {
+            {
+                let a = a.resolve(ir, ctx);
+                let b = b.resolve(ir, ctx);
+                if let (Some(a), Some(b)) = (a, b) {
+                    return ExecutionResult::Output(self.calc(a, b).into());
+                }
+            }
+            if self == &BinaryOp::Eq && a == b {
+                return ExecutionResult::Output(U256::one().into());
+            }
+        }
+
+        ExecutionResult::Output(Expr::BinaryOp(*self, Box::new(a), Box::new(b)))
     }
 }
 

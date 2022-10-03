@@ -127,14 +127,9 @@ impl InstructionHandler for Instruction {
 }
 
 pub enum ExecutionResult {
-    Abort(u8),
     None,
+    End,
     Output(Expr),
-    Result {
-        offset: Expr,
-        len: Expr,
-    },
-    Stop,
     Jmp(BlockId),
     CndJmp {
         cnd: Expr,

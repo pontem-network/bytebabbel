@@ -1,6 +1,6 @@
 use crate::bytecode::hir::ir::var::VarId;
-use crate::bytecode::lir::ir::Expr;
 use crate::bytecode::lir::stack::Stack;
+use crate::bytecode::lir::vars::Vars;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
 use std::cmp::min;
@@ -9,14 +9,14 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct Context<'a> {
     address: U256,
-    pub stack: Stack,
     fun: &'a Function,
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
     static_analysis: bool,
     code_size: u128,
     flags: Flags,
-    var_seq: u64,
+    pub stack: Stack,
+    pub vars: Vars,
 }
 
 impl<'a> Context<'a> {
@@ -35,7 +35,7 @@ impl<'a> Context<'a> {
             static_analysis: true,
             code_size,
             flags,
-            var_seq: 0,
+            vars: Default::default(),
         }
     }
 
@@ -45,12 +45,6 @@ impl<'a> Context<'a> {
 
     pub fn is_static_analysis_enable(&self) -> bool {
         self.static_analysis
-    }
-
-    pub fn next_var(&mut self) -> VarId {
-        let var = VarId::from(self.var_seq as u64);
-        self.var_seq += 1;
-        var
     }
 
     pub fn fun(&self) -> &Function {
