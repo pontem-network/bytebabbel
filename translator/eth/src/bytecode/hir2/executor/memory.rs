@@ -1,6 +1,6 @@
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::lir::ir::{Expr, Lir};
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::{Expr, Hir2};
 
 #[derive(Debug, Clone)]
 pub enum MemoryOp {
@@ -11,7 +11,7 @@ pub enum MemoryOp {
 }
 
 impl InstructionHandler for MemoryOp {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         match self {
             MemoryOp::MLoad => {
                 let addr = Box::new(params.remove(0));

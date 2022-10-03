@@ -1,7 +1,7 @@
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::{Expr, Hir2};
 use crate::bytecode::instruction::Instruction;
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::lir::ir::{Expr, Lir};
 use crate::BlockId;
 
 pub enum ControlFlow {
@@ -14,7 +14,7 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         match self {
             ControlFlow::Stop => {
                 ir.stop();

@@ -1,12 +1,12 @@
 use crate::bytecode::hir::ir::var::VarId;
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::BlockId;
 use primitive_types::U256;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
-pub struct Lir {
+pub struct Hir2 {
     labels: HashMap<Label, usize>,
     statement: Vec<IR>,
 }
@@ -58,7 +58,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn resolve(&self, ir: &Lir, ctx: &Context) -> Option<U256> {
+    pub fn resolve(&self, ir: &Hir2, ctx: &Context) -> Option<U256> {
         match self {
             Expr::Val(val) => Some(*val),
             Expr::Var(var) => {
@@ -97,7 +97,7 @@ pub struct Label {
     to: BlockId,
 }
 
-impl Lir {
+impl Hir2 {
     pub fn assign(&mut self, expr: Expr, ctx: &mut Context) -> VarId {
         let var = ctx.vars.next_var();
         let ixd = self.statement.len();

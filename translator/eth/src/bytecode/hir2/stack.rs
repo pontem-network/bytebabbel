@@ -1,4 +1,4 @@
-use crate::bytecode::lir::ir::Expr;
+use crate::bytecode::hir2::ir::Expr;
 use std::fmt::Debug;
 
 pub const FRAME_SIZE: usize = 32;
@@ -40,8 +40,8 @@ impl Stack {
 
 #[cfg(test)]
 mod tests {
-    use crate::bytecode::lir::ir::Expr;
-    use crate::bytecode::lir::stack::Stack;
+    use crate::bytecode::hir2::ir::Expr;
+    use crate::bytecode::hir2::stack::Stack;
     use crate::OpCode;
 
     #[test]

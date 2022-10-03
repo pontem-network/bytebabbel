@@ -1,6 +1,6 @@
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::lir::ir::{Expr, Lir};
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::{Expr, Hir2};
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
 use evm_core::utils::I256;
@@ -29,7 +29,7 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Lir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
         ExecutionResult::Output(Expr::UnaryOp(*self, Box::new(params.remove(0))))
     }
 }
@@ -60,7 +60,7 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let b = params.remove(1);
         let a = params.remove(0);
         if !ctx.is_in_loop() {
@@ -213,7 +213,7 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         // let op1 = params[0].clone();
         // let op2 = params[1].clone();
         // let op3 = params[2].clone();

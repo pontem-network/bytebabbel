@@ -1,6 +1,6 @@
 use crate::bytecode::hir::ir::var::VarId;
-use crate::bytecode::lir::stack::Stack;
-use crate::bytecode::lir::vars::Vars;
+use crate::bytecode::hir2::stack::Stack;
+use crate::bytecode::hir2::vars::Vars;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
 use std::cmp::min;

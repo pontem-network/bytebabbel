@@ -14,7 +14,7 @@ use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
 use crate::vm::static_initialization;
 
-use crate::bytecode::lir::IrBuilder;
+use crate::bytecode::hir2::IrBuilder;
 use bytecode::block::BlockIter;
 use bytecode::ops::InstructionIter;
 pub use bytecode::ops::OpCode;

@@ -1,12 +1,12 @@
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::lir::ir::{Expr, Lir};
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::{Expr, Hir2};
 use primitive_types::U256;
 
 pub struct Sha3;
 
 impl InstructionHandler for Sha3 {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let len = params.remove(1);
         let addr = params.remove(0);
         let id = ir.assign(Expr::Hash(Box::new(addr), Box::new(len)), ctx);
@@ -17,7 +17,7 @@ impl InstructionHandler for Sha3 {
 pub struct Address;
 
 impl InstructionHandler for Address {
-    fn handle(&self, _: Vec<Expr>, _: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         ExecutionResult::Output(ctx.address().into())
     }
 }
@@ -40,7 +40,7 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => U256::zero(),
             TxMeta::Origin => U256::zero(),
@@ -78,7 +78,7 @@ fn call_data_size(ctx: &mut Context) -> ExecutionResult {
     ExecutionResult::Output(expr)
 }
 
-fn call_data_load(mut params: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+fn call_data_load(mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
     let offset = params.remove(0);
     if ctx.flags().native_input {
         if let Some(offset) = offset.resolve(ir, ctx) {

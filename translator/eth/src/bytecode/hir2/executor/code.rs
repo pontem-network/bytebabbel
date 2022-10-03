@@ -1,6 +1,6 @@
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::lir::ir::{Expr, Lir};
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::{Expr, Hir2};
 use primitive_types::U256;
 
 pub enum CodeOp {
@@ -18,7 +18,7 @@ pub enum CodeOp {
 }
 
 impl InstructionHandler for CodeOp {
-    fn handle(&self, ops: Vec<Expr>, ir: &mut Lir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, ops: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         match self {
             CodeOp::CodeSize => {
                 // let id = ir.create_var(Expr::Val(U256::from(ctx.code_size())));

@@ -1,7 +1,7 @@
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::lir::context::Context;
-use crate::bytecode::lir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::lir::ir::{Expr, Lir};
+use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir2::ir::{Expr, Hir2};
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, Flags, Function, OpCode};
 use anyhow::{anyhow, bail, ensure, Error};
@@ -36,9 +36,9 @@ impl IrBuilder {
         fun: &Function,
         contract_address: U256,
         code_size: u128,
-    ) -> Result<Lir, Error> {
+    ) -> Result<Hir2, Error> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
-        let mut ir = Lir::default();
+        let mut ir = Hir2::default();
         self.translate_blocks(BlockId::default(), &mut ir, &mut ctx)?;
         Ok(ir)
     }
@@ -46,7 +46,7 @@ impl IrBuilder {
     fn translate_blocks(
         &self,
         start: BlockId,
-        ir: &mut Lir,
+        ir: &mut Hir2,
         ctx: &mut Context,
     ) -> Result<(), Error> {
         let mut block_id = start;
@@ -75,14 +75,14 @@ impl IrBuilder {
         }
     }
 
-    fn flush_context(&self, ctx: &mut Context, ir: &mut Lir) -> Result<(), Error> {
+    fn flush_context(&self, ctx: &mut Context, ir: &mut Hir2) -> Result<(), Error> {
         Ok(())
     }
 
     fn translate_block(
         &self,
         block: &InstructionBlock,
-        ir: &mut Lir,
+        ir: &mut Hir2,
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
         for inst in block.iter() {
