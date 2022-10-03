@@ -131,6 +131,12 @@ impl CmdConvert {
             interface_path
         };
 
+        // save abi
+        if self.convertion_flags.save_abi {
+            let abi_path = move_path.with_extension("abi");
+            fs::write(&abi_path, pack.contract().abi.as_str())?;
+        }
+
         Ok(ResultConvert {
             mv_path,
             move_path,
