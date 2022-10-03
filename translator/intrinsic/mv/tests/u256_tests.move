@@ -295,23 +295,25 @@ module self::u256_tests {
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 0);
 
-        // let a = bitnot(from_u128(100));
-        // let b = from_u128(5);
-        // let d = smod(a, b);
-        // std::debug::print(&d);
-        // // why does it fail?
-        // // -100 mod 5 = 0
-        // assert!(as_u128(d) == 0, 1);
+        let a = bitnot(from_u128(100));
+        let b = from_u128(5);
+        let d = smod(a, b);
+        assert!(as_u128(d) == 0, 1);
 
         let a = from_u128(100);
         let b = bitnot(from_u128(5));
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 2);
 
-        let a = from_u128(100);
-        let b = bitnot(from_u128(51));
-        let d = smod(a, b);
-        assert!(as_u128(d) == 2, 3);
+        let a = bitnot(from_u128(5));
+        let b = from_u128(2);
+        let d = bitnot(smod(a, b));
+        assert!(as_u128(d) == 1, 3);
+
+        let a = bitnot(from_u128(5));
+        let b = bitnot(from_u128(2));
+        let d = bitnot(smod(a, b));
+        assert!(as_u128(d) == 1, 4);
     }
 
     #[test_only]

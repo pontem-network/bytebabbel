@@ -643,7 +643,9 @@ module self::u256 {
 
         let ret = mod(a, b);
 
-        if (a_neg) {
+        if (compare(&ret, &zero()) == EQUAL) {
+            zero()
+        } else if (a_neg) {
             bitnot(ret)
         } else {
             ret
