@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use anyhow::{anyhow, ensure, Result};
 use eth::abi::call::fn_params_str_split;
-use ethabi::ParamType;
+use ethabi::{Contract, Event, ParamType};
 use serde_json::Value;
 
 // = = =
@@ -26,6 +26,18 @@ pub(crate) fn decode(mut json: Value, mask: &[String]) -> Result<Value> {
     Ok(json)
 }
 
+pub(crate) fn decode_by_abi(mut json: Value, abi: &Contract) -> Result<Value> {
+    for event in abi.events.iter().flat_map(|(.., events)| events) {
+        let signature = format!("{:#x}", event.signature());
+        // let types: Vec<ParamType> = event.inputs.iter().map(|v| v.kind.clone()).collect();
+
+        decode_event(&mut json, &signature, event)?
+    }
+    Ok(json)
+}
+
+// = = =
+
 fn decode_proc(json: &mut Value, index: &str, mask: &[ParamType]) -> Result<()> {
     if index == "*" {
         return replace_by_mask(json, mask);
@@ -48,7 +60,7 @@ fn decode_proc(json: &mut Value, index: &str, mask: &[ParamType]) -> Result<()> 
 }
 
 fn replace_by_mask(json: &mut Value, mask: &[ParamType]) -> Result<()> {
-    if let Err(err) = object_to_u256(json) {
+    if let Err(err) = object_to_hex(json) {
         log::error!("{err:?}");
     }
 
@@ -79,7 +91,79 @@ fn replace_by_mask(json: &mut Value, mask: &[ParamType]) -> Result<()> {
     Ok(())
 }
 
-fn object_to_u256(json: &mut Value) -> Result<()> {
+// = = =
+
+/// Searching for the `topics` index.
+/// This field contains the `hash` of the `event` from abi.
+/// Decoding adjacent fields by the types of this event
+fn decode_event(json: &mut Value, signature: &str, event: &Event) -> Result<()> {
+    match json {
+        Value::Array(data) => data
+            .iter_mut()
+            .try_for_each(|v| decode_event(v, signature, event))?,
+        Value::Object(data) => {
+            let topics = data.get_mut("topics").and_then(topics_to_hash_string);
+            if topics.as_deref() == Some(signature) {
+                decode_event_data(data, event);
+            }
+
+            data.iter_mut()
+                .try_for_each(|(.., v)| decode_event(v, signature, event))?;
+        }
+        _ => (),
+    }
+
+    Ok(())
+}
+
+fn decode_event_data(json: &mut serde_json::Map<String, Value>, event: &Event) {
+    let types: Vec<ParamType> = event.inputs.iter().map(|t| t.kind.clone()).collect();
+    let names: Vec<String> = event.inputs.iter().map(|t| t.name.clone()).collect();
+
+    for (name, val) in json {
+        if name == "topics" {
+            continue;
+        }
+        if let Value::String(data) = val {
+            if !data.starts_with("0x") {
+                continue;
+            }
+            let result = hex::decode(data.trim_start_matches("0x"))
+                .ok()
+                .and_then(|bytes| ethabi::decode(&types, &bytes).map_err(err).ok());
+
+            if let Some(result) = result {
+                let mut map = serde_json::Map::new();
+                result.iter().zip(&names).for_each(|(val, name)| {
+                    map.insert(name.clone(), Value::String(format!("{val:?}")));
+                });
+
+                *val = Value::Object(map);
+            }
+        }
+    }
+}
+
+fn topics_to_hash_string(json: &mut Value) -> Option<String> {
+    object_to_hex(json).ok()?;
+
+    match json {
+        Value::Array(data) => data.iter_mut().map(topics_to_hash_string).next()?,
+        Value::String(data) => {
+            if data.starts_with("0x") {
+                Some(data.clone())
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+// = = =
+
+/// u256 object to hex
+fn object_to_hex(json: &mut Value) -> Result<()> {
     if !json.is_object() {
         return Ok(());
     }
@@ -105,8 +189,8 @@ fn object_to_u256(json: &mut Value) -> Result<()> {
     let u256_bytes: Vec<u8> = list_u64.into_iter().flat_map(|v| v.to_be_bytes()).collect();
 
     let hex = format!("0x{}", hex::encode(&u256_bytes));
-    *json = Value::String(hex);
 
+    *json = Value::String(hex);
     Ok(())
 }
 
@@ -123,7 +207,7 @@ where
 mod test {
     use serde_json::Value;
 
-    use crate::resources::decode::decode;
+    use crate::resources::decode::{decode, decode_by_abi};
 
     const JSON_TEST: &str = r#"[
           {
@@ -189,13 +273,167 @@ mod test {
         ]
     "#;
 
+    const ABI_TEST: &str = r#"[
+        {
+            "inputs": [
+              {
+                "internalType": "address",
+                "name": "admin",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                  {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "addr",
+                    "type": "address"
+                  },
+                  {
+                    "indexed": false,
+                    "internalType": "bool",
+                    "name": "is_admin",
+                    "type": "bool"
+                  },
+                  {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                  }
+            ],
+            "name": "NewUser",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+              {
+                "indexed": false,
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+              },
+              {
+                "indexed": false,
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+              },
+              {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              }
+            ],
+            "name": "Transfer",
+            "type": "event"
+        },
+        {
+            "inputs": [],
+            "name": "create_user",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "get_balance",
+            "outputs": [
+                  {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                  }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "get_id",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "is_owner",
+            "outputs": [
+              {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+              {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              }
+            ],
+            "name": "transfer",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ]"#;
+
     #[test]
-    fn test_decode() {
+    fn test_decode_type() {
         let resp: Value = serde_json::from_str(JSON_TEST).unwrap();
         let result = decode(resp, &["data:address,address,u256".to_string()]).unwrap();
 
         let json_string = serde_json::to_string_pretty(&result).unwrap();
+
         assert!(json_string.contains("[Address(0xc433207eca28f7e0b37898979b21008531f90cb6), Address(0x0000000000000000000000000000000000000000), Uint(0)]"));
         assert!(json_string.contains("[Address(0xc16e29cd1d0efa4f01638e19907aae97f6152034), Address(0xc433207eca28f7e0b37898979b21008531f90cb6), Uint(200)]"));
+    }
+
+    #[test]
+    fn test_decode_abi() {
+        let response: Value = serde_json::from_str(JSON_TEST).unwrap();
+        let abi: ethabi::Contract = serde_json::from_str(&ABI_TEST).unwrap();
+
+        let result = decode_by_abi(response, &abi).unwrap();
+        let json_string = serde_json::to_string_pretty(&result).unwrap();
+
+        assert!(json_string.contains(
+            r#"{
+        "addr": "Address(0xc433207eca28f7e0b37898979b21008531f90cb6)",
+        "is_admin": "Bool(false)",
+        "amount": "Uint(0)"
+      }"#
+        ));
+        assert!(json_string.contains(
+            r#"{
+      "data": {
+        "from": "Address(0xc16e29cd1d0efa4f01638e19907aae97f6152034)",
+        "to": "Address(0xc433207eca28f7e0b37898979b21008531f90cb6)",
+        "amount": "Uint(200)"
+      }"#
+        ));
     }
 }
