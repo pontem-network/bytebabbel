@@ -26,14 +26,13 @@ pub(crate) fn decode(mut json: Value, mask: &[String]) -> Result<Value> {
     Ok(json)
 }
 
-pub(crate) fn decode_by_abi(mut json: Value, abi: &Contract) -> Result<Value> {
+pub(crate) fn decode_by_abi(json: &mut Value, abi: &Contract) {
     for event in abi.events.iter().flat_map(|(.., events)| events) {
         let signature = format!("{:#x}", event.signature());
         // let types: Vec<ParamType> = event.inputs.iter().map(|v| v.kind.clone()).collect();
 
-        decode_event(&mut json, &signature, event)?
+        decode_event(json, &signature, event);
     }
-    Ok(json)
 }
 
 // = = =
@@ -96,11 +95,11 @@ fn replace_by_mask(json: &mut Value, mask: &[ParamType]) -> Result<()> {
 /// Searching for the `topics` index.
 /// This field contains the `hash` of the `event` from abi.
 /// Decoding adjacent fields by the types of this event
-fn decode_event(json: &mut Value, signature: &str, event: &Event) -> Result<()> {
+fn decode_event(json: &mut Value, signature: &str, event: &Event) {
     match json {
         Value::Array(data) => data
             .iter_mut()
-            .try_for_each(|v| decode_event(v, signature, event))?,
+            .for_each(|v| decode_event(v, signature, event)),
         Value::Object(data) => {
             let topics = data.get_mut("topics").and_then(topics_to_hash_string);
             if topics.as_deref() == Some(signature) {
@@ -108,12 +107,10 @@ fn decode_event(json: &mut Value, signature: &str, event: &Event) -> Result<()> 
             }
 
             data.iter_mut()
-                .try_for_each(|(.., v)| decode_event(v, signature, event))?;
+                .for_each(|(.., v)| decode_event(v, signature, event));
         }
         _ => (),
     }
-
-    Ok(())
 }
 
 fn decode_event_data(json: &mut serde_json::Map<String, Value>, event: &Event) {
@@ -414,11 +411,11 @@ mod test {
 
     #[test]
     fn test_decode_abi() {
-        let response: Value = serde_json::from_str(JSON_TEST).unwrap();
-        let abi: ethabi::Contract = serde_json::from_str(&ABI_TEST).unwrap();
+        let mut response: Value = serde_json::from_str(JSON_TEST).unwrap();
+        let abi: ethabi::Contract = serde_json::from_str(ABI_TEST).unwrap();
 
-        let result = decode_by_abi(response, &abi).unwrap();
-        let json_string = serde_json::to_string_pretty(&result).unwrap();
+        decode_by_abi(&mut response, &abi);
+        let json_string = serde_json::to_string_pretty(&response).unwrap();
 
         assert!(json_string.contains(
             r#"{

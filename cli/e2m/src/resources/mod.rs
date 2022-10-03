@@ -1,3 +1,5 @@
+use std::fs;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
 
@@ -17,7 +19,7 @@ pub mod resource_path;
 
 use crate::profile::ProfileValue;
 use crate::{wait, Cmd};
-use decode::decode;
+use decode::{decode, decode_by_abi};
 use query::ListQuery;
 use resource_path::ResourcePath;
 
@@ -49,6 +51,10 @@ pub struct CmdResources {
     /// Used for decoding EVENTS
     #[clap(long, multiple = true)]
     decode_types: Vec<String>,
+
+    /// Path to abi for decoding events
+    #[clap(long, value_parser)]
+    abi: Option<PathBuf>,
 
     /// Max number of events to retrieve.
     #[clap(long, default_value = "10", value_parser)]
@@ -169,6 +175,11 @@ impl CmdResources {
         log::debug!("url: {url}");
 
         let mut response: Value = reqwest::blocking::get(url)?.json()?;
+
+        if let Some(path) = &self.abi {
+            let abi_string = serde_json::from_str(&fs::read_to_string(path)?)?;
+            decode_by_abi(&mut response, &abi_string);
+        }
 
         if !self.decode_types.is_empty() {
             response = decode(response, &self.decode_types)?;
