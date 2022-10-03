@@ -1,3 +1,5 @@
+use anyhow::Error;
+
 use crate::bytecode::hir::ir::statement::Statement as HirStmt;
 use crate::bytecode::hir::ir::var::{VarId, Vars};
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
@@ -5,7 +7,6 @@ use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;
 use crate::bytecode::mir::ir::Mir;
 use crate::{BlockId, MirTranslator};
-use anyhow::Error;
 
 impl<'a> MirTranslator<'a> {
     pub fn translate_loop(

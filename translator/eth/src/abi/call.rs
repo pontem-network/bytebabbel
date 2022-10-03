@@ -2,7 +2,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
 use anyhow::{ensure, Result};
-
 use ethabi::token::{LenientTokenizer, Tokenizer};
 use ethabi::{Bytes, Constructor, Function, Token};
 use primitive_types::U256;
@@ -123,7 +122,7 @@ impl EthEncodeByString for Constructor {
     }
 }
 
-fn to_token(data: &(ethabi::ParamType, &str)) -> Result<Token, ethabi::Error> {
+pub fn to_token(data: &(ethabi::ParamType, &str)) -> Result<Token, ethabi::Error> {
     match data.0 {
         ethabi::ParamType::Address => {
             let value = data.1.trim_start_matches("0x");
@@ -185,8 +184,9 @@ impl Display for FunHash {
 
 #[cfg(test)]
 mod test {
-    use crate::abi::call::EthEncodeByString;
     use ethabi::Contract;
+
+    use crate::abi::call::EthEncodeByString;
 
     /// Encoding and decoding input/output
     ///

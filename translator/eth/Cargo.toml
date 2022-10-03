@@ -6,11 +6,16 @@ edition = "2021"
 [dependencies]
 hex = "0.4"
 anyhow = "1.0.58"
-serde_json = "1.0.82"
 log = "0.4.17"
 ethabi = "17.2"
+serde = { version = "1.0.138", features = ["derive"] }
+serde_json = "1.0.82"
+sha3 = "0.10.1"
+base32 = "0.4"
+tempdir = "0.3.7"
+
 # types
 evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
-move-core-types = {git = "https://github.com/move-language/move", rev = "59265662d0a44ba53b09ba3c4b2248efdf08c622" , features = ["address32"] }
+move-core-types = { git = "https://github.com/move-language/move", rev = "94552a7fd7381b84376f6d7008d1f3110b5eccc5", features = ["address32"] }

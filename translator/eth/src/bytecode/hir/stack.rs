@@ -1,5 +1,6 @@
-use crate::bytecode::hir::ir::var::VarId;
 use std::fmt::Debug;
+
+use crate::bytecode::hir::ir::var::VarId;
 
 pub const FRAME_SIZE: usize = 32;
 

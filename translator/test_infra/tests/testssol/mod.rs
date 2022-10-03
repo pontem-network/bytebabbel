@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use anyhow::{anyhow, ensure, Error, Result};
 use itertools::Itertools;
@@ -6,17 +9,17 @@ use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
 
-pub mod convert;
-pub mod env;
-pub mod parse;
-
-use crate::testssol::env::sol::EvmPack;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::call::EthEncodeByString;
+use eth::compile::EvmPack;
 use eth::Flags;
 use parse::{SolFile, SolTest};
 use test_infra::color;
 use translator::translate;
+
+pub mod convert;
+pub mod env;
+pub mod parse;
 
 const TEST_NAME: &str = "sol";
 
@@ -177,4 +180,8 @@ fn return_val_to_string(val: Result<String>) -> String {
             "!panic".to_string()
         }
     }
+}
+
+pub fn sol_path() -> PathBuf {
+    PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("sol")
 }

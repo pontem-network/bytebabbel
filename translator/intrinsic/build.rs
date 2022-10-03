@@ -3,8 +3,9 @@ use std::{env, fs};
 
 use anyhow::{anyhow, Result};
 
-mod build_helper;
 use build_helper as helper;
+
+mod build_helper;
 
 #[derive(Debug)]
 pub(crate) struct Paths {

@@ -8,8 +8,7 @@ use ethabi::{Contract, ParamType};
 use rand::Rng;
 
 use eth::abi::call::fn_params_str_split;
-
-use crate::testssol::env::sol::{build_sol_by_path, EvmPack};
+use eth::compile::{build_sol, EvmPack};
 
 const SOL_DIRECTORY: &str = "./sol";
 
@@ -105,7 +104,7 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
         }
     }
 
-    let contract = build_sol_by_path(&sol_path)
+    let contract = build_sol(&sol_path)
         .map_err(|err| log::error!("{err:?}"))
         .ok()?;
 

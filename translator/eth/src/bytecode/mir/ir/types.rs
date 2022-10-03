@@ -1,6 +1,7 @@
+use std::fmt::{Display, Formatter};
+
 use crate::bytecode::types::EthType;
 use crate::U256;
-use std::fmt::{Display, Formatter};
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Clone, Hash, Copy)]
 pub enum SType {

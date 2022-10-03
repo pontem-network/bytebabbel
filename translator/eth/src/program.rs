@@ -1,8 +1,10 @@
-use crate::abi::call::FunHash;
-use crate::{Function, Mir, MoveAbi};
-use anyhow::Error;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
+
+use anyhow::Error;
+
+use crate::abi::call::FunHash;
+use crate::{Function, Mir, MoveAbi};
 
 pub struct Program {
     constructor: Mir,

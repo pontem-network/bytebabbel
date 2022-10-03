@@ -1,7 +1,9 @@
+use std::mem;
+
+use anyhow::Error;
+
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;
-use anyhow::Error;
-use std::mem;
 
 pub mod debug;
 pub mod expression;

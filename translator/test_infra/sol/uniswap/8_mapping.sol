@@ -8,7 +8,7 @@ contract TestMapping {
     mapping(address => uint128) public balanceOf;
 
     // # mint(0x1,10) 10
-    function mint(address to, uint128 value) public returns(uint128){
+    function mint(address to, uint128 value) public returns (uint128){
         balanceOf[to] = balanceOf[to] + value;
         return balanceOf[to];
     }

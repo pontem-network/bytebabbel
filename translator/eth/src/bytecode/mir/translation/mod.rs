@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+
+use anyhow::{anyhow, Error};
+use primitive_types::U256;
+
 use crate::bytecode::hir::executor::math::BinaryOp;
 use crate::bytecode::hir::ir::statement::Statement as HirStmt;
 use crate::bytecode::hir::ir::var::{VarId, Vars};
@@ -7,9 +12,6 @@ use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
 use crate::{Flags, Function, Hir};
-use anyhow::{anyhow, Error};
-use primitive_types::U256;
-use std::collections::HashMap;
 
 pub mod brunch;
 pub mod cast;

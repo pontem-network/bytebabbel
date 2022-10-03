@@ -1,7 +1,17 @@
 //! Simple EVM-bytecode disassembler.
 
+use std::collections::HashMap;
+
 use anyhow::Error;
+use ethabi::Contract;
 use log::{log_enabled, trace};
+use primitive_types::U256;
+
+use bytecode::block::BlockIter;
+use bytecode::ops::InstructionIter;
+pub use bytecode::ops::OpCode;
+use bytecode::pre_processing::swarm::remove_swarm_hash;
+use program::Program;
 
 use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
@@ -14,17 +24,9 @@ use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
 use crate::vm::static_initialization;
 
-use bytecode::block::BlockIter;
-use bytecode::ops::InstructionIter;
-pub use bytecode::ops::OpCode;
-use bytecode::pre_processing::swarm::remove_swarm_hash;
-use ethabi::Contract;
-use primitive_types::U256;
-use program::Program;
-use std::collections::HashMap;
-
 pub mod abi;
 pub mod bytecode;
+pub mod compile;
 pub mod program;
 pub mod vm;
 
@@ -51,8 +53,8 @@ pub fn transpile_program(
 
     let mut flow_builder = FlowBuilder::new(&contract)?;
     let contract_flow = flow_builder.make_flow();
-    let block_io = flow_builder.block_io();
-    let hir = HirTranslator::new(&contract, contract_flow, block_io, flags);
+    let flow_trace = flow_builder.flow_trace();
+    let hir = HirTranslator::new(&contract, contract_flow, flow_trace, flags);
 
     let functions = abi
         .functions()

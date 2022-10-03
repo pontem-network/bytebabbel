@@ -1,11 +1,13 @@
 #![allow(clippy::assign_op_pattern)]
 #![allow(clippy::ptr_offset_with_cast)]
 
-use crate::abi::call::{FunHash, FUN_HASH_LEN};
-use crate::bytecode::hir::stack::FRAME_SIZE;
+use std::fmt::{Display, Formatter};
+
 use anyhow::{bail, Error};
 use primitive_types::U256;
-use std::fmt::{Display, Formatter};
+
+use crate::abi::call::{FunHash, FUN_HASH_LEN};
+use crate::bytecode::hir::stack::FRAME_SIZE;
 
 #[derive(Default, Clone, Debug)]
 pub struct Function {

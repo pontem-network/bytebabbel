@@ -1,12 +1,14 @@
-use crate::bytecode::hir::context::Context;
-use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::var::{Expr, VarId};
-use crate::Hir;
+use std::ops::{Div, Rem};
+
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
 use evm_core::utils::I256;
 use primitive_types::U256;
-use std::ops::{Div, Rem};
+
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
+use crate::bytecode::hir::ir::var::{Expr, VarId};
+use crate::Hir;
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum UnaryOp {

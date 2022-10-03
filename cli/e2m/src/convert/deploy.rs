@@ -1,19 +1,18 @@
 use std::fs;
-use std::future::Future;
 
 use anyhow::{anyhow, Result};
-
-use crate::convert::ResultConvert;
-use crate::Args;
 use framework::natives::code::{
     ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy,
 };
 use framework::zip_metadata_str;
 use move_binary_format::access::ModuleAccess;
 
-const TEMPLATE_MOVE_TOML: &str = include_str!("../resources/template_move.toml");
+use crate::convert::ResultConvert;
+use crate::{wait, CmdConvert};
 
-impl Args {
+const TEMPLATE_MOVE_TOML: &str = include_str!("../../resources/template_move.toml");
+
+impl CmdConvert {
     /// Publish in aptos node
     /// Access keys are taken from profiles (.aptos/config.yaml).
     pub fn publish(&self, result_convert: &ResultConvert) -> Result<String> {
@@ -37,10 +36,10 @@ impl Args {
                 "--profile",
                 profile,
                 "--max-gas",
-                &self.deploy_flags.max_gas.to_string(),
+                &self.transaction_flags.max_gas.to_string(),
                 "--assume-yes",
             ])
-            .map_err(|_| anyhow!("Invalid profile parameter. "))?;
+            .map_err(|err| anyhow!("Invalid profile parameter. {err}"))?;
 
         let binarycode = fs::read(&result_convert.mv_path)?;
 
@@ -56,21 +55,13 @@ impl Args {
         let size = bcs::serialized_size(&payload)?;
         println!("package size {} bytes", size);
 
-        let fut = txn_options.submit_transaction(payload, None);
+        let fut = txn_options.submit_transaction(payload);
         let result = wait(fut).map(aptos::common::types::TransactionSummary::from)?;
 
         Ok(serde_json::to_string_pretty(&serde_json::to_value(
             &result,
         )?)?)
     }
-}
-
-fn wait<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 fn gen_meta(result_convert: &ResultConvert, binarycode: &[u8]) -> Result<PackageMetadata> {

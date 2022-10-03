@@ -1,9 +1,11 @@
+use std::collections::HashSet;
+use std::mem;
+
+use anyhow::{anyhow, Error};
+
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::instruction::Offset;
 use crate::{BlockId, OpCode, U256};
-use anyhow::{anyhow, Error};
-use std::collections::HashSet;
-use std::mem;
 
 #[derive(Debug, Clone, Default)]
 pub struct Executor {
@@ -39,6 +41,14 @@ impl Executor {
             input: self.negative_item_used.clone(),
             output: mem::take(&mut self.call_stack),
         }
+    }
+
+    pub fn negative_item_used(&self) -> &HashSet<StackItem> {
+        &self.negative_item_used
+    }
+
+    pub fn call_stack(&self) -> &Vec<StackItem> {
+        &self.call_stack
     }
 
     pub fn exec(&mut self, block: &InstructionBlock) -> Next {

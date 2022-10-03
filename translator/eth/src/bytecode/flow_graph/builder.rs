@@ -1,13 +1,16 @@
 #![allow(dead_code)]
+
+use std::collections::{HashMap, VecDeque};
+use std::usize;
+
+use anyhow::Error;
+use primitive_types::U256;
+
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
-use crate::bytecode::tracing::tracer::{BlockIO, FlowTrace, Tracer};
+use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, OpCode};
-use anyhow::Error;
-use primitive_types::U256;
-use std::collections::{HashMap, VecDeque};
-use std::usize;
 
 pub struct FlowBuilder<'a> {
     call_stack: Vec<BlockId>,
@@ -121,8 +124,8 @@ impl<'a> FlowBuilder<'a> {
         }
     }
 
-    pub fn block_io(self) -> HashMap<BlockId, BlockIO> {
-        self.flow_trace.io
+    pub fn flow_trace(self) -> FlowTrace {
+        self.flow_trace
     }
 
     fn pop_stack(&mut self, count: usize) -> Vec<BlockId> {
@@ -148,7 +151,7 @@ impl<'a> FlowBuilder<'a> {
                         return Next::Cnd(jmp, BlockId(inst.next() as u128));
                     }
                     OpCode::Return | OpCode::Stop | OpCode::Revert | OpCode::SelfDestruct => {
-                        return Next::Stop
+                        return Next::Stop;
                     }
                     OpCode::Dup(_) => {
                         let new_item = ops[ops.len() - 1];

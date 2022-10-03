@@ -1,5 +1,6 @@
-use crate::bytecode::instruction::{Instruction, Offset};
 use std::fmt::Debug;
+
+use crate::bytecode::instruction::{Instruction, Offset};
 
 pub struct InstructionIter {
     offset: usize,
@@ -53,8 +54,10 @@ pub enum OpCode {
     Not,
     Byte,
     Shl,
-    Shr, // logical shift right
-    Sar, // arithmetic shift right
+    Shr,
+    // logical shift right
+    Sar,
+    // arithmetic shift right
     Sha3,
     Addr,
     Balance,

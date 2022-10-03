@@ -1,10 +1,10 @@
 #![allow(dead_code)]
-/// High-Level Intermediate Representation
-pub mod context;
-pub mod executor;
-pub mod ir;
-pub mod optimization;
-pub mod stack;
+
+use std::collections::HashMap;
+use std::fmt::Debug;
+
+use anyhow::{anyhow, bail, ensure, Error};
+use primitive_types::U256;
 
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::{Flow, IfFlow, LoopFlow};
@@ -14,18 +14,21 @@ use crate::bytecode::hir::ir::statement::Statement;
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::optimization::IrOptimizer;
-use crate::bytecode::tracing::tracer::BlockIO;
+use crate::bytecode::tracing::tracer::FlowTrace;
 use crate::bytecode::types::Function;
 use crate::{BlockId, Flags};
-use anyhow::{anyhow, bail, ensure, Error};
-use primitive_types::U256;
-use std::collections::HashMap;
-use std::fmt::Debug;
+
+/// High-Level Intermediate Representation
+pub mod context;
+pub mod executor;
+pub mod ir;
+pub mod optimization;
+pub mod stack;
 
 pub struct HirTranslator<'a> {
     contract: &'a HashMap<BlockId, InstructionBlock>,
     contact_flow: Flow,
-    block_io: HashMap<BlockId, BlockIO>,
+    trace: FlowTrace,
     flags: Flags,
 }
 
@@ -33,13 +36,13 @@ impl<'a> HirTranslator<'a> {
     pub fn new(
         contract: &'a HashMap<BlockId, InstructionBlock>,
         contact_flow: Flow,
-        block_io: HashMap<BlockId, BlockIO>,
+        trace: FlowTrace,
         flags: Flags,
     ) -> HirTranslator {
         HirTranslator {
             contract,
             contact_flow,
-            block_io,
+            trace,
             flags,
         }
     }
@@ -53,6 +56,7 @@ impl<'a> HirTranslator<'a> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir::default();
         self.exec_flow(&self.contact_flow, &mut ir, &mut ctx)?;
+        ir.print(&fun.name);
         let ir = IrOptimizer::optimize(ir)?;
         ir.print(&fun.name);
         Ok(ir)
@@ -62,12 +66,6 @@ impl<'a> HirTranslator<'a> {
         self.contract
             .get(block_id)
             .ok_or_else(|| anyhow!("block not found"))
-    }
-
-    fn get_io(&self, block_id: &BlockId) -> Result<&BlockIO, Error> {
-        self.block_io
-            .get(block_id)
-            .ok_or_else(|| anyhow!("block io not found"))
     }
 
     fn exec_flow(&self, flow: &Flow, ir: &mut Hir, ctx: &mut Context) -> Result<StopFlag, Error> {
@@ -115,11 +113,9 @@ impl<'a> HirTranslator<'a> {
         let cnd_block = ir.swap_instruction(before_inst);
         match res {
             BlockResult::Jmp(cnd, _) => {
-                // ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
                 self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
                 let loop_inst = ir.swap_instruction(instructions);
-                // ctx.exit_loop();
                 ir.push_loop(
                     loop_.jmp.block,
                     cnd_block,
@@ -136,11 +132,9 @@ impl<'a> HirTranslator<'a> {
             } => {
                 ensure!(true_br == loop_.jmp.true_br, "invalid true_br");
                 ensure!(false_br == loop_.jmp.false_br, "invalid false_br");
-                // ctx.enter_loop();
                 let instructions = ir.swap_instruction(vec![]);
                 self.exec_flow(loop_.br.flow(), ir, &mut ctx.clone())?;
                 let loop_inst = ir.swap_instruction(instructions);
-                // ctx.exit_loop();
                 ir.push_loop(
                     loop_.jmp.block,
                     cnd_block,
@@ -253,7 +247,14 @@ impl<'a> HirTranslator<'a> {
                 }
                 ExecutionResult::None => {}
                 ExecutionResult::Output(stack) => {
-                    ensure!(stack.len() == inst.pushes(), "Invalid stake state.");
+                    ensure!(
+                        stack.len() == inst.pushes(),
+                        "Invalid stake state. ID: {}:{}. result len ({}) != instr result len {}",
+                        id,
+                        inst,
+                        stack.len(),
+                        inst.pushes(),
+                    );
                     ctx.push_stack(stack);
                 }
                 ExecutionResult::Result { offset, len } => {
