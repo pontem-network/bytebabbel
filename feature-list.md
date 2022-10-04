@@ -1,4 +1,5 @@
 # Feature-List
+
 ❗Supported but not verified.\
 ✖️️Implemented in a static analyzer, but not available at runtime.
 
@@ -8,75 +9,75 @@
 - [x] Memory operations.
 - [x] Branching (if, else)
 - [x] Hash (keccak256 replaced with sha3)
-- [x] Math 
-  - [x] Add
-  - [x] Sub
-  - [x] Mul
-  - [x] Div
-  - [x] Mod
-  - [x] SDiv
-  - [x] SMod
-  - [x] SLt 
-  - [x] SGt
-  - [x] Exp❗
-  - [x] SignExtend❗
-  - [x] BitOr
-  - [x] BitAnd
-  - [x] BitXor
-  - [x] Shl
-  - [x] Sar❗(shift right with sign)
-  - [x] Shr
-  - [x] Lt
-  - [x] Gt
-  - [x] Eq
-  - [x] Neq
-  - [x] BitNot
-  - [x] IsZero
-  - [x] Byte❗
-  - [ ] AddMod (a + b) % N
-  - [ ] MulMod (a * b) % N
-- [ ] Looping 
-  - [x] For❗
-  - [x] While❗
-  - [ ] Do-While
+- [x] Math
+    - [x] Add
+    - [x] Sub
+    - [x] Mul
+    - [x] Div
+    - [x] Mod
+    - [x] SDiv
+    - [x] SMod
+    - [x] SLt
+    - [x] SGt
+    - [x] Exp❗
+    - [x] SignExtend❗
+    - [x] BitOr
+    - [x] BitAnd
+    - [x] BitXor
+    - [x] Shl
+    - [x] Sar❗(shift right with sign)
+    - [x] Shr
+    - [x] Lt
+    - [x] Gt
+    - [x] Eq
+    - [x] Neq
+    - [x] BitNot
+    - [x] IsZero
+    - [x] Byte❗
+    - [ ] AddMod (a + b) % N
+    - [ ] MulMod (a * b) % N
+- [ ] Looping
+    - [x] For❗
+    - [x] While❗
+    - [ ] Do-While
 - [ ] Dynamic types (string, bytes, etc.)
 - [ ] Dependency
-  - [x] Message signer
-  - [ ] Balance
-  - [ ] Origin
-  - [ ] Caller
-  - [ ] CallValue
-  - [ ] CallDataLoad
-  - [ ] CallDataSize
-  - [ ] Blockhash
-  - [ ] Timestamp
-  - [ ] GasLimit
-  - [ ] Difficulty
-  - [ ] Number
-  - [ ] GasPrice
-  - [ ] Coinbase
-  - [ ] Gas
+    - [x] Message signer
+    - [ ] Balance
+    - [ ] Origin
+    - [ ] Caller
+    - [ ] CallValue
+    - [ ] CallDataLoad
+    - [ ] CallDataSize
+    - [ ] Blockhash
+    - [ ] Timestamp
+    - [ ] GasLimit
+    - [ ] Difficulty
+    - [ ] Number
+    - [ ] GasPrice
+    - [ ] Coinbase
+    - [ ] Gas
 - [ ] Call between contracts
-  - [ ] Call
-  - [ ] CallCode
-  - [ ] DelegateCall
-  - [ ] StaticCall
+    - [ ] Call
+    - [ ] CallCode
+    - [ ] DelegateCall
+    - [ ] StaticCall
 - [ ] Other opcodes
-  - [x] CodeSize ✖️️
-  - [x] CallDataCopy ✖️️
-  - [x] CodeCopy ✖️️
-  - [ ] ExtCodeSize
-  - [ ] ExtCodeCopy
-  - [ ] ReturnDataSize
-  - [ ] ReturnDataCopy
-  - [ ] ExtCodeHash
-  - [x] PC ✖️️
-  - [ ] Create
-  - [ ] Create2
+    - [x] CodeSize ✖️️
+    - [x] CallDataCopy ✖️️
+    - [x] CodeCopy ✖️️
+    - [ ] ExtCodeSize
+    - [ ] ExtCodeCopy
+    - [ ] ReturnDataSize
+    - [ ] ReturnDataCopy
+    - [ ] ExtCodeHash
+    - [x] PC ✖️️
+    - [ ] Create
+    - [ ] Create2
 - [x] Solidity interface mapping to move interface.
-  - [x] Primitive types (u128, bool, address)
-  - [x] U256
-  - [ ] Structs
-  - [ ] Dynamic types (string, bytes, etc.)
-  - [x] Move interface maker. (Creates a move project with interfaces from abi)
-  - [ ] Event mapping.
+    - [x] Primitive types (u128, bool, address)
+    - [x] U256
+    - [ ] Structs
+    - [ ] Dynamic types (string, bytes, etc.)
+    - [x] Move interface maker. (Creates a move project with interfaces from abi)
+    - [ ] Event mapping.

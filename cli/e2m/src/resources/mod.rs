@@ -11,17 +11,17 @@ use clap::Parser;
 use reqwest::Url;
 use serde_json::Value;
 
+use decode::{decode, decode_by_abi};
+use query::ListQuery;
+use resource_path::ResourcePath;
 use test_infra::color::{bold, font_yellow};
+
+use crate::profile::ProfileValue;
+use crate::{wait, Cmd};
 
 pub mod decode;
 pub mod query;
 pub mod resource_path;
-
-use crate::profile::ProfileValue;
-use crate::{wait, Cmd};
-use decode::{decode, decode_by_abi};
-use query::ListQuery;
-use resource_path::ResourcePath;
 
 #[derive(Parser, Debug)]
 pub struct CmdResources {

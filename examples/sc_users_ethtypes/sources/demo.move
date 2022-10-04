@@ -1,6 +1,7 @@
 module sc::ScUserEth {
-    use sc::EthUsers;
     use std::vector;
+
+    use sc::EthUsers;
 
     public entry fun constructor(account_address: &signer) {
         EthUsers::constructor(account_address);
