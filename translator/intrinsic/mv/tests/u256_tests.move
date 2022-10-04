@@ -198,6 +198,31 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::get_negative;
+
+    #[test]
+    fun test_negative() {
+        let a = from_u128(30);
+        let b = get_negative(a);
+        let c = as_u128(overflowing_add(a, b));
+
+        assert!(c == 0, 0);
+
+        let a = from_u128(0);
+        let b = get_negative(a);
+        let c = as_u128(overflowing_add(a, b));
+
+        assert!(c == 0, 1);
+
+        let a = from_u128(100);
+        let b = get_negative(a);
+        let c = overflowing_add(b, b);
+        let d = as_u128(get_negative(c));
+
+        assert!(d == 200, 2);
+    }
+
+    #[test_only]
     use self::u256::slt;
 
     #[test]
@@ -260,23 +285,23 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::{sdiv, bitnot};
+    use self::u256::{sdiv};
 
     #[test]
     fun test_sdiv() {
-        let a = bitnot(from_u128(100));
-        let b = bitnot(from_u128(5));
+        let a = get_negative(from_u128(100));
+        let b = get_negative(from_u128(5));
         let d = sdiv(a, b);
         assert!(as_u128(d) == 20, 0);
 
-        let a = bitnot(from_u128(100));
+        let a = get_negative(from_u128(100));
         let b = from_u128(5);
-        let d = bitnot(sdiv(a, b));
+        let d = get_negative(sdiv(a, b));
         assert!(as_u128(d) == 20, 1);
 
         let a = from_u128(U64_MAX);
-        let b = bitnot(from_u128(U128_MAX));
-        let d = bitnot(sdiv(a, b));
+        let b = get_negative(from_u128(U128_MAX));
+        let d = get_negative(sdiv(a, b));
         assert!(as_u128(d) == 0, 2);
 
         let a = from_u128(U128_MAX);
@@ -295,24 +320,24 @@ module self::u256_tests {
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 0);
 
-        let a = bitnot(from_u128(100));
+        let a = get_negative(from_u128(100));
         let b = from_u128(5);
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 1);
 
         let a = from_u128(100);
-        let b = bitnot(from_u128(5));
+        let b = get_negative(from_u128(5));
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 2);
 
-        let a = bitnot(from_u128(5));
+        let a = get_negative(from_u128(5));
         let b = from_u128(2);
-        let d = bitnot(smod(a, b));
+        let d = get_negative(smod(a, b));
         assert!(as_u128(d) == 1, 3);
 
-        let a = bitnot(from_u128(5));
-        let b = bitnot(from_u128(2));
-        let d = bitnot(smod(a, b));
+        let a = get_negative(from_u128(5));
+        let b = get_negative(from_u128(2));
+        let d = get_negative(smod(a, b));
         assert!(as_u128(d) == 1, 4);
     }
 
@@ -568,10 +593,13 @@ module self::u256_tests {
         assert!(as_u128(num) == 231238729, 1);
 
         let num = from_string(&b"-231238729");
-        assert!(as_u128(bitnot(num)) == 231238729, 2);
+        assert!(as_u128(get_negative(num)) == 231238729, 2);
 
         let num = from_string(&b"0");
         assert!(as_u128(num) == 0, 3);
+
+        let num = from_string(&b"-1");
+        assert!(as_u128(get_negative(num)) == 1, 3);
     }
 
     #[test_only]

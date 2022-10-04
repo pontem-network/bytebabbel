@@ -71,7 +71,7 @@ module self::u256 {
         if (sign) {
             res
         } else {
-            bitnot(res)
+            get_negative(res)
         }
     }
 
@@ -628,13 +628,13 @@ module self::u256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
-        let a = if (a_neg) { bitnot(a) } else { a };
-        let b = if (b_neg) { bitnot(b) } else { b };
-
+        let a = if (a_neg) { get_negative(a) } else { a };
+        let b = if (b_neg) { get_negative(b) } else { b };
+    
         let ret = div(a, b);
 
         if (a_neg != b_neg) {
-            bitnot(ret)
+            get_negative(ret)
         } else {
             ret
         }
@@ -667,15 +667,15 @@ module self::u256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
-        let a = if (a_neg) { bitnot(a) } else { a };
-        let b = if (b_neg) { bitnot(b) } else { b };
+        let a = if (a_neg) { get_negative(a) } else { a };
+        let b = if (b_neg) { get_negative(b) } else { b };
 
         let ret = mod(a, b);
 
         if (compare(&ret, &zero()) == EQUAL) {
             zero()
         } else if (a_neg) {
-            bitnot(ret)
+            get_negative(ret)
         } else {
             ret
         }
@@ -728,6 +728,15 @@ module self::u256 {
     public fun is_negative(a: &U256): bool {
         let msb = get(a, WORDS - 1);
         msb & 0x8000000000000000 != 0
+    }
+
+    // change sign
+    public fun get_negative(a: U256): U256 {
+        if (is_negative(&a)) {
+            bitnot(overflowing_sub(a, from_u128(1)))
+        } else {
+            overflowing_add(bitnot(a), from_u128(1))
+        }
     }
 
     /// Shift right `a`  by `shift`.
