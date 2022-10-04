@@ -83,17 +83,17 @@ impl CmdResources {
         show_ignored_message(self.resource_path.is_some(), "--resource_path");
         show_ignored_message(!self.decode_types.is_empty(), "--decode-types");
 
-        let profile = self.profile_options.profile.clone();
-
         let mut aptos_accout_list_args = vec![
             "subcommand".to_string(),
             "--query".to_string(),
             self.query.to_string(),
             "--url".to_string(),
-            self.rest_options.url(&profile)?.to_string(),
-            "--profile".to_string(),
-            profile,
+            self.rest_options.url(&self.profile_options)?.to_string(),
         ];
+
+        if let Some(profile) = self.profile_options.profile.as_ref() {
+            aptos_accout_list_args.extend(["--profile".to_string(), profile.clone()]);
+        }
 
         if let Some(account) = &self.account {
             aptos_accout_list_args.extend(["--account".to_string(), account.to_hex()]);
@@ -136,12 +136,18 @@ impl CmdResources {
 impl CmdResources {
     fn url(&self) -> Result<Url> {
         let resource_path: &ResourcePath = self.resource_path_must()?;
-        let profile = &self.profile_options.profile;
 
-        let request_url_base = self.rest_options.url(profile)?.as_str().to_string();
+        let request_url_base = self
+            .rest_options
+            .url(&self.profile_options)?
+            .as_str()
+            .to_string();
 
         let account_hex = match self.account {
-            None => ProfileValue::from_str(profile)?.to_address()?,
+            None => ProfileValue::from_str(
+                self.profile_options.profile.as_deref().unwrap_or("default"),
+            )?
+            .to_address()?,
             Some(address) => address,
         }
         .to_hex();
