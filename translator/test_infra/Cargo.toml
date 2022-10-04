@@ -40,7 +40,7 @@ move-core-types = { git = "https://github.com/move-language/move", rev = "0155b4
 move-binary-format = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82" }
 move-stdlib = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82", features = ["testing"] }
 
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc", features = ["testing"]  }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc", features = ["testing"] }
 aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
 aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
 move-deps = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }

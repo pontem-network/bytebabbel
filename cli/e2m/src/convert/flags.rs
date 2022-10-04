@@ -22,6 +22,10 @@ pub struct ConvertFlags {
     /// Generate an interface project
     #[clap(long, short = 'i')]
     pub interface_package: bool,
+
+    /// Save solidity abi
+    #[clap(long)]
+    pub save_abi: bool,
 }
 
 impl ConvertFlags {
