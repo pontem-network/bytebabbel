@@ -12,6 +12,8 @@
 ### Fixed
 
 - Fixed u128 math.
+- Verified smod, sdiv
+- Updated tests for slt, sgt
 
 ### Changed
 

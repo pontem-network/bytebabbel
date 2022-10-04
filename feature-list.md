@@ -14,8 +14,8 @@
   - [x] Mul
   - [x] Div
   - [x] Mod
-  - [x] SDiv❗
-  - [x] SMod❗
+  - [x] SDiv
+  - [x] SMod
   - [x] SLt 
   - [x] SGt
   - [x] Exp❗
