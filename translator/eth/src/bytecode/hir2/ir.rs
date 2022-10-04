@@ -1,9 +1,9 @@
-use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::BlockId;
 use primitive_types::U256;
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Hir2 {
@@ -99,7 +99,7 @@ pub struct Label {
 
 impl Hir2 {
     pub fn assign(&mut self, expr: Expr, ctx: &mut Context) -> VarId {
-        let var = ctx.vars.next_var();
+        let var = ctx.vars.gen_tmp();
         let ixd = self.statement.len();
         self.statement.push(IR::Assign(var, expr));
         ctx.vars.set(var, ixd);
@@ -156,5 +156,24 @@ impl From<u128> for Expr {
 impl From<VarId> for Expr {
     fn from(id: VarId) -> Self {
         Expr::Var(id)
+    }
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub struct VarId(u32, bool);
+
+impl VarId {
+    pub fn new_tmp(idx: u32) -> Self {
+        VarId(idx, true)
+    }
+}
+
+impl Debug for VarId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.1 {
+            write!(f, "tmp{}", self.0)
+        } else {
+            write!(f, "var{}", self.0)
+        }
     }
 }

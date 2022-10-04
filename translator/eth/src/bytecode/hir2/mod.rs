@@ -62,10 +62,6 @@ impl IrBuilder {
                 }
                 BlockResult::CndJmp(cmd, _, _) => {
                     self.flush_context(ctx, ir)?;
-                    println!("CndJmp: {:?}", cmd);
-                    println!("ir: {:?}", ir);
-                    println!("ctx: {:?}", ctx.stack);
-
                     bail!("CndJmp is not supported yet");
                 }
                 BlockResult::Stop => {
@@ -76,6 +72,15 @@ impl IrBuilder {
     }
 
     fn flush_context(&self, ctx: &mut Context, ir: &mut Hir2) -> Result<(), Error> {
+        let mut counter = 0;
+        while let Some(item) = ctx.stack.pop() {
+            let var = ctx.vars.new_var(counter);
+            ir.assign(Expr::Assign(var, item));
+            counter += 1;
+        }
+
+        println!("ir: {:?}", ir);
+        println!("ctx: {:?}", ctx.stack);
         Ok(())
     }
 
@@ -96,7 +101,7 @@ impl IrBuilder {
                 continue;
             }
 
-            let args = ctx.stack.pop(pops);
+            let args = ctx.stack.pop_vec(pops);
             ensure!(pops == args.len(), "Invalid stake state.");
 
             let result = inst.handle(args, ir, ctx);

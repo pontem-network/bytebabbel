@@ -1,4 +1,5 @@
-use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::hir2::ir::VarId;
+use std::borrow::BorrowMut;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -6,13 +7,14 @@ use std::rc::Rc;
 #[derive(Debug, Default, Clone)]
 pub struct Vars {
     vars: HashMap<VarId, usize>,
-    var_seq: Rc<Cell<u64>>,
+    var_seq: Rc<Cell<u32>>,
 }
 
 impl Vars {
-    pub fn next_var(&self) -> VarId {
-        let var = VarId::from(self.var_seq.get());
-        self.var_seq.set(self.var_seq.get() + 1);
+    pub fn gen_tmp(&self) -> VarId {
+        let idx = self.var_seq.get();
+        let var = VarId::new_tmp(idx);
+        self.var_seq.set(idx + 1);
         var
     }
 

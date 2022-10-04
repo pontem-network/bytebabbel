@@ -13,7 +13,11 @@ impl Stack {
         self.stack.clear();
     }
 
-    pub fn pop(&mut self, count: usize) -> Vec<Expr> {
+    pub fn pop(&mut self) -> Option<Expr> {
+        self.stack.pop()
+    }
+
+    pub fn pop_vec(&mut self, count: usize) -> Vec<Expr> {
         let mut res = Vec::with_capacity(count);
         for _ in 0..count {
             if let Some(item) = self.stack.pop() {
@@ -84,13 +88,13 @@ mod tests {
             1.into(),
             0.into(),
         ];
-        assert_eq!(stack.pop(11), expected);
-        assert_eq!(stack.pop(11), expected);
+        assert_eq!(stack.pop_vec(11), expected);
+        assert_eq!(stack.pop_vec(11), expected);
 
         stack.push(0.into());
         stack.dup(OpCode::Dup(1).pops());
         let expected = vec![0.into(), 0.into()];
-        assert_eq!(stack.pop(2), expected);
+        assert_eq!(stack.pop_vec(2), expected);
 
         stack.push(0.into());
         stack.push(1.into());
@@ -98,7 +102,7 @@ mod tests {
         stack.dup(OpCode::Dup(2).pops());
 
         let expected = vec![1.into(), 2.into(), 1.into(), 0.into()];
-        assert_eq!(stack.pop(4), expected);
+        assert_eq!(stack.pop_vec(4), expected);
     }
 
     #[test]
@@ -130,7 +134,7 @@ mod tests {
             1.into(),
             0.into(),
         ];
-        assert_eq!(stack.pop(11), expected);
+        assert_eq!(stack.pop_vec(11), expected);
 
         stack.push(0.into());
         stack.push(1.into());
@@ -159,7 +163,7 @@ mod tests {
             1.into(),
             0.into(),
         ];
-        assert_eq!(stack.pop(11), expected);
+        assert_eq!(stack.pop_vec(11), expected);
 
         stack.push(0.into());
         stack.push(1.into());
@@ -187,6 +191,6 @@ mod tests {
             1.into(),
             10.into(),
         ];
-        assert_eq!(stack.pop(11), expected);
+        assert_eq!(stack.pop_vec(11), expected);
     }
 }
