@@ -11,7 +11,7 @@ use clap::Parser;
 use reqwest::Url;
 use serde_json::Value;
 
-use decode::{decode, decode_by_abi};
+use decode::{decode_by_abi, decode_by_types};
 use query::ListQuery;
 use resource_path::ResourcePath;
 use test_infra::color::{bold, font_yellow};
@@ -188,7 +188,7 @@ impl CmdResources {
         }
 
         if !self.decode_types.is_empty() {
-            response = decode(response, &self.decode_types)?;
+            response = decode_by_types(response, &self.decode_types)?;
         }
         log::debug!("response: {response:?}");
 

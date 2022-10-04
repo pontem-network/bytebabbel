@@ -8,7 +8,7 @@ use eth::abi::call::fn_params_str_split;
 
 // = = =
 
-pub(crate) fn decode(mut json: Value, mask: &[String]) -> Result<Value> {
+pub(crate) fn decode_by_types(mut json: Value, mask: &[String]) -> Result<Value> {
     mask.iter()
         .filter_map(|v| {
             let (index, types) = v.split_once(':')?;
@@ -205,204 +205,16 @@ where
 mod test {
     use serde_json::Value;
 
-    use crate::resources::decode::{decode, decode_by_abi};
+    use crate::resources::decode::{decode_by_abi, decode_by_types};
 
-    const JSON_TEST: &str = r#"[
-          {
-            "version": "420684",
-            "guid": {
-              "creation_number": "4",
-              "account_address": "0xb9efc292b81e426405ebf74ac16e29cd1d0efa4f01638e19907aae97f6152034"
-            },
-            "sequence_number": "0",
-            "type": "0xb9efc292b81e426405ebf74ac16e29cd1d0efa4f01638e19907aae97f6152034::Users::Event",
-            "data": {
-              "data": "0x000000000000000000000000c433207eca28f7e0b37898979b21008531f90cb600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-              "topics": [
-                {
-                  "v0": "4853473898109565021",
-                  "v1": "12423157531212965247",
-                  "v2": "16082917701485615544",
-                  "v3": "14887007877718918608"
-                }
-              ]
-            }
-          },
-          {
-            "version": "421362",
-            "guid": {
-              "creation_number": "4",
-              "account_address": "0xb9efc292b81e426405ebf74ac16e29cd1d0efa4f01638e19907aae97f6152034"
-            },
-            "sequence_number": "1",
-            "type": "0xb9efc292b81e426405ebf74ac16e29cd1d0efa4f01638e19907aae97f6152034::Users::Event",
-            "data": {
-              "data": "0x000000000000000000000000c16e29cd1d0efa4f01638e19907aae97f6152034000000000000000000000000c433207eca28f7e0b37898979b21008531f90cb600000000000000000000000000000000000000000000000000000000000000c8",
-              "topics": [
-                {
-                  "v0": "2951364421682967535",
-                  "v1": "10748869590852608278",
-                  "v2": "7620847484418887082",
-                  "v3": "15992936130196719771"
-                }
-              ]
-            }
-          },
-          {
-            "version": "421626",
-            "guid": {
-              "creation_number": "4",
-              "account_address": "0xb9efc292b81e426405ebf74ac16e29cd1d0efa4f01638e19907aae97f6152034"
-            },
-            "sequence_number": "2",
-            "type": "0xb9efc292b81e426405ebf74ac16e29cd1d0efa4f01638e19907aae97f6152034::Users::Event",
-            "data": {
-              "data": "0x000000000000000000000000c16e29cd1d0efa4f01638e19907aae97f6152034000000000000000000000000c433207eca28f7e0b37898979b21008531f90cb600000000000000000000000000000000000000000000000000000000000000c8",
-              "topics": [
-                {
-                  "v0": "2951364421682967535",
-                  "v1": "10748869590852608278",
-                  "v2": "7620847484418887082",
-                  "v3": "15992936130196719771"
-                }
-              ]
-            }
-          }
-        ]
-    "#;
+    const RESPONSE: &str = include_str!("../../resources/tests/response_events.json");
 
-    const ABI_TEST: &str = r#"[
-        {
-            "inputs": [
-              {
-                "internalType": "address",
-                "name": "admin",
-                "type": "address"
-              }
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                  {
-                    "indexed": false,
-                    "internalType": "address",
-                    "name": "addr",
-                    "type": "address"
-                  },
-                  {
-                    "indexed": false,
-                    "internalType": "bool",
-                    "name": "is_admin",
-                    "type": "bool"
-                  },
-                  {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                  }
-            ],
-            "name": "NewUser",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-              {
-                "indexed": false,
-                "internalType": "address",
-                "name": "from",
-                "type": "address"
-              },
-              {
-                "indexed": false,
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-              },
-              {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-              }
-            ],
-            "name": "Transfer",
-            "type": "event"
-        },
-        {
-            "inputs": [],
-            "name": "create_user",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "get_balance",
-            "outputs": [
-                  {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                  }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "get_id",
-            "outputs": [
-              {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "is_owner",
-            "outputs": [
-              {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-              {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-              }
-            ],
-            "name": "transfer",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
-    ]"#;
+    const ABI: &str = include_str!("../../resources/tests/users.abi");
 
     #[test]
     fn test_decode_type() {
-        let resp: Value = serde_json::from_str(JSON_TEST).unwrap();
-        let result = decode(resp, &["data:address,address,u256".to_string()]).unwrap();
+        let resp: Value = serde_json::from_str(RESPONSE).unwrap();
+        let result = decode_by_types(resp, &["data:address,address,u256".to_string()]).unwrap();
 
         let json_string = serde_json::to_string_pretty(&result).unwrap();
 
@@ -412,8 +224,8 @@ mod test {
 
     #[test]
     fn test_decode_abi() {
-        let mut response: Value = serde_json::from_str(JSON_TEST).unwrap();
-        let abi: ethabi::Contract = serde_json::from_str(ABI_TEST).unwrap();
+        let mut response: Value = serde_json::from_str(RESPONSE).unwrap();
+        let abi: ethabi::Contract = serde_json::from_str(ABI).unwrap();
 
         decode_by_abi(&mut response, &abi);
         let json_string = serde_json::to_string_pretty(&response).unwrap();
