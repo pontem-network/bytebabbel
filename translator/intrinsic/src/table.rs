@@ -1,8 +1,10 @@
-use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
     FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
 };
+
+use crate::Function;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Memory {
     New,

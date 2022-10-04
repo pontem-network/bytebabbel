@@ -1,13 +1,12 @@
 module self::u256 {
+    // U256.
+    //=================================================================================================================
+
     // Errors.
     /// When trying to get or put word into U256 but it's out of index.
     const EWORDS_OVERFLOW: u64 = 1;
 
-    // U256
-    // =================================================================================================================
-
     // Constants.
-
     /// Max `u64` value.
     const U64_MAX: u128 = 18446744073709551615;
 
@@ -23,7 +22,7 @@ module self::u256 {
     /// When `a` is less than `b`.
     const LESS_THAN: u8 = 1;
 
-    /// When `b` is greater than `b`.
+    /// When `a` is greater than `b`.
     const GREATER_THAN: u8 = 2;
 
     // Data structs.
@@ -67,6 +66,7 @@ module self::u256 {
     }
 
     // API
+    // TODO
     public fun from_signer(addr: &signer): U256 {
         let encoded = std::bcs::to_bytes(addr);
         // todo replace with riding last 20 bytes
@@ -80,6 +80,7 @@ module self::u256 {
     }
 
     // API
+    // TODO
     fun from_address(addr: address): U256 {
         let encoded = std::bcs::to_bytes(&addr);
         // todo replace with riding last 20 bytes
@@ -370,7 +371,6 @@ module self::u256 {
 
     // API
     /// Signed lt.
-    /// todo check this)
     public fun slt(a: U256, b: U256): bool {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
@@ -421,7 +421,7 @@ module self::u256 {
     }
 
     // API
-    fun bitnot(a: U256): U256 {
+    public fun bitnot(a: U256): U256 {
         let ret = zero();
         let i = 0;
         while (i < WORDS) {
@@ -432,7 +432,7 @@ module self::u256 {
     }
 
     // API
-    fun byte(i: U256, x: U256): U256 {
+    public fun byte(i: U256, x: U256): U256 {
         let shift = 248 - as_u128(i) * 8;
         bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
     }
@@ -495,6 +495,8 @@ module self::u256 {
         };
         ret
     }
+
+    use self::du256::{zero_d, get_d, put_d, DU256};
 
     // API
     /// Multiples two `U256`.
@@ -591,8 +593,7 @@ module self::u256 {
 
     // API
     /// Divide `a` by `b` with sign.
-    /// todo check this)
-    fun sdiv(a: U256, b: U256): U256 {
+    public fun sdiv(a: U256, b: U256): U256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
@@ -610,8 +611,7 @@ module self::u256 {
 
     // API
     /// Signed gt.
-    /// todo check this)
-    fun sgt(a: U256, b: U256): bool {
+    public fun sgt(a: U256, b: U256): bool {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
@@ -632,8 +632,7 @@ module self::u256 {
 
     // API
     /// Signed mod.
-    /// todo check this)
-    fun smod(a: U256, b: U256): U256 {
+    public fun smod(a: U256, b: U256): U256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
@@ -642,7 +641,9 @@ module self::u256 {
 
         let ret = mod(a, b);
 
-        if (a_neg) {
+        if (compare(&ret, &zero()) == EQUAL) {
+            zero()
+        } else if (a_neg) {
             bitnot(ret)
         } else {
             ret
@@ -651,7 +652,6 @@ module self::u256 {
 
     // API
     /// Exponentiation.
-    /// todo check this)
     /// todo use DU256 for intermediate calculations
     public fun exp(a: U256, b: U256): U256 {
         let ret = one();
@@ -694,7 +694,7 @@ module self::u256 {
         }
     }
 
-    fun is_negative(a: &U256): bool {
+    public fun is_negative(a: &U256): bool {
         let msb = get(a, WORDS - 1);
         msb & 0x8000000000000000 != 0
     }
@@ -759,19 +759,6 @@ module self::u256 {
         write_u64(a.v2, vec, offset + 8);
         write_u64(a.v1, vec, offset + 16);
         write_u64(a.v0, vec, offset + 24);
-    }
-
-
-    /// Convert `DU256` to `U256`.
-    public fun du256_to_u256(a: DU256): (U256, bool) {
-        let b = new_u256(get_d(&a, 0), get_d(&a, 1), get_d(&a, 2), get_d(&a, 3));
-
-        let overflow = false;
-        if (get_d(&a, 4) != 0 || get_d(&a, 5) != 0 || get_d(&a, 6) != 0 || get_d(&a, 7) != 0) {
-            overflow = true;
-        };
-
-        (b, overflow)
     }
 
     public fun read_u64(bytes: &vector<u8>, offset: u64): u64 {
@@ -882,90 +869,15 @@ module self::u256 {
     }
 
 
-    // DU256
-    // =================================================================================================================
+    /// Convert `DU256` to `U256`.
+    public fun du256_to_u256(a: DU256): (U256, bool) {
+        let b = new_u256(get_d(&a, 0), get_d(&a, 1), get_d(&a, 2), get_d(&a, 3));
 
-    /// Double `U256` used for multiple (to store overflow).
-    struct DU256 has copy, drop, store {
-        v0: u64,
-        v1: u64,
-        v2: u64,
-        v3: u64,
-        v4: u64,
-        v5: u64,
-        v6: u64,
-        v7: u64,
-    }
+        let overflow = false;
+        if (get_d(&a, 4) != 0 || get_d(&a, 5) != 0 || get_d(&a, 6) != 0 || get_d(&a, 7) != 0) {
+            overflow = true;
+        };
 
-    public fun new_du256(v0: u64, v1: u64, v2: u64, v3: u64, v4: u64, v5: u64, v6: u64, v7: u64): DU256 {
-        DU256 {
-            v0,
-            v1,
-            v2,
-            v3,
-            v4,
-            v5,
-            v6,
-            v7,
-        }
-    }
-
-    /// Get word from `DU256` by index.
-    public fun get_d(a: & DU256, i: u64): u64 {
-        if (i == 0) {
-            a.v0
-        } else if (i == 1) {
-            a.v1
-        } else if (i == 2) {
-            a.v2
-        } else if (i == 3) {
-            a.v3
-        } else if (i == 4) {
-            a.v4
-        } else if (i == 5) {
-            a.v5
-        } else if (i == 6) {
-            a.v6
-        } else if (i == 7) {
-            a.v7
-        } else {
-            abort EWORDS_OVERFLOW
-        }
-    }
-
-    /// Put new word into `DU256` by index `i`.
-    public fun put_d(a: &mut DU256, i: u64, val: u64) {
-        if (i == 0) {
-            a.v0 = val;
-        } else if (i == 1) {
-            a.v1 = val;
-        } else if (i == 2) {
-            a.v2 = val;
-        } else if (i == 3) {
-            a.v3 = val;
-        } else if (i == 4) {
-            a.v4 = val;
-        } else if (i == 5) {
-            a.v5 = val;
-        } else if (i == 6) {
-            a.v6 = val;
-        } else if (i == 7) {
-            a.v7 = val;
-        } else {
-            abort EWORDS_OVERFLOW
-        }
-    }
-
-    public fun zero_d(): DU256 {
-        DU256 {
-            v0: 0,
-            v1: 0,
-            v2: 0,
-            v3: 0,
-            v4: 0,
-            v5: 0,
-            v6: 0,
-            v7: 0,
-        }
+        (b, overflow)
     }
 }
