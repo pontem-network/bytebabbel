@@ -31,6 +31,11 @@ impl Stack {
         self.stack.push(push);
     }
 
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Expr> {
+        let idx = self.stack.len() - idx;
+        self.stack.get_mut(idx)
+    }
+
     pub fn dup(&mut self, idx: usize) {
         let item = self.stack[self.stack.len() - idx].clone();
         self.stack.push(item);

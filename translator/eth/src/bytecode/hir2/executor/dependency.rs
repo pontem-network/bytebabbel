@@ -9,7 +9,7 @@ impl InstructionHandler for Sha3 {
     fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let len = params.remove(1);
         let addr = params.remove(0);
-        let id = ir.assign(Expr::Hash(Box::new(addr), Box::new(len)), ctx);
+        let id = ir.assign(Expr::Hash(Box::new(addr), Box::new(len)), &mut ctx.vars);
         ExecutionResult::Output(id.into())
     }
 }

@@ -1,5 +1,4 @@
 use crate::bytecode::hir2::ir::VarId;
-use std::borrow::BorrowMut;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;

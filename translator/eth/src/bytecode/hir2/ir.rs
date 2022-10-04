@@ -1,9 +1,10 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir2::vars::Vars;
 use crate::BlockId;
 use primitive_types::U256;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, Default)]
 pub struct Hir2 {
@@ -55,6 +56,7 @@ pub enum Expr {
     BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
     TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
     Hash(Box<Expr>, Box<Expr>),
+    Copy(Box<Expr>),
 }
 
 impl Expr {
@@ -62,7 +64,7 @@ impl Expr {
         match self {
             Expr::Val(val) => Some(*val),
             Expr::Var(var) => {
-                let expr = ir.get_var(*var, ctx);
+                let expr = ir.get_var(*var, &ctx.vars);
                 expr.resolve(ir, ctx)
             }
             Expr::MLoad(_) => None,
@@ -87,7 +89,12 @@ impl Expr {
                 Some(cnd.calc(arg1, arg2, arg3))
             }
             Expr::Hash(_, _) => None,
+            Expr::Copy(expr) => expr.resolve(ir, ctx),
         }
+    }
+
+    pub fn is_var(&self) -> bool {
+        matches!(self, Expr::Var(_))
     }
 }
 
@@ -98,16 +105,16 @@ pub struct Label {
 }
 
 impl Hir2 {
-    pub fn assign(&mut self, expr: Expr, ctx: &mut Context) -> VarId {
-        let var = ctx.vars.gen_tmp();
+    pub fn assign(&mut self, expr: Expr, vars: &mut Vars) -> VarId {
+        let var = vars.gen_tmp();
         let ixd = self.statement.len();
         self.statement.push(IR::Assign(var, expr));
-        ctx.vars.set(var, ixd);
+        vars.set(var, ixd);
         var
     }
 
-    pub fn get_var(&self, var: VarId, ctx: &Context) -> &Expr {
-        let assign_idx = ctx.vars.get(&var).expect("var not found");
+    pub fn get_var(&self, var: VarId, vars: &Vars) -> &Expr {
+        let assign_idx = vars.get(&var).expect("var not found");
         if let IR::Assign(var_id, stmt) = &self.statement[assign_idx] {
             assert_eq!(*var_id, var);
             stmt
@@ -159,7 +166,7 @@ impl From<VarId> for Expr {
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct VarId(u32, bool);
 
 impl VarId {
@@ -168,7 +175,7 @@ impl VarId {
     }
 }
 
-impl Debug for VarId {
+impl Display for VarId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.1 {
             write!(f, "tmp{}", self.0)

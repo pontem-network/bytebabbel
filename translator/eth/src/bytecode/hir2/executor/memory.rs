@@ -15,7 +15,7 @@ impl InstructionHandler for MemoryOp {
         match self {
             MemoryOp::MLoad => {
                 let addr = Box::new(params.remove(0));
-                let id = ir.assign(Expr::MLoad(addr), ctx);
+                let id = ir.assign(Expr::MLoad(addr), &mut ctx.vars);
                 ExecutionResult::Output(id.into())
             }
             MemoryOp::MStore => {

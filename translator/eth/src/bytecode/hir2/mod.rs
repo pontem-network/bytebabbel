@@ -1,14 +1,15 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Expr, Hir2, IR};
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, Flags, Function, OpCode};
-use anyhow::{anyhow, bail, ensure, Error};
+use anyhow::{anyhow, bail, ensure, Context as ErrorContext, Error};
 use primitive_types::U256;
 use std::collections::HashMap;
 
 pub mod context;
+pub mod debug;
 pub mod executor;
 pub mod ir;
 pub mod stack;
@@ -74,8 +75,8 @@ impl IrBuilder {
     fn flush_context(&self, ctx: &mut Context, ir: &mut Hir2) -> Result<(), Error> {
         let mut counter = 0;
         while let Some(item) = ctx.stack.pop() {
-            let var = ctx.vars.new_var(counter);
-            ir.assign(Expr::Assign(var, item));
+            // let var = ctx.vars.new_var(counter);
+            // ir.assign(Expr::Assign(var, item), ctx);
             counter += 1;
         }
 
@@ -97,7 +98,7 @@ impl IrBuilder {
                 continue;
             }
             if let OpCode::Dup(_) = inst.1 {
-                ctx.stack.dup(pops);
+                self.dup(pops, ir, ctx).context("dup stack")?;
                 continue;
             }
 
@@ -135,6 +136,25 @@ impl IrBuilder {
         self.contract
             .get(id)
             .ok_or_else(|| anyhow!("Block {:?} not found", id))
+    }
+
+    pub fn dup(&self, pops: usize, ir: &mut Hir2, ctx: &mut Context) -> Result<(), Error> {
+        let src = ctx
+            .stack
+            .get_mut(pops)
+            .ok_or_else(|| anyhow!("Invalid stack state. "))?;
+        if !src.is_var() {
+            let var = ir.assign(src.clone(), &mut ctx.vars);
+            *src = Expr::Var(var);
+        }
+
+        ctx.stack.dup(pops);
+        let var = ctx
+            .stack
+            .pop()
+            .ok_or_else(|| anyhow!("Invalid stack state"))?;
+        ctx.stack.push(Expr::Copy(Box::new(var)));
+        Ok(())
     }
 }
 
