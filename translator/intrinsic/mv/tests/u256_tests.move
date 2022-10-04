@@ -557,6 +557,24 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::from_string;
+
+    #[test]
+    fun test_from_string() {
+        let num = from_string(&b"1313539323434");
+        assert!(as_u128(num) == 1313539323434, 0);
+
+        let num = from_string(&b"231238729");
+        assert!(as_u128(num) == 231238729, 1);
+
+        let num = from_string(&b"-231238729");
+        assert!(as_u128(bitnot(num)) == 231238729, 2);
+
+        let num = from_string(&b"0");
+        assert!(as_u128(num) == 0, 3);
+    }
+
+    #[test_only]
     use self::u256::overflowing_add;
 
     #[test]

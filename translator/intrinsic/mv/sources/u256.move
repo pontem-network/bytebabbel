@@ -44,6 +44,37 @@ module self::u256 {
         }
     }
 
+    public fun from_string(string: &vector<u8>): U256 {
+        let sign = true;
+        let shift = 0;
+        let lenght = std::vector::length(string);
+        let res = zero();
+        let ten = from_u128(10);
+
+        // char '-' = 45
+        if (*std::vector::borrow(string, shift) == 45) {
+            sign = false;
+            shift = shift + 1;
+        };
+
+        // char '0' = 48
+        while (shift < lenght) {
+            let digit = *std::vector::borrow(string, shift) - 48;
+
+            res = overflowing_add(
+                overflowing_mul(res, ten),
+                from_u128((digit as u128))
+            );
+            shift = shift + 1;
+        };
+
+        if (sign) {
+            res
+        } else {
+            bitnot(res)
+        }
+    }
+
     /// Returns `U256` equals to zero.
     public fun zero(): U256 {
         U256 {
