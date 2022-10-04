@@ -37,7 +37,7 @@
   - [ ] MulMod (a * b) % N
 - [ ] Looping 
   - [x] For❗
-  - [ ] While
+  - [x] While❗
   - [ ] Do-While
 - [ ] Dynamic types (string, bytes, etc.)
 - [ ] Dependency
