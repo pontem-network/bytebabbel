@@ -25,7 +25,6 @@ pub struct IrBuilder {
 impl IrBuilder {
     pub fn new(contract: HashMap<BlockId, InstructionBlock>, flags: Flags) -> Result<Self, Error> {
         let flow = Tracer::new(&contract).trace()?;
-        dbg!(&flow.funcs);
         Ok(Self {
             contract,
             flags,
@@ -67,8 +66,9 @@ impl IrBuilder {
                     true_br,
                     false_br,
                 } => {
+                    let cnd = ir.assign(cnd, &mut ctx.vars);
                     self.flush_context(ctx, ir)?;
-                    ir.true_brunch(&ctx.loc, cnd, true_br.into());
+                    ir.true_brunch(&ctx.loc, ctx.loc.wrap(_Expr::Var(cnd)), true_br.into());
                     let stack = ctx.stack.clone();
                     let vars = ctx.vars.clone();
                     self.translate_blocks(false_br, ir, ctx)?;
@@ -92,15 +92,18 @@ impl IrBuilder {
         let last_idx = stack.len() - 1;
         for (i, var) in stack.into_iter().enumerate() {
             let var_id = VarId::new_var((last_idx - i) as u32);
+            if let _Expr::Var(id) = var.as_ref() {
+                if var_id == *id {
+                    ctx.stack.push(var);
+                    continue;
+                }
+            }
+
             stack_dump.insert(var_id, var.clone());
             ctx.vars.set(var_id, var);
             ctx.stack.push(ctx.loc.wrap(_Expr::Var(var_id)));
         }
         ir.save_context(&ctx.loc, stack_dump);
-
-        let mut str = String::new();
-        ir.print(&mut str)?;
-        println!("{}", str);
         Ok(())
     }
 
@@ -113,7 +116,6 @@ impl IrBuilder {
         for inst in block.iter() {
             let pops = inst.pops();
             ctx.loc = inst.location();
-
             if let OpCode::Swap(_) = inst.1 {
                 ctx.stack.swap(pops);
                 continue;
@@ -125,8 +127,8 @@ impl IrBuilder {
 
             let args = ctx.stack.pop_vec(pops);
             ensure!(pops == args.len(), "Invalid stake state.");
-
             let result = inst.handle(args, ir, ctx);
+
             match result {
                 ExecutionResult::Output(output) => {
                     ctx.stack.push(ctx.loc.wrap(output));
@@ -151,7 +153,6 @@ impl IrBuilder {
                 }
             }
         }
-
         Ok(BlockResult::Jmp(BlockId::from(
             block.end + block.last().map(|i| i.size()).unwrap_or(1) as u64,
         )))

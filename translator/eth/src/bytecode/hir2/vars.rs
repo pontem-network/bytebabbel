@@ -2,9 +2,10 @@ use crate::bytecode::hir2::ir::{VarId, _Expr};
 use crate::bytecode::loc::Loc;
 use std::cell::Cell;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct Vars {
     vars: HashMap<VarId, Loc<_Expr>>,
     var_seq: Rc<Cell<u32>>,
@@ -23,6 +24,21 @@ impl Vars {
     }
 
     pub fn set(&mut self, var: VarId, expr: Loc<_Expr>) {
-        self.vars.insert(var, expr);
+        if let _Expr::Var(id) = expr.as_ref() {
+            let expr = self.vars.get(id).expect("var not found").clone();
+            self.vars.insert(var, expr);
+        } else {
+            self.vars.insert(var, expr);
+        }
+    }
+}
+
+impl Debug for Vars {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Vars {{")?;
+        for (var, expr) in &self.vars {
+            writeln!(f, " {} => {:?},", var, expr.as_ref())?;
+        }
+        write!(f, " }}")
     }
 }

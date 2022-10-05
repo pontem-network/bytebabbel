@@ -6,12 +6,11 @@ use crate::bytecode::loc::Loc;
 use crate::BlockId;
 use anyhow::Error;
 use primitive_types::U256;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Write};
 
 #[derive(Debug, Clone, Default)]
 pub struct Hir2 {
-    labels: HashMap<Label, usize>,
     statement: Vec<Loc<Stmt>>,
 }
 
@@ -151,6 +150,10 @@ impl Hir2 {
 
     pub fn save_context(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Loc<_Expr>>) {
         self.statement.push(loc.wrap(Stmt::StoreContext(context)));
+    }
+
+    pub fn sstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
+        self.statement.push(loc.wrap(Stmt::SStore { addr, var }));
     }
 
     pub fn true_brunch(&mut self, loc: &Loc<()>, cnd: Loc<_Expr>, label: Label) {

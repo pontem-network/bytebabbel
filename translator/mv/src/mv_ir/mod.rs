@@ -1,6 +1,4 @@
 use anyhow::{anyhow, Error};
-use log::log_enabled;
-use log::Level;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::Signature;
 use move_binary_format::CompiledModule;

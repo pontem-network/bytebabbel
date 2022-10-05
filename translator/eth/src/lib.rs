@@ -85,6 +85,9 @@ pub fn translate_function(
 ) -> Result<Mir, Error> {
     let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
     let lir = lir.translate_fun(fun, contract_addr, code_size)?;
+    let mut buff = String::new();
+    lir.print(&mut buff)?;
+    trace!("{}", buff);
     let mir_translator = MirTranslator::new(fun, flags);
     let mir = mir_translator.translate(hir)?;
     mir.print(&fun.name);

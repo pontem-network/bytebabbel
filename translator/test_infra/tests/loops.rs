@@ -1,15 +1,7 @@
 use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::{make_move_module, sol_path};
-use anyhow::anyhow;
 use eth::compile::build_sol;
 use eth::Flags;
-use move_binary_format::file_format::Bytecode;
-use move_binary_format::CompiledModule;
-use move_bytecode_source_map::mapping::SourceMapping;
-use move_deps::move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
-use move_deps::move_package::compilation::package_layout::CompiledPackageLayout::CompiledModules;
-use move_ir_types::location::Spanned;
-use mv::mv_ir::print_move_module;
 use test_infra::init_log;
 
 #[allow(dead_code)]
@@ -17,33 +9,6 @@ mod testssol;
 
 #[test]
 pub fn test_loop() {
-    // let mut module = CompiledModule::deserialize(include_bytes!(
-    //     "../../../test_mv/build/test/bytecode_modules/Test.mv"
-    // ))
-    // .unwrap();
-    //
-    // let def = module.function_defs.get_mut(0).unwrap();
-    // let code = &mut def.code.as_mut().unwrap().code;
-    // code.insert(0, Bytecode::BrTrue(9));
-    // code.insert(0, Bytecode::LdTrue);
-    // code.insert(10, Bytecode::Branch(2));
-    //
-    // println!("code: {:#?}", code);
-    //
-    // print_move_module(&module);
-    // CodeUnitVerifier::verify_module(&VerifierConfig::default(), &module)
-    //     .map_err(|err| {
-    //         anyhow!(
-    //             "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?} -{:?}",
-    //             err.major_status(),
-    //             err.sub_status(),
-    //             err.message(),
-    //             err.location(),
-    //             err.indices()
-    //         )
-    //     })
-    //     .unwrap();
-
     init_log();
     let evm = build_sol(sol_path().join("bitwise/simple.sol")).unwrap();
     let bytecode = make_move_module(

@@ -5,7 +5,7 @@ use std::mem;
 
 pub const FRAME_SIZE: usize = 32;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Clone)]
 pub struct Stack {
     stack: Vec<Loc<_Expr>>,
 }
@@ -54,5 +54,15 @@ impl Stack {
 
     pub fn take(&mut self) -> Vec<Loc<_Expr>> {
         mem::take(&mut self.stack)
+    }
+}
+
+impl Debug for Stack {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Stack {{")?;
+        for (idx, expr) in self.stack.iter().enumerate().rev() {
+            write!(f, " {} => {:?},", idx, expr)?;
+        }
+        write!(f, " }}")
     }
 }

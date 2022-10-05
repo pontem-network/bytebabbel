@@ -1,5 +1,7 @@
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir2::ir::{Stmt, _Expr};
+use crate::bytecode::loc::Loc;
+use crate::BlockId;
 use anyhow::Error;
 use std::fmt::{Display, Formatter, Write};
 
@@ -74,8 +76,9 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Stmt) -> Result<(), Error> {
-    match stmt {
+pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> {
+    write!(buf, "{}: ", BlockId::from(stmt.start))?;
+    match stmt.as_ref() {
         Stmt::Label(label) => writeln!(buf, "'{}:", label.to)?,
         Stmt::Assign(var, expr) => {
             write!(buf, "{} = ", var)?;
@@ -137,6 +140,7 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Stmt) -> Result<(), Error> {
         Stmt::StoreContext(ctx) => {
             writeln!(buf, "[")?;
             for (id, expr) in ctx.iter() {
+                write!(buf, "{}: ", BlockId::from(expr.start))?;
                 write!(buf, "{} = ", id)?;
                 print_expr(buf, &expr)?;
                 writeln!(buf, ";")?;
