@@ -1,6 +1,6 @@
+use crate::bytecode::hir::ir::Expr;
 use anyhow::{bail, ensure, Error};
 
-use crate::bytecode::hir::ir::var::{Expr, VarId};
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;

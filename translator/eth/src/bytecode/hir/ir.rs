@@ -1,7 +1,7 @@
-use crate::bytecode::hir2::context::Context;
-use crate::bytecode::hir2::debug::print_stmt;
-use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::vars::Vars;
+use crate::bytecode::hir::context::Context;
+use crate::bytecode::hir::debug::print_stmt;
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
 use crate::BlockId;
 use anyhow::Error;
@@ -10,8 +10,9 @@ use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Write};
 
 #[derive(Debug, Clone, Default)]
-pub struct Hir2 {
+pub struct Hir {
     statement: Vec<Loc<Stmt>>,
+    labels: BTreeMap<Label, usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -66,7 +67,7 @@ pub enum _Expr {
 }
 
 impl _Expr {
-    pub fn resolve(&self, ir: &Hir2, ctx: &Context) -> Option<U256> {
+    pub fn resolve(&self, ir: &Hir, ctx: &Context) -> Option<U256> {
         match self {
             _Expr::Val(val) => Some(*val),
             _Expr::Var(var) => {
@@ -104,7 +105,7 @@ impl _Expr {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, Ord, PartialOrd)]
 pub struct Label {
     pub to: BlockId,
 }
@@ -115,7 +116,7 @@ impl From<BlockId> for Label {
     }
 }
 
-impl Hir2 {
+impl Hir {
     pub fn assign(&mut self, expr: Loc<_Expr>, vars: &mut Vars) -> VarId {
         let var = vars.gen_tmp();
         self.statement
@@ -176,6 +177,15 @@ impl Hir2 {
 
     pub fn label(&mut self, loc: &Loc<()>, label: Label) {
         self.statement.push(loc.wrap(Stmt::Label(label)));
+        self.labels.insert(label, self.statement.len() - 1);
+    }
+
+    pub fn has_label(&self, label: Label) -> bool {
+        self.labels.contains_key(&label)
+    }
+
+    pub fn goto(&mut self, loc: &Loc<()>, label: Label) {
+        self.statement.push(loc.wrap(Stmt::Brunch(label)));
     }
 
     pub fn print<B: Write>(&self, buf: &mut B) -> Result<(), Error> {

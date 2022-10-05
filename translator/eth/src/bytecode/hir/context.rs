@@ -1,22 +1,22 @@
-use std::cmp::min;
-use std::collections::HashMap;
-
-use primitive_types::U256;
-
-use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir::stack::Stack;
+use crate::bytecode::hir::vars::Vars;
+use crate::bytecode::loc::Loc;
 use crate::{BlockId, Flags, Function};
+use primitive_types::U256;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Context<'a> {
     address: U256,
-    stack: Stack,
     fun: &'a Function,
     loop_input: HashMap<BlockId, (Stack, BlockId)>,
     loop_stack_size: usize,
     static_analysis: bool,
     code_size: u128,
     flags: Flags,
+    pub loc: Loc<()>,
+    pub stack: Stack,
+    pub vars: Vars,
 }
 
 impl<'a> Context<'a> {
@@ -35,6 +35,8 @@ impl<'a> Context<'a> {
             static_analysis: true,
             code_size,
             flags,
+            vars: Default::default(),
+            loc: Loc::new(0, 0, ()),
         }
     }
 
@@ -44,14 +46,6 @@ impl<'a> Context<'a> {
 
     pub fn is_static_analysis_enable(&self) -> bool {
         self.static_analysis
-    }
-
-    pub fn pop_stack(&mut self, pops: usize) -> Vec<VarId> {
-        self.stack.pop(pops)
-    }
-
-    pub fn push_stack(&mut self, to_push: Vec<VarId>) {
-        self.stack.push(to_push)
     }
 
     pub fn fun(&self) -> &Function {
@@ -75,20 +69,6 @@ impl<'a> Context<'a> {
         self.loop_input.get(block_id).map(|(stack, _)| stack)
     }
 
-    pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
-        let original_len = origin.stack.len();
-        let continue_len = self.stack.stack.len();
-        let mapping_size = min(original_len, continue_len);
-        let mut mapping = Vec::with_capacity(mapping_size);
-        for idx in 0..mapping_size {
-            mapping.push(MapStackItem {
-                origin: origin.stack[original_len - 1 - idx],
-                new: self.stack.stack[continue_len - 1 - idx],
-            });
-        }
-        mapping
-    }
-
     pub fn is_in_loop(&self) -> bool {
         self.loop_stack_size != 0
     }
@@ -104,10 +84,4 @@ impl<'a> Context<'a> {
     pub fn flags(&self) -> &Flags {
         &self.flags
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct MapStackItem {
-    pub origin: VarId,
-    pub new: VarId,
 }

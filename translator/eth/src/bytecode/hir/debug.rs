@@ -1,5 +1,5 @@
-use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::ir::{Stmt, _Expr};
+use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::hir::ir::{Stmt, _Expr};
 use crate::bytecode::loc::Loc;
 use crate::BlockId;
 use anyhow::Error;

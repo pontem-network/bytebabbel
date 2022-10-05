@@ -1,4 +1,4 @@
-use crate::bytecode::hir2::ir::{VarId, _Expr};
+use crate::bytecode::hir::ir::{VarId, _Expr};
 use crate::bytecode::loc::Loc;
 use std::cell::Cell;
 use std::collections::HashMap;

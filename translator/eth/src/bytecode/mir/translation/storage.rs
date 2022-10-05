@@ -1,6 +1,7 @@
+use crate::bytecode::hir::ir::VarId;
+use crate::bytecode::hir::vars::Vars;
 use anyhow::{ensure, Error};
 
-use crate::bytecode::hir::ir::var::{VarId, Vars};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;

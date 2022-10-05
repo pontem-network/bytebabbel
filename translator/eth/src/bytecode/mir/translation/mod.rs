@@ -4,8 +4,7 @@ use anyhow::{anyhow, Error};
 use primitive_types::U256;
 
 use crate::bytecode::hir::executor::math::BinaryOp;
-use crate::bytecode::hir::ir::statement::Statement as HirStmt;
-use crate::bytecode::hir::ir::var::{VarId, Vars};
+use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType, Value};

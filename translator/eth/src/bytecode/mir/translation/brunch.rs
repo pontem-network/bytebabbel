@@ -1,7 +1,7 @@
 use anyhow::Error;
 
-use crate::bytecode::hir::ir::statement::Statement as HirStmt;
-use crate::bytecode::hir::ir::var::{VarId, Vars};
+use crate::bytecode::hir::ir::VarId;
+use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::mir::ir::expression::{Expression, StackOpsBuilder};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::SType;

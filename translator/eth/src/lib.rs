@@ -18,8 +18,7 @@ use crate::abi::MoveAbi;
 use crate::bytecode::block::BlockId;
 use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
-use crate::bytecode::hir::HirTranslator;
-use crate::bytecode::hir2::IrBuilder;
+use crate::bytecode::hir::HirBuilder;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
@@ -55,38 +54,28 @@ pub fn transpile_program(
     let mut flow_builder = FlowBuilder::new(&contract)?;
     let contract_flow = flow_builder.make_flow();
     let flow_trace = flow_builder.flow_trace();
-    let lir = IrBuilder::new(contract.clone(), flags)?;
-    let hir = HirTranslator::new(&contract, contract_flow, flow_trace, flags);
+    let hir = HirBuilder::new(contract.clone(), flags)?;
     let functions = abi
         .functions()
         .iter()
         .map(|(hash, fun)| {
-            translate_function(
-                &hir,
-                &lir,
-                fun,
-                contract_addr,
-                contract_code_len as u128,
-                flags,
-            )
-            .map(|mir| (*hash, mir))
+            translate_function(&hir, fun, contract_addr, contract_code_len as u128, flags)
+                .map(|mir| (*hash, mir))
         })
         .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
     Program::new(constructor, functions, abi)
 }
 
 pub fn translate_function(
-    hir_translator: &HirTranslator,
-    lir: &IrBuilder,
+    hir: &HirBuilder,
     fun: &Function,
     contract_addr: U256,
     code_size: u128,
     flags: Flags,
 ) -> Result<Mir, Error> {
-    let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
-    let lir = lir.translate_fun(fun, contract_addr, code_size)?;
+    let hir = hir.translate_fun(fun, contract_addr, code_size)?;
     let mut buff = String::new();
-    lir.print(&mut buff)?;
+    hir.print(&mut buff)?;
     trace!("{}", buff);
     let mir_translator = MirTranslator::new(fun, flags);
     let mir = mir_translator.translate(hir)?;
