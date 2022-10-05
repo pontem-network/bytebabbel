@@ -57,6 +57,7 @@ impl HirBuilder {
                 BlockResult::Jmp(block) => {
                     if self.flow.loops.contains_key(&block) {
                         if ir.has_label(Label::from(block)) {
+                            self.flush_context(ctx, ir)?;
                             ir.goto(&ctx.loc, Label::from(block));
                         } else {
                             block_id = block;

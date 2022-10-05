@@ -188,6 +188,10 @@ impl Hir {
         self.statement.push(loc.wrap(Stmt::Brunch(label)));
     }
 
+    pub fn statements(self) -> Vec<Loc<Stmt>> {
+        self.statement
+    }
+
     pub fn print<B: Write>(&self, buf: &mut B) -> Result<(), Error> {
         for stmt in &self.statement {
             print_stmt(buf, &stmt)?;

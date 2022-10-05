@@ -1,3 +1,4 @@
+use crate::bytecode::hir::ir::Label;
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::translation::variables::Variable;
 use crate::BlockId;
@@ -43,4 +44,5 @@ pub enum Statement {
         len: Variable,
         topics: Vec<Variable>,
     },
+    Label(Label),
 }

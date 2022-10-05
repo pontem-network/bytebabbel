@@ -1,4 +1,4 @@
-use crate::bytecode::hir::ir::Expr;
+use crate::bytecode::hir::ir::{Expr, VarId};
 use anyhow::{bail, ensure, Error};
 
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};

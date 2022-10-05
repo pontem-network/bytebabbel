@@ -7,6 +7,7 @@ use crate::bytecode::mir::translation::variables::Variable;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
+    Const(Value),
     GetMem,
     GetStore,
     MLoad {
@@ -25,7 +26,6 @@ pub enum Expression {
     MSize {
         memory: Variable,
     },
-    Const(Value),
     Var(Variable),
     Unary(UnaryOp, TypedExpr),
     Binary(BinaryOp, TypedExpr, TypedExpr),

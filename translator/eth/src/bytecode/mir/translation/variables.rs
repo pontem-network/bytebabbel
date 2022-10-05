@@ -17,7 +17,6 @@ pub struct Variables {
 pub struct Inner {
     locals: HashMap<SType, Locals>,
     seq: LocalIndex,
-    scopes: Vec<HashSet<Variable>>,
     list: Vec<SType>,
     input: Vec<SType>,
 }
@@ -28,7 +27,6 @@ impl Variables {
             inner: Rc::new(RefCell::new(Inner {
                 locals: HashMap::new(),
                 seq: params.len() as LocalIndex,
-                scopes: Vec::new(),
                 list: vec![],
                 input: params,
             })),
@@ -83,18 +81,6 @@ impl Variables {
             .borrow_with_id(id)
             .ok_or_else(|| anyhow!("{} is not a valid local index", id))?;
         Ok(Variable(idx, tp))
-    }
-
-    pub fn create_scope(&mut self) -> Scope {
-        {
-            let mut vars = self.inner.borrow_mut();
-            vars.scopes.push(HashSet::new());
-        };
-        Scope {
-            vars: Variables {
-                inner: self.inner.clone(),
-            },
-        }
     }
 
     pub fn locals(&self) -> Vec<SType> {
@@ -157,23 +143,6 @@ impl Locals {
 
     pub fn contains(&self, idx: LocalIndex) -> bool {
         self.free.contains(&idx) || self.borrowed.contains(&idx)
-    }
-}
-
-pub struct Scope {
-    vars: Variables,
-}
-
-impl Drop for Scope {
-    fn drop(&mut self) {
-        let mut vars = self.vars.inner.borrow_mut();
-        if let Some(scope) = vars.scopes.pop() {
-            for var in scope {
-                if let Some(locals) = vars.locals.get_mut(&var.ty()) {
-                    locals.release(var.0);
-                }
-            }
-        }
     }
 }
 
