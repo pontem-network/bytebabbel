@@ -415,7 +415,7 @@ module self::u256 {
         };
 
         if (a_neg && b_neg) {
-            return gt(a, b)
+            return gt(get_negative(a), get_negative(b))
         };
 
         lt(a, b)
@@ -655,7 +655,7 @@ module self::u256 {
         };
 
         if (a_neg && b_neg) {
-            return lt(a, b)
+            return lt(get_negative(a), get_negative(b))
         };
 
         gt(a, b)

@@ -202,7 +202,7 @@ module self::u256_tests {
 
     #[test]
     fun test_negative() {
-        let a = from_u128(30);
+        let a = from_string(&b"30");
         let b = get_negative(a);
         let c = as_u128(overflowing_add(a, b));
 
@@ -214,8 +214,7 @@ module self::u256_tests {
 
         assert!(c == 0, 1);
 
-        let a = from_u128(100);
-        let b = get_negative(a);
+        let b = from_string(&b"-100");
         let c = overflowing_add(b, b);
         let d = as_u128(get_negative(c));
 
@@ -242,15 +241,20 @@ module self::u256_tests {
         let c = slt(a, b);
         assert!(c == false, 2);
 
-        let a = new_u256(1, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let a = from_string(&b"-1");
+        let b = from_string(&b"-2");
         let c = slt(a, b);
         assert!(c == false, 3);
 
-        let a = new_u256(2, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(1, 0, 0, 0);
+        let a = from_string(&b"-2");
+        let b = from_string(&b"1");
         let c = slt(a, b);
         assert!(c == true, 4);
+
+        let a = from_string(&b"-2");
+        let b = from_string(&b"-1");
+        let c = slt(a, b);
+        assert!(c == true, 5);
     }
 
     #[test_only]
@@ -273,13 +277,13 @@ module self::u256_tests {
         let c = sgt(a, b);
         assert!(c == false, 2);
 
-        let a = new_u256(1, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let a = from_string(&b"-1");
+        let b = from_string(&b"-2");
         let c = sgt(a, b);
         assert!(c == true, 3);
 
-        let a = new_u256(2, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(1, 0, 0, 0);
+        let a = from_string(&b"-2");
+        let b = from_string(&b"1");
         let c = sgt(a, b);
         assert!(c == false, 4);
     }
@@ -289,12 +293,12 @@ module self::u256_tests {
 
     #[test]
     fun test_sdiv() {
-        let a = get_negative(from_u128(100));
+        let a = from_string(&b"-100");
         let b = get_negative(from_u128(5));
         let d = sdiv(a, b);
         assert!(as_u128(d) == 20, 0);
 
-        let a = get_negative(from_u128(100));
+        let a = from_string(&b"-100");
         let b = from_u128(5);
         let d = get_negative(sdiv(a, b));
         assert!(as_u128(d) == 20, 1);
@@ -320,17 +324,17 @@ module self::u256_tests {
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 0);
 
-        let a = get_negative(from_u128(100));
+        let a = from_string(&b"-100");
         let b = from_u128(5);
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 1);
 
         let a = from_u128(100);
-        let b = get_negative(from_u128(5));
+        let b = from_string(&b"-5");
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 2);
 
-        let a = get_negative(from_u128(5));
+        let a = from_string(&b"-5");
         let b = from_u128(2);
         let d = get_negative(smod(a, b));
         assert!(as_u128(d) == 1, 3);
