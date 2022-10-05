@@ -1,20 +1,23 @@
 use crate::bytecode::hir2::context::Context;
+use crate::bytecode::hir2::debug::print_stmt;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir2::vars::Vars;
 use crate::BlockId;
+use anyhow::Error;
 use primitive_types::U256;
-use std::collections::HashMap;
-use std::fmt::{Debug, Display};
+use std::collections::{BTreeMap, HashMap};
+use std::fmt::{Debug, Display, Write};
 
 #[derive(Debug, Clone, Default)]
 pub struct Hir2 {
     labels: HashMap<Label, usize>,
-    statement: Vec<IR>,
+    statement: Vec<Stmt>,
 }
 
 #[derive(Debug, Clone)]
-pub enum IR {
+pub enum Stmt {
     Label(Label),
+    StoreContext(BTreeMap<VarId, Expr>),
     Assign(VarId, Expr),
     MemStore8 {
         addr: Expr,
@@ -39,7 +42,8 @@ pub enum IR {
         offset: Expr,
         len: Expr,
     },
-    GoTo(Label),
+    BrunchTrue(Expr, Label),
+    Brunch(Label),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -64,7 +68,7 @@ impl Expr {
         match self {
             Expr::Val(val) => Some(*val),
             Expr::Var(var) => {
-                let expr = ir.get_var(*var, &ctx.vars);
+                let expr = ctx.vars.get(var)?;
                 expr.resolve(ir, ctx)
             }
             Expr::MLoad(_) => None,
@@ -100,51 +104,64 @@ impl Expr {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Label {
-    from: BlockId,
-    to: BlockId,
+    pub to: BlockId,
+}
+
+impl From<BlockId> for Label {
+    fn from(to: BlockId) -> Self {
+        Self { to }
+    }
 }
 
 impl Hir2 {
     pub fn assign(&mut self, expr: Expr, vars: &mut Vars) -> VarId {
         let var = vars.gen_tmp();
-        let ixd = self.statement.len();
-        self.statement.push(IR::Assign(var, expr));
-        vars.set(var, ixd);
+        self.statement.push(Stmt::Assign(var, expr.clone()));
+        vars.set(var, expr.clone());
         var
     }
 
-    pub fn get_var(&self, var: VarId, vars: &Vars) -> &Expr {
-        let assign_idx = vars.get(&var).expect("var not found");
-        if let IR::Assign(var_id, stmt) = &self.statement[assign_idx] {
-            assert_eq!(*var_id, var);
-            stmt
-        } else {
-            panic!("invalid var assignment");
-        }
-    }
-
     pub fn abort(&mut self, code: u8) {
-        self.statement.push(IR::Abort(code));
+        self.statement.push(Stmt::Abort(code));
     }
 
     pub fn result(&mut self, offset: Expr, len: Expr) {
-        self.statement.push(IR::Result { offset, len });
+        self.statement.push(Stmt::Result { offset, len });
     }
 
     pub fn stop(&mut self) {
-        self.statement.push(IR::Stop);
+        self.statement.push(Stmt::Stop);
     }
 
     pub fn return_(&mut self, offset: Expr, len: Expr) {
-        self.statement.push(IR::Result { offset, len });
+        self.statement.push(Stmt::Result { offset, len });
     }
 
     pub fn mstore(&mut self, addr: Expr, var: Expr) {
-        self.statement.push(IR::MemStore { addr, var });
+        self.statement.push(Stmt::MemStore { addr, var });
     }
 
     pub fn mstore8(&mut self, addr: Expr, var: Expr) {
-        self.statement.push(IR::MemStore8 { addr, var });
+        self.statement.push(Stmt::MemStore8 { addr, var });
+    }
+
+    pub fn save_context(&mut self, context: BTreeMap<VarId, Expr>) {
+        self.statement.push(Stmt::StoreContext(context));
+    }
+
+    pub fn true_brunch(&mut self, cnd: Expr, label: Label) {
+        self.statement.push(Stmt::BrunchTrue(cnd, label));
+    }
+
+    pub fn label(&mut self, label: Label) {
+        self.statement.push(Stmt::Label(label));
+    }
+
+    pub fn print<B: Write>(&self, buf: &mut B) -> Result<(), Error> {
+        for stmt in &self.statement {
+            print_stmt(buf, &stmt)?;
+        }
+        Ok(())
     }
 }
 
@@ -166,10 +183,14 @@ impl From<VarId> for Expr {
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug, Ord, PartialOrd)]
 pub struct VarId(u32, bool);
 
 impl VarId {
+    pub fn new_var(idx: u32) -> Self {
+        VarId(idx, false)
+    }
+
     pub fn new_tmp(idx: u32) -> Self {
         VarId(idx, true)
     }

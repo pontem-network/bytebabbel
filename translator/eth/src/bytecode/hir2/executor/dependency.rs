@@ -43,7 +43,7 @@ impl InstructionHandler for TxMeta {
     fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => U256::zero(),
-            TxMeta::Origin => U256::zero(),
+            TxMeta::Origin => return ExecutionResult::Output(Expr::Signer),
             TxMeta::Caller => {
                 return ExecutionResult::Output(Expr::Signer);
             }

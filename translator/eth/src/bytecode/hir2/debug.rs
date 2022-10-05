@@ -1,5 +1,5 @@
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::ir::Expr;
+use crate::bytecode::hir2::ir::{Expr, Stmt};
 use anyhow::Error;
 use std::fmt::{Display, Formatter, Write};
 
@@ -26,30 +26,36 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &Expr) -> Result<(), Error> {
             write!(buf, ")")?
         }
         Expr::UnaryOp(cmd, arg) => {
+            write!(buf, "(")?;
             write!(buf, "{}", cmd)?;
             print_expr(buf, &arg)?;
+            write!(buf, ")")?
         }
         Expr::BinaryOp(cmd, arg1, arg2) => {
+            write!(buf, "(")?;
             print_expr(buf, &arg1)?;
             write!(buf, " {} ", cmd)?;
             print_expr(buf, &arg2)?;
+            write!(buf, ")")?
         }
         Expr::TernaryOp(cmd, arg1, arg2, arg3) => match cmd {
             TernaryOp::AddMod => {
-                write!(buf, "(")?;
+                write!(buf, "((")?;
                 print_expr(buf, &arg1)?;
                 write!(buf, " + ")?;
                 print_expr(buf, &arg2)?;
                 write!(buf, ") % ")?;
                 print_expr(buf, &arg3)?;
+                write!(buf, ")")?
             }
             TernaryOp::MulMod => {
-                write!(buf, "(")?;
+                write!(buf, "((")?;
                 print_expr(buf, &arg1)?;
                 write!(buf, " * ")?;
                 print_expr(buf, &arg2)?;
                 write!(buf, ") % ")?;
                 print_expr(buf, &arg3)?;
+                write!(buf, ")")?
             }
         },
         Expr::Hash(offset, len) => {
@@ -68,6 +74,83 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &Expr) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Stmt) -> Result<(), Error> {
+    match stmt {
+        Stmt::Label(label) => writeln!(buf, "'{}:", label.to)?,
+        Stmt::Assign(var, expr) => {
+            write!(buf, "{} = ", var)?;
+            print_expr(buf, &expr)?;
+            writeln!(buf, ";")?;
+        }
+        Stmt::MemStore8 { addr, var } => {
+            write!(buf, "mstore8(")?;
+            print_expr(buf, &addr)?;
+            write!(buf, ", ")?;
+            print_expr(buf, &var)?;
+            writeln!(buf, ");")?;
+        }
+        Stmt::MemStore { addr, var } => {
+            write!(buf, "mstore(")?;
+            print_expr(buf, &addr)?;
+            write!(buf, ", ")?;
+            print_expr(buf, &var)?;
+            writeln!(buf, ");")?;
+        }
+        Stmt::SStore { addr, var } => {
+            write!(buf, "sstore(")?;
+            print_expr(buf, &addr)?;
+            write!(buf, ", ")?;
+            print_expr(buf, &var)?;
+            writeln!(buf, ");")?;
+        }
+        Stmt::Log {
+            offset,
+            len,
+            topics,
+        } => {
+            write!(buf, "log(")?;
+            print_expr(buf, &offset)?;
+            write!(buf, ", ")?;
+            print_expr(buf, &len)?;
+            for topic in topics {
+                write!(buf, ", ")?;
+                print_expr(buf, topic)?;
+            }
+            writeln!(buf, ");")?;
+        }
+        Stmt::Stop => {
+            writeln!(buf, "stop;")?;
+        }
+        Stmt::Abort(code) => {
+            writeln!(buf, "abort({});", code)?;
+        }
+        Stmt::Result { offset, len } => {
+            write!(buf, "result(")?;
+            print_expr(buf, &offset)?;
+            write!(buf, ", ")?;
+            print_expr(buf, &len)?;
+            writeln!(buf, ");")?;
+        }
+        Stmt::Brunch(label) => {
+            writeln!(buf, "goto '{};", label.to)?;
+        }
+        Stmt::StoreContext(ctx) => {
+            writeln!(buf, "[")?;
+            for (id, expr) in ctx.iter() {
+                write!(buf, "{} = ", id)?;
+                print_expr(buf, &expr)?;
+                writeln!(buf, ";")?;
+            }
+            writeln!(buf, "]")?;
+        }
+        Stmt::BrunchTrue(cnd, true_br) => {
+            print_expr(buf, &cnd)?;
+            writeln!(buf, "\nBrTrue '{};", true_br.to)?;
+        }
+    }
+    Ok(())
+}
+
 impl Display for UnaryOp {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -80,27 +163,27 @@ impl Display for UnaryOp {
 impl Display for BinaryOp {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BinaryOp::Eq => write!(f, " == "),
-            BinaryOp::Lt => write!(f, " < "),
-            BinaryOp::Gt => write!(f, " > "),
-            BinaryOp::Shr => write!(f, " >> "),
-            BinaryOp::Shl => write!(f, " << "),
-            BinaryOp::Sar => write!(f, " >>> "),
-            BinaryOp::Add => write!(f, " + "),
-            BinaryOp::And => write!(f, " & "),
-            BinaryOp::Or => write!(f, " | "),
-            BinaryOp::Xor => write!(f, " ^ "),
-            BinaryOp::Mul => write!(f, " * "),
-            BinaryOp::Sub => write!(f, " - "),
-            BinaryOp::Div => write!(f, " / "),
-            BinaryOp::SDiv => write!(f, " // "),
-            BinaryOp::SLt => write!(f, " < "),
-            BinaryOp::SGt => write!(f, " > "),
+            BinaryOp::Eq => write!(f, "=="),
+            BinaryOp::Lt => write!(f, "<"),
+            BinaryOp::Gt => write!(f, ">"),
+            BinaryOp::Shr => write!(f, ">>"),
+            BinaryOp::Shl => write!(f, "<<"),
+            BinaryOp::Sar => write!(f, ">>>"),
+            BinaryOp::Add => write!(f, "+"),
+            BinaryOp::And => write!(f, "&"),
+            BinaryOp::Or => write!(f, "|"),
+            BinaryOp::Xor => write!(f, "^"),
+            BinaryOp::Mul => write!(f, "*"),
+            BinaryOp::Sub => write!(f, "-"),
+            BinaryOp::Div => write!(f, "/"),
+            BinaryOp::SDiv => write!(f, "//"),
+            BinaryOp::SLt => write!(f, "<"),
+            BinaryOp::SGt => write!(f, ">"),
             BinaryOp::Byte => write!(f, "#"),
-            BinaryOp::Mod => write!(f, " % "),
-            BinaryOp::SMod => write!(f, " %% "),
-            BinaryOp::Exp => write!(f, " ** "),
-            BinaryOp::SignExtend => write!(f, " ** "),
+            BinaryOp::Mod => write!(f, "%"),
+            BinaryOp::SMod => write!(f, "%%"),
+            BinaryOp::Exp => write!(f, "**"),
+            BinaryOp::SignExtend => write!(f, "**"),
         }
     }
 }

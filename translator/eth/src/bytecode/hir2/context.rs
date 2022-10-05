@@ -3,7 +3,6 @@ use crate::bytecode::hir2::stack::Stack;
 use crate::bytecode::hir2::vars::Vars;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
-use std::cmp::min;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -69,9 +68,9 @@ impl<'a> Context<'a> {
     }
 
     pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
-        let original_len = origin.stack.len();
-        let continue_len = self.stack.stack.len();
-        let mapping_size = min(original_len, continue_len);
+        // let original_len = origin.stack.len();
+        // let continue_len = self.stack.stack.len();
+        // let mapping_size = min(original_len, continue_len);
         //let mut mapping = Vec::with_capacity(mapping_size);
         // for idx in 0..mapping_size {
         //     mapping.push(MapStackItem {

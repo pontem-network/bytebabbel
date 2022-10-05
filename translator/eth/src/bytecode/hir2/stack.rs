@@ -1,11 +1,12 @@
 use crate::bytecode::hir2::ir::Expr;
 use std::fmt::Debug;
+use std::mem;
 
 pub const FRAME_SIZE: usize = 32;
 
 #[derive(Default, Debug, Clone)]
 pub struct Stack {
-    pub stack: Vec<Expr>,
+    stack: Vec<Expr>,
 }
 
 impl Stack {
@@ -44,6 +45,14 @@ impl Stack {
     pub fn swap(&mut self, idx: usize) {
         let last_index = self.stack.len();
         self.stack.swap(last_index - idx, last_index - 1);
+    }
+
+    pub fn len(&self) -> usize {
+        self.stack.len()
+    }
+
+    pub fn take(&mut self) -> Vec<Expr> {
+        mem::take(&mut self.stack)
     }
 }
 

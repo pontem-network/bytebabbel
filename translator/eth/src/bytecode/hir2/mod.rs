@@ -1,12 +1,12 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2, IR};
+use crate::bytecode::hir2::ir::{Expr, Hir2, VarId};
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, Flags, Function, OpCode};
 use anyhow::{anyhow, bail, ensure, Context as ErrorContext, Error};
 use primitive_types::U256;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 pub mod context;
 pub mod debug;
@@ -61,27 +61,45 @@ impl IrBuilder {
                         block_id = block;
                     }
                 }
-                BlockResult::CndJmp(cmd, _, _) => {
+                BlockResult::CndJmp {
+                    cnd,
+                    true_br,
+                    false_br,
+                } => {
                     self.flush_context(ctx, ir)?;
-                    bail!("CndJmp is not supported yet");
+                    ir.true_brunch(cnd, true_br.into());
+                    let stack = ctx.stack.clone();
+                    let vars = ctx.vars.clone();
+                    self.translate_blocks(false_br, ir, ctx)?;
+                    ir.label(true_br.into());
+                    ctx.stack = stack;
+                    ctx.vars = vars;
+                    self.translate_blocks(true_br, ir, ctx)?;
+                    return Ok(());
                 }
                 BlockResult::Stop => {
-                    bail!("Stop is not supported yet");
+                    return Ok(());
                 }
             }
         }
     }
 
     fn flush_context(&self, ctx: &mut Context, ir: &mut Hir2) -> Result<(), Error> {
-        let mut counter = 0;
-        while let Some(item) = ctx.stack.pop() {
-            // let var = ctx.vars.new_var(counter);
-            // ir.assign(Expr::Assign(var, item), ctx);
-            counter += 1;
-        }
+        let mut stack = ctx.stack.take();
+        let mut stack_dump = BTreeMap::new();
 
-        println!("ir: {:?}", ir);
-        println!("ctx: {:?}", ctx.stack);
+        let last_idx = stack.len() - 1;
+        for (i, var) in stack.into_iter().enumerate() {
+            let var_id = VarId::new_var((last_idx - i) as u32);
+            stack_dump.insert(var_id, var.clone());
+            ctx.vars.set(var_id, var);
+            ctx.stack.push(Expr::Var(var_id));
+        }
+        ir.save_context(stack_dump);
+
+        let mut str = String::new();
+        ir.print(&mut str)?;
+        println!("{}", str);
         Ok(())
     }
 
@@ -122,7 +140,11 @@ impl IrBuilder {
                     true_br,
                     false_br,
                 } => {
-                    return Ok(BlockResult::CndJmp(cnd, true_br, false_br));
+                    return Ok(BlockResult::CndJmp {
+                        cnd,
+                        true_br,
+                        false_br,
+                    });
                 }
             }
         }
@@ -160,6 +182,10 @@ impl IrBuilder {
 
 pub enum BlockResult {
     Jmp(BlockId),
-    CndJmp(Expr, BlockId, BlockId),
+    CndJmp {
+        cnd: Expr,
+        true_br: BlockId,
+        false_br: BlockId,
+    },
     Stop,
 }
