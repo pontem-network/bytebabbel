@@ -1,44 +1,44 @@
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::hir2::ir::{Expr, Stmt};
+use crate::bytecode::hir2::ir::{Stmt, _Expr};
 use anyhow::Error;
 use std::fmt::{Display, Formatter, Write};
 
-pub fn print_expr<B: Write>(buf: &mut B, expr: &Expr) -> Result<(), Error> {
+pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
     match expr {
-        Expr::Val(val) => write!(buf, "{}", val)?,
-        Expr::Var(var) => write!(buf, "{}", var)?,
-        Expr::MLoad(offset) => {
+        _Expr::Val(val) => write!(buf, "{}", val)?,
+        _Expr::Var(var) => write!(buf, "{}", var)?,
+        _Expr::MLoad(offset) => {
             write!(buf, "mload(")?;
             print_expr(buf, &offset)?;
             write!(buf, ")")?
         }
-        Expr::SLoad(key) => {
+        _Expr::SLoad(key) => {
             write!(buf, "sload(")?;
             print_expr(buf, &key)?;
             write!(buf, ")")?
         }
-        Expr::Signer => write!(buf, "signer")?,
-        Expr::MSize => write!(buf, "msize")?,
-        Expr::ArgsSize => write!(buf, "args_size")?,
-        Expr::Args(idx) => {
+        _Expr::Signer => write!(buf, "signer")?,
+        _Expr::MSize => write!(buf, "msize")?,
+        _Expr::ArgsSize => write!(buf, "args_size")?,
+        _Expr::Args(idx) => {
             write!(buf, "args(")?;
             print_expr(buf, &idx)?;
             write!(buf, ")")?
         }
-        Expr::UnaryOp(cmd, arg) => {
+        _Expr::UnaryOp(cmd, arg) => {
             write!(buf, "(")?;
             write!(buf, "{}", cmd)?;
             print_expr(buf, &arg)?;
             write!(buf, ")")?
         }
-        Expr::BinaryOp(cmd, arg1, arg2) => {
+        _Expr::BinaryOp(cmd, arg1, arg2) => {
             write!(buf, "(")?;
             print_expr(buf, &arg1)?;
             write!(buf, " {} ", cmd)?;
             print_expr(buf, &arg2)?;
             write!(buf, ")")?
         }
-        Expr::TernaryOp(cmd, arg1, arg2, arg3) => match cmd {
+        _Expr::TernaryOp(cmd, arg1, arg2, arg3) => match cmd {
             TernaryOp::AddMod => {
                 write!(buf, "((")?;
                 print_expr(buf, &arg1)?;
@@ -58,14 +58,14 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &Expr) -> Result<(), Error> {
                 write!(buf, ")")?
             }
         },
-        Expr::Hash(offset, len) => {
+        _Expr::Hash(offset, len) => {
             write!(buf, "hash(")?;
             print_expr(buf, &offset)?;
             write!(buf, ", ")?;
             print_expr(buf, &len)?;
             write!(buf, ")")?
         }
-        Expr::Copy(cp) => {
+        _Expr::Copy(cp) => {
             write!(buf, "copy(")?;
             print_expr(buf, &cp)?;
             write!(buf, ")")?

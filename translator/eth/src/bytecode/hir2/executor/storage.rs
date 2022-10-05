@@ -1,6 +1,7 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Hir2, _Expr};
+use crate::bytecode::loc::Loc;
 
 pub enum StorageOp {
     SLoad,
@@ -8,7 +9,7 @@ pub enum StorageOp {
 }
 
 impl InstructionHandler for StorageOp {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Loc<_Expr>>, ir: &mut Hir2, _: &mut Context) -> ExecutionResult {
         // match self {
         //     StorageOp::SLoad => {
         //         let addr = params[0].clone();

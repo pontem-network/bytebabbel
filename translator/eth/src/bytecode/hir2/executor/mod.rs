@@ -8,8 +8,9 @@ use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir2::executor::memory::MemoryOp;
 use crate::bytecode::hir2::executor::stack::StackOp;
 use crate::bytecode::hir2::executor::storage::StorageOp;
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Hir2, _Expr};
 use crate::bytecode::instruction::Instruction;
+use crate::bytecode::loc::Loc;
 use crate::{BlockId, OpCode};
 
 pub mod call;
@@ -23,19 +24,29 @@ pub mod stack;
 pub mod storage;
 
 pub trait InstructionHandler {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, context: &mut Context) -> ExecutionResult;
+    fn handle(
+        &self,
+        params: Vec<Loc<_Expr>>,
+        ir: &mut Hir2,
+        context: &mut Context,
+    ) -> ExecutionResult;
 }
 
 struct NoOp;
 
 impl InstructionHandler for NoOp {
-    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Loc<_Expr>>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
         ExecutionResult::None
     }
 }
 
 impl InstructionHandler for Instruction {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, context: &mut Context) -> ExecutionResult {
+    fn handle(
+        &self,
+        params: Vec<Loc<_Expr>>,
+        ir: &mut Hir2,
+        context: &mut Context,
+    ) -> ExecutionResult {
         match &self.1 {
             OpCode::Add => BinaryOp::Add.handle(params, ir, context),
             OpCode::Mul => BinaryOp::Mul.handle(params, ir, context),
@@ -129,10 +140,10 @@ impl InstructionHandler for Instruction {
 pub enum ExecutionResult {
     None,
     End,
-    Output(Expr),
+    Output(_Expr),
     Jmp(BlockId),
     CndJmp {
-        cnd: Expr,
+        cnd: Loc<_Expr>,
         true_br: BlockId,
         false_br: BlockId,
     },

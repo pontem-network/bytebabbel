@@ -1,7 +1,8 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2, VarId};
+use crate::bytecode::hir2::ir::{Hir2, VarId, _Expr};
+use crate::bytecode::loc::Loc;
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, Flags, Function, OpCode};
 use anyhow::{anyhow, bail, ensure, Context as ErrorContext, Error};
@@ -67,11 +68,11 @@ impl IrBuilder {
                     false_br,
                 } => {
                     self.flush_context(ctx, ir)?;
-                    ir.true_brunch(cnd, true_br.into());
+                    ir.true_brunch(&ctx.loc, cnd, true_br.into());
                     let stack = ctx.stack.clone();
                     let vars = ctx.vars.clone();
                     self.translate_blocks(false_br, ir, ctx)?;
-                    ir.label(true_br.into());
+                    ir.label(&ctx.loc, true_br.into());
                     ctx.stack = stack;
                     ctx.vars = vars;
                     self.translate_blocks(true_br, ir, ctx)?;
@@ -85,7 +86,7 @@ impl IrBuilder {
     }
 
     fn flush_context(&self, ctx: &mut Context, ir: &mut Hir2) -> Result<(), Error> {
-        let mut stack = ctx.stack.take();
+        let stack = ctx.stack.take();
         let mut stack_dump = BTreeMap::new();
 
         let last_idx = stack.len() - 1;
@@ -93,9 +94,9 @@ impl IrBuilder {
             let var_id = VarId::new_var((last_idx - i) as u32);
             stack_dump.insert(var_id, var.clone());
             ctx.vars.set(var_id, var);
-            ctx.stack.push(Expr::Var(var_id));
+            ctx.stack.push(ctx.loc.wrap(_Expr::Var(var_id)));
         }
-        ir.save_context(stack_dump);
+        ir.save_context(&ctx.loc, stack_dump);
 
         let mut str = String::new();
         ir.print(&mut str)?;
@@ -111,6 +112,8 @@ impl IrBuilder {
     ) -> Result<BlockResult, Error> {
         for inst in block.iter() {
             let pops = inst.pops();
+            ctx.loc = inst.location();
+
             if let OpCode::Swap(_) = inst.1 {
                 ctx.stack.swap(pops);
                 continue;
@@ -126,7 +129,7 @@ impl IrBuilder {
             let result = inst.handle(args, ir, ctx);
             match result {
                 ExecutionResult::Output(output) => {
-                    ctx.stack.push(output);
+                    ctx.stack.push(ctx.loc.wrap(output));
                 }
                 ExecutionResult::None => {}
                 ExecutionResult::End => {
@@ -167,7 +170,7 @@ impl IrBuilder {
             .ok_or_else(|| anyhow!("Invalid stack state. "))?;
         if !src.is_var() {
             let var = ir.assign(src.clone(), &mut ctx.vars);
-            *src = Expr::Var(var);
+            *src = ctx.loc.wrap(_Expr::Var(var));
         }
 
         ctx.stack.dup(pops);
@@ -175,7 +178,7 @@ impl IrBuilder {
             .stack
             .pop()
             .ok_or_else(|| anyhow!("Invalid stack state"))?;
-        ctx.stack.push(Expr::Copy(Box::new(var)));
+        ctx.stack.push(ctx.loc.wrap(_Expr::Copy(Box::new(var))));
         Ok(())
     }
 }
@@ -183,7 +186,7 @@ impl IrBuilder {
 pub enum BlockResult {
     Jmp(BlockId),
     CndJmp {
-        cnd: Expr,
+        cnd: Loc<_Expr>,
         true_br: BlockId,
         false_br: BlockId,
     },

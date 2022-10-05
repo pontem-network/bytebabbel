@@ -1,3 +1,4 @@
+use crate::bytecode::loc::Loc;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -19,6 +20,10 @@ impl Instruction {
 
     pub fn next(&self) -> Offset {
         self.0 + self.size() as Offset
+    }
+
+    pub fn location(&self) -> Loc<()> {
+        Loc::new(self.0, self.next(), ())
     }
 }
 

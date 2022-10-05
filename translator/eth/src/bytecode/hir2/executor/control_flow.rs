@@ -1,7 +1,8 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Hir2, _Expr};
 use crate::bytecode::instruction::Instruction;
+use crate::bytecode::loc::Loc;
 use crate::BlockId;
 
 pub enum ControlFlow {
@@ -14,24 +15,29 @@ pub enum ControlFlow {
 }
 
 impl InstructionHandler for ControlFlow {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(
+        &self,
+        mut params: Vec<Loc<_Expr>>,
+        ir: &mut Hir2,
+        ctx: &mut Context,
+    ) -> ExecutionResult {
         match self {
             ControlFlow::Stop => {
-                ir.stop();
+                ir.stop(&ctx.loc);
                 ExecutionResult::End
             }
             ControlFlow::Return => {
                 let len = params.remove(1);
                 let offset = params.remove(0);
-                ir.return_(offset, len);
+                ir.return_(&ctx.loc, offset, len);
                 ExecutionResult::End
             }
             ControlFlow::Revert => {
-                ir.abort(255);
+                ir.abort(&ctx.loc, 255);
                 ExecutionResult::End
             }
             ControlFlow::Abort(code) => {
-                ir.abort(*code);
+                ir.abort(&ctx.loc, *code);
                 ExecutionResult::End
             }
             ControlFlow::Jump => {

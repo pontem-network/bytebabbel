@@ -2,6 +2,7 @@ use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::debug::print_stmt;
 use crate::bytecode::hir2::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir2::vars::Vars;
+use crate::bytecode::loc::Loc;
 use crate::BlockId;
 use anyhow::Error;
 use primitive_types::U256;
@@ -11,94 +12,96 @@ use std::fmt::{Debug, Display, Write};
 #[derive(Debug, Clone, Default)]
 pub struct Hir2 {
     labels: HashMap<Label, usize>,
-    statement: Vec<Stmt>,
+    statement: Vec<Loc<Stmt>>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Label(Label),
-    StoreContext(BTreeMap<VarId, Expr>),
-    Assign(VarId, Expr),
+    StoreContext(BTreeMap<VarId, Loc<_Expr>>),
+    Assign(VarId, Loc<_Expr>),
     MemStore8 {
-        addr: Expr,
-        var: Expr,
+        addr: Loc<_Expr>,
+        var: Loc<_Expr>,
     },
     MemStore {
-        addr: Expr,
-        var: Expr,
+        addr: Loc<_Expr>,
+        var: Loc<_Expr>,
     },
     SStore {
-        addr: Expr,
-        var: Expr,
+        addr: Loc<_Expr>,
+        var: Loc<_Expr>,
     },
     Log {
-        offset: Expr,
-        len: Expr,
-        topics: Vec<Expr>,
+        offset: Loc<_Expr>,
+        len: Loc<_Expr>,
+        topics: Vec<Loc<_Expr>>,
     },
     Stop,
     Abort(u8),
     Result {
-        offset: Expr,
-        len: Expr,
+        offset: Loc<_Expr>,
+        len: Loc<_Expr>,
     },
-    BrunchTrue(Expr, Label),
+    BrunchTrue(Loc<_Expr>, Label),
     Brunch(Label),
 }
 
+pub type Expr = Box<Loc<_Expr>>;
+
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Expr {
+pub enum _Expr {
     Val(U256),
     Var(VarId),
-    MLoad(Box<Expr>),
-    SLoad(Box<Expr>),
+    MLoad(Expr),
+    SLoad(Expr),
     Signer,
     MSize,
     ArgsSize,
-    Args(Box<Expr>),
-    UnaryOp(UnaryOp, Box<Expr>),
-    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
-    TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
-    Hash(Box<Expr>, Box<Expr>),
-    Copy(Box<Expr>),
+    Args(Expr),
+    UnaryOp(UnaryOp, Expr),
+    BinaryOp(BinaryOp, Expr, Expr),
+    TernaryOp(TernaryOp, Expr, Expr, Expr),
+    Hash(Expr, Expr),
+    Copy(Expr),
 }
 
-impl Expr {
+impl _Expr {
     pub fn resolve(&self, ir: &Hir2, ctx: &Context) -> Option<U256> {
         match self {
-            Expr::Val(val) => Some(*val),
-            Expr::Var(var) => {
+            _Expr::Val(val) => Some(*val),
+            _Expr::Var(var) => {
                 let expr = ctx.vars.get(var)?;
                 expr.resolve(ir, ctx)
             }
-            Expr::MLoad(_) => None,
-            Expr::SLoad(_) => None,
-            Expr::Signer => None,
-            Expr::MSize => None,
-            Expr::ArgsSize => None,
-            Expr::Args(_) => None,
-            Expr::UnaryOp(cnd, arg) => {
+            _Expr::MLoad(_) => None,
+            _Expr::SLoad(_) => None,
+            _Expr::Signer => None,
+            _Expr::MSize => None,
+            _Expr::ArgsSize => None,
+            _Expr::Args(_) => None,
+            _Expr::UnaryOp(cnd, arg) => {
                 let arg = arg.resolve(ir, ctx)?;
                 Some(cnd.calc(arg))
             }
-            Expr::BinaryOp(cnd, arg1, arg2) => {
+            _Expr::BinaryOp(cnd, arg1, arg2) => {
                 let arg1 = arg1.resolve(ir, ctx)?;
                 let arg2 = arg2.resolve(ir, ctx)?;
                 Some(cnd.calc(arg1, arg2))
             }
-            Expr::TernaryOp(cnd, arg1, arg2, arg3) => {
+            _Expr::TernaryOp(cnd, arg1, arg2, arg3) => {
                 let arg1 = arg1.resolve(ir, ctx)?;
                 let arg2 = arg2.resolve(ir, ctx)?;
                 let arg3 = arg3.resolve(ir, ctx)?;
                 Some(cnd.calc(arg1, arg2, arg3))
             }
-            Expr::Hash(_, _) => None,
-            Expr::Copy(expr) => expr.resolve(ir, ctx),
+            _Expr::Hash(_, _) => None,
+            _Expr::Copy(expr) => expr.resolve(ir, ctx),
         }
     }
 
     pub fn is_var(&self) -> bool {
-        matches!(self, Expr::Var(_))
+        matches!(self, _Expr::Var(_))
     }
 }
 
@@ -114,47 +117,62 @@ impl From<BlockId> for Label {
 }
 
 impl Hir2 {
-    pub fn assign(&mut self, expr: Expr, vars: &mut Vars) -> VarId {
+    pub fn assign(&mut self, expr: Loc<_Expr>, vars: &mut Vars) -> VarId {
         let var = vars.gen_tmp();
-        self.statement.push(Stmt::Assign(var, expr.clone()));
+        self.statement
+            .push(expr.wrap(Stmt::Assign(var, expr.clone())));
         vars.set(var, expr.clone());
         var
     }
 
-    pub fn abort(&mut self, code: u8) {
-        self.statement.push(Stmt::Abort(code));
+    pub fn abort(&mut self, loc: &Loc<()>, code: u8) {
+        self.statement.push(loc.wrap(Stmt::Abort(code)));
     }
 
-    pub fn result(&mut self, offset: Expr, len: Expr) {
-        self.statement.push(Stmt::Result { offset, len });
+    pub fn result(&mut self, loc: &Loc<()>, offset: Loc<_Expr>, len: Loc<_Expr>) {
+        self.statement.push(loc.wrap(Stmt::Result { offset, len }));
     }
 
-    pub fn stop(&mut self) {
-        self.statement.push(Stmt::Stop);
+    pub fn stop(&mut self, loc: &Loc<()>) {
+        self.statement.push(loc.wrap(Stmt::Stop));
     }
 
-    pub fn return_(&mut self, offset: Expr, len: Expr) {
-        self.statement.push(Stmt::Result { offset, len });
+    pub fn return_(&mut self, loc: &Loc<()>, offset: Loc<_Expr>, len: Loc<_Expr>) {
+        self.statement.push(loc.wrap(Stmt::Result { offset, len }));
     }
 
-    pub fn mstore(&mut self, addr: Expr, var: Expr) {
-        self.statement.push(Stmt::MemStore { addr, var });
+    pub fn mstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
+        self.statement.push(loc.wrap(Stmt::MemStore { addr, var }));
     }
 
-    pub fn mstore8(&mut self, addr: Expr, var: Expr) {
-        self.statement.push(Stmt::MemStore8 { addr, var });
+    pub fn mstore8(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
+        self.statement.push(loc.wrap(Stmt::MemStore8 { addr, var }));
     }
 
-    pub fn save_context(&mut self, context: BTreeMap<VarId, Expr>) {
-        self.statement.push(Stmt::StoreContext(context));
+    pub fn save_context(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Loc<_Expr>>) {
+        self.statement.push(loc.wrap(Stmt::StoreContext(context)));
     }
 
-    pub fn true_brunch(&mut self, cnd: Expr, label: Label) {
-        self.statement.push(Stmt::BrunchTrue(cnd, label));
+    pub fn true_brunch(&mut self, loc: &Loc<()>, cnd: Loc<_Expr>, label: Label) {
+        self.statement.push(loc.wrap(Stmt::BrunchTrue(cnd, label)));
     }
 
-    pub fn label(&mut self, label: Label) {
-        self.statement.push(Stmt::Label(label));
+    pub fn log(
+        &mut self,
+        loc: &Loc<()>,
+        offset: Loc<_Expr>,
+        len: Loc<_Expr>,
+        topics: Vec<Loc<_Expr>>,
+    ) {
+        self.statement.push(loc.wrap(Stmt::Log {
+            offset,
+            len,
+            topics,
+        }));
+    }
+
+    pub fn label(&mut self, loc: &Loc<()>, label: Label) {
+        self.statement.push(loc.wrap(Stmt::Label(label)));
     }
 
     pub fn print<B: Write>(&self, buf: &mut B) -> Result<(), Error> {
@@ -165,21 +183,21 @@ impl Hir2 {
     }
 }
 
-impl From<U256> for Expr {
+impl From<U256> for _Expr {
     fn from(val: U256) -> Self {
-        Expr::Val(val)
+        _Expr::Val(val)
     }
 }
 
-impl From<u128> for Expr {
+impl From<u128> for _Expr {
     fn from(val: u128) -> Self {
-        Expr::Val(U256::from(val))
+        _Expr::Val(U256::from(val))
     }
 }
 
-impl From<VarId> for Expr {
+impl From<VarId> for _Expr {
     fn from(id: VarId) -> Self {
-        Expr::Var(id)
+        _Expr::Var(id)
     }
 }
 

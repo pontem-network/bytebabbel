@@ -1,15 +1,24 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Hir2, _Expr};
+use crate::bytecode::loc::Loc;
 use primitive_types::U256;
 
 pub struct Sha3;
 
 impl InstructionHandler for Sha3 {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(
+        &self,
+        mut params: Vec<Loc<_Expr>>,
+        ir: &mut Hir2,
+        ctx: &mut Context,
+    ) -> ExecutionResult {
         let len = params.remove(1);
         let addr = params.remove(0);
-        let id = ir.assign(Expr::Hash(Box::new(addr), Box::new(len)), &mut ctx.vars);
+        let id = ir.assign(
+            ctx.loc.wrap(_Expr::Hash(Box::new(addr), Box::new(len))),
+            &mut ctx.vars,
+        );
         ExecutionResult::Output(id.into())
     }
 }
@@ -17,7 +26,7 @@ impl InstructionHandler for Sha3 {
 pub struct Address;
 
 impl InstructionHandler for Address {
-    fn handle(&self, _: Vec<Expr>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Loc<_Expr>>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         ExecutionResult::Output(ctx.address().into())
     }
 }
@@ -40,12 +49,12 @@ pub enum TxMeta {
 }
 
 impl InstructionHandler for TxMeta {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Loc<_Expr>>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
             TxMeta::Balance => U256::zero(),
-            TxMeta::Origin => return ExecutionResult::Output(Expr::Signer),
+            TxMeta::Origin => return ExecutionResult::Output(_Expr::Signer),
             TxMeta::Caller => {
-                return ExecutionResult::Output(Expr::Signer);
+                return ExecutionResult::Output(_Expr::Signer);
             }
             TxMeta::CallValue => U256::zero(),
             TxMeta::CallDataLoad => {
@@ -73,12 +82,16 @@ fn call_data_size(ctx: &mut Context) -> ExecutionResult {
     } else if ctx.is_static_analysis_enable() {
         U256::from(1024).into()
     } else {
-        Expr::ArgsSize
+        _Expr::ArgsSize
     };
     ExecutionResult::Output(expr)
 }
 
-fn call_data_load(mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+fn call_data_load(
+    mut params: Vec<Loc<_Expr>>,
+    ir: &mut Hir2,
+    ctx: &mut Context,
+) -> ExecutionResult {
     let offset = params.remove(0);
     if ctx.flags().native_input {
         if let Some(offset) = offset.resolve(ir, ctx) {
@@ -86,7 +99,7 @@ fn call_data_load(mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> Ex
                 ExecutionResult::Output(ctx.fun().hash().as_frame().into())
             } else {
                 let index = ((offset - U256::from(4)) / U256::from(32)) + U256::one();
-                ExecutionResult::Output(Expr::Args(Box::new(index.into())))
+                ExecutionResult::Output(_Expr::Args(Box::new(ctx.loc.wrap(index.into()))))
             }
         } else {
             panic!("unsupported dynamic types");
@@ -100,6 +113,6 @@ fn call_data_load(mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> Ex
                 }
             }
         }
-        ExecutionResult::Output(Expr::Args(Box::new(offset)))
+        ExecutionResult::Output(_Expr::Args(Box::new(offset)))
     }
 }

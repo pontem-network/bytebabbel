@@ -31,6 +31,40 @@ impl<C> Loc<C> {
     }
 }
 
+impl<C: PartialEq> PartialEq for Loc<C> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl<C: Eq> Eq for Loc<C> {}
+
+impl<C> Deref for Loc<C> {
+    type Target = C;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<C> DerefMut for Loc<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
+impl<C> AsRef<C> for Loc<C> {
+    fn as_ref(&self) -> &C {
+        &self.inner
+    }
+}
+
+impl<C: Clone> Clone for Loc<C> {
+    fn clone(&self) -> Self {
+        Loc::new(self.start, self.end, self.inner.clone())
+    }
+}
+
 pub trait Move {
     fn move_forward(&mut self, offset: Offset);
     fn move_back(&mut self, offset: Offset);
@@ -69,20 +103,6 @@ impl Move for Loc<Vec<Instruction>> {
     }
 }
 
-impl<C> Deref for Loc<C> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<C> DerefMut for Loc<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
 impl<C: Debug> Debug for Loc<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "\nLoc: [{}; {}]\n{:?}", self.start, self.end, self.inner)
@@ -92,15 +112,5 @@ impl<C: Debug> Debug for Loc<C> {
 impl<C: Display> Display for Loc<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "\nBlock: [{}; {}]\n{}", self.start, self.end, self.inner)
-    }
-}
-
-impl<C: Clone> Clone for Loc<C> {
-    fn clone(&self) -> Self {
-        Self {
-            start: self.start,
-            end: self.end,
-            inner: self.inner.clone(),
-        }
     }
 }

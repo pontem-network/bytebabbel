@@ -1,6 +1,7 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Hir2, _Expr};
+use crate::bytecode::loc::Loc;
 use primitive_types::U256;
 
 pub enum CodeOp {
@@ -18,17 +19,12 @@ pub enum CodeOp {
 }
 
 impl InstructionHandler for CodeOp {
-    fn handle(&self, ops: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Loc<_Expr>>, _: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
         match self {
-            CodeOp::CodeSize => {
-                // let id = ir.create_var(Expr::Val(U256::from(ctx.code_size())));
-                ExecutionResult::Output(Expr::Val(U256::from(ctx.code_size())))
-            }
+            CodeOp::CodeSize => ExecutionResult::Output(_Expr::Val(U256::from(ctx.code_size()))),
             CodeOp::CallDataCopy => ExecutionResult::None,
             CodeOp::CodeCopy => {
-                // let offset = ir.resolve_var(ops[1].clone()).unwrap_or_default();
-                // ir.code_copy(BlockId::from(offset));
-                ExecutionResult::None
+                unimplemented!("CodeCopy")
             }
             CodeOp::ExtCodeSize => {
                 todo!()

@@ -1,6 +1,7 @@
 use crate::bytecode::hir2::context::Context;
 use crate::bytecode::hir2::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir2::ir::{Expr, Hir2};
+use crate::bytecode::hir2::ir::{Expr, Hir2, _Expr};
+use crate::bytecode::loc::Loc;
 use evm_core::eval::arithmetic;
 use evm_core::eval::bitwise;
 use evm_core::utils::I256;
@@ -29,8 +30,13 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir2, _: &mut Context) -> ExecutionResult {
-        ExecutionResult::Output(Expr::UnaryOp(*self, Box::new(params.remove(0))))
+    fn handle(
+        &self,
+        mut params: Vec<Loc<_Expr>>,
+        _: &mut Hir2,
+        _: &mut Context,
+    ) -> ExecutionResult {
+        ExecutionResult::Output(_Expr::UnaryOp(*self, Box::new(params.remove(0))))
     }
 }
 
@@ -60,7 +66,12 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
+    fn handle(
+        &self,
+        mut params: Vec<Loc<_Expr>>,
+        ir: &mut Hir2,
+        ctx: &mut Context,
+    ) -> ExecutionResult {
         let b = params.remove(1);
         let a = params.remove(0);
         if !ctx.is_in_loop() {
@@ -71,12 +82,12 @@ impl InstructionHandler for BinaryOp {
                     return ExecutionResult::Output(self.calc(a, b).into());
                 }
             }
-            if self == &BinaryOp::Eq && a == b {
+            if self == &BinaryOp::Eq && a.as_ref() == b.as_ref() {
                 return ExecutionResult::Output(U256::one().into());
             }
         }
 
-        ExecutionResult::Output(Expr::BinaryOp(*self, Box::new(a), Box::new(b)))
+        ExecutionResult::Output(_Expr::BinaryOp(*self, Box::new(a), Box::new(b)))
     }
 }
 
@@ -213,33 +224,32 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, params: Vec<Expr>, ir: &mut Hir2, ctx: &mut Context) -> ExecutionResult {
-        // let op1 = params[0].clone();
-        // let op2 = params[1].clone();
-        // let op3 = params[2].clone();
-        //
-        // if !ctx.is_in_loop() {
-        //     let op1 = ir.resolve_var(op1);
-        //     let op2 = ir.resolve_var(op2);
-        //     let op3 = ir.resolve_var(op3);
-        //     if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
-        //         let res = self.calc(op1, op2, op3);
-        //         let id = ir.create_var(Expr::Val(res));
-        //         return ExecutionResult::Output(vec![id]);
-        //     }
-        // }
-        // let op1 = ir.var(&op1).clone();
-        // let op2 = ir.var(&op2).clone();
-        // let op3 = ir.var(&op3).clone();
-        //
-        // let id = ir.create_var(Expr::TernaryOp(
-        //     *self,
-        //     Box::new(op1),
-        //     Box::new(op2),
-        //     Box::new(op3),
-        // ));
-        // ExecutionResult::Output(vec![id])
-        todo!()
+    fn handle(
+        &self,
+        mut params: Vec<Loc<_Expr>>,
+        ir: &mut Hir2,
+        ctx: &mut Context,
+    ) -> ExecutionResult {
+        let op3 = params.remove(2);
+        let op2 = params.remove(1);
+        let op1 = params.remove(0);
+
+        if !ctx.is_in_loop() {
+            let op1 = op1.resolve(ir, ctx);
+            let op2 = op2.resolve(ir, ctx);
+            let op3 = op3.resolve(ir, ctx);
+            if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
+                let res = self.calc(op1, op2, op3);
+                return ExecutionResult::Output(res.into());
+            }
+        }
+
+        ExecutionResult::Output(_Expr::TernaryOp(
+            *self,
+            Box::new(op1),
+            Box::new(op2),
+            Box::new(op3),
+        ))
     }
 }
 

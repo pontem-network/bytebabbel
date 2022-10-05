@@ -1,6 +1,7 @@
 use crate::bytecode::hir::ir::var::VarId;
 use crate::bytecode::hir2::stack::Stack;
 use crate::bytecode::hir2::vars::Vars;
+use crate::bytecode::loc::Loc;
 use crate::{BlockId, Flags, Function};
 use primitive_types::U256;
 use std::collections::HashMap;
@@ -14,6 +15,8 @@ pub struct Context<'a> {
     static_analysis: bool,
     code_size: u128,
     flags: Flags,
+
+    pub loc: Loc<()>,
     pub stack: Stack,
     pub vars: Vars,
 }
@@ -35,6 +38,7 @@ impl<'a> Context<'a> {
             code_size,
             flags,
             vars: Default::default(),
+            loc: Loc::new(0, 0, ()),
         }
     }
 
@@ -65,20 +69,6 @@ impl<'a> Context<'a> {
 
     pub fn get_loop(&self, block_id: &BlockId) -> Option<&Stack> {
         self.loop_input.get(block_id).map(|(stack, _)| stack)
-    }
-
-    pub fn map_stack(&self, origin: &Stack) -> Vec<MapStackItem> {
-        // let original_len = origin.stack.len();
-        // let continue_len = self.stack.stack.len();
-        // let mapping_size = min(original_len, continue_len);
-        //let mut mapping = Vec::with_capacity(mapping_size);
-        // for idx in 0..mapping_size {
-        //     mapping.push(MapStackItem {
-        //         origin: origin.stack[original_len - 1 - idx],
-        //         new: self.stack.stack[continue_len - 1 - idx],
-        //     });
-        // }
-        todo!()
     }
 
     pub fn is_in_loop(&self) -> bool {
