@@ -11,25 +11,25 @@ module self::info {
     use std::signer;
 
     /// AptosCoin - balance
-    public fun balance(account: address): U256 {
+    fun balance(account: address): U256 {
         let balance = coin::balance<AptosCoin>(account);
         from_u64(balance)
     }
 
-    public fun get_current_block_height(): U256 {
+    fun get_current_block_height(): U256 {
         from_u64(block::get_current_block_height())
     }
 
-    public fun get_epoch_interval_secs(): U256 {
+    fun get_epoch_interval_secs(): U256 {
         from_u64(block::get_epoch_interval_secs())
     }
 
-    public fun gas_price():U256{
+    fun gas_price():U256{
         // @todo It needs to be replaced as soon as it becomes possible to get the cost from Aptos
         from_u64(100)
     }
 
-    public fun maximum_number_of_gas_units():U256{
+    fun maximum_number_of_gas_units():U256{
         // @todo It needs to be replaced as soon as it becomes possible to get the cost from Aptos
         from_u64(10000000)
     }
