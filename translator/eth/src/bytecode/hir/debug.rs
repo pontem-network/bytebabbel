@@ -85,21 +85,24 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
             print_expr(buf, &expr)?;
             writeln!(buf, ";")?;
         }
-        Stmt::MemStore8 { addr, var } => {
+        Stmt::MemStore8 { addr, val: var } => {
             write!(buf, "mstore8(")?;
             print_expr(buf, &addr)?;
             write!(buf, ", ")?;
             print_expr(buf, &var)?;
             writeln!(buf, ");")?;
         }
-        Stmt::MemStore { addr, var } => {
+        Stmt::MemStore { addr, val: var } => {
             write!(buf, "mstore(")?;
             print_expr(buf, &addr)?;
             write!(buf, ", ")?;
             print_expr(buf, &var)?;
             writeln!(buf, ");")?;
         }
-        Stmt::SStore { addr, var } => {
+        Stmt::SStore {
+            key: addr,
+            val: var,
+        } => {
             write!(buf, "sstore(")?;
             print_expr(buf, &addr)?;
             write!(buf, ", ")?;

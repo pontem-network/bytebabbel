@@ -1,26 +1,29 @@
 use crate::bytecode::hir::ir::Label;
+use crate::bytecode::loc::Loc;
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::translation::variables::Variable;
 use crate::BlockId;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
     InitStorage(Variable),
-    Assign(Variable, TypedExpr),
+    StoreContext(BTreeMap<Variable, Loc<TypedExpr>>),
+    Assign(Variable, Loc<TypedExpr>),
     MStore {
         memory: Variable,
-        offset: Variable,
-        val: Variable,
+        offset: Loc<TypedExpr>,
+        val: Loc<TypedExpr>,
     },
     MStore8 {
         memory: Variable,
-        offset: Variable,
-        val: Variable,
+        offset: Loc<TypedExpr>,
+        val: Loc<TypedExpr>,
     },
     SStore {
         storage: Variable,
-        key: Variable,
-        val: Variable,
+        key: Loc<TypedExpr>,
+        val: Loc<TypedExpr>,
     },
     IF {
         cnd: TypedExpr,
@@ -40,9 +43,9 @@ pub enum Statement {
     Log {
         storage: Variable,
         memory: Variable,
-        offset: Variable,
-        len: Variable,
-        topics: Vec<Variable>,
+        offset: Loc<TypedExpr>,
+        len: Loc<TypedExpr>,
+        topics: Vec<Loc<TypedExpr>>,
     },
     Label(Label),
 }

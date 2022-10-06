@@ -33,7 +33,7 @@ impl Variables {
         }
     }
 
-    pub fn borrow_global(&mut self, tp: SType) -> Variable {
+    pub fn borrow(&mut self, tp: SType) -> Variable {
         let mut vars = self.inner.borrow_mut();
         let idx = vars.seq;
         let locals = vars.locals.entry(tp).or_default();
@@ -47,40 +47,16 @@ impl Variables {
         }
     }
 
+    pub fn release(&mut self, var: Variable) {
+        let mut vars = self.inner.borrow_mut();
+        let locals = vars.locals.get_mut(&var.1).unwrap();
+        locals.release(var.0);
+    }
+
     pub fn borrow_param(&mut self, idx: LocalIndex) -> Variable {
         let vars = self.inner.borrow();
         let tp = vars.input[idx as usize];
         Variable(idx, tp)
-    }
-
-    pub fn borrow(&mut self, tp: SType) -> Variable {
-        let mut vars = self.inner.borrow_mut();
-        let idx = vars.seq;
-        let locals = vars.locals.entry(tp).or_default();
-        let var = if let Some(idx) = locals.borrow() {
-            Variable(idx, tp)
-        } else {
-            locals.new_borrowed(idx);
-            vars.seq += 1;
-            vars.list.push(tp);
-            Variable(idx, tp)
-        };
-        let current_scope = vars.scopes.len() - 1;
-        if let Some(scope) = vars.scopes.get_mut(current_scope) {
-            scope.insert(var);
-        } else {
-            panic!("no scope");
-        }
-        var
-    }
-
-    pub fn borrow_with_id(&mut self, id: LocalIndex, tp: SType) -> Result<Variable, Error> {
-        let mut vars = self.inner.borrow_mut();
-        let locals = vars.locals.entry(tp).or_default();
-        let idx = locals
-            .borrow_with_id(id)
-            .ok_or_else(|| anyhow!("{} is not a valid local index", id))?;
-        Ok(Variable(idx, tp))
     }
 
     pub fn locals(&self) -> Vec<SType> {

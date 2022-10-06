@@ -1,5 +1,6 @@
-use crate::bytecode::hir::ir::VarId;
+use crate::bytecode::hir::ir::{VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
+use crate::bytecode::loc::Loc;
 use anyhow::{ensure, Error};
 
 use crate::bytecode::mir::ir::statement::Statement;
@@ -9,44 +10,43 @@ use crate::MirTranslator;
 impl<'a> MirTranslator<'a> {
     pub(super) fn translate_mem_store(
         &mut self,
-        addr: VarId,
-        var_id: VarId,
-        _vars: &mut Vars,
+        offset: Loc<_Expr>,
+        val: Loc<_Expr>,
     ) -> Result<(), Error> {
-        let var = self.get_var(var_id)?;
-        let addr = self.get_var(addr)?;
-        let var = self.cast(var, SType::Num)?;
+        let offset = self.translate_expr(offset)?;
+        let val = self.translate_expr(val)?;
+        let val = self.cast_expr(val, SType::Num)?;
+
         ensure!(
             addr.ty() == SType::Num,
             "Expected Number type for memory address"
         );
-        self.mir.push(Statement::MStore {
+        self.mir.push(self.loc.wrap(Statement::MStore {
             memory: self.mem_var,
-            offset: addr,
-            val: var,
-        });
+            offset,
+            val,
+        }));
         Ok(())
     }
 
     pub(super) fn translate_mem_store8(
         &mut self,
-        addr: VarId,
-        var_id: VarId,
-        _vars: &mut Vars,
+        offset: Loc<_Expr>,
+        val: Loc<_Expr>,
     ) -> Result<(), Error> {
-        let var = self.get_var(var_id)?;
-        let addr = self.get_var(addr)?;
-        let var = self.cast(var, SType::Num)?;
+        let offset = self.translate_expr(offset)?;
+        let val = self.translate_expr(val)?;
+        let val = self.cast_expr(val, SType::Num)?;
 
         ensure!(
             addr.ty() == SType::Num,
             "Expected Number type for memory address"
         );
-        self.mir.push(Statement::MStore8 {
+        self.mir.push(self.loc.wrap(Statement::MStore8 {
             memory: self.mem_var,
-            offset: addr,
-            val: var,
-        });
+            offset,
+            val,
+        }));
         Ok(())
     }
 }

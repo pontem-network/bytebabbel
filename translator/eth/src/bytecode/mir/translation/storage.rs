@@ -1,5 +1,6 @@
-use crate::bytecode::hir::ir::VarId;
+use crate::bytecode::hir::ir::{VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
+use crate::bytecode::loc::Loc;
 use anyhow::{ensure, Error};
 
 use crate::bytecode::mir::ir::statement::Statement;
@@ -9,24 +10,23 @@ use crate::MirTranslator;
 impl<'a> MirTranslator<'a> {
     pub(super) fn translate_s_store(
         &mut self,
-        addr: VarId,
-        var_id: VarId,
-        _vars: &mut Vars,
+        key: Loc<_Expr>,
+        val: Loc<_Expr>,
     ) -> Result<(), Error> {
-        let var = self.get_var(var_id)?;
-        let addr = self.get_var(addr)?;
-        let var = self.cast(var, SType::Num)?;
+        let key = self.translate_expr(key)?;
+        let val = self.translate_expr(val)?;
+        let val = self.cast_expr(val, SType::Num)?;
 
         ensure!(
-            addr.ty() == SType::Num,
+            key.ty() == SType::Num,
             "Expected Number type for storage address"
         );
 
-        self.mir.push(Statement::SStore {
+        self.mir.push(self.loc.wrap(Statement::SStore {
             storage: self.store_var,
-            key: addr,
-            val: var,
-        });
+            key,
+            val,
+        }));
         Ok(())
     }
 }

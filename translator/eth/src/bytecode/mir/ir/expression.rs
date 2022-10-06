@@ -2,6 +2,7 @@ use anyhow::{anyhow, ensure, Error};
 use primitive_types::U256;
 
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
+use crate::bytecode::loc::Loc;
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 
@@ -12,26 +13,26 @@ pub enum Expression {
     GetStore,
     MLoad {
         memory: Variable,
-        offset: Variable,
+        offset: Loc<TypedExpr>,
     },
     MSlice {
         memory: Variable,
-        offset: Variable,
-        len: Variable,
+        offset: Loc<TypedExpr>,
+        len: Loc<TypedExpr>,
     },
     SLoad {
         storage: Variable,
-        offset: Variable,
+        offset: Loc<TypedExpr>,
     },
     MSize {
         memory: Variable,
     },
     Var(Variable),
-    Unary(UnaryOp, TypedExpr),
-    Binary(BinaryOp, TypedExpr, TypedExpr),
-    Ternary(TernaryOp, TypedExpr, TypedExpr, TypedExpr),
+    Unary(UnaryOp, Loc<TypedExpr>),
+    Binary(BinaryOp, Loc<TypedExpr>, Loc<TypedExpr>),
+    Ternary(TernaryOp, Loc<TypedExpr>, Loc<TypedExpr>, Loc<TypedExpr>),
     StackOps(StackOps),
-    Cast(TypedExpr, Cast),
+    Cast(Loc<TypedExpr>, Cast),
     BytesLen(Variable),
     ReadNum {
         data: Variable,

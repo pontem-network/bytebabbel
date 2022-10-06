@@ -1,5 +1,6 @@
 use std::mem;
 
+use crate::bytecode::loc::Loc;
 use anyhow::Error;
 
 use crate::bytecode::mir::ir::statement::Statement;
@@ -13,11 +14,11 @@ pub mod types;
 #[derive(Debug, Default, Clone)]
 pub struct Mir {
     locals: Vec<SType>,
-    statements: Vec<Statement>,
+    statements: Vec<Loc<Statement>>,
 }
 
 impl Mir {
-    pub fn push(&mut self, statement: Statement) {
+    pub fn push(&mut self, statement: Loc<Statement>) {
         self.statements.push(statement);
     }
 
@@ -26,11 +27,11 @@ impl Mir {
         mir
     }
 
-    pub fn into_inner(self) -> Vec<Statement> {
+    pub fn into_inner(self) -> Vec<Loc<Statement>> {
         self.statements
     }
 
-    pub fn statements(&self) -> &[Statement] {
+    pub fn statements(&self) -> &[Loc<Statement>] {
         &self.statements
     }
 

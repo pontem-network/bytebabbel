@@ -22,15 +22,15 @@ pub enum Stmt {
     Assign(VarId, Loc<_Expr>),
     MemStore8 {
         addr: Loc<_Expr>,
-        var: Loc<_Expr>,
+        val: Loc<_Expr>,
     },
     MemStore {
         addr: Loc<_Expr>,
-        var: Loc<_Expr>,
+        val: Loc<_Expr>,
     },
     SStore {
-        addr: Loc<_Expr>,
-        var: Loc<_Expr>,
+        key: Loc<_Expr>,
+        val: Loc<_Expr>,
     },
     Log {
         offset: Loc<_Expr>,
@@ -142,11 +142,13 @@ impl Hir {
     }
 
     pub fn mstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
-        self.statement.push(loc.wrap(Stmt::MemStore { addr, var }));
+        self.statement
+            .push(loc.wrap(Stmt::MemStore { addr, val: var }));
     }
 
     pub fn mstore8(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
-        self.statement.push(loc.wrap(Stmt::MemStore8 { addr, var }));
+        self.statement
+            .push(loc.wrap(Stmt::MemStore8 { addr, val: var }));
     }
 
     pub fn save_context(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Loc<_Expr>>) {
@@ -154,7 +156,10 @@ impl Hir {
     }
 
     pub fn sstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
-        self.statement.push(loc.wrap(Stmt::SStore { addr, var }));
+        self.statement.push(loc.wrap(Stmt::SStore {
+            key: addr,
+            val: var,
+        }));
     }
 
     pub fn true_brunch(&mut self, loc: &Loc<()>, cnd: Loc<_Expr>, label: Label) {
@@ -188,7 +193,11 @@ impl Hir {
         self.statement.push(loc.wrap(Stmt::Brunch(label)));
     }
 
-    pub fn statements(self) -> Vec<Loc<Stmt>> {
+    pub fn statements(&self) -> &[Loc<Stmt>] {
+        &self.statement
+    }
+
+    pub fn inner(self) -> Vec<Loc<Stmt>> {
         self.statement
     }
 
@@ -228,6 +237,10 @@ impl VarId {
 
     pub fn new_tmp(idx: u32) -> Self {
         VarId(idx, true)
+    }
+
+    pub fn is_tmp(&self) -> bool {
+        self.1
     }
 }
 

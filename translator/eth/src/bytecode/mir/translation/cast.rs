@@ -1,3 +1,4 @@
+use crate::bytecode::loc::Loc;
 use anyhow::Error;
 
 use crate::bytecode::mir::ir::expression::{Cast, Expression, TypedExpr};
@@ -12,12 +13,12 @@ impl<'a> MirTranslator<'a> {
         }
 
         let res = self.cast_expr(from.expr(), to)?;
-        let var = self.variables.borrow_global(to);
+        let var = self.vars.borrow(to);
         self.mir.push(var.assign(res));
         Ok(var)
     }
 
-    pub fn cast_expr(&mut self, from: TypedExpr, to: SType) -> Result<TypedExpr, Error> {
+    pub fn cast_expr(&mut self, from: Loc<TypedExpr>, to: SType) -> Result<Loc<TypedExpr>, Error> {
         if from.ty == to {
             return Ok(from);
         }

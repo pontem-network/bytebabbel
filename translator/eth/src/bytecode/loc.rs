@@ -31,6 +31,12 @@ impl<C> Loc<C> {
     }
 }
 
+impl<C: Default> Default for Loc<C> {
+    fn default() -> Self {
+        Loc::new(0, 0, Default::default())
+    }
+}
+
 impl<C: PartialEq> PartialEq for Loc<C> {
     fn eq(&self, other: &Self) -> bool {
         self.inner == other.inner
