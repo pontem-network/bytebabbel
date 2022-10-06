@@ -1,6 +1,9 @@
 module self::du256_tests {
+    /// Max `u64` value.
+    const U64_MAX: u128 = 18446744073709551615;
+
     #[test_only]
-    use self::du256::{new_du256, get_d, put_d};
+    use self::u256::{new_du256, get_d, put_d};
 
     #[tets_only]
     use self::u256::{get, du256_to_u256};
@@ -78,5 +81,24 @@ module self::du256_tests {
         let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
 
         put_d(&mut a, 8, 0);
+    }
+
+    #[test_only]
+    use self::u256::overflowing_add_d;
+
+    #[test]
+    fun test_add_d() {
+        let a = new_du256(1, 0, 0, 0, 0, 0, 0, 0);
+        let b = new_du256(1, 0, 0, 0, 0, 0, 0, 0);
+        let c = overflowing_add_d(a, b);
+
+        assert!(get_d(&c, 0) == 2, 0);
+
+        let a = new_du256((U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), 0, 0, 0, 0);
+        let b = new_du256((U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), 0, 0, 0, 0);
+        let c = overflowing_add_d(a, b);
+        let d = overflowing_add_d(c, new_du256(2, 0, 0, 0, 0, 0, 0, 0));
+
+        assert!(get_d(&d, 4) == 2, 1);
     }
 }

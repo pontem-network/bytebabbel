@@ -714,6 +714,87 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::add_mod;
+
+    #[test]
+    fun test_add_mod() {
+        let a = from_string(&b"1000000000");
+        let b = from_string(&b"1");
+        let mod = from_string(&b"1000000000");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 1, 0);
+
+        let a = from_string(&b"5");
+        let b = from_string(&b"3");
+        let mod = from_string(&b"9");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 8, 1);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"19");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 11, 2);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"9973");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 1594, 3);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 2)]
+    fun test_add_mod_abort() {
+        let a = from_string(&b"1000000000");
+        let b = from_string(&b"1");
+        let mod = from_string(&b"0");
+        let _ = add_mod(a, b, mod);
+    }
+
+    #[test_only]
+    use self::u256::mul_mod;
+
+    #[test]
+    fun test_mul_mod() {
+        let a = from_string(&b"1000000000");
+        let b = from_string(&b"1");
+        let mod = from_string(&b"1000000000");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 0, 0);
+
+        let a = from_string(&b"5");
+        let b = from_string(&b"3");
+        let mod = from_string(&b"9");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 6, 1);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"19");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 16, 2);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"9973");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 6910, 3);
+    }
+
+    #[test_only]
     use self::u256::{from_bytes, to_bytes, write, from_signer};
 
     #[test(self = @0xffeeddccbbaa99887766554433221100f0e0d0c0b0a090807060504030201000)]
