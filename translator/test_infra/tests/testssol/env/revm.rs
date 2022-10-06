@@ -9,6 +9,8 @@ use primitive_types::{H160, U256};
 
 use eth::compile::EvmPack;
 
+const ADDRESS: &str = "0000000000000000000000000000000000000042";
+
 fn memory_vicinity() -> Result<MemoryVicinity> {
     Ok(MemoryVicinity {
         block_base_fee_per_gas: U256::max_value(),
@@ -30,11 +32,11 @@ fn memory_vicinity() -> Result<MemoryVicinity> {
 fn context() -> Result<Context> {
     Ok(Context {
         // Execution address.
-        address: "5cbdd86a2fa8dc4bddd8a8f69dba48572eec07fb".parse()?,
+        address: ADDRESS.parse()?,
         // The calling EVM.
-        caller: "5cbdd86a2fa8dc4bddd8a8f69dba48572eec07fb".parse()?,
+        caller: ADDRESS.parse()?,
         // The apparent value of the EVM. call value, if non-zero, must have payable
-        apparent_value: U256::from(0u8),
+        apparent_value: U256::from(2u8),
     })
 }
 
@@ -69,14 +71,13 @@ impl REvm {
     pub fn run_tx(&self, call: Vec<u8>) -> Result<Vec<u8>> {
         let backend = MemoryBackend::new(&self.vicinity, BTreeMap::new());
         let metadata = StackSubstateMetadata::new(u64::MAX, &self.config);
-
         let precompiles = BTreeMap::new();
+
+        let mut memo = MemoryStackState::new(metadata, &backend);
+        memo.deposit(ADDRESS.parse().unwrap(), U256::from(10_000));
+
         let mut executor: StackExecutor<MemoryStackState<MemoryBackend>, BTreeMap<_, _>> =
-            StackExecutor::new_with_precompiles(
-                MemoryStackState::new(metadata, &backend),
-                &self.config,
-                &precompiles,
-            );
+            StackExecutor::new_with_precompiles(memo, &self.config, &precompiles);
 
         let mut rt = Runtime::new(
             self.code.clone(),
@@ -84,6 +85,7 @@ impl REvm {
             self.ctx.clone(),
             &self.config,
         );
+
         let exit_reason = executor.execute(&mut rt);
 
         match exit_reason {
