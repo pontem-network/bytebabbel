@@ -1,10 +1,8 @@
+use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
     FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
 };
-
-use crate::Function;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Memory {
     New,
@@ -20,11 +18,11 @@ pub enum Memory {
 
 impl Memory {
     pub fn token() -> SignatureToken {
-        SignatureToken::Struct(StructHandleIndex(2))
+        SignatureToken::Struct(StructHandleIndex(1))
     }
 
     pub fn instance() -> StructDefinitionIndex {
-        StructDefinitionIndex(2)
+        StructDefinitionIndex(1)
     }
 }
 
@@ -45,15 +43,15 @@ impl Function for Memory {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Self::New => FunctionHandleIndex(44),
-            Self::Size => FunctionHandleIndex(11),
-            Self::Load => FunctionHandleIndex(36),
-            Self::Store => FunctionHandleIndex(40),
-            Self::Store8 => FunctionHandleIndex(41),
-            Self::Hash => FunctionHandleIndex(24),
-            Self::Slice => FunctionHandleIndex(39),
-            Self::RequestBufferLen => FunctionHandleIndex(56),
-            Self::ReadRequestBuffer => FunctionHandleIndex(54),
+            Self::New => FunctionHandleIndex(48),
+            Self::Size => FunctionHandleIndex(13),
+            Self::Load => FunctionHandleIndex(39),
+            Self::Store => FunctionHandleIndex(44),
+            Self::Store8 => FunctionHandleIndex(45),
+            Self::Hash => FunctionHandleIndex(27),
+            Self::Slice => FunctionHandleIndex(43),
+            Self::RequestBufferLen => FunctionHandleIndex(64),
+            Self::ReadRequestBuffer => FunctionHandleIndex(62),
         }
     }
 }
@@ -72,11 +70,11 @@ pub enum Persist {
 
 impl Persist {
     pub fn token() -> SignatureToken {
-        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(3))))
+        SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(2))))
     }
 
     pub fn instance() -> StructDefinitionIndex {
-        StructDefinitionIndex(3)
+        StructDefinitionIndex(2)
     }
 }
 
@@ -96,14 +94,14 @@ impl Function for Persist {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Self::InitContract => FunctionHandleIndex(25),
-            Self::Store => FunctionHandleIndex(70),
-            Self::Load => FunctionHandleIndex(66),
-            Self::Log0 => FunctionHandleIndex(30),
-            Self::Log1 => FunctionHandleIndex(31),
-            Self::Log2 => FunctionHandleIndex(32),
-            Self::Log3 => FunctionHandleIndex(33),
-            Self::Log4 => FunctionHandleIndex(34),
+            Self::InitContract => FunctionHandleIndex(28),
+            Self::Store => FunctionHandleIndex(80),
+            Self::Load => FunctionHandleIndex(76),
+            Self::Log0 => FunctionHandleIndex(33),
+            Self::Log1 => FunctionHandleIndex(34),
+            Self::Log2 => FunctionHandleIndex(35),
+            Self::Log3 => FunctionHandleIndex(36),
+            Self::Log4 => FunctionHandleIndex(37),
         }
     }
 }
@@ -149,11 +147,11 @@ pub enum U256 {
 
 impl U256 {
     pub fn token() -> SignatureToken {
-        SignatureToken::Struct(StructHandleIndex(4))
+        SignatureToken::Struct(StructHandleIndex(3))
     }
 
     pub fn instance() -> StructDefinitionIndex {
-        StructDefinitionIndex(4)
+        StructDefinitionIndex(3)
     }
 }
 
@@ -200,41 +198,41 @@ impl Function for U256 {
 
     fn handler(&self) -> FunctionHandleIndex {
         match self {
-            Self::Add => FunctionHandleIndex(47),
-            Self::Sub => FunctionHandleIndex(50),
-            Self::Mul => FunctionHandleIndex(49),
-            Self::Div => FunctionHandleIndex(9),
-            Self::Mod => FunctionHandleIndex(38),
-            Self::BitOr => FunctionHandleIndex(4),
-            Self::BitAnd => FunctionHandleIndex(2),
-            Self::BitXor => FunctionHandleIndex(6),
-            Self::Shl => FunctionHandleIndex(62),
-            Self::Shr => FunctionHandleIndex(64),
-            Self::Lt => FunctionHandleIndex(35),
-            Self::Gt => FunctionHandleIndex(23),
-            Self::Le => FunctionHandleIndex(28),
-            Self::Ge => FunctionHandleIndex(20),
-            Self::Eq => FunctionHandleIndex(12),
-            Self::Neq => FunctionHandleIndex(42),
-            Self::BitNot => FunctionHandleIndex(3),
-            Self::Byte => FunctionHandleIndex(7),
-            Self::FromSigner => FunctionHandleIndex(17),
-            Self::FromBytes => FunctionHandleIndex(16),
-            Self::FromBool => FunctionHandleIndex(15),
-            Self::ToBool => FunctionHandleIndex(72),
-            Self::FromU64s => FunctionHandleIndex(19),
-            Self::IsZero => FunctionHandleIndex(27),
-            Self::SDiv => FunctionHandleIndex(59),
-            Self::SLt => FunctionHandleIndex(67),
-            Self::SGt => FunctionHandleIndex(61),
-            Self::SMod => FunctionHandleIndex(68),
-            Self::Exp => FunctionHandleIndex(13),
-            Self::SignExtend => FunctionHandleIndex(60),
-            Self::Sar => FunctionHandleIndex(58),
-            Self::FromAddress => FunctionHandleIndex(14),
-            Self::ToAddress => FunctionHandleIndex(71),
-            Self::FromU128 => FunctionHandleIndex(18),
-            Self::ToU128 => FunctionHandleIndex(0),
+            Self::Add => FunctionHandleIndex(52),
+            Self::Sub => FunctionHandleIndex(57),
+            Self::Mul => FunctionHandleIndex(55),
+            Self::Div => FunctionHandleIndex(12),
+            Self::Mod => FunctionHandleIndex(41),
+            Self::BitOr => FunctionHandleIndex(5),
+            Self::BitAnd => FunctionHandleIndex(3),
+            Self::BitXor => FunctionHandleIndex(8),
+            Self::Shl => FunctionHandleIndex(70),
+            Self::Shr => FunctionHandleIndex(73),
+            Self::Lt => FunctionHandleIndex(38),
+            Self::Gt => FunctionHandleIndex(26),
+            Self::Le => FunctionHandleIndex(31),
+            Self::Ge => FunctionHandleIndex(22),
+            Self::Eq => FunctionHandleIndex(14),
+            Self::Neq => FunctionHandleIndex(47),
+            Self::BitNot => FunctionHandleIndex(4),
+            Self::Byte => FunctionHandleIndex(9),
+            Self::FromSigner => FunctionHandleIndex(19),
+            Self::FromBytes => FunctionHandleIndex(18),
+            Self::FromBool => FunctionHandleIndex(17),
+            Self::ToBool => FunctionHandleIndex(82),
+            Self::FromU64s => FunctionHandleIndex(21),
+            Self::IsZero => FunctionHandleIndex(30),
+            Self::SDiv => FunctionHandleIndex(67),
+            Self::SLt => FunctionHandleIndex(77),
+            Self::SGt => FunctionHandleIndex(69),
+            Self::SMod => FunctionHandleIndex(78),
+            Self::Exp => FunctionHandleIndex(15),
+            Self::SignExtend => FunctionHandleIndex(68),
+            Self::Sar => FunctionHandleIndex(66),
+            Self::FromAddress => FunctionHandleIndex(16),
+            Self::ToAddress => FunctionHandleIndex(81),
+            Self::FromU128 => FunctionHandleIndex(20),
+            Self::ToU128 => FunctionHandleIndex(1),
         }
     }
 }

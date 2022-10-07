@@ -72,5 +72,5 @@ pub trait Function {
 }
 
 pub fn self_address_index() -> ConstantPoolIndex {
-    ConstantPoolIndex(10)
+    ConstantPoolIndex(11)
 }
