@@ -55,7 +55,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::overflowing_add_u64;
+    use self::utiles::overflowing_add_u64;
 
     #[test]
     fun test_overflowing_add_u64() {
@@ -77,7 +77,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::overflowing_sub_u64;
+    use self::utiles::overflowing_sub_u64;
 
     #[test]
     fun test_overflowing_sub() {
@@ -95,7 +95,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::split_u128;
+    use self::utiles::split_u128;
 
     #[test]
     fun test_split_u128() {
@@ -109,7 +109,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::leading_zeros_u64;
+    use self::utiles::leading_zeros_u64;
 
     #[test]
     fun test_leading_zeros_u64() {

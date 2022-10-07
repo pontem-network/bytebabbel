@@ -1,18 +1,18 @@
-module self::du256_tests {
+module self::u512_tests {
     /// Max `u64` value.
     const U64_MAX: u128 = 18446744073709551615;
 
     #[test_only]
-    use self::u256::{new_du256, get_d, put_d};
+    use self::u512::{new_u512, get_d, put_d};
 
     #[tets_only]
-    use self::u256::{get, du256_to_u256};
+    use self::u256::{get, u512_to_u256};
 
     #[test]
-    fun test_du256_to_u256() {
-        let a = new_du256(255, 100, 50, 300, 0, 0, 0, 0);
+    fun test_u512_to_u256() {
+        let a = new_u512(255, 100, 50, 300, 0, 0, 0, 0);
 
-        let (m, overflow) = du256_to_u256(a);
+        let (m, overflow) = u512_to_u256(a);
         assert!(!overflow, 0);
         assert!(get(&m, 0) == get_d(&a, 0), 1);
         assert!(get(&m, 1) == get_d(&a, 1), 2);
@@ -22,7 +22,7 @@ module self::du256_tests {
         put_d(&mut a, 4, 100);
         put_d(&mut a, 5, 5);
 
-        let (m, overflow) = du256_to_u256(a);
+        let (m, overflow) = u512_to_u256(a);
         assert!(overflow, 5);
         assert!(get(&m, 0) == get_d(&a, 0), 6);
         assert!(get(&m, 1) == get_d(&a, 1), 7);
@@ -32,7 +32,7 @@ module self::du256_tests {
 
     #[test]
     fun test_get_d() {
-        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+        let a = new_u512(1, 2, 3, 4, 5, 6, 7, 8);
 
         assert!(get_d(&a, 0) == 1, 0);
         assert!(get_d(&a, 1) == 2, 1);
@@ -47,14 +47,14 @@ module self::du256_tests {
     #[test]
     #[expected_failure(abort_code = 1)]
     fun test_get_d_overflow() {
-        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+        let a = new_u512(1, 2, 3, 4, 5, 6, 7, 8);
 
         get_d(&a, 8);
     }
 
     #[test]
     fun test_put_d() {
-        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+        let a = new_u512(1, 2, 3, 4, 5, 6, 7, 8);
 
         put_d(&mut a, 0, 10);
         put_d(&mut a, 1, 20);
@@ -78,26 +78,26 @@ module self::du256_tests {
     #[test]
     #[expected_failure(abort_code = 1)]
     fun test_put_d_overflow() {
-        let a = new_du256(1, 2, 3, 4, 5, 6, 7, 8);
+        let a = new_u512(1, 2, 3, 4, 5, 6, 7, 8);
 
         put_d(&mut a, 8, 0);
     }
 
     #[test_only]
-    use self::u256::overflowing_add_d;
+    use self::u512::overflowing_add_d;
 
     #[test]
     fun test_add_d() {
-        let a = new_du256(1, 0, 0, 0, 0, 0, 0, 0);
-        let b = new_du256(1, 0, 0, 0, 0, 0, 0, 0);
+        let a = new_u512(1, 0, 0, 0, 0, 0, 0, 0);
+        let b = new_u512(1, 0, 0, 0, 0, 0, 0, 0);
         let c = overflowing_add_d(a, b);
 
         assert!(get_d(&c, 0) == 2, 0);
 
-        let a = new_du256((U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), 0, 0, 0, 0);
-        let b = new_du256((U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), 0, 0, 0, 0);
+        let a = new_u512((U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), 0, 0, 0, 0);
+        let b = new_u512((U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), (U64_MAX as u64), 0, 0, 0, 0);
         let c = overflowing_add_d(a, b);
-        let d = overflowing_add_d(c, new_du256(2, 0, 0, 0, 0, 0, 0, 0));
+        let d = overflowing_add_d(c, new_u512(2, 0, 0, 0, 0, 0, 0, 0));
 
         assert!(get_d(&d, 4) == 2, 1);
     }
