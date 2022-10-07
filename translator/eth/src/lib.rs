@@ -16,7 +16,6 @@ use program::Program;
 use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
 use crate::bytecode::block::BlockId;
-use crate::bytecode::flow_graph::FlowBuilder;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirBuilder;
 use crate::bytecode::mir::ir::Mir;
@@ -51,9 +50,6 @@ pub fn transpile_program(
         .map(|block| (BlockId::from(block.start), block))
         .collect::<HashMap<_, _>>();
 
-    let mut flow_builder = FlowBuilder::new(&contract)?;
-    let contract_flow = flow_builder.make_flow();
-    let flow_trace = flow_builder.flow_trace();
     let hir = HirBuilder::new(contract.clone(), flags)?;
     let functions = abi
         .functions()

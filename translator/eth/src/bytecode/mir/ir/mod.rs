@@ -48,6 +48,6 @@ impl Mir {
     }
 
     pub fn print_to_buffer(&self, buffer: &mut String) -> Result<(), Error> {
-        debug::print_buf(self, buffer, 0)
+        debug::print_buf(self, buffer)
     }
 }

@@ -14,7 +14,7 @@ impl<'a> MirTranslator<'a> {
             _Expr::Val(val) => val.into(),
             _Expr::Var(var) => {
                 let var = self.get_var(var)?;
-                self.vars.release(var)?;
+                self.vars.release(var);
                 Expression::MoveVar(var).ty(var.ty())
             }
             _Expr::MLoad(offset) => {
@@ -36,8 +36,8 @@ impl<'a> MirTranslator<'a> {
             }
             _Expr::Signer => {
                 let signer = self.vars.borrow_param(self.signer_index);
-                let signer = loc.wrap(Expression::CopyVar(signer).ty(signer.ty()));
-                self.cast_expr(signer, SType::Num)?
+                let signer = Expression::CopyVar(signer).ty(signer.ty()).loc(loc);
+                self.cast_expr(signer, SType::Num)?.inner()
             }
             _Expr::MSize => Expression::MSize {
                 memory: self.mem_var,
@@ -46,16 +46,16 @@ impl<'a> MirTranslator<'a> {
             _Expr::ArgsSize => self.args_size()?,
             _Expr::Args(offset) => self.args(offset)?,
             _Expr::UnaryOp(op, arg) => self.translate_unary_op(op, arg)?,
-            _Expr::BinaryOp(op, arg1, arg2) => self.translate_binary_op(*op, arg1, arg2)?,
+            _Expr::BinaryOp(op, arg1, arg2) => self.translate_binary_op(op, arg1, arg2)?,
             _Expr::TernaryOp(op, arg1, arg2, arg3) => {
-                self.translate_ternary_op(*op, arg1, arg2, arg3)?
+                self.translate_ternary_op(op, arg1, arg2, arg3)?
             }
             _Expr::Hash(offset, len) => {
                 let offset = self.translate_expr(*offset)?;
                 let len = self.translate_expr(*len)?;
 
-                ensure!(offset.ty() == SType::Num, "offset must be of type num");
-                ensure!(len.ty() == SType::Num, "len must be of type num");
+                ensure!(offset.ty == SType::Num, "offset must be of type num");
+                ensure!(len.ty == SType::Num, "len must be of type num");
                 Expression::Hash {
                     mem: self.mem_var,
                     offset,
@@ -64,15 +64,15 @@ impl<'a> MirTranslator<'a> {
                 .ty(SType::Num)
             }
             _Expr::Copy(expr) => {
-                if let _Expr::Var(var) = expr {
-                    let var = self.get_var(*var)?;
+                if let _Expr::Var(var) = expr.inner() {
+                    let var = self.get_var(var)?;
                     Expression::CopyVar(var).ty(var.ty())
                 } else {
                     bail!("Only variables can be copied")
                 }
             }
         };
-        Ok(loc.wrap(res))
+        Ok(res.loc(loc))
     }
 
     fn get_var(&mut self, var: VarId) -> Result<Variable, Error> {
@@ -113,7 +113,7 @@ impl<'a> MirTranslator<'a> {
         } else {
             let data = self.vars.borrow_param(self.args_index);
             let offset = self.translate_expr(*offset)?;
-            ensure!(offset.ty() == SType::Num, "offset must be of type num");
+            ensure!(offset.ty == SType::Num, "offset must be of type num");
             ensure!(data.ty() == SType::Bytes, "args must be of type bytes");
             Expression::ReadNum { data, offset }.ty(SType::Num)
         })

@@ -1,14 +1,13 @@
 use crate::bytecode::hir::ir::Label;
-use crate::bytecode::loc::Loc;
-use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
+use crate::bytecode::loc::{Loc, Location};
+use crate::bytecode::mir::ir::expression::TypedExpr;
 use crate::bytecode::mir::translation::variables::Variable;
-use crate::BlockId;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
     InitStorage(Variable),
-    StoreContext(BTreeMap<Variable, Loc<TypedExpr>>),
+    StoreContext(HashMap<Variable, Loc<TypedExpr>>),
     Assign(Variable, Loc<TypedExpr>),
     MStore {
         memory: Variable,
@@ -25,21 +24,8 @@ pub enum Statement {
         key: Loc<TypedExpr>,
         val: Loc<TypedExpr>,
     },
-    IF {
-        cnd: TypedExpr,
-        true_br: Vec<Statement>,
-        false_br: Vec<Statement>,
-    },
-    Loop {
-        id: BlockId,
-        cnd_calc: Vec<Statement>,
-        cnd: Expression,
-        // false br
-        body: Vec<Statement>,
-    },
     Abort(u8),
     Result(Vec<Variable>),
-    Continue(BlockId),
     Log {
         storage: Variable,
         memory: Variable,
@@ -48,4 +34,12 @@ pub enum Statement {
         topics: Vec<Loc<TypedExpr>>,
     },
     Label(Label),
+    BrTrue(Loc<TypedExpr>, Label),
+    Br(Label),
+}
+
+impl Statement {
+    pub fn loc(self, loc: impl Location) -> Loc<Statement> {
+        Loc::new(loc.start(), loc.end(), self)
+    }
 }

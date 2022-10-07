@@ -85,11 +85,14 @@ impl<'a> MirTranslator<'a> {
     }
 
     fn unary_with_bool(&mut self, op: UnaryOp, args: Loc<TypedExpr>) -> Result<TypedExpr, Error> {
+        let loc = args.wrap(());
         Ok(match op {
             UnaryOp::IsZero => Expression::Binary(
                 BinaryOp::Eq,
                 args,
-                args.wrap(Expression::Const(Value::Bool(false)).ty(SType::Bool)),
+                Expression::Const(Value::Bool(false))
+                    .ty(SType::Bool)
+                    .loc(loc),
             )
             .ty(SType::Bool),
             UnaryOp::Not => Expression::Unary(UnaryOp::Not, args).ty(SType::Bool),

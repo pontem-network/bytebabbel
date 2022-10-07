@@ -2,7 +2,7 @@ use anyhow::{anyhow, Error};
 use primitive_types::U256;
 
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use crate::bytecode::loc::Loc;
+use crate::bytecode::loc::{Loc, Location};
 use crate::bytecode::mir::ir::types::{SType, Value};
 use crate::bytecode::mir::translation::variables::Variable;
 
@@ -60,9 +60,15 @@ pub struct TypedExpr {
     pub ty: SType,
 }
 
-impl From<&U256> for TypedExpr {
-    fn from(val: &U256) -> Self {
-        Expression::Const(Value::Number(*val)).ty(SType::Num)
+impl TypedExpr {
+    pub fn loc(self, loc: impl Location) -> Loc<TypedExpr> {
+        Loc::new(loc.start(), loc.end(), self)
+    }
+}
+
+impl From<U256> for TypedExpr {
+    fn from(val: U256) -> Self {
+        Expression::Const(Value::Number(val)).ty(SType::Num)
     }
 }
 

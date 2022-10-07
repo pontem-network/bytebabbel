@@ -3,7 +3,6 @@ use anyhow::Error;
 
 use crate::bytecode::mir::ir::expression::{Cast, Expression, TypedExpr};
 use crate::bytecode::mir::ir::types::SType;
-use crate::bytecode::mir::translation::Variable;
 use crate::MirTranslator;
 
 impl<'a> MirTranslator<'a> {
@@ -12,6 +11,7 @@ impl<'a> MirTranslator<'a> {
             return Ok(from);
         }
         let cast = Cast::make(from.ty, to)?;
-        Ok(from.wrap(Expression::Cast(from, cast).ty(to)))
+        let loc = from.wrap(());
+        Ok(Expression::Cast(from, cast).ty(to).loc(loc))
     }
 }

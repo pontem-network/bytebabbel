@@ -5,7 +5,6 @@ use primitive_types::U256;
 
 use crate::bytecode::hir::executor::math::BinaryOp;
 use crate::bytecode::hir::ir::{Stmt, VarId, _Expr};
-use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
 use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
@@ -14,7 +13,6 @@ use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::variables::{Variable, Variables};
 use crate::{Flags, Function, Hir};
 
-pub mod brunch;
 pub mod cast;
 pub mod consts;
 pub mod expr;
@@ -58,10 +56,18 @@ impl<'a> MirTranslator<'a> {
         let mut mir = Mir::default();
 
         let store_var = variables.borrow(SType::Storage);
-        mir.push(loc.wrap(store_var.assign(Expression::GetStore.ty(SType::Storage))));
+        mir.push(
+            store_var
+                .assign(Expression::GetStore.ty(SType::Storage).loc(loc))
+                .loc(loc),
+        );
 
         let mem_var = variables.borrow(SType::Memory);
-        mir.push(loc.wrap(mem_var.assign(Expression::GetMem.ty(SType::Memory))));
+        mir.push(
+            mem_var
+                .assign(Expression::GetMem.ty(SType::Memory).loc(loc))
+                .loc(loc),
+        );
 
         MirTranslator {
             fun,
@@ -83,7 +89,7 @@ impl<'a> MirTranslator<'a> {
         let ctx = instructions
             .iter()
             .map(|inst| {
-                if let Stmt::StoreContext(ctx) = inst {
+                if let Stmt::StoreContext(ctx) = inst.as_ref() {
                     ctx.len()
                 } else {
                     0
@@ -113,13 +119,13 @@ impl<'a> MirTranslator<'a> {
 
             match stmt.inner() {
                 Stmt::Label(label) => {
-                    self.mir.push(self.loc.wrap(Statement::Label(*label)));
+                    self.mir.push(self.loc.wrap(Statement::Label(label)));
                 }
                 Stmt::StoreContext(ctx) => {
                     self.translate_store_context(ctx)?;
                 }
                 Stmt::Assign(var, expr) => {
-                    self.translate_set_var(*var, expr)?;
+                    self.translate_set_var(var, expr)?;
                 }
                 Stmt::MemStore8 { addr, val } => {
                     self.translate_mem_store8(addr, val)?;
@@ -145,111 +151,34 @@ impl<'a> MirTranslator<'a> {
                     }
                 }
                 Stmt::Abort(code) => {
-                    self.mir.push(self.loc.wrap(Statement::Abort(*code)));
+                    self.mir.push(self.loc.wrap(Statement::Abort(code)));
                 }
                 Stmt::Result { offset, len } => {
                     self.translate_ret(offset, len)?;
                 }
-                Stmt::BrunchTrue(cnd, label) => {}
-                Stmt::Brunch(label) => {}
+                Stmt::BrunchTrue(cnd, label) => {
+                    let expr = self.translate_expr(cnd)?;
+                    self.mir.push(Statement::BrTrue(expr, label).loc(self.loc));
+                }
+                Stmt::Brunch(label) => {
+                    self.mir.push(Statement::Br(label).loc(self.loc));
+                }
             }
-            // match stmt.as_ref() {
-            //     HirStmt::SetVar(id) => {
-            //         self.translate_set_var(*id, vars)?;
-            //     }
-            //     HirStmt::MemStore { addr, var } => {
-            //         self.translate_mem_store(*addr, *var, vars)?;
-            //     }
-            //     HirStmt::MemStore8 { addr, var } => {
-            //         self.translate_mem_store8(*addr, *var, vars)?;
-            //     }
-            //     HirStmt::SStore { addr, var } => {
-            //         self.translate_s_store(*addr, *var, vars)?;
-            //     }
-            //     HirStmt::If {
-            //         condition,
-            //         true_branch,
-            //         false_branch,
-            //     } => {
-            //         self.translate_if(*condition, true_branch, false_branch, vars)?;
-            //     }
-            //     HirStmt::Loop {
-            //         id,
-            //         condition_block,
-            //         condition,
-            //         is_true_br_loop,
-            //         loop_br,
-            //     } => {
-            //         self.translate_loop(
-            //             *id,
-            //             condition_block,
-            //             *condition,
-            //             *is_true_br_loop,
-            //             loop_br,
-            //             vars,
-            //         )?;
-            //     }
-            //     HirStmt::Stop => {
-            //         if !self.fun.native_output.is_empty() {
-            //             self.mir.push(Statement::Abort(u8::MAX));
-            //         } else {
-            //             self.translate_ret_unit()?;
-            //         }
-            //     }
-            //     HirStmt::Abort(code) => {
-            //         self.mir.push(Statement::Abort(*code));
-            //     }
-            //     HirStmt::Result { offset, len } => {
-            //         self.translate_ret(*offset, *len)?;
-            //     }
-            //     HirStmt::MapVar { id, val } => {
-            //         let val = self.get_var(*val)?;
-            //         let id = self.get_var(*id)?;
-            //         self.mir.push(Statement::Assign(id, val.expr()));
-            //     }
-            //     HirStmt::Continue {
-            //         loop_id: id,
-            //         context: inst,
-            //     } => {
-            //         self.translate_instructions(inst, vars)?;
-            //         self.mir.push(Statement::Continue(*id));
-            //     }
-            //     HirStmt::Log {
-            //         offset,
-            //         len,
-            //         topics,
-            //     } => {
-            //         let topics = topics
-            //             .iter()
-            //             .map(|t| self.get_var(*t))
-            //             .collect::<Result<Vec<_>, _>>()?;
-            //
-            //         let offset = self.get_var(*offset)?;
-            //         let len = self.get_var(*len)?;
-            //         self.mir.push(Statement::Log {
-            //             storage: self.store_var,
-            //             memory: self.mem_var,
-            //             offset,
-            //             len,
-            //             topics,
-            //         });
-            //     }
-            // }
         }
         Ok(())
     }
 
     fn translate_store_context(&mut self, ctx: BTreeMap<VarId, Loc<_Expr>>) -> Result<(), Error> {
-        let mut context = BTreeMap::new();
+        let mut context = HashMap::new();
         for (var, expr) in ctx {
             let expr = self.translate_expr(expr)?;
             let expr = self.cast_expr(expr, SType::Num)?;
-            let var = self
+            let var = *self
                 .ctx_map
                 .get(&var)
                 .ok_or_else(|| anyhow!("Unknown context variable:{}", var))?;
             self.vars.reborrow(var);
-            context.insert(*var, expr);
+            context.insert(var, expr);
         }
         self.mir
             .push(self.loc.wrap(Statement::StoreContext(context)));
@@ -382,7 +311,7 @@ impl<'a> MirTranslator<'a> {
                     self.loc.wrap(tmp.expr()),
                     SType::from_eth_type(tp, self.flags.u128_io),
                 )?;
-                if result.is_num() {
+                if result.ty.is_num() {
                     tmp = self.vars.borrow(SType::Num);
                 }
                 let result_var = self.vars.borrow(result.ty);

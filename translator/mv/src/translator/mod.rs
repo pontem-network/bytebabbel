@@ -5,9 +5,9 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 
 use eth::abi::call::FunHash;
-use eth::bytecode::block::BlockId;
 use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
-use eth::bytecode::mir::ir::expression::{Cast, Expression, StackOp, TypedExpr};
+use eth::bytecode::loc::Loc;
+use eth::bytecode::mir::ir::expression::{Cast, Expression, TypedExpr};
 use eth::bytecode::mir::ir::statement::Statement;
 use eth::bytecode::mir::ir::types::{SType, Value};
 use eth::bytecode::mir::ir::Mir;
@@ -160,7 +160,7 @@ impl MvIrTranslator {
         self.sign_writer.make_signature(types)
     }
 
-    fn translate_statements(&mut self, statements: &[Statement]) -> Result<(), Error> {
+    fn translate_statements(&mut self, statements: &[Loc<Statement>]) -> Result<(), Error> {
         for st in statements {
             self.translate_statement(st)?;
         }
@@ -173,21 +173,6 @@ impl MvIrTranslator {
                 self.translate_expr(&exp.expr)?;
                 self.code.set_var(var.index());
             }
-            Statement::IF {
-                cnd,
-                true_br,
-                false_br,
-            } => {
-                self.translate_if(&cnd.expr, true_br, false_br)?;
-            }
-            Statement::Loop {
-                id,
-                cnd_calc,
-                cnd,
-                body,
-            } => {
-                self.translate_loop(*id, cnd_calc, cnd, body)?;
-            }
             Statement::Abort(code) => {
                 self.code.abort(*code);
             }
@@ -196,9 +181,6 @@ impl MvIrTranslator {
                     self.code.ld_var(var.index());
                 }
                 self.code.write(Bytecode::Ret);
-            }
-            Statement::Continue(id) => {
-                self.code.mark_jmp_to_label(*id);
             }
             Statement::MStore {
                 memory,
@@ -255,6 +237,10 @@ impl MvIrTranslator {
             } => {
                 self.translate_log(*storage, *memory, *offset, *len, topics)?;
             }
+            Statement::StoreContext(_) => {}
+            Statement::Label(_) => {}
+            Statement::BrTrue(_, _) => {}
+            Statement::Br(_) => {}
         }
         Ok(())
     }
@@ -286,31 +272,6 @@ impl MvIrTranslator {
             }
             Expression::MoveVar(var) => {
                 self.code.ld_var(var.index());
-            }
-            Expression::StackOps(ops) => {
-                for op in &ops.vec {
-                    match op {
-                        StackOp::PushBoolVar(var) => {
-                            self.code.ld_var(var.index());
-                        }
-                        StackOp::Not => {
-                            self.code.write(Bytecode::Not);
-                        }
-                        StackOp::PushBool(val) => {
-                            if *val {
-                                self.code.write(Bytecode::LdTrue);
-                            } else {
-                                self.code.write(Bytecode::LdFalse);
-                            }
-                        }
-                        StackOp::Eq => {
-                            self.code.write(Bytecode::Eq);
-                        }
-                        StackOp::PushExpr(expr) => {
-                            self.translate_expr(&expr.expr)?;
-                        }
-                    }
-                }
             }
             Expression::GetMem => {
                 self.code
@@ -380,57 +341,8 @@ impl MvIrTranslator {
             Expression::Ternary(op, arg, arg1, arg2) => {
                 self.translate_ternary(op, arg, arg1, arg2)?
             }
+            Expression::CopyVar(_) => {}
         }
-        Ok(())
-    }
-
-    fn translate_if(
-        &mut self,
-        cnd: &Expression,
-        true_br: &[Statement],
-        false_br: &[Statement],
-    ) -> Result<(), Error> {
-        self.translate_expr(cnd)?;
-        let before = self.code.swap(Code::default());
-        self.translate_statements(true_br)?;
-        let true_br = self.code.swap(Code::default());
-        self.translate_statements(false_br)?;
-        let mut false_br = self.code.swap(before);
-
-        if !false_br.is_final() {
-            false_br.mark_jmp();
-            false_br.write(Bytecode::Branch(false_br.pc() + true_br.pc() + 1));
-        }
-
-        self.code.mark_jmp();
-        self.code
-            .write(Bytecode::BrTrue(self.code.pc() + false_br.pc() + 1));
-
-        self.code.extend(false_br)?;
-        self.code.extend(true_br)?;
-        Ok(())
-    }
-
-    fn translate_loop(
-        &mut self,
-        id: BlockId,
-        cnd_calc: &[Statement],
-        cnd: &Expression,
-        // false br
-        body: &[Statement],
-    ) -> Result<(), Error> {
-        self.code.create_label(id);
-        self.translate_statements(cnd_calc)?;
-        self.translate_expr(cnd)?;
-
-        let before = self.code.swap(Code::default());
-        self.translate_statements(body)?;
-        let loop_br = self.code.swap(before);
-
-        self.code.mark_jmp();
-        self.code
-            .write(Bytecode::BrTrue(self.code.pc() + loop_br.pc() + 1));
-        self.code.extend(loop_br)?;
         Ok(())
     }
 

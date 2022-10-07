@@ -3,6 +3,11 @@ use std::ops::{Deref, DerefMut};
 
 use crate::bytecode::instruction::{Instruction, Offset};
 
+pub trait Location {
+    fn start(&self) -> Offset;
+    fn end(&self) -> Offset;
+}
+
 pub struct Loc<C> {
     pub start: Offset,
     pub end: Offset,
@@ -28,6 +33,26 @@ impl<C> Loc<C> {
 
     pub fn inner(self) -> C {
         self.inner
+    }
+}
+
+impl<C> Location for Loc<C> {
+    fn start(&self) -> Offset {
+        self.start
+    }
+
+    fn end(&self) -> Offset {
+        self.end
+    }
+}
+
+impl<C> Location for &Loc<C> {
+    fn start(&self) -> Offset {
+        self.start
+    }
+
+    fn end(&self) -> Offset {
+        self.end
     }
 }
 
@@ -70,6 +95,8 @@ impl<C: Clone> Clone for Loc<C> {
         Loc::new(self.start, self.end, self.inner.clone())
     }
 }
+
+impl<C: Copy> Copy for Loc<C> {}
 
 pub trait Move {
     fn move_forward(&mut self, offset: Offset);

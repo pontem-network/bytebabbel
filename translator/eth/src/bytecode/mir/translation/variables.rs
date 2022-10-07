@@ -1,21 +1,11 @@
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
-
 use crate::bytecode::loc::Loc;
-use anyhow::{anyhow, Error};
-
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::{LocalIndex, SType};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Variables {
-    inner: Rc<RefCell<Inner>>,
-}
-
-#[derive(Debug)]
-pub struct Inner {
     locals: HashMap<SType, Locals>,
     seq: LocalIndex,
     list: Vec<SType>,
@@ -25,50 +15,44 @@ pub struct Inner {
 impl Variables {
     pub fn new(params: Vec<SType>) -> Variables {
         Variables {
-            inner: Rc::new(RefCell::new(Inner {
-                locals: HashMap::new(),
-                seq: params.len() as LocalIndex,
-                list: vec![],
-                input: params,
-            })),
+            locals: HashMap::new(),
+            seq: params.len() as LocalIndex,
+            list: vec![],
+            input: params,
         }
     }
 
     pub fn borrow(&mut self, tp: SType) -> Variable {
-        let mut vars = self.inner.borrow_mut();
-        let idx = vars.seq;
-        let locals = vars.locals.entry(tp).or_default();
+        let idx = self.seq;
+        let locals = self.locals.entry(tp).or_default();
         if let Some(idx) = locals.borrow() {
             Variable(idx, tp)
         } else {
             locals.new_borrowed(idx);
-            vars.seq += 1;
-            vars.list.push(tp);
+            self.seq += 1;
+            self.list.push(tp);
             Variable(idx, tp)
         }
     }
 
     pub fn reborrow(&mut self, var: Variable) {
-        let mut vars = self.inner.borrow_mut();
-        let idx = vars.seq;
-        let locals = vars.locals.entry(var.1).or_default();
+        let idx = self.seq;
+        let locals = self.locals.entry(var.1).or_default();
         locals.borrow_with_id(idx);
     }
 
     pub fn release(&mut self, var: Variable) {
-        let mut vars = self.inner.borrow_mut();
-        let locals = vars.locals.get_mut(&var.1).unwrap();
+        let locals = self.locals.get_mut(&var.1).unwrap();
         locals.release(var.0);
     }
 
     pub fn borrow_param(&mut self, idx: LocalIndex) -> Variable {
-        let vars = self.inner.borrow();
-        let tp = vars.input[idx as usize];
+        let tp = self.input[idx as usize];
         Variable(idx, tp)
     }
 
     pub fn locals(&self) -> Vec<SType> {
-        self.inner.borrow().list.to_vec()
+        self.list.to_vec()
     }
 }
 

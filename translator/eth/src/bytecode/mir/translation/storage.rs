@@ -1,5 +1,4 @@
-use crate::bytecode::hir::ir::{VarId, _Expr};
-use crate::bytecode::hir::vars::Vars;
+use crate::bytecode::hir::ir::_Expr;
 use crate::bytecode::loc::Loc;
 use anyhow::{ensure, Error};
 
@@ -18,7 +17,7 @@ impl<'a> MirTranslator<'a> {
         let val = self.cast_expr(val, SType::Num)?;
 
         ensure!(
-            key.ty() == SType::Num,
+            key.ty == SType::Num,
             "Expected Number type for storage address"
         );
 
