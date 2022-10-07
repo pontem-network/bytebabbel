@@ -5,7 +5,7 @@ use log::log_enabled;
 use log::Level;
 
 use crate::bytecode::hir::executor::math::TernaryOp;
-use crate::bytecode::mir::ir::expression::{Expression, StackOp};
+use crate::bytecode::mir::ir::expression::Expression;
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::Value;
 use crate::bytecode::mir::ir::Mir;
@@ -23,7 +23,7 @@ pub fn print_ir(ir: &Mir, name: &str) {
     }
 }
 
-pub fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> {
+pub fn print_buf<B: Write>(ir: &Mir, buf: B, width: usize) -> Result<(), Error> {
     writeln!(
         buf,
         "================================================================================="
@@ -36,14 +36,14 @@ pub fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> 
     Ok(())
 }
 
-fn print_statements(st: &[Statement], buf: &mut String, width: usize) -> Result<(), Error> {
+fn print_statements<B: Write>(st: &[Statement], buf: B, width: usize) -> Result<(), Error> {
     for inst in st {
         print_statement(inst, buf, width)?;
     }
     Ok(())
 }
 
-fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(), Error> {
+fn print_statement<B: Write>(inst: &Statement, buf: B, width: usize) -> Result<(), Error> {
     match inst {
         Statement::Assign(var, value) => {
             write!(
@@ -178,15 +178,8 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
             Value::Number(val) => write!(buf, "{}", val)?,
             Value::Bool(val) => write!(buf, "{}", val)?,
         },
-        Expression::Var(val) => write!(buf, "var_{}", val.index())?,
-        Expression::StackOps(ops) => {
-            writeln!(buf, "{{")?;
-            for op in &ops.vec {
-                print_stack_op(op, buf, width + 2)?;
-                writeln!(buf, ";")?;
-            }
-            write!(buf, "{:width$}}}", " ")?;
-        }
+        Expression::MoveVar(val) => write!(buf, "move(var_{})", val.index())?,
+        Expression::CopyVar(val) => write!(buf, "copy(var_{})", val.index())?,
         Expression::MLoad { memory, offset } => {
             write!(
                 buf,
@@ -195,7 +188,10 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
                 offset.index()
             )?;
         }
-        Expression::SLoad { storage, offset } => {
+        Expression::SLoad {
+            storage,
+            key: offset,
+        } => {
             write!(
                 buf,
                 "var_{:?}.state_load(var_{:?})",
@@ -278,28 +274,6 @@ pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(
                 write!(buf, ")")?;
             }
         },
-    }
-    Ok(())
-}
-
-fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Error> {
-    match op {
-        StackOp::PushBoolVar(val) => {
-            write!(buf, "{:width$}push var_{}", " ", val.index())?;
-        }
-        StackOp::Not => {
-            write!(buf, "{:width$}!", " ")?;
-        }
-        StackOp::PushBool(val) => {
-            write!(buf, "{:width$}push {}", " ", val)?;
-        }
-        StackOp::Eq => {
-            write!(buf, "{:width$}eq", " ")?;
-        }
-        StackOp::PushExpr(expr) => {
-            write!(buf, "{:width$}push ", " ")?;
-            print_expr(&expr.expr, buf, width)?;
-        }
     }
     Ok(())
 }

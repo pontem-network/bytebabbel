@@ -284,7 +284,7 @@ impl MvIrTranslator {
                     }
                 };
             }
-            Expression::Var(var) => {
+            Expression::MoveVar(var) => {
                 self.code.ld_var(var.index());
             }
             Expression::StackOps(ops) => {
@@ -328,7 +328,10 @@ impl MvIrTranslator {
                     vec![CallOp::MutBorrow(*memory), CallOp::Var(*offset)],
                 );
             }
-            Expression::SLoad { storage, offset } => {
+            Expression::SLoad {
+                storage,
+                key: offset,
+            } => {
                 self.code.call(
                     Persist::Load,
                     vec![CallOp::Var(*storage), CallOp::Var(*offset)],

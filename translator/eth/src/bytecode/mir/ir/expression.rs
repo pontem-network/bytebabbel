@@ -1,4 +1,4 @@
-use anyhow::{anyhow, ensure, Error};
+use anyhow::{anyhow, Error};
 use primitive_types::U256;
 
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
@@ -22,26 +22,26 @@ pub enum Expression {
     },
     SLoad {
         storage: Variable,
-        offset: Loc<TypedExpr>,
+        key: Loc<TypedExpr>,
     },
     MSize {
         memory: Variable,
     },
-    Var(Variable),
+    MoveVar(Variable),
+    CopyVar(Variable),
     Unary(UnaryOp, Loc<TypedExpr>),
     Binary(BinaryOp, Loc<TypedExpr>, Loc<TypedExpr>),
     Ternary(TernaryOp, Loc<TypedExpr>, Loc<TypedExpr>, Loc<TypedExpr>),
-    StackOps(StackOps),
     Cast(Loc<TypedExpr>, Cast),
     BytesLen(Variable),
     ReadNum {
         data: Variable,
-        offset: Variable,
+        offset: Loc<TypedExpr>,
     },
     Hash {
         mem: Variable,
-        offset: Variable,
-        len: Variable,
+        offset: Loc<TypedExpr>,
+        len: Loc<TypedExpr>,
     },
 }
 
@@ -117,102 +117,5 @@ impl Cast {
             Cast::RawNumToNum => SType::Num,
             Cast::NumToRawNum => SType::RawNum,
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct StackOps {
-    pub vec: Vec<StackOp>,
-}
-
-#[derive(Debug, Clone)]
-pub enum StackOp {
-    PushExpr(TypedExpr),
-    PushBoolVar(Variable),
-    PushBool(bool),
-    Eq,
-    Not,
-}
-
-#[derive(Default, Debug)]
-pub struct StackOpsBuilder {
-    stack: Vec<SType>,
-    vec: Vec<StackOp>,
-}
-
-impl StackOpsBuilder {
-    pub fn push_bool(mut self, var: Variable) -> Result<StackOpsBuilder, Error> {
-        ensure!(
-            var.ty() == SType::Bool,
-            "Can't push bool from {:?}",
-            var.ty()
-        );
-        self.stack.push(var.ty());
-        self.vec.push(StackOp::PushBoolVar(var));
-        Ok(self)
-    }
-
-    pub fn push_expr(mut self, expr: TypedExpr) -> Result<StackOpsBuilder, Error> {
-        self.stack.push(expr.ty);
-        self.vec.push(StackOp::PushExpr(expr));
-        Ok(self)
-    }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn not(mut self) -> Result<StackOpsBuilder, Error> {
-        let op = self
-            .stack
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
-        if op != SType::Bool {
-            return Err(anyhow::anyhow!("incompatible types for not: {:?}", self));
-        }
-        self.vec.push(StackOp::Not);
-        self.stack.push(SType::Bool);
-        Ok(self)
-    }
-
-    pub fn push_const_bool(mut self, val: bool) -> StackOpsBuilder {
-        self.stack.push(SType::Bool);
-        self.vec.push(StackOp::PushBool(val));
-        self
-    }
-
-    pub fn eq(mut self) -> Result<StackOpsBuilder, Error> {
-        let op1 = self
-            .stack
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
-        let op2 = self
-            .stack
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
-
-        if op1 != op2 || op1 != SType::Bool {
-            return Err(anyhow::anyhow!(
-                "incompatible types: eq({:?}, {:?}):Bool.\n{:?}",
-                op1,
-                op2,
-                self
-            ));
-        }
-        self.vec.push(StackOp::Eq);
-        self.stack.push(SType::Bool);
-        Ok(self)
-    }
-
-    pub fn build(mut self, tp: SType) -> Result<Expression, Error> {
-        let res = self
-            .stack
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("stack is empty"))?;
-        if res != tp {
-            return Err(anyhow::anyhow!(
-                "incompatible result types:{:?}. Type:{:?}",
-                self,
-                tp
-            ));
-        }
-        Ok(Expression::StackOps(StackOps { vec: self.vec }))
     }
 }

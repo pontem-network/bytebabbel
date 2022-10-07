@@ -103,6 +103,13 @@ impl _Expr {
     pub fn is_var(&self) -> bool {
         matches!(self, _Expr::Var(_))
     }
+
+    pub fn as_val(&self) -> Option<U256> {
+        match self {
+            _Expr::Val(val) => Some(*val),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, Ord, PartialOrd)]

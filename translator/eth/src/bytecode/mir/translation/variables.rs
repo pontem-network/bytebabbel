@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use crate::bytecode::loc::Loc;
 use anyhow::{anyhow, Error};
 
 use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
@@ -47,6 +48,13 @@ impl Variables {
         }
     }
 
+    pub fn reborrow(&mut self, var: Variable) {
+        let mut vars = self.inner.borrow_mut();
+        let idx = vars.seq;
+        let locals = vars.locals.entry(var.1).or_default();
+        locals.borrow_with_id(idx);
+    }
+
     pub fn release(&mut self, var: Variable) {
         let mut vars = self.inner.borrow_mut();
         let locals = vars.locals.get_mut(&var.1).unwrap();
@@ -80,7 +88,7 @@ impl Locals {
         }
     }
 
-    pub fn borrow_with_id(&mut self, id: LocalIndex) -> Option<LocalIndex> {
+    pub fn borrow_with_id(&mut self, id: LocalIndex) {
         let local = self
             .free
             .iter()
@@ -90,9 +98,6 @@ impl Locals {
         if let Some(idx) = local {
             self.free.remove(idx);
             self.borrowed.push(id);
-            Some(id)
-        } else {
-            None
         }
     }
 
@@ -143,10 +148,10 @@ impl Variable {
     }
 
     pub fn expr(&self) -> TypedExpr {
-        Expression::Var(*self).ty(self.1)
+        Expression::MoveVar(*self).ty(self.1)
     }
 
-    pub fn assign(&self, expr: TypedExpr) -> Statement {
+    pub fn assign(&self, expr: Loc<TypedExpr>) -> Statement {
         Statement::Assign(*self, expr)
     }
 }

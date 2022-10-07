@@ -241,7 +241,6 @@ impl<'a> MirTranslator<'a> {
 
     fn translate_store_context(&mut self, ctx: BTreeMap<VarId, Loc<_Expr>>) -> Result<(), Error> {
         let mut context = BTreeMap::new();
-
         for (var, expr) in ctx {
             let expr = self.translate_expr(expr)?;
             let expr = self.cast_expr(expr, SType::Num)?;
@@ -249,6 +248,7 @@ impl<'a> MirTranslator<'a> {
                 .ctx_map
                 .get(&var)
                 .ok_or_else(|| anyhow!("Unknown context variable:{}", var))?;
+            self.vars.reborrow(var);
             context.insert(*var, expr);
         }
         self.mir
@@ -325,8 +325,8 @@ impl<'a> MirTranslator<'a> {
                 self.loc.wrap(
                     Expression::MSlice {
                         memory: self.mem_var,
-                        offset: self.loc.wrap(Expression::Var(len).ty(SType::Num)),
-                        len: self.loc.wrap(Expression::Var(len).ty(SType::Num)),
+                        offset: self.loc.wrap(Expression::MoveVar(len).ty(SType::Num)),
+                        len: self.loc.wrap(Expression::MoveVar(len).ty(SType::Num)),
                     }
                     .ty(SType::Bytes),
                 ),
@@ -348,7 +348,9 @@ impl<'a> MirTranslator<'a> {
             let offset_var = self.vars.borrow(SType::Num);
             self.mir
                 .push(self.loc.wrap(Statement::Assign(offset_var, offset)));
-            let offset = self.loc.wrap(Expression::Var(offset_var).ty(SType::Num));
+            let offset = self
+                .loc
+                .wrap(Expression::MoveVar(offset_var).ty(SType::Num));
 
             let mut results = vec![];
             let word_size = self.vars.borrow(SType::Num);
@@ -359,7 +361,7 @@ impl<'a> MirTranslator<'a> {
                         .wrap(Expression::Const(Value::from(U256::from(32))).ty(SType::Num)),
                 )),
             );
-            let word_size = self.loc.wrap(Expression::Var(word_size).ty(SType::Num));
+            let word_size = self.loc.wrap(Expression::MoveVar(word_size).ty(SType::Num));
 
             let mut tmp = self.vars.borrow(SType::Num);
             for tp in &self.fun.native_output {
@@ -375,12 +377,18 @@ impl<'a> MirTranslator<'a> {
                         ),
                     )),
                 );
-                let result = self.cast(tmp, SType::from_eth_type(tp, self.flags.u128_io))?;
+
+                let result = self.cast_expr(
+                    self.loc.wrap(tmp.expr()),
+                    SType::from_eth_type(tp, self.flags.u128_io),
+                )?;
                 if result.is_num() {
                     tmp = self.vars.borrow(SType::Num);
                 }
+                let result_var = self.vars.borrow(result.ty);
+                self.mir.push(self.loc.wrap(result_var.assign(result)));
 
-                results.push(result);
+                results.push(result_var);
                 self.mir.push(
                     self.loc.wrap(Statement::Assign(
                         offset_var,
