@@ -84,7 +84,7 @@ pub fn self_address_index(module: &CompiledModule) -> Result<ConstantPoolIndex> 
     let val = match cindex.as_ref() {
         Some(data) => *data,
         None => {
-            let const_index = find_address_const(&module, AccountAddress::from_hex_literal("0x42")?)
+            let const_index = find_address_const(module, AccountAddress::from_hex_literal("0x42")?)
                 .ok_or_else(|| anyhow!("The constant with the address 0x42 was not found"))?
                 .0 as u16;
 
