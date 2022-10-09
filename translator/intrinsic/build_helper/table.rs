@@ -111,7 +111,7 @@ const U256_TABLE: [(&str, &str); 37] = [
     ("FromU128", "from_u128"),
     ("ToU128", "as_u128"),
     ("AddMod", "add_mod"),
-    ("MulMod", "mul_mod")
+    ("MulMod", "mul_mod"),
 ];
 
 pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
