@@ -143,6 +143,8 @@ pub enum U256 {
     ToAddress,
     FromU128,
     ToU128,
+    AddMod,
+    MulMod,
 }
 
 impl U256 {
@@ -193,6 +195,8 @@ impl Function for U256 {
             Self::ToAddress => "to_address",
             Self::FromU128 => "from_u128",
             Self::ToU128 => "as_u128",
+            Self::AddMod => "add_mod",
+            Self::MulMod => "mul_mod",
         }
     }
 
@@ -233,6 +237,8 @@ impl Function for U256 {
             Self::ToAddress => FunctionHandleIndex(81),
             Self::FromU128 => FunctionHandleIndex(20),
             Self::ToU128 => FunctionHandleIndex(1),
+            Self::AddMod => FunctionHandleIndex(0),
+            Self::MulMod => FunctionHandleIndex(46),
         }
     }
 }
