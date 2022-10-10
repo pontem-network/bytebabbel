@@ -7,7 +7,7 @@ use crate::BlockId;
 use anyhow::Error;
 use primitive_types::U256;
 use std::collections::BTreeMap;
-use std::fmt::{Debug, Display, Write};
+use std::fmt::{Debug, Display, Formatter, Write};
 
 #[derive(Debug, Clone, Default)]
 pub struct Hir {
@@ -234,7 +234,7 @@ impl From<VarId> for _Expr {
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug, Ord, PartialOrd)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct VarId(u32, bool);
 
 impl VarId {
@@ -248,6 +248,12 @@ impl VarId {
 
     pub fn is_tmp(&self) -> bool {
         self.1
+    }
+}
+
+impl Debug for VarId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

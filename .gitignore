@@ -8,3 +8,4 @@ translator/intrinsic/src/table.rs
 translator/intrinsic/mv/template.mv
 .idea
 .aptos
+!/translator/intrinsic/src/table.rs

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Error, Result};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
@@ -16,7 +16,7 @@ use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
 use eth::Flags;
-use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
+use intrinsic::table::{self_address_index, Memory as Mem, Persist, U256 as Num};
 use intrinsic::{template, Function};
 
 use crate::mv_ir::func::Func;
@@ -465,14 +465,13 @@ impl MvIrTranslator {
         arg: &Loc<TypedExpr>,
         arg1: &Loc<TypedExpr>,
         arg2: &Loc<TypedExpr>,
-    ) -> Result<(), Error> {
+    ) {
         let args = vec![CallOp::Expr(arg), CallOp::Expr(arg1), CallOp::Expr(arg2)];
         let index = match op {
             TernaryOp::AddMod => Num::AddMod,
             TernaryOp::MulMod => Num::MulMod,
         };
-        self.code.call(index, args);
-        Ok(())
+        self.call(index, args);
     }
 
     fn call(&mut self, fun: impl Function, args: Vec<CallOp>) {

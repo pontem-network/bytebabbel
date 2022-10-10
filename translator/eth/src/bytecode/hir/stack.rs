@@ -1,6 +1,6 @@
 use crate::bytecode::hir::ir::_Expr;
 use crate::bytecode::loc::Loc;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::mem;
 
 pub const FRAME_SIZE: usize = 32;
@@ -62,6 +62,16 @@ impl Debug for Stack {
         write!(f, "Stack {{")?;
         for (idx, expr) in self.stack.iter().enumerate().rev() {
             write!(f, " {} => {:?},", idx, expr)?;
+        }
+        write!(f, " }}")
+    }
+}
+
+impl Display for Stack {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Stack {{")?;
+        for (idx, expr) in self.stack.iter().enumerate().rev() {
+            writeln!(f, " {} => {:?},", idx, expr.as_ref())?;
         }
         write!(f, " }}")
     }

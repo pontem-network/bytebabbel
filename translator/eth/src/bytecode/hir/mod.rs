@@ -91,9 +91,10 @@ impl HirBuilder {
     }
 
     fn flush_context(&self, ctx: &mut Context, ir: &mut Hir) -> Result<(), Error> {
+        println!("stack: {}__\n{}", BlockId::from(ctx.loc.start), ctx.stack);
+
         let stack = ctx.stack.take();
         let mut stack_dump = BTreeMap::new();
-
         let last_idx = stack.len() - 1;
         for (i, var) in stack.into_iter().enumerate() {
             let var_id = VarId::new_var((last_idx - i) as u32);
