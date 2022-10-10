@@ -2,7 +2,9 @@ use std::fs;
 
 use anyhow::{anyhow, Result};
 use move_binary_format::access::ModuleAccess;
+use move_binary_format::file_format::{ConstantPoolIndex, SignatureToken};
 use move_binary_format::CompiledModule;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
 
 use crate::Paths;
@@ -11,8 +13,19 @@ const TEMPLATE_USE: &str = "\
 use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
-    FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
+    FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex, ConstantPoolIndex,
 };
+";
+
+pub const SELF_ADDRESS: AccountAddress = AccountAddress::new([
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x42,
+]);
+
+const SELF_ADDRESS_INDEX: &str = "\
+pub fn self_address_index() -> ConstantPoolIndex {
+    ConstantPoolIndex(###SELF_ADDRESS_INDEX###)
+}
 ";
 
 const TEMPLATE_ENUM_TOKEN: &str =
@@ -118,7 +131,7 @@ pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
     let template_mv_cont = fs::read(&paths.template_mv)?;
     let template = CompiledModule::deserialize(&template_mv_cont).unwrap();
 
-    let result = [
+    let mut result = [
         (false, "Memory", MEMORY_TABLE.to_vec()),
         (true, "Persist", PERSIST_TABLE.to_vec()),
         (false, "U256", U256_TABLE.to_vec()),
@@ -128,7 +141,16 @@ pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
     .collect::<Result<Vec<String>>>()?
     .join("\n");
 
-    fs::write(&paths.instrinsic_table, format!("{TEMPLATE_USE}{result}"))?;
+    let index = find_address_const(&template, SELF_ADDRESS).ok_or_else(|| {
+        anyhow!(
+            "Can't find self address index in template module: {:?}",
+            paths.template_mv
+        )
+    })?;
+    result += "\n";
+    result += &SELF_ADDRESS_INDEX.replace("###SELF_ADDRESS_INDEX###", &index.to_string());
+
+    fs::write(&paths.intrinsic_table, format!("{TEMPLATE_USE}{result}"))?;
 
     Ok(())
 }
@@ -165,7 +187,7 @@ fn gen_enum_code(
     let enum_fn_handler = table
         .iter()
         .map(|(name, move_fn)| {
-            let fn_index = find_fundction_index(template_mv, move_fn)
+            let fn_index = find_function_index(template_mv, move_fn)
                 .ok_or_else(|| anyhow!("Function {move_fn:?} not found"))?;
             Ok(format!("Self::{name} => FunctionHandleIndex({fn_index}),"))
         })
@@ -191,11 +213,26 @@ fn gen_enum_code(
     Ok(result)
 }
 
-fn find_fundction_index(template_mv: &CompiledModule, fn_name: &str) -> Option<usize> {
+fn find_function_index(template_mv: &CompiledModule, fn_name: &str) -> Option<usize> {
     template_mv
         .function_handles()
         .iter()
         .enumerate()
         .find(|(.., item)| template_mv.identifier_at(item.name).as_str() == fn_name)
         .map(|(index, ..)| index)
+}
+
+pub fn find_address_const(
+    module: &CompiledModule,
+    addr: AccountAddress,
+) -> Option<ConstantPoolIndex> {
+    module
+        .constant_pool
+        .iter()
+        .enumerate()
+        .find(|(_, c)| match c.type_ {
+            SignatureToken::Address => c.data.as_slice() == addr.as_slice(),
+            _ => false,
+        })
+        .map(|(id, _)| ConstantPoolIndex(id as u16))
 }

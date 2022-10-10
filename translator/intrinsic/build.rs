@@ -9,7 +9,7 @@ mod build_helper;
 
 #[derive(Debug)]
 pub(crate) struct Paths {
-    instrinsic_table: PathBuf,
+    intrinsic_table: PathBuf,
     sources: PathBuf,
     project: PathBuf,
     template_mv: PathBuf,
@@ -33,7 +33,7 @@ impl Paths {
         let template_mv = intrinsic_path.join("mv").join("template.mv");
 
         Ok(Paths {
-            instrinsic_table: intrinsic_path.join("src").join("table.rs"),
+            intrinsic_table: intrinsic_path.join("src").join("table.rs"),
             project,
             sources,
             template_mv,

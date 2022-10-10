@@ -1,7 +1,7 @@
 use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
-    FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
+    FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex, ConstantPoolIndex,
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence)]
 pub enum Memory {
@@ -241,4 +241,8 @@ impl Function for U256 {
             Self::MulMod => FunctionHandleIndex(46),
         }
     }
+}
+
+pub fn self_address_index() -> ConstantPoolIndex {
+    ConstantPoolIndex(11)
 }

@@ -15,7 +15,7 @@ use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
 use eth::Flags;
-use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
+use intrinsic::table::{self_address_index, Memory as Mem, Persist, U256 as Num};
 use intrinsic::template;
 
 use crate::mv_ir::func::Func;
@@ -317,7 +317,7 @@ impl MvIrTranslator {
                     .call(Mem::New, vec![CallOp::ConstU64(self.max_memory)]);
             }
             Expression::GetStore => {
-                let index = intrinsic::self_address_index(&self.template)?;
+                let index = self_address_index();
                 self.code.write(Bytecode::LdConst(index));
 
                 self.code
