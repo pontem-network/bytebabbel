@@ -55,7 +55,11 @@ impl MoveExecutor {
                 let adapter = StorageAdapter::new(&resolver);
                 let mut session = vm.new_session(&adapter, id);
                 publish_std(&mut session);
-                let output = session.finish().unwrap().into_change_set(&mut ()).unwrap();
+                let output = session
+                    .finish()
+                    .unwrap()
+                    .into_change_set(&mut (), 3)
+                    .unwrap();
                 resolver.apply(output);
                 resolver
             })
@@ -75,6 +79,7 @@ impl MoveExecutor {
         MoveVmExt::new(
             NativeGasParameters::zeros(),
             AbstractValueSizeGasParameters::zeros(),
+            3,
             false,
         )
         .unwrap()
@@ -94,7 +99,11 @@ impl MoveExecutor {
         session
             .publish_module(module, addr, &mut UnmeteredGasMeter)
             .unwrap();
-        let output = session.finish().unwrap().into_change_set(&mut ()).unwrap();
+        let output = session
+            .finish()
+            .unwrap()
+            .into_change_set(&mut (), 3)
+            .unwrap();
         self.resolver.apply(output);
     }
 
@@ -127,7 +136,7 @@ impl MoveExecutor {
             .return_values;
         let result = session.finish().unwrap();
         let events = result.events.clone();
-        let output = result.into_change_set(&mut ()).unwrap();
+        let output = result.into_change_set(&mut (), 3).unwrap();
 
         let returns = if self.flags.hidden_output {
             vec![]
