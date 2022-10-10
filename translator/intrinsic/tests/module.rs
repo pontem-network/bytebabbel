@@ -13,8 +13,8 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 
-use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
-use intrinsic::{find_address_const, self_address_index, template, Function};
+use intrinsic::table::{self_address_index, Memory as Mem, Persist, U256 as Num};
+use intrinsic::{template, Function};
 
 #[test]
 pub fn test_template_verification() {
@@ -55,7 +55,7 @@ pub fn test_template() {
         )
     );
     assert_eq!(
-        module.constant_pool[self_address_index(&module).unwrap().0 as usize],
+        module.constant_pool[self_address_index().0 as usize],
         Constant {
             type_: SignatureToken::Address,
             data: AccountAddress::from_hex_literal("0x42").unwrap().to_vec(),
@@ -84,11 +84,6 @@ pub fn test_intrinsic_signature_token_mem_store() {
     assert_eq!(
         Mem::token(),
         SignatureToken::Struct(find_struct_by_name(&template, "Memory"))
-    );
-
-    assert_eq!(
-        self_address_index(&template).ok(),
-        find_address_const(&template, address)
     );
 
     assert_eq!(
