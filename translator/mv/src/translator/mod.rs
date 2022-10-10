@@ -292,7 +292,7 @@ impl MvIrTranslator {
                 self.call(Mem::New, vec![CallOp::ConstU64(self.max_memory)]);
             }
             Expression::GetStore => {
-                let index = intrinsic::self_address_index(&self.template)?;
+                let index = self_address_index();
                 self.code.write(Bytecode::LdConst(index));
 
                 self.code
