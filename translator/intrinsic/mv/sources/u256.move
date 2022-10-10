@@ -6,6 +6,9 @@ module self::u256 {
     /// When trying to get or put word into U256 but it's out of index.
     const EWORDS_OVERFLOW: u64 = 1;
 
+    /// When trying to divide or get module by zero
+    const EDIV: u64 = 2;
+
     // Constants.
     /// Max `u64` value.
     const U64_MAX: u128 = 18446744073709551615;
@@ -44,6 +47,38 @@ module self::u256 {
         }
     }
 
+    #[test_only]
+    public fun from_string(string: &vector<u8>): U256 {
+        let sign = true;
+        let shift = 0;
+        let lenght = std::vector::length(string);
+        let res = zero();
+        let ten = from_u128(10);
+
+        // char '-' = 45
+        if (*std::vector::borrow(string, shift) == 45) {
+            sign = false;
+            shift = shift + 1;
+        };
+
+        // char '0' = 48
+        while (shift < lenght) {
+            let digit = *std::vector::borrow(string, shift) - 48;
+
+            res = overflowing_add(
+                overflowing_mul(res, ten),
+                from_u128((digit as u128))
+            );
+            shift = shift + 1;
+        };
+
+        if (sign) {
+            res
+        } else {
+            get_negative(res)
+        }
+    }
+
     /// Returns `U256` equals to zero.
     public fun zero(): U256 {
         U256 {
@@ -53,6 +88,8 @@ module self::u256 {
             v3: 0,
         }
     }
+
+    use self::utiles::split_u128;
 
     /// Returns a `U256` from `u128` value.
     public fun from_u128(val: u128): U256 {
@@ -352,6 +389,8 @@ module self::u256 {
         ret
     }
 
+    use self::utiles::leading_zeros_u64;
+
     // Private functions.
     /// Get bits used to store `a`.
     public fun bits(a: &U256): u64 {
@@ -384,7 +423,7 @@ module self::u256 {
         };
 
         if (a_neg && b_neg) {
-            return gt(a, b)
+            return gt(get_negative(a), get_negative(b))
         };
 
         lt(a, b)
@@ -457,6 +496,8 @@ module self::u256 {
         EQUAL
     }
 
+    use self::utiles::overflowing_add_u64;
+
     // API
     /// Adds two `U256` and returns sum.
     public fun overflowing_add(a: U256, b: U256): U256 {
@@ -496,7 +537,7 @@ module self::u256 {
         ret
     }
 
-    use self::du256::{zero_d, get_d, put_d, DU256};
+    use self::u512::{zero_d, get_d, put_d};
 
     // API
     /// Multiples two `U256`.
@@ -547,9 +588,11 @@ module self::u256 {
             i = i + 1;
         };
 
-        let (r, _overflow) = du256_to_u256(ret);
+        let (r, _overflow) = u512_to_u256(ret);
         r
     }
+
+    use self::utiles::overflowing_sub_u64;
 
     // API
     /// Subtracts two `U256`, returns result.
@@ -597,13 +640,13 @@ module self::u256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
-        let a = if (a_neg) { bitnot(a) } else { a };
-        let b = if (b_neg) { bitnot(b) } else { b };
-
+        let a = if (a_neg) { get_negative(a) } else { a };
+        let b = if (b_neg) { get_negative(b) } else { b };
+    
         let ret = div(a, b);
 
         if (a_neg != b_neg) {
-            bitnot(ret)
+            get_negative(ret)
         } else {
             ret
         }
@@ -624,7 +667,7 @@ module self::u256 {
         };
 
         if (a_neg && b_neg) {
-            return lt(a, b)
+            return lt(get_negative(a), get_negative(b))
         };
 
         gt(a, b)
@@ -636,15 +679,15 @@ module self::u256 {
         let a_neg = is_negative(&a);
         let b_neg = is_negative(&b);
 
-        let a = if (a_neg) { bitnot(a) } else { a };
-        let b = if (b_neg) { bitnot(b) } else { b };
+        let a = if (a_neg) { get_negative(a) } else { a };
+        let b = if (b_neg) { get_negative(b) } else { b };
 
         let ret = mod(a, b);
 
         if (compare(&ret, &zero()) == EQUAL) {
             zero()
         } else if (a_neg) {
-            bitnot(ret)
+            get_negative(ret)
         } else {
             ret
         }
@@ -652,7 +695,7 @@ module self::u256 {
 
     // API
     /// Exponentiation.
-    /// todo use DU256 for intermediate calculations
+    /// todo use U512 for intermediate calculations
     public fun exp(a: U256, b: U256): U256 {
         let ret = one();
         let i = 0;
@@ -697,6 +740,15 @@ module self::u256 {
     public fun is_negative(a: &U256): bool {
         let msb = get(a, WORDS - 1);
         msb & 0x8000000000000000 != 0
+    }
+
+    // change sign
+    public fun get_negative(a: U256): U256 {
+        if (is_negative(&a)) {
+            bitnot(overflowing_sub(a, from_u128(1)))
+        } else {
+            overflowing_add(bitnot(a), from_u128(1))
+        }
     }
 
     /// Shift right `a`  by `shift`.
@@ -795,82 +847,44 @@ module self::u256 {
         *std::vector::borrow_mut(vec, offset + 7) = ((a & 0xFF) as u8);
     }
 
-    /// Get leading zeros of a binary representation of `a`.
-    public fun leading_zeros_u64(a: u64): u8 {
-        if (a == 0) {
-            return 64
-        };
+    use self::u512::overflowing_add_d;
 
-        let a1 = a & 0xFFFFFFFF;
-        let a2 = a >> 32;
+    public fun add_mod(a: U256, b: U256, mod: U256): U256 {
+        assert!(compare(&mod, &zero()) != EQUAL, EDIV);
 
-        if (a2 == 0) {
-            let bit = 32;
+        let a_d = u256_to_u512(&a);
+        let b_d = u256_to_u512(&b);
+        let mod_d = u256_to_u512(&mod);
 
-            while (bit >= 1) {
-                let b = (a1 >> (bit - 1)) & 1;
-                if (b != 0) {
-                    break
-                };
+        let res = mod_d(overflowing_add_d(a_d, b_d), mod_d);
 
-                bit = bit - 1;
-            };
+        let (res, o) = u512_to_u256(res);
 
-            (32 - bit) + 32
-        } else {
-            let bit = 64;
-            while (bit >= 1) {
-                let b = (a >> (bit - 1)) & 1;
-                if (b != 0) {
-                    break
-                };
-                bit = bit - 1;
-            };
+        assert!(!o, 2);
 
-            64 - bit
-        }
+        res
     }
 
-    /// Similar to Rust `overflowing_add`.
-    /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would occur.
-    /// If an overflow would have occurred then the wrapped value is returned.
-    public fun overflowing_add_u64(a: u64, b: u64): (u64, bool) {
-        let a128 = (a as u128);
-        let b128 = (b as u128);
+    use self::u512::mod_d;
 
-        let r = a128 + b128;
-        if (r > U64_MAX) {
-            // overflow
-            let overflow = r - U64_MAX - 1;
-            ((overflow as u64), true)
-        } else {
-            (((a128 + b128) as u64), false)
-        }
-    }
+    public fun mul_mod(a: U256, b: U256, mod: U256): U256 {
+        // mod != 0
+        assert!(compare(&mod, &zero()) != EQUAL, 2);
 
-    /// Similar to Rust `overflowing_sub`.
-    /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would occur.
-    /// If an overflow would have occurred then the wrapped value is returned.
-    public fun overflowing_sub_u64(a: u64, b: u64): (u64, bool) {
-        if (a < b) {
-            let r = b - a;
-            ((U64_MAX as u64) - r + 1, true)
-        } else {
-            (a - b, false)
-        }
-    }
+        let res = mod_d(overflowing_mul_d(a, b), u256_to_u512(&mod));
 
-    /// Extracts two `u64` from `a` `u128`.
-    public fun split_u128(a: u128): (u64, u64) {
-        let a1 = ((a >> 64) as u64);
-        let a2 = ((a & 0xFFFFFFFFFFFFFFFF) as u64);
+        let (res, o) = u512_to_u256(res);
 
-        (a1, a2)
+        assert!(!o, 2);
+
+        res
     }
 
 
-    /// Convert `DU256` to `U256`.
-    public fun du256_to_u256(a: DU256): (U256, bool) {
+    use self::u512::{U512, new_u512};
+
+    /// Convert `U512` to `U256`.
+    public fun u512_to_u256(a: U512): (U256, bool) {
         let b = new_u256(get_d(&a, 0), get_d(&a, 1), get_d(&a, 2), get_d(&a, 3));
 
         let overflow = false;
@@ -880,4 +894,67 @@ module self::u256 {
 
         (b, overflow)
     }
+
+    /// Convert `U256` to `U512`.
+    public fun u256_to_u512(a: &U256): U512 {
+        new_u512(
+            get(a, 0),
+            get(a, 1),
+            get(a, 2),
+            get(a, 3),
+            0, 0, 0, 0
+        )
+    }
+
+    /// Multiples two `U256`. Returns U512.
+    public fun overflowing_mul_d(a: U256, b: U256): U512 {
+        let ret = zero_d();
+
+        let i = 0;
+        while (i < WORDS) {
+            let carry = 0u64;
+            let b1 = get(&b, i);
+
+            let j = 0;
+            while (j < WORDS) {
+                let a1 = get(&a, j);
+
+                if (a1 != 0 || carry != 0) {
+                    let (hi, low) = split_u128((a1 as u128) * (b1 as u128));
+
+                    let overflow = {
+                        let existing_low = get_d(&ret, i + j);
+                        let (low, o) = overflowing_add_u64(low, existing_low);
+                        put_d(&mut ret, i + j, low);
+                        if (o) {
+                            1
+                        } else {
+                            0
+                        }
+                    };
+
+                    carry = {
+                        let existing_hi = get_d(&ret, i + j + 1);
+                        let hi = hi + overflow;
+                        let (hi, o0) = overflowing_add_u64(hi, carry);
+                        let (hi, o1) = overflowing_add_u64(hi, existing_hi);
+                        put_d(&mut ret, i + j + 1, hi);
+
+                        if (o0 || o1) {
+                            1
+                        } else {
+                            0
+                        }
+                    };
+                };
+
+                j = j + 1;
+            };
+
+            i = i + 1;
+        };
+
+        ret
+    }
+
 }

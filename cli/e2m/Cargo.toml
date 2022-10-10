@@ -1,6 +1,6 @@
 [package]
 name = "e2m"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 authors = [
     "Maxim Vladimirov <maxim@pontem.network>",
@@ -25,7 +25,6 @@ translator = { path = "../../translator" }
 test_infra = { path = "../../translator/test_infra" }
 eth = { path = "../../translator/eth" }
 
-
 # FEATURE DEPLOY
 # It is necessary to monitor the relevance. At the moment, this particular client is working with devnet
 # You need to download a working client from https://github.com/aptos-labs/aptos-core/releases
@@ -37,6 +36,7 @@ hex = { version = "0.4", optional = true }
 tokio = { version = "1.21", features = ["full"], optional = true }
 serde_json = { version = "1.0.82", optional = true }
 ethabi = { version = "17.2", optional = true }
+reqwest = { version = "0.11", optional = true }
 
 aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc", optional = true }
 aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc", optional = true }
@@ -54,6 +54,7 @@ deploy = [
     "ethabi",
     "tokio",
     "serde_json",
+    "reqwest",
     "aptos",
     "aptos-vm",
     "aptos-types",

@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use enum_iterator::all;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::{
-    Constant, ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
-    StructHandleIndex, Visibility,
+    Constant, FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex,
+    Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
@@ -14,7 +14,7 @@ use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 
 use intrinsic::table::{Memory as Mem, Persist, U256 as Num};
-use intrinsic::{self_address_index, template, Function};
+use intrinsic::{find_address_const, self_address_index, template, Function};
 
 #[test]
 pub fn test_template_verification() {
@@ -26,7 +26,8 @@ pub fn test_template_verification() {
         &["div".to_string(), "mod".to_string()]
             .into_iter()
             .collect::<HashSet<_>>(),
-    );
+    )
+    .unwrap();
     CodeUnitVerifier::verify_module(&VerifierConfig::default(), &template).unwrap();
 }
 
@@ -38,7 +39,8 @@ pub fn test_template_verification_core() {
         &["sstore".to_string(), "mod".to_string()]
             .into_iter()
             .collect(),
-    );
+    )
+    .unwrap();
     CodeUnitVerifier::verify_module(&VerifierConfig::default(), &template).unwrap();
 }
 
@@ -53,7 +55,7 @@ pub fn test_template() {
         )
     );
     assert_eq!(
-        module.constant_pool[self_address_index().0 as usize],
+        module.constant_pool[self_address_index(&module).unwrap().0 as usize],
         Constant {
             type_: SignatureToken::Address,
             data: AccountAddress::from_hex_literal("0x42").unwrap().to_vec(),
@@ -65,7 +67,7 @@ pub fn test_template() {
 pub fn test_intrinsic_signature_token_mem_store() {
     let address = AccountAddress::random();
 
-    let template = template(address, "template_module", &HashSet::new());
+    let template = template(address, "template_module", &HashSet::new()).unwrap();
 
     assert_eq!(
         template.self_id(),
@@ -84,7 +86,10 @@ pub fn test_intrinsic_signature_token_mem_store() {
         SignatureToken::Struct(find_struct_by_name(&template, "Memory"))
     );
 
-    assert_eq!(self_address_index(), find_address_const(&template, address));
+    assert_eq!(
+        self_address_index(&template).ok(),
+        find_address_const(&template, address)
+    );
 
     assert_eq!(
         Num::token(),
@@ -95,7 +100,7 @@ pub fn test_intrinsic_signature_token_mem_store() {
 #[test]
 pub fn test_intrinsic_function_visibility() {
     let address = AccountAddress::random();
-    let template = template(address, "template_module", &HashSet::new());
+    let template = template(address, "template_module", &HashSet::new()).unwrap();
     let public_functions = vec![Num::FromU128.handler(), Num::ToU128.handler()];
 
     for fun in &template.function_defs {
@@ -110,7 +115,7 @@ pub fn test_intrinsic_function_visibility() {
 #[test]
 pub fn test_intrinsic_signature_token() {
     let address = AccountAddress::random();
-    let template = template(address, "template_module", &HashSet::new());
+    let template = template(address, "template_module", &HashSet::new()).unwrap();
 
     let diff: Vec<Mem> = all::<Mem>()
         .filter(|mem| find_function_by_name(&template, mem.name()) != mem.handler())
@@ -190,18 +195,5 @@ fn find_def(module: &CompiledModule, name: &str) -> StructDefinitionIndex {
         .enumerate()
         .find(|(_, def)| def.struct_handle == id)
         .map(|(id, _)| StructDefinitionIndex(id as u16))
-        .unwrap()
-}
-
-fn find_address_const(module: &CompiledModule, addr: AccountAddress) -> ConstantPoolIndex {
-    module
-        .constant_pool
-        .iter()
-        .enumerate()
-        .find(|(_, c)| match c.type_ {
-            SignatureToken::Address => c.data.as_slice() == addr.as_slice(),
-            _ => false,
-        })
-        .map(|(id, _)| ConstantPoolIndex(id as u16))
         .unwrap()
 }

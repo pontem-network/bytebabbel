@@ -74,7 +74,7 @@ const PERSIST_TABLE: [(&str, &str); 8] = [
     ("Log4", "log4"),
 ];
 
-const U256_TABLE: [(&str, &str); 35] = [
+const U256_TABLE: [(&str, &str); 37] = [
     ("Add", "overflowing_add"),
     ("Sub", "overflowing_sub"),
     ("Mul", "overflowing_mul"),
@@ -110,6 +110,8 @@ const U256_TABLE: [(&str, &str); 35] = [
     ("ToAddress", "to_address"),
     ("FromU128", "from_u128"),
     ("ToU128", "as_u128"),
+    ("AddMod", "add_mod"),
+    ("MulMod", "mul_mod"),
 ];
 
 pub(crate) fn generate_table(paths: &Paths) -> Result<()> {

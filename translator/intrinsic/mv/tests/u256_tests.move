@@ -55,7 +55,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::overflowing_add_u64;
+    use self::utiles::overflowing_add_u64;
 
     #[test]
     fun test_overflowing_add_u64() {
@@ -77,7 +77,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::overflowing_sub_u64;
+    use self::utiles::overflowing_sub_u64;
 
     #[test]
     fun test_overflowing_sub() {
@@ -95,7 +95,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::split_u128;
+    use self::utiles::split_u128;
 
     #[test]
     fun test_split_u128() {
@@ -109,7 +109,7 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::leading_zeros_u64;
+    use self::utiles::leading_zeros_u64;
 
     #[test]
     fun test_leading_zeros_u64() {
@@ -198,6 +198,30 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::get_negative;
+
+    #[test]
+    fun test_negative() {
+        let a = from_string(&b"30");
+        let b = get_negative(a);
+        let c = as_u128(overflowing_add(a, b));
+
+        assert!(c == 0, 0);
+
+        let a = from_u128(0);
+        let b = get_negative(a);
+        let c = as_u128(overflowing_add(a, b));
+
+        assert!(c == 0, 1);
+
+        let b = from_string(&b"-100");
+        let c = overflowing_add(b, b);
+        let d = as_u128(get_negative(c));
+
+        assert!(d == 200, 2);
+    }
+
+    #[test_only]
     use self::u256::slt;
 
     #[test]
@@ -217,15 +241,20 @@ module self::u256_tests {
         let c = slt(a, b);
         assert!(c == false, 2);
 
-        let a = new_u256(1, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let a = from_string(&b"-1");
+        let b = from_string(&b"-2");
         let c = slt(a, b);
         assert!(c == false, 3);
 
-        let a = new_u256(2, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(1, 0, 0, 0);
+        let a = from_string(&b"-2");
+        let b = from_string(&b"1");
         let c = slt(a, b);
         assert!(c == true, 4);
+
+        let a = from_string(&b"-2");
+        let b = from_string(&b"-1");
+        let c = slt(a, b);
+        assert!(c == true, 5);
     }
 
     #[test_only]
@@ -248,35 +277,35 @@ module self::u256_tests {
         let c = sgt(a, b);
         assert!(c == false, 2);
 
-        let a = new_u256(1, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(2, 0, 0, 0x8000000000000000u64);
+        let a = from_string(&b"-1");
+        let b = from_string(&b"-2");
         let c = sgt(a, b);
         assert!(c == true, 3);
 
-        let a = new_u256(2, 0, 0, 0x8000000000000000u64);
-        let b = new_u256(1, 0, 0, 0);
+        let a = from_string(&b"-2");
+        let b = from_string(&b"1");
         let c = sgt(a, b);
         assert!(c == false, 4);
     }
 
     #[test_only]
-    use self::u256::{sdiv, bitnot};
+    use self::u256::{sdiv};
 
     #[test]
     fun test_sdiv() {
-        let a = bitnot(from_u128(100));
-        let b = bitnot(from_u128(5));
+        let a = from_string(&b"-100");
+        let b = get_negative(from_u128(5));
         let d = sdiv(a, b);
         assert!(as_u128(d) == 20, 0);
 
-        let a = bitnot(from_u128(100));
+        let a = from_string(&b"-100");
         let b = from_u128(5);
-        let d = bitnot(sdiv(a, b));
+        let d = get_negative(sdiv(a, b));
         assert!(as_u128(d) == 20, 1);
 
         let a = from_u128(U64_MAX);
-        let b = bitnot(from_u128(U128_MAX));
-        let d = bitnot(sdiv(a, b));
+        let b = get_negative(from_u128(U128_MAX));
+        let d = get_negative(sdiv(a, b));
         assert!(as_u128(d) == 0, 2);
 
         let a = from_u128(U128_MAX);
@@ -295,24 +324,24 @@ module self::u256_tests {
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 0);
 
-        let a = bitnot(from_u128(100));
+        let a = from_string(&b"-100");
         let b = from_u128(5);
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 1);
 
         let a = from_u128(100);
-        let b = bitnot(from_u128(5));
+        let b = from_string(&b"-5");
         let d = smod(a, b);
         assert!(as_u128(d) == 0, 2);
 
-        let a = bitnot(from_u128(5));
+        let a = from_string(&b"-5");
         let b = from_u128(2);
-        let d = bitnot(smod(a, b));
+        let d = get_negative(smod(a, b));
         assert!(as_u128(d) == 1, 3);
 
-        let a = bitnot(from_u128(5));
-        let b = bitnot(from_u128(2));
-        let d = bitnot(smod(a, b));
+        let a = get_negative(from_u128(5));
+        let b = get_negative(from_u128(2));
+        let d = get_negative(smod(a, b));
         assert!(as_u128(d) == 1, 4);
     }
 
@@ -557,6 +586,27 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::from_string;
+
+    #[test]
+    fun test_from_string() {
+        let num = from_string(&b"1313539323434");
+        assert!(as_u128(num) == 1313539323434, 0);
+
+        let num = from_string(&b"231238729");
+        assert!(as_u128(num) == 231238729, 1);
+
+        let num = from_string(&b"-231238729");
+        assert!(as_u128(get_negative(num)) == 231238729, 2);
+
+        let num = from_string(&b"0");
+        assert!(as_u128(num) == 0, 3);
+
+        let num = from_string(&b"-1");
+        assert!(as_u128(get_negative(num)) == 1, 3);
+    }
+
+    #[test_only]
     use self::u256::overflowing_add;
 
     #[test]
@@ -661,6 +711,87 @@ module self::u256_tests {
         let a = new_u256(max, max, max, max);
 
         let _ = overflowing_mul(a, from_u128(2));
+    }
+
+    #[test_only]
+    use self::u256::add_mod;
+
+    #[test]
+    fun test_add_mod() {
+        let a = from_string(&b"1000000000");
+        let b = from_string(&b"1");
+        let mod = from_string(&b"1000000000");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 1, 0);
+
+        let a = from_string(&b"5");
+        let b = from_string(&b"3");
+        let mod = from_string(&b"9");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 8, 1);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"19");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 11, 2);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"9973");
+        let c = add_mod(a, b, mod);
+
+        assert!(as_u128(c) == 1594, 3);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 2)]
+    fun test_add_mod_abort() {
+        let a = from_string(&b"1000000000");
+        let b = from_string(&b"1");
+        let mod = from_string(&b"0");
+        let _ = add_mod(a, b, mod);
+    }
+
+    #[test_only]
+    use self::u256::mul_mod;
+
+    #[test]
+    fun test_mul_mod() {
+        let a = from_string(&b"1000000000");
+        let b = from_string(&b"1");
+        let mod = from_string(&b"1000000000");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 0, 0);
+
+        let a = from_string(&b"5");
+        let b = from_string(&b"3");
+        let mod = from_string(&b"9");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 6, 1);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"19");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 16, 2);
+
+        let max = from_string(&b"115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        let a = max;
+        let b = max;
+        let mod = from_string(&b"9973");
+        let c = mul_mod(a, b, mod);
+
+        assert!(as_u128(c) == 6910, 3);
     }
 
     #[test_only]

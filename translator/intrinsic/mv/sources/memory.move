@@ -2,7 +2,9 @@ module self::memory {
     // Memory.
     //=================================================================================================================
 
-    use self::u256::{U256, new_u256, from_bytes, get, zero, as_u64, from_u128, split_u128};
+    use self::u256::{U256, new_u256, from_bytes, get, zero, as_u64, from_u128};
+
+    use self::utiles::split_u128;
 
     const ELENGTH: u64 = 0x1;
     const OUT_OF_MEMORY: u64 = 0x2;

@@ -43,16 +43,16 @@ impl MvIrTranslator {
         max_memory: u64,
         program: Program,
         flags: Flags,
-    ) -> MvIrTranslator {
-        let template = template(address, program.name(), program.identifiers());
-        Self {
+    ) -> Result<MvIrTranslator> {
+        let template = template(address, program.name(), program.identifiers())?;
+        Ok(Self {
             sign_writer: SignatureWriter::new(&template.signatures),
             code: Default::default(),
             template,
             max_memory,
             program: Some(program),
             flags,
-        }
+        })
     }
 
     pub fn translate(mut self) -> Result<Module, Error> {
@@ -292,8 +292,9 @@ impl MvIrTranslator {
                 self.call(Mem::New, vec![CallOp::ConstU64(self.max_memory)]);
             }
             Expression::GetStore => {
-                self.code
-                    .write(Bytecode::LdConst(intrinsic::self_address_index()));
+                let index = intrinsic::self_address_index(&self.template)?;
+                self.code.write(Bytecode::LdConst(index));
+
                 self.code
                     .write(Bytecode::MutBorrowGlobal(Persist::instance()));
             }
@@ -461,18 +462,17 @@ impl MvIrTranslator {
     fn translate_ternary(
         &mut self,
         op: TernaryOp,
-        _arg: &Loc<TypedExpr>,
-        _arg1: &Loc<TypedExpr>,
-        _arg2: &Loc<TypedExpr>,
-    ) {
-        match op {
-            TernaryOp::AddMod => {
-                todo!()
-            }
-            TernaryOp::MulMod => {
-                todo!()
-            }
-        }
+        arg: &Loc<TypedExpr>,
+        arg1: &Loc<TypedExpr>,
+        arg2: &Loc<TypedExpr>,
+    ) -> Result<(), Error> {
+        let args = vec![CallOp::Expr(arg), CallOp::Expr(arg1), CallOp::Expr(arg2)];
+        let index = match op {
+            TernaryOp::AddMod => Num::AddMod,
+            TernaryOp::MulMod => Num::MulMod,
+        };
+        self.code.call(index, args);
+        Ok(())
     }
 
     fn call(&mut self, fun: impl Function, args: Vec<CallOp>) {
