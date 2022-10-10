@@ -553,18 +553,17 @@ impl MvIrTranslator {
     fn translate_ternary(
         &mut self,
         op: &TernaryOp,
-        _arg: &TypedExpr,
-        _arg1: &TypedExpr,
-        _arg2: &TypedExpr,
+        arg: &TypedExpr,
+        arg1: &TypedExpr,
+        arg2: &TypedExpr,
     ) -> Result<(), Error> {
-        match op {
-            TernaryOp::AddMod => {
-                todo!()
-            }
-            TernaryOp::MulMod => {
-                todo!()
-            }
-        }
+        let args = vec![self.call_args(arg)?, self.call_args(arg1)?, self.call_args(arg2)?];
+        let index = match op {
+            TernaryOp::AddMod => Num::AddMod,
+            TernaryOp::MulMod => Num::MulMod,
+        };
+        self.code.call(index, args);
+        Ok(())
     }
 
     fn call_args(&mut self, args: &TypedExpr) -> Result<CallOp, Error> {
