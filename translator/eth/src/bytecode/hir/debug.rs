@@ -140,7 +140,7 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
         Stmt::Brunch(label) => {
             writeln!(buf, "goto '{};", label.to)?;
         }
-        Stmt::StoreContext(ctx) => {
+        Stmt::StoreStack(ctx) => {
             writeln!(buf, "[")?;
             for (id, expr) in ctx.iter() {
                 write!(buf, "{}: ", BlockId::from(expr.start))?;

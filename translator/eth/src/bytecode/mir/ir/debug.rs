@@ -53,7 +53,7 @@ impl Display for Statement {
             Statement::InitStorage(var) => {
                 write!(f, "InitStorage({})", var)
             }
-            Statement::StoreContext(ctx) => {
+            Statement::StoreStack(ctx) => {
                 writeln!(f, "[")?;
                 for (var, loc) in ctx {
                     writeln!(f, "  {}: {};", var, loc)?;

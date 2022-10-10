@@ -111,7 +111,7 @@ impl Locals {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Variable(LocalIndex, SType);
 
 impl Variable {

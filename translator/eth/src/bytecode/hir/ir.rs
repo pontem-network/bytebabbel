@@ -18,7 +18,7 @@ pub struct Hir {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Label(Label),
-    StoreContext(BTreeMap<VarId, Loc<_Expr>>),
+    StoreStack(BTreeMap<VarId, Loc<_Expr>>),
     Assign(VarId, Loc<_Expr>),
     MemStore8 {
         addr: Loc<_Expr>,
@@ -158,8 +158,8 @@ impl Hir {
             .push(loc.wrap(Stmt::MemStore8 { addr, val: var }));
     }
 
-    pub fn save_context(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Loc<_Expr>>) {
-        self.statement.push(loc.wrap(Stmt::StoreContext(context)));
+    pub fn save_stack(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Loc<_Expr>>) {
+        self.statement.push(loc.wrap(Stmt::StoreStack(context)));
     }
 
     pub fn sstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {

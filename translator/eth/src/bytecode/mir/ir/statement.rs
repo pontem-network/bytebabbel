@@ -2,12 +2,12 @@ use crate::bytecode::hir::ir::Label;
 use crate::bytecode::loc::{Loc, Location};
 use crate::bytecode::mir::ir::expression::TypedExpr;
 use crate::bytecode::mir::translation::variables::Variable;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
     InitStorage(Variable),
-    StoreContext(HashMap<Variable, Loc<TypedExpr>>),
+    StoreStack(BTreeMap<Variable, Loc<TypedExpr>>),
     Assign(Variable, Loc<TypedExpr>),
     MStore {
         memory: Variable,

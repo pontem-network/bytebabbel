@@ -108,7 +108,7 @@ impl HirBuilder {
             ctx.vars.set(var_id, var);
             ctx.stack.push(ctx.loc.wrap(_Expr::Var(var_id)));
         }
-        ir.save_context(&ctx.loc, stack_dump);
+        ir.save_stack(&ctx.loc, stack_dump);
         Ok(())
     }
 

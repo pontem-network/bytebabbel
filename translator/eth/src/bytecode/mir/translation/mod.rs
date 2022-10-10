@@ -89,7 +89,7 @@ impl<'a> MirTranslator<'a> {
         let ctx = instructions
             .iter()
             .map(|inst| {
-                if let Stmt::StoreContext(ctx) = inst.as_ref() {
+                if let Stmt::StoreStack(ctx) = inst.as_ref() {
                     ctx.len()
                 } else {
                     0
@@ -121,8 +121,8 @@ impl<'a> MirTranslator<'a> {
                 Stmt::Label(label) => {
                     self.mir.push(self.loc.wrap(Statement::Label(label)));
                 }
-                Stmt::StoreContext(ctx) => {
-                    self.translate_store_context(ctx)?;
+                Stmt::StoreStack(ctx) => {
+                    self.translate_store_stack(ctx)?;
                 }
                 Stmt::Assign(var, expr) => {
                     self.translate_set_var(var, expr)?;
@@ -168,8 +168,8 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_store_context(&mut self, ctx: BTreeMap<VarId, Loc<_Expr>>) -> Result<(), Error> {
-        let mut context = HashMap::new();
+    fn translate_store_stack(&mut self, ctx: BTreeMap<VarId, Loc<_Expr>>) -> Result<(), Error> {
+        let mut context = BTreeMap::new();
         for (var, expr) in ctx {
             let expr = self.translate_expr(expr)?;
             let expr = self.cast_expr(expr, SType::Num)?;
@@ -180,8 +180,7 @@ impl<'a> MirTranslator<'a> {
             self.vars.reborrow(var);
             context.insert(var, expr);
         }
-        self.mir
-            .push(self.loc.wrap(Statement::StoreContext(context)));
+        self.mir.push(self.loc.wrap(Statement::StoreStack(context)));
         Ok(())
     }
 
