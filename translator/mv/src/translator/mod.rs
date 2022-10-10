@@ -558,7 +558,11 @@ impl MvIrTranslator {
         arg1: &TypedExpr,
         arg2: &TypedExpr,
     ) -> Result<(), Error> {
-        let args = vec![self.call_args(arg)?, self.call_args(arg1)?, self.call_args(arg2)?];
+        let args = vec![
+            self.call_args(arg)?,
+            self.call_args(arg1)?,
+            self.call_args(arg2)?,
+        ];
         let index = match op {
             TernaryOp::AddMod => Num::AddMod,
             TernaryOp::MulMod => Num::MulMod,
