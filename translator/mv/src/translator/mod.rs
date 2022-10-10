@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Error};
+use anyhow::{anyhow, bail, Error, Result};
 use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
@@ -42,16 +42,16 @@ impl MvIrTranslator {
         max_memory: u64,
         program: Program,
         flags: Flags,
-    ) -> MvIrTranslator {
-        let template = template(address, program.name(), program.identifiers());
-        Self {
+    ) -> Result<MvIrTranslator> {
+        let template = template(address, program.name(), program.identifiers())?;
+        Ok(Self {
             sign_writer: SignatureWriter::new(&template.signatures),
             code: Default::default(),
             template,
             max_memory,
             program: Some(program),
             flags,
-        }
+        })
     }
 
     pub fn translate(mut self) -> Result<Module, Error> {
@@ -317,8 +317,9 @@ impl MvIrTranslator {
                     .call(Mem::New, vec![CallOp::ConstU64(self.max_memory)]);
             }
             Expression::GetStore => {
-                self.code
-                    .write(Bytecode::LdConst(intrinsic::self_address_index()));
+                let index = intrinsic::self_address_index(&self.template)?;
+                self.code.write(Bytecode::LdConst(index));
+
                 self.code
                     .write(Bytecode::MutBorrowGlobal(Persist::instance()));
             }

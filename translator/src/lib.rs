@@ -37,7 +37,7 @@ pub fn translate(bytecode: &str, abi: &str, config: Config) -> Result<Target, Er
         config.flags,
     )?;
 
-    let mvir = MvIrTranslator::new(config.contract_addr, MAX_MEMORY, program, config.flags);
+    let mvir = MvIrTranslator::new(config.contract_addr, MAX_MEMORY, program, config.flags)?;
     let module = mvir.translate()?;
     let compiled_module = module.make_move_module()?;
     let interface = move_interface(&compiled_module, &abi, config.flags)?;
