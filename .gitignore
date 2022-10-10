@@ -4,6 +4,7 @@ translator/test_infra/bin
 translator/intrinsic/mv/build
 /aptos
 Cargo.lock
+translator/intrinsic/src/table.rs
 translator/intrinsic/mv/template.mv
 .idea
 .aptos

@@ -13,7 +13,8 @@ const TEMPLATE_USE: &str = "\
 use crate::Function;
 use enum_iterator::Sequence;
 use move_binary_format::file_format::{
-    FunctionHandleIndex, SignatureToken, StructDefinitionIndex, StructHandleIndex, ConstantPoolIndex,
+    ConstantPoolIndex, FunctionHandleIndex, SignatureToken, StructDefinitionIndex,
+    StructHandleIndex,
 };
 ";
 
