@@ -42,7 +42,7 @@ pub fn print_buf<B: Write>(ir: &Mir, buf: &mut B) -> Result<(), Error> {
 
 fn print_statements<B: Write>(st: &[Loc<Statement>], buf: &mut B) -> Result<(), Error> {
     for inst in st {
-        writeln!(buf, "{}: {}", BlockId::from(inst.start), inst)?;
+        writeln!(buf, "{}: {}", BlockId::from(inst.start), inst.as_ref())?;
     }
     Ok(())
 }
@@ -56,29 +56,41 @@ impl Display for Statement {
             Statement::StoreStack(ctx) => {
                 writeln!(f, "[")?;
                 for (var, loc) in ctx {
-                    writeln!(f, "  {}: {};", var, loc)?;
+                    writeln!(f, "  {}: {};", var, loc.as_ref())?;
                 }
                 write!(f, "]")
             }
             Statement::Assign(var, expr) => {
-                write!(f, "{} = {};", var, expr)
+                write!(f, "{} = {};", var, expr.as_ref())
             }
             Statement::MStore {
                 memory,
                 offset,
                 val,
             } => {
-                write!(f, "{}.MStore({}, {});", memory, offset, val)
+                write!(
+                    f,
+                    "{}.MStore({}, {});",
+                    memory,
+                    offset.as_ref(),
+                    val.as_ref()
+                )
             }
             Statement::MStore8 {
                 memory,
                 offset,
                 val,
             } => {
-                write!(f, "{}.MStore8({}, {});", memory, offset, val)
+                write!(
+                    f,
+                    "{}.MStore8({}, {});",
+                    memory,
+                    offset.as_ref(),
+                    val.as_ref()
+                )
             }
             Statement::SStore { storage, key, val } => {
-                write!(f, "{}.SStore({}, {});", storage, key, val)
+                write!(f, "{}.SStore({}, {});", storage, key.as_ref(), val.as_ref())
             }
             Statement::Abort(code) => {
                 write!(f, "Abort({});", code)
@@ -100,12 +112,19 @@ impl Display for Statement {
                 len,
                 topics,
             } => {
-                write!(f, "{}.Log({}, {}, {}, [", storage, memory, offset, len)?;
+                write!(
+                    f,
+                    "{}.Log({}, {}, {}, [",
+                    storage,
+                    memory,
+                    offset.as_ref(),
+                    len.as_ref()
+                )?;
                 for (i, topic) in topics.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "{}", topic)?;
+                    write!(f, "{}", topic.as_ref())?;
                 }
                 write!(f, "]);")
             }
@@ -113,7 +132,7 @@ impl Display for Statement {
                 write!(f, "'{}:", l)
             }
             Statement::BrTrue(cnd, l) => {
-                write!(f, "if {} goto '{};", cnd, l)
+                write!(f, "if {} goto '{};", cnd.as_ref(), l)
             }
             Statement::Br(l) => {
                 write!(f, "goto '{};", l)
@@ -141,17 +160,23 @@ impl Display for TypedExpr {
                 write!(f, "GetStore()")
             }
             Expression::MLoad { memory, offset } => {
-                write!(f, "{}.MLoad({})", memory, offset)
+                write!(f, "{}.MLoad({})", memory, offset.as_ref())
             }
             Expression::MSlice {
                 memory,
                 offset,
                 len,
             } => {
-                write!(f, "{}.MSlice({}, {})", memory, offset, len)
+                write!(
+                    f,
+                    "{}.MSlice({}, {})",
+                    memory,
+                    offset.as_ref(),
+                    len.as_ref()
+                )
             }
             Expression::SLoad { storage, key } => {
-                write!(f, "{}.SLoad({})", storage, key)
+                write!(f, "{}.SLoad({})", storage, key.as_ref())
             }
             Expression::MSize { memory } => {
                 write!(f, "{}.MSize()", memory)
@@ -163,30 +188,42 @@ impl Display for TypedExpr {
                 write!(f, "copy({})", var)
             }
             Expression::Unary(op, arg) => {
-                write!(f, "{}({})", op, arg)
+                write!(f, "{}({})", op, arg.as_ref())
             }
             Expression::Binary(op, arg, arg1) => {
-                write!(f, "({} {} {})", arg, op, arg1)
+                write!(f, "({} {} {})", arg.as_ref(), op, arg1.as_ref())
             }
             Expression::Ternary(op, arg1, arg2, arg3) => match op {
                 TernaryOp::AddMod => {
-                    write!(f, "addmod({}, {}, {})", arg1, arg2, arg3)
+                    write!(
+                        f,
+                        "addmod({}, {}, {})",
+                        arg1.as_ref(),
+                        arg2.as_ref(),
+                        arg3.as_ref()
+                    )
                 }
                 TernaryOp::MulMod => {
-                    write!(f, "mulmod({}, {}, {})", arg1, arg2, arg3)
+                    write!(
+                        f,
+                        "mulmod({}, {}, {})",
+                        arg1.as_ref(),
+                        arg2.as_ref(),
+                        arg3.as_ref()
+                    )
                 }
             },
             Expression::Cast(expr, cast) => {
-                write!(f, "({} as {})", expr, cast.to())
+                write!(f, "({} as {})", expr.as_ref(), cast.to())
             }
             Expression::BytesLen(var) => {
                 write!(f, "{}.BytesLen()", var)
             }
             Expression::ReadNum { data, offset } => {
-                write!(f, "{}.ReadNum({})", data, offset)
+                write!(f, "{}.ReadNum({})", data, offset.as_ref())
             }
             Expression::Hash { mem, offset, len } => {
-                write!(f, "{}.Hash({}, {})", mem, offset, len)
+                write!(f, "{}.Hash({}, {})", mem, offset.as_ref(), len.as_ref())
             }
         }
     }
@@ -207,6 +244,6 @@ impl Display for Value {
 
 impl Display for Variable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "var_{}", self.index())
+        write!(f, "var_{}", self.index())
     }
 }

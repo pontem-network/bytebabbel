@@ -285,6 +285,9 @@ impl MvIrTranslator {
             Expression::MoveVar(var) => {
                 self.code.move_loc(var.index());
             }
+            Expression::CopyVar(var) => {
+                self.code.copy_loc(var.index());
+            }
             Expression::GetMem => {
                 self.call(Mem::New, vec![CallOp::ConstU64(self.max_memory)]);
             }
@@ -347,9 +350,6 @@ impl MvIrTranslator {
             Expression::Binary(op, arg, arg1) => self.translate_binary(*op, arg, arg1),
             Expression::Ternary(op, arg, arg1, arg2) => {
                 self.translate_ternary(*op, arg, arg1, arg2)
-            }
-            Expression::CopyVar(var) => {
-                self.code.copy_loc(var.index());
             }
         }
     }
@@ -424,6 +424,13 @@ impl MvIrTranslator {
     }
 
     fn translate_binary(&mut self, op: BinaryOp, arg: &Loc<TypedExpr>, arg1: &Loc<TypedExpr>) {
+        if op == BinaryOp::Eq || arg.ty == SType::Bool && arg1.ty == SType::Bool {
+            self.translate_expr(arg);
+            self.translate_expr(arg1);
+            self.code.write(Bytecode::Eq);
+            return;
+        }
+
         let args = vec![CallOp::Expr(arg), CallOp::Expr(arg1)];
         let index = match op {
             BinaryOp::Eq => Num::Eq,

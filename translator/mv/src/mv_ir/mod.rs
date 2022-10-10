@@ -58,7 +58,9 @@ pub fn print_move_module(module: &CompiledModule) {
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+    let mut ops = DisassemblerOptions::new();
+    ops.only_externally_visible = true;
+    let disassembler = Disassembler::new(source_mapping, ops);
     let dissassemble_string = disassembler.disassemble().unwrap();
     println!("{}", dissassemble_string);
 }

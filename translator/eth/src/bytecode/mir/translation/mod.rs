@@ -25,7 +25,7 @@ pub struct MirTranslator<'a> {
     pub(super) fun: &'a Function,
     pub(super) vars: Variables,
     pub(super) var_map: HashMap<VarId, Variable>,
-    pub(super) ctx_map: HashMap<VarId, Variable>,
+    pub(super) stack_map: HashMap<VarId, Variable>,
     pub(super) mir: Mir,
     pub(super) mem_var: Variable,
     pub(super) store_var: Variable,
@@ -73,7 +73,7 @@ impl<'a> MirTranslator<'a> {
             fun,
             vars: variables,
             var_map: Default::default(),
-            ctx_map: Default::default(),
+            stack_map: Default::default(),
             mir,
             mem_var,
             store_var,
@@ -100,8 +100,11 @@ impl<'a> MirTranslator<'a> {
         for idx in 0..ctx {
             let var_id = VarId::new_var(idx as u32);
             let var = self.vars.borrow(SType::Num);
-            self.ctx_map.insert(var_id, var);
-            self.vars.release(var);
+            self.stack_map.insert(var_id, var);
+        }
+
+        for (_, var) in self.stack_map.iter() {
+            self.vars.release(*var);
         }
     }
 
@@ -168,19 +171,23 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_store_stack(&mut self, ctx: BTreeMap<VarId, Loc<_Expr>>) -> Result<(), Error> {
-        let mut context = BTreeMap::new();
-        for (var, expr) in ctx {
+    fn translate_store_stack(
+        &mut self,
+        hir_stack: BTreeMap<VarId, Loc<_Expr>>,
+    ) -> Result<(), Error> {
+        let mut mir_stack = BTreeMap::new();
+        for (var, expr) in hir_stack {
             let expr = self.translate_expr(expr)?;
             let expr = self.cast_expr(expr, SType::Num)?;
             let var = *self
-                .ctx_map
+                .stack_map
                 .get(&var)
                 .ok_or_else(|| anyhow!("Unknown context variable:{}", var))?;
             self.vars.reborrow(var);
-            context.insert(var, expr);
+            mir_stack.insert(var, expr);
         }
-        self.mir.push(self.loc.wrap(Statement::StoreStack(context)));
+        self.mir
+            .push(self.loc.wrap(Statement::StoreStack(mir_stack)));
         Ok(())
     }
 
@@ -192,7 +199,7 @@ impl<'a> MirTranslator<'a> {
             self.mir.push(self.loc.wrap(Statement::Assign(var, expr)));
         } else {
             let var = *self
-                .ctx_map
+                .stack_map
                 .get(&id)
                 .ok_or_else(|| anyhow!("Unknown context variable: {} in {}", id, self.fun.name))?;
             let expr = self.cast_expr(expr, var.ty())?;

@@ -83,7 +83,7 @@ impl<'a> MirTranslator<'a> {
                 .ok_or_else(|| anyhow::anyhow!("variable not found: {:?}", var))?)
         } else {
             Ok(*self
-                .ctx_map
+                .stack_map
                 .get(&var)
                 .ok_or_else(|| anyhow::anyhow!("variable not found: {:?}", var))?)
         }
