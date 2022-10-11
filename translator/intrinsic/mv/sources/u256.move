@@ -89,7 +89,18 @@ module self::u256 {
         }
     }
 
+    /// u64 => u256
+    public fun from_u64(val:u64): U256{
+        U256 {
+            v0: val,
+            v1: 0,
+            v2: 0,
+            v3: 0,
+        }
+    }
+
     use self::utiles::split_u128;
+
 
     /// Returns a `U256` from `u128` value.
     public fun from_u128(val: u128): U256 {
