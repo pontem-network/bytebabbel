@@ -17,6 +17,7 @@ pub struct Context<'a> {
     pub loc: Loc<()>,
     pub stack: Stack,
     pub vars: Vars,
+    jmp_id: usize,
 }
 
 impl<'a> Context<'a> {
@@ -37,7 +38,13 @@ impl<'a> Context<'a> {
             flags,
             vars: Default::default(),
             loc: Loc::new(0, 0, ()),
+            jmp_id: 0,
         }
+    }
+
+    pub fn next_jmp_id(&mut self) -> BlockId {
+        self.jmp_id += 1;
+        BlockId::from(self.jmp_id as u128)
     }
 
     pub fn disable_static_analysis(&mut self) {

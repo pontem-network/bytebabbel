@@ -1,7 +1,6 @@
 use std::fmt::{Display, Formatter, Write};
 
 use crate::bytecode::hir::executor::math::TernaryOp;
-use crate::bytecode::hir::ir::Label;
 use crate::BlockId;
 use anyhow::Error;
 use log::log_enabled;
@@ -138,12 +137,6 @@ impl Display for Statement {
                 write!(f, "goto '{};", l)
             }
         }
-    }
-}
-
-impl Display for Label {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to)
     }
 }
 

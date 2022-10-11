@@ -13,8 +13,11 @@ impl<'a> MirTranslator<'a> {
         let res = match expr.inner() {
             _Expr::Val(val) => val.into(),
             _Expr::Var(var) => {
+                let is_tmp = var.is_tmp();
                 let var = self.get_var(var)?;
-                self.vars.release(var);
+                if is_tmp {
+                    self.vars.release(var);
+                }
                 Expression::MoveVar(var).ty(var.ty())
             }
             _Expr::MLoad(offset) => {

@@ -79,7 +79,7 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
 pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> {
     write!(buf, "{}: ", BlockId::from(stmt.start))?;
     match stmt.as_ref() {
-        Stmt::Label(label) => writeln!(buf, "'{}:", label.to)?,
+        Stmt::Label(label) => writeln!(buf, "'{}:", label)?,
         Stmt::Assign(var, expr) => {
             write!(buf, "{} = ", var)?;
             print_expr(buf, &expr)?;
@@ -138,7 +138,7 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
             writeln!(buf, ");")?;
         }
         Stmt::Brunch(label) => {
-            writeln!(buf, "goto '{};", label.to)?;
+            writeln!(buf, "goto {};", label)?;
         }
         Stmt::StoreStack(ctx) => {
             writeln!(buf, "[")?;
@@ -152,7 +152,7 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
         }
         Stmt::BrunchTrue(cnd, true_br) => {
             print_expr(buf, &cnd)?;
-            writeln!(buf, "\nBrTrue '{};", true_br.to)?;
+            writeln!(buf, "\nBrTrue {};", true_br)?;
         }
     }
     Ok(())

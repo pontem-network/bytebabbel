@@ -44,7 +44,7 @@ impl InstructionHandler for ControlFlow {
                 let dest = params.remove(0);
                 let dest = dest
                     .resolve(ir, ctx)
-                    .expect("Jump destination is not a constant");
+                    .expect(&format!("Jump destination is not a constant. {:?}", dest));
                 ExecutionResult::Jmp(BlockId::from(dest))
             }
             ControlFlow::JumpIf(inst) => {

@@ -2,7 +2,7 @@ use crate::bytecode::hir::ir::{VarId, _Expr};
 use crate::bytecode::loc::Loc;
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Default, Clone)]
@@ -40,5 +40,11 @@ impl Debug for Vars {
             writeln!(f, " {} => {:?},", var, expr.as_ref())?;
         }
         write!(f, " }}")
+    }
+}
+
+impl Display for Vars {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{:?}", self)
     }
 }

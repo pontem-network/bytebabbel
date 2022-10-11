@@ -102,10 +102,6 @@ impl<'a> MirTranslator<'a> {
             let var = self.vars.borrow(SType::Num);
             self.stack_map.insert(var_id, var);
         }
-
-        for (_, var) in self.stack_map.iter() {
-            self.vars.release(*var);
-        }
     }
 
     pub fn translate(mut self, hir: Hir) -> Result<Mir, Error> {
@@ -183,7 +179,6 @@ impl<'a> MirTranslator<'a> {
                 .stack_map
                 .get(&var)
                 .ok_or_else(|| anyhow!("Unknown context variable:{}", var))?;
-            self.vars.reborrow(var);
             mir_stack.insert(var, expr);
         }
         self.mir
@@ -231,14 +226,6 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    // fn get_var(&mut self, id: VarId) -> Result<Variable, Error> {
-    //     let var = self
-    //         .var_map
-    //         .get(&id)
-    //         .ok_or_else(|| anyhow!("variable {:?} not found", id))?;
-    //     Ok(*var)
-    // }
-    //
     fn translate_ret_unit(&mut self) -> Result<(), Error> {
         if self.flags.hidden_output || self.flags.native_output {
             self.mir.push(self.loc.wrap(Statement::Result(vec![])));

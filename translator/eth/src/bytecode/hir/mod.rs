@@ -2,6 +2,7 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::{Label, VarId, _Expr};
+use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{BlockId, Flags, Function, Hir, OpCode};
@@ -56,9 +57,9 @@ impl HirBuilder {
             match self.translate_block(block, ir, ctx)? {
                 BlockResult::Jmp(block) => {
                     if self.flow.loops.contains_key(&block) {
-                        if ir.has_label(Label::from(block)) {
+                        if ir.has_label(Label::new(block)) {
                             self.flush_context(ctx, ir)?;
-                            ir.goto(&ctx.loc, Label::from(block));
+                            ir.goto(&ctx.loc, Label::new(block));
                         } else {
                             block_id = block;
                         }
@@ -71,13 +72,18 @@ impl HirBuilder {
                     true_br,
                     false_br,
                 } => {
+                    let jmp_id = ctx.next_jmp_id();
                     let cnd = ir.assign(cnd, &mut ctx.vars);
                     self.flush_context(ctx, ir)?;
-                    ir.true_brunch(&ctx.loc, ctx.loc.wrap(_Expr::Var(cnd)), true_br.into());
+                    ir.true_brunch(
+                        &ctx.loc,
+                        ctx.loc.wrap(_Expr::Var(cnd)),
+                        Label::new(true_br).from(jmp_id),
+                    );
                     let stack = ctx.stack.clone();
                     let vars = ctx.vars.clone();
                     self.translate_blocks(false_br, ir, ctx)?;
-                    ir.label(&ctx.loc, true_br.into());
+                    ir.label(&ctx.loc, Label::new(true_br).from(jmp_id));
                     ctx.stack = stack;
                     ctx.vars = vars;
                     self.translate_blocks(true_br, ir, ctx)?;
@@ -91,13 +97,16 @@ impl HirBuilder {
     }
 
     fn flush_context(&self, ctx: &mut Context, ir: &mut Hir) -> Result<(), Error> {
-        println!("stack: {}__\n{}", BlockId::from(ctx.loc.start), ctx.stack);
-
         let stack = ctx.stack.take();
         let mut stack_dump = BTreeMap::new();
         let last_idx = stack.len() - 1;
+        let mut vars = Vars::default();
         for (i, var) in stack.into_iter().enumerate() {
             let var_id = VarId::new_var((last_idx - i) as u32);
+
+            let unvaried = var.unvar(ctx);
+            vars.set(var_id, unvaried);
+
             if let _Expr::Var(id) = var.as_ref() {
                 if var_id == *id {
                     ctx.stack.push(var);
@@ -106,9 +115,9 @@ impl HirBuilder {
             }
 
             stack_dump.insert(var_id, var.clone());
-            ctx.vars.set(var_id, var);
             ctx.stack.push(ctx.loc.wrap(_Expr::Var(var_id)));
         }
+        ctx.vars = vars;
         ir.save_stack(&ctx.loc, stack_dump);
         Ok(())
     }

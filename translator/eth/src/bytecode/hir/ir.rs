@@ -66,6 +66,18 @@ pub enum _Expr {
     Copy(Expr),
 }
 
+impl Loc<_Expr> {
+    pub fn unvar(&self, ctx: &Context) -> Loc<_Expr> {
+        match self.as_ref() {
+            _Expr::Var(id) => {
+                let expr = ctx.vars.get(id).expect("variable not found").clone();
+                expr.unvar(ctx)
+            }
+            _ => self.clone(),
+        }
+    }
+}
+
 impl _Expr {
     pub fn resolve(&self, ir: &Hir, ctx: &Context) -> Option<U256> {
         match self {
@@ -114,12 +126,30 @@ impl _Expr {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, Ord, PartialOrd)]
 pub struct Label {
-    pub to: BlockId,
+    to: BlockId,
+    from: Option<BlockId>,
 }
 
-impl From<BlockId> for Label {
-    fn from(to: BlockId) -> Self {
-        Self { to }
+impl Label {
+    pub fn new(to: BlockId) -> Self {
+        Self { to, from: None }
+    }
+
+    pub fn from(self, from: BlockId) -> Self {
+        Self {
+            from: Some(from),
+            ..self
+        }
+    }
+}
+
+impl Display for Label {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(from) = self.from {
+            write!(f, "'{}_{}", from, self.to)
+        } else {
+            write!(f, "'{}", self.to)
+        }
     }
 }
 
@@ -248,6 +278,10 @@ impl VarId {
 
     pub fn is_tmp(&self) -> bool {
         self.1
+    }
+
+    pub fn id(&self) -> u32 {
+        self.0
     }
 }
 

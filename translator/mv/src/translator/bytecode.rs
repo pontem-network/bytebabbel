@@ -8,7 +8,8 @@ impl Code {
     }
 
     pub fn move_loc(&mut self, idx: LocalIndex) {
-        self.write(Bytecode::MoveLoc(idx));
+        // todo. Replace with MoveLoc
+        self.write(Bytecode::CopyLoc(idx));
     }
 
     pub fn assign(&mut self, idx: LocalIndex) {
