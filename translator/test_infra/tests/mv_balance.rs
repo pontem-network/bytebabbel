@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::PathBuf;
 
-use anyhow::{ensure, Result};
 use ethabi::Contract;
 
 use eth::Flags;
