@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::fmt::Debug;
+use std::fs;
 use std::path::PathBuf;
 
 use anyhow::{anyhow, ensure, Error, Result};
@@ -25,6 +26,8 @@ const TEST_NAME: &str = "sol";
 
 lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
+    static ref BALANCE_MV: Vec<u8> =
+        fs::read("./resources/test_helper/build/test_helper/bytecode_modules/balance.mv").unwrap();
 }
 
 #[derive(Debug)]
@@ -135,6 +138,9 @@ impl STest {
             Flags::default(),
         )?;
         let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
+        vm.deploy("0x1", BALANCE_MV.clone());
+        vm.run("0x1::balance::x42_1_000_000", "0x1", None)?;
+
         vm.deploy("0x42", bytecode);
         vm.run(&format!("{}::constructor", module_address), "0x42", None)
             .unwrap();

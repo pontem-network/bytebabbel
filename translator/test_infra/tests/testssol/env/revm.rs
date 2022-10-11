@@ -36,7 +36,7 @@ fn context() -> Result<Context> {
         // The calling EVM.
         caller: ADDRESS.parse()?,
         // The apparent value of the EVM. call value, if non-zero, must have payable
-        apparent_value: U256::from(2u8),
+        apparent_value: U256::from(0u8),
     })
 }
 
@@ -71,10 +71,11 @@ impl REvm {
     pub fn run_tx(&self, call: Vec<u8>) -> Result<Vec<u8>> {
         let backend = MemoryBackend::new(&self.vicinity, BTreeMap::new());
         let metadata = StackSubstateMetadata::new(u64::MAX, &self.config);
+
         let precompiles = BTreeMap::new();
 
         let mut memo = MemoryStackState::new(metadata, &backend);
-        memo.deposit(ADDRESS.parse().unwrap(), U256::from(10_000));
+        memo.deposit(ADDRESS.parse().unwrap(), U256::from(1_000_000));
 
         let mut executor: StackExecutor<MemoryStackState<MemoryBackend>, BTreeMap<_, _>> =
             StackExecutor::new_with_precompiles(memo, &self.config, &precompiles);
@@ -85,7 +86,6 @@ impl REvm {
             self.ctx.clone(),
             &self.config,
         );
-
         let exit_reason = executor.execute(&mut rt);
 
         match exit_reason {

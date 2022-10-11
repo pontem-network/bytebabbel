@@ -56,6 +56,9 @@ regex = "1.6"
 # logs
 env_logger = "0.9"
 
+[build-dependencies]
+anyhow = "1.0.62"
+
 [[test]]
 name = "sol"
 harness = false
