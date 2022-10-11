@@ -81,12 +81,6 @@ module self::memory {
 
     // API
     public fun mstore(mem: &mut Memory, position: U256, value: U256) {
-        if (as_u64(position) == 128) {
-            aptos_std::debug::print(&position);
-            aptos_std::debug::print(&value);
-            aptos_std::debug::print_stack_trace();
-        };
-
         let position = as_u64(position);
         resize_offset(mem, position, WORD_SIZE);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);

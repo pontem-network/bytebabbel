@@ -252,7 +252,7 @@ impl MvIrTranslator {
             self.translate_expr(loc);
         }
 
-        for var in st_locs {
+        for var in st_locs.iter().rev() {
             self.code.assign(var.index());
         }
     }
