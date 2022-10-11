@@ -34,20 +34,20 @@ once_cell = "1.13.1"
 itertools = "0.10.3"
 tempdir = "0.3.7"
 
-move-vm-runtime = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82", features = ["testing"] }
-move-vm-types = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82" }
-move-core-types = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82", features = ["address32"] }
-move-binary-format = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82" }
-move-stdlib = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82", features = ["testing"] }
+move-vm-runtime = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["testing"] }
+move-vm-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
+move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
+move-binary-format = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
+move-stdlib = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["testing"] }
 
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc", features = ["testing"] }
-aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
-move-deps = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
-aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
-aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
-aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "6d375306122da45a38eb9a6c95625ce2b7f64cbc" }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0", features = ["testing"] }
+aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+move-deps = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
 
 # for test *.sol
 libtest-mimic = "0.4"

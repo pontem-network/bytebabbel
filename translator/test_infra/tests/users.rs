@@ -58,7 +58,7 @@ pub fn test_for_users() {
         assert_eq!(guid, new_user_event.0);
         assert_eq!(0, new_user_event.1);
         assert_eq!(
-            TypeTag::Struct(StructTag {
+            TypeTag::Struct(Box::new(StructTag {
                 address: AccountAddress::from_hex_literal(
                     "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00"
                 )
@@ -66,7 +66,7 @@ pub fn test_for_users() {
                 module: Identifier::new("Users").unwrap(),
                 name: Identifier::new("Event").unwrap(),
                 type_params: vec![],
-            }),
+            })),
             new_user_event.2
         );
 
@@ -141,7 +141,7 @@ pub fn test_for_users() {
         assert_eq!(guid, new_user_event.0);
         assert_eq!(1, new_user_event.1);
         assert_eq!(
-            TypeTag::Struct(StructTag {
+            TypeTag::Struct(Box::new(StructTag {
                 address: AccountAddress::from_hex_literal(
                     "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00"
                 )
@@ -149,7 +149,7 @@ pub fn test_for_users() {
                 module: Identifier::new("Users").unwrap(),
                 name: Identifier::new("Event").unwrap(),
                 type_params: vec![],
-            }),
+            })),
             new_user_event.2
         );
 

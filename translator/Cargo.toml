@@ -13,7 +13,7 @@ ethabi = "17.2"
 serde_json = "1.0.82"
 
 # move:
-move-core-types = { git = "https://github.com/move-language/move", rev = "0155b47808de249f4030e84354fde154a1500a82", features = ["address32"] }
+move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
 evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
