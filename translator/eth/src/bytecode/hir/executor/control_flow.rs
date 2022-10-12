@@ -44,7 +44,7 @@ impl InstructionHandler for ControlFlow {
                 let dest = params.remove(0);
                 let dest = dest
                     .resolve(ir, ctx)
-                    .expect(&format!("Jump destination is not a constant. {:?}", dest));
+                    .unwrap_or_else(|| panic!("Jump destination is not a constant. {:?}", dest));
                 ExecutionResult::Jmp(Offset::from(dest))
             }
             ControlFlow::JumpIf(inst) => {
@@ -53,7 +53,7 @@ impl InstructionHandler for ControlFlow {
                     .resolve(ir, ctx)
                     .expect("Unsupported dynamic jump if");
                 let true_br = Offset::from(true_br);
-                let false_br = Offset::from(inst.next());
+                let false_br = inst.next();
                 let cnd = params.remove(0);
                 if !ctx.is_in_loop() {
                     if let Some(cnd_val) = cnd.resolve(ir, ctx) {

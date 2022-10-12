@@ -199,7 +199,7 @@ impl Hir {
         let var = vars.gen_tmp();
         self.statement
             .push(expr.wrap(Stmt::Assign(var, expr.clone())));
-        vars.set(var, expr.clone());
+        vars.set(var, expr);
         var
     }
 
@@ -281,7 +281,7 @@ impl Hir {
 
     pub fn print<B: Write>(&self, buf: &mut B) -> Result<(), Error> {
         for stmt in &self.statement {
-            print_stmt(buf, &stmt)?;
+            print_stmt(buf, stmt)?;
         }
         Ok(())
     }

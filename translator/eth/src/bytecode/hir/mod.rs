@@ -171,9 +171,7 @@ impl HirBuilder {
                 }
             }
         }
-        Ok(BlockResult::Jmp(Offset::from(
-            block.end + block.last().map(|i| i.size()).unwrap_or(1),
-        )))
+        Ok(BlockResult::Jmp(block.end + block.last().map(|i| i.size()).unwrap_or(1)))
     }
 
     fn block(&self, id: &Offset) -> Result<&InstructionBlock, Error> {

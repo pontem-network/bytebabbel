@@ -17,7 +17,7 @@ impl Instruction {
     }
 
     pub fn next(&self) -> Offset {
-        Offset::from(self.0 + self.size())
+        self.0 + self.size()
     }
 
     pub fn location(&self) -> Loc<()> {

@@ -47,7 +47,7 @@ pub fn transpile_program(
     let abi = MoveAbi::new(name, abi_entries)?;
 
     let contract = BlockIter::new(InstructionIter::new(contract_code))
-        .map(|block| (Offset::from(block.start), block))
+        .map(|block| (block.start, block))
         .collect::<HashMap<_, _>>();
 
     let hir = HirBuilder::new(contract, flags)?;

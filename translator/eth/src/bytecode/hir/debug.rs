@@ -1,7 +1,7 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir::ir::{Stmt, _Expr};
 use crate::bytecode::loc::Loc;
-use crate::Offset;
+
 use anyhow::Error;
 use std::fmt::{Display, Formatter, Write};
 

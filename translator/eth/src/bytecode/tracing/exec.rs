@@ -52,7 +52,7 @@ impl Executor {
 
     pub fn exec(&mut self, block: &InstructionBlock) -> Next {
         if let Some(inst) = block.first() {
-            self.path.push(Offset::from(inst.0));
+            self.path.push(inst.0);
         } else {
             return Next::Stop;
         };
@@ -68,8 +68,8 @@ impl Executor {
                     return Next::Cnd(
                         jmp,
                         StackItem::Positive {
-                            value: Offset::from(inst.next()),
-                            offset: Offset::from(inst.offset()),
+                            value: inst.next(),
+                            offset: inst.offset(),
                         },
                     );
                 }
@@ -91,10 +91,10 @@ impl Executor {
                     if val <= U256::from(u32::MAX) {
                         self.push_stack(vec![StackItem::Positive {
                             value: Offset::from(val),
-                            offset: Offset::from(inst.offset()),
+                            offset: inst.offset(),
                         }]);
                     } else {
-                        self.push_stack(vec![StackItem::Calc(Offset::from(inst.offset()))]);
+                        self.push_stack(vec![StackItem::Calc(inst.offset())]);
                     }
                 }
                 OpCode::Pop => {}
@@ -109,7 +109,7 @@ impl Executor {
                     if pushes > 0 {
                         self.push_stack(
                             (0..pushes)
-                                .map(|_| StackItem::Calc(Offset::from(inst.offset())))
+                                .map(|_| StackItem::Calc(inst.offset()))
                                 .collect(),
                         );
                     }
@@ -120,8 +120,8 @@ impl Executor {
             .last()
             .map(|last| {
                 Next::Jmp(StackItem::Positive {
-                    value: Offset::from(last.next()),
-                    offset: Offset::from(last.offset()),
+                    value: last.next(),
+                    offset: last.offset(),
                 })
             })
             .unwrap_or(Next::Stop)
