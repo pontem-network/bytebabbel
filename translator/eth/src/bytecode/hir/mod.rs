@@ -128,8 +128,9 @@ impl HirBuilder {
         ir: &mut Hir,
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
-        println!("translate block: {:?}", block.start);
         for inst in block.iter() {
+            println!("translate instr: {}", inst.0);
+
             let pops = inst.pops();
             ctx.loc = inst.location();
             if let OpCode::Swap(_) = inst.1 {
