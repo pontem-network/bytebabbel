@@ -516,6 +516,16 @@ module self::u256_tests {
         let b = from_u128(3);
         let c = exp(a, b);
         assert!(c == from_u128(8), 0);
+
+        let a = from_u128(0);
+        let b = from_u128(0);
+        let c = exp(a, b);
+        assert!(c == from_u128(1), 1);
+
+        let a = from_u128(83);
+        let b = from_u128(13);
+        let c = exp(a, b);
+        assert!(c == from_string(&b"8871870642308873326043363"), 2);
     }
 
     #[test_only]
