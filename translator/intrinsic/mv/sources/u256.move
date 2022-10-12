@@ -106,28 +106,28 @@ module self::u256 {
     // TODO
     public fun from_signer(addr: &signer): U256 {
         let encoded = std::bcs::to_bytes(addr);
-        // todo replace with riding last 20 bytes
-        let address_mask = U256 {
-            v0: 0xFFFFFFFFFFFFFFFF,
-            v1: 0xFFFFFFFFFFFFFFFF,
-            v2: 0x00000000FFFFFFFF,
-            v3: 0x0000000000000000,
+        let i = 0u64;
+
+        while (i < 12) {
+            *std::vector::borrow_mut(&mut encoded, i) = 0;
+            i = i + 1;
         };
-        bitand(from_bytes(&encoded, zero()), address_mask)
+
+        from_bytes(&encoded, zero())
     }
 
     // API
     // TODO
     fun from_address(addr: address): U256 {
         let encoded = std::bcs::to_bytes(&addr);
-        // todo replace with riding last 20 bytes
-        let address_mask = U256 {
-            v0: 0xFFFFFFFFFFFFFFFF,
-            v1: 0xFFFFFFFFFFFFFFFF,
-            v2: 0x00000000FFFFFFFF,
-            v3: 0x0000000000000000,
+        let i = 0u64;
+
+        while (i < 12) {
+            *std::vector::borrow_mut(&mut encoded, i) = 0;
+            i = i + 1;
         };
-        bitand(from_bytes(&encoded, zero()), address_mask)
+
+        from_bytes(&encoded, zero())
     }
 
     // API
