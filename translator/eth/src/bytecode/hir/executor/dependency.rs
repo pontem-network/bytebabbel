@@ -69,7 +69,10 @@ impl InstructionHandler for TxMeta {
             TxMeta::Timestamp => U256::zero(),
             TxMeta::Difficulty => U256::zero(),
             TxMeta::Number => U256::zero(),
-            TxMeta::GasPrice => U256::zero(),
+            TxMeta::GasPrice => {
+                let id = ir.create_var(Expr::GasPrice);
+                return ExecutionResult::Output(vec![id]);
+            }
             TxMeta::Coinbase => U256::zero(),
             TxMeta::GasLimit => U256::MAX,
             TxMeta::Gas => U256::MAX,

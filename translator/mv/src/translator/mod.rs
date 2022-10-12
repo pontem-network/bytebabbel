@@ -356,6 +356,9 @@ impl MvIrTranslator {
                 self.code
                     .call(Info::AptosBalance, vec![CallOp::Var(*address)]);
             }
+            Expression::GasPrice => {
+                self.code.call(Info::GasPrice, vec![]);
+            }
         }
     }
 

@@ -83,6 +83,7 @@ impl<'a> MirTranslator<'a> {
                 }
                 .ty(SType::Num)
             }
+            Expr::GasPrice => Expression::GasPrice.ty(SType::Num),
         };
         Ok(res.loc(loc))
     }

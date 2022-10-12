@@ -25,5 +25,25 @@ library Info {
         address user = 0x0000000000000000000000000000000000000042;
         return user.balance;
     }
+
+    // # gas_price ()
+    function gas_price() public view returns (uint){
+        uint256 gasPrice;
+        assembly {
+            gasPrice := gasprice()
+        }
+        return gasPrice;
+    }
+
+    // # ignore_block_height()
+    function block_height() public view returns (uint){
+        return block.number;
+    }
+
+    // # ignore_epoch_interval_secs()
+    function epoch_interval_secs() public view returns (uint){
+        return block.timestamp;
+    }
+
 }
 

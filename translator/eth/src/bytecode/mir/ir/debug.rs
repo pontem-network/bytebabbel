@@ -218,6 +218,12 @@ impl Display for TypedExpr {
             Expression::Hash { mem, offset, len } => {
                 write!(f, "{}.Hash({}, {})", mem, offset.as_ref(), len.as_ref())
             }
+            Expression::Balance { address } => {
+                write!(buf, "balance({address:?})")?;
+            }
+            Expression::GasPrice => {
+                write!(buf, "gas_price()")?;
+            }
         }
     }
 }

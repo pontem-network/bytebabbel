@@ -12,9 +12,10 @@ use eth::compile::EvmPack;
 const ADDRESS: &str = "0000000000000000000000000000000000000042";
 
 fn memory_vicinity() -> Result<MemoryVicinity> {
+    let now = std::time::SystemTime::now().elapsed()?.as_secs();
     Ok(MemoryVicinity {
         block_base_fee_per_gas: U256::max_value(),
-        gas_price: U256::from(1),
+        gas_price: U256::from(100),
         origin: H160::random(),
         chain_id: U256::from(1u8),
         block_hashes: vec![
@@ -23,7 +24,7 @@ fn memory_vicinity() -> Result<MemoryVicinity> {
         ],
         block_number: U256::from(0u8),
         block_coinbase: H160::zero(),
-        block_timestamp: U256::from(1529891469u128),
+        block_timestamp: U256::from(now),
         block_difficulty: U256::zero(),
         block_gas_limit: U256::zero(),
     })

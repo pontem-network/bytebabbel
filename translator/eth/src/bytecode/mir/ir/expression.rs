@@ -46,6 +46,7 @@ pub enum Expression {
     Balance {
         address: Variable,
     },
+    GasPrice,
 }
 
 impl Expression {
