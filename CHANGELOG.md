@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Support of 'do-while' loop.
 
 
 ## [0.0.2] - 2022-10-04
