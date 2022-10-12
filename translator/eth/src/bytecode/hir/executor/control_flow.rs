@@ -3,7 +3,7 @@ use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::_Expr;
 use crate::bytecode::instruction::Instruction;
 use crate::bytecode::loc::Loc;
-use crate::{BlockId, Hir};
+use crate::{Hir, Offset};
 
 pub enum ControlFlow {
     Stop,
@@ -45,15 +45,15 @@ impl InstructionHandler for ControlFlow {
                 let dest = dest
                     .resolve(ir, ctx)
                     .expect(&format!("Jump destination is not a constant. {:?}", dest));
-                ExecutionResult::Jmp(BlockId::from(dest))
+                ExecutionResult::Jmp(Offset::from(dest))
             }
             ControlFlow::JumpIf(inst) => {
                 let true_br = params
                     .remove(0)
                     .resolve(ir, ctx)
                     .expect("Unsupported dynamic jump if");
-                let true_br = BlockId::from(true_br);
-                let false_br = BlockId::from(inst.next());
+                let true_br = Offset::from(true_br);
+                let false_br = Offset::from(inst.next());
                 let cnd = params.remove(0);
                 if !ctx.is_in_loop() {
                     if let Some(cnd_val) = cnd.resolve(ir, ctx) {

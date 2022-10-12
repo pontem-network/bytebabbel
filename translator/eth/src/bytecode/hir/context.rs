@@ -1,7 +1,7 @@
 use crate::bytecode::hir::stack::Stack;
 use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
-use crate::{BlockId, Flags, Function};
+use crate::{Flags, Function, Offset};
 use primitive_types::U256;
 use std::collections::HashMap;
 
@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub struct Context<'a> {
     address: U256,
     fun: &'a Function,
-    loop_input: HashMap<BlockId, (Stack, BlockId)>,
+    loop_input: HashMap<Offset, (Stack, Offset)>,
     loop_stack_size: usize,
     static_analysis: bool,
     code_size: u128,
@@ -37,14 +37,14 @@ impl<'a> Context<'a> {
             code_size,
             flags,
             vars: Default::default(),
-            loc: Loc::new(0, 0, ()),
+            loc: Loc::new(0u128, 0u128, ()),
             jmp_id: 0,
         }
     }
 
-    pub fn next_jmp_id(&mut self) -> BlockId {
+    pub fn next_jmp_id(&mut self) -> Offset {
         self.jmp_id += 1;
-        BlockId::from(self.jmp_id as u128)
+        Offset::from(self.jmp_id as u128)
     }
 
     pub fn disable_static_analysis(&mut self) {
@@ -67,12 +67,12 @@ impl<'a> Context<'a> {
         self.code_size
     }
 
-    pub fn create_loop(&mut self, block_id: BlockId, break_br: BlockId) {
+    pub fn create_loop(&mut self, block_id: Offset, break_br: Offset) {
         self.loop_input
             .insert(block_id, (self.stack.clone(), break_br));
     }
 
-    pub fn get_loop(&self, block_id: &BlockId) -> Option<&Stack> {
+    pub fn get_loop(&self, block_id: &Offset) -> Option<&Stack> {
         self.loop_input.get(block_id).map(|(stack, _)| stack)
     }
 

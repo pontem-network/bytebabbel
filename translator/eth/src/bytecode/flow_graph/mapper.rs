@@ -4,14 +4,14 @@ use crate::bytecode::flow_graph::builder::CndBranch;
 use crate::bytecode::flow_graph::debug::log_flow;
 use crate::bytecode::flow_graph::flow::{Flow, IfFlow, LoopFlow};
 use crate::bytecode::flow_graph::LoopBr;
-use crate::BlockId;
+use crate::Offset;
 
 #[derive(Debug, Clone)]
 struct Mapper {
     //blocks: BTreeMap<BlockId, CndBranch>,
     elements: Vec<CndBranch>,
     /// continue -> loop head
-    loop_map: BTreeMap<BlockId, BlockId>,
+    loop_map: BTreeMap<Offset, Offset>,
 }
 
 impl Mapper {
@@ -31,7 +31,7 @@ impl Mapper {
         let element = self
             .elements
             .iter()
-            .find(|cnd| cnd.block() == BlockId::default())
+            .find(|cnd| cnd.block() == Offset::default())
             .cloned();
 
         let first_block = if let Some(element) = element {
@@ -101,7 +101,7 @@ impl Mapper {
         Flow::Sequence(seq)
     }
 
-    fn map_block(&mut self, blocks: &[BlockId]) -> Vec<Flow> {
+    fn map_block(&mut self, blocks: &[Offset]) -> Vec<Flow> {
         let mut seq = Vec::new();
         if blocks.is_empty() {
             return seq;
@@ -128,7 +128,7 @@ impl Mapper {
         seq
     }
 
-    fn find_element(&self, blocks: &[BlockId]) -> Option<&CndBranch> {
+    fn find_element(&self, blocks: &[Offset]) -> Option<&CndBranch> {
         self.elements
             .iter()
             .filter(|cnd| cnd.block() == blocks[0])

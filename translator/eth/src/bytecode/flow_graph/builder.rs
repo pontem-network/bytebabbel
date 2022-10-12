@@ -10,17 +10,17 @@ use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::flow_graph::flow::Flow;
 use crate::bytecode::flow_graph::mapper::map_flow;
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
-use crate::{BlockId, OpCode};
+use crate::{Offset, OpCode};
 
 pub struct FlowBuilder<'a> {
-    call_stack: Vec<BlockId>,
-    block: BlockId,
-    blocks: &'a HashMap<BlockId, InstructionBlock>,
+    call_stack: Vec<Offset>,
+    block: Offset,
+    blocks: &'a HashMap<Offset, InstructionBlock>,
     flow_trace: FlowTrace,
 }
 
 impl<'a> FlowBuilder<'a> {
-    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>) -> Result<FlowBuilder<'a>, Error> {
+    pub fn new(blocks: &'a HashMap<Offset, InstructionBlock>) -> Result<FlowBuilder<'a>, Error> {
         Ok(FlowBuilder {
             call_stack: Vec::new(),
             block: Default::default(),
@@ -33,9 +33,9 @@ impl<'a> FlowBuilder<'a> {
         let mut cnd_branches = Vec::new();
 
         let mut branch_stack: Vec<BranchingState> = Vec::new();
-        let mut root = Vec::<BlockId>::new();
+        let mut root = Vec::<Offset>::new();
 
-        self.block = BlockId::default();
+        self.block = Offset::default();
         'pc: loop {
             let next = self.exec_block();
 
@@ -128,7 +128,7 @@ impl<'a> FlowBuilder<'a> {
         self.flow_trace
     }
 
-    fn pop_stack(&mut self, count: usize) -> Vec<BlockId> {
+    fn pop_stack(&mut self, count: usize) -> Vec<Offset> {
         let mut res = Vec::with_capacity(count);
         for _ in 0..count {
             res.push(self.call_stack.pop().unwrap_or_default());
@@ -136,7 +136,7 @@ impl<'a> FlowBuilder<'a> {
         res
     }
 
-    fn push_stack(&mut self, to_push: Vec<BlockId>) {
+    fn push_stack(&mut self, to_push: Vec<Offset>) {
         self.call_stack.extend(to_push.into_iter().rev());
     }
 
@@ -148,7 +148,7 @@ impl<'a> FlowBuilder<'a> {
                     OpCode::Jump => return Next::Jmp(ops.remove(0)),
                     OpCode::JumpIf => {
                         let jmp = ops.remove(0);
-                        return Next::Cnd(jmp, BlockId(inst.next() as u128));
+                        return Next::Cnd(jmp, inst.next());
                     }
                     OpCode::Return | OpCode::Stop | OpCode::Revert | OpCode::SelfDestruct => {
                         return Next::Stop;
@@ -166,22 +166,22 @@ impl<'a> FlowBuilder<'a> {
                     OpCode::Push(val) => {
                         let val = U256::from(val.as_slice());
                         if val <= U256::from(u32::MAX) {
-                            self.push_stack(vec![BlockId::from(val)]);
+                            self.push_stack(vec![Offset::from(val)]);
                         } else {
-                            self.push_stack(vec![BlockId::default()]);
+                            self.push_stack(vec![Offset::default()]);
                         }
                     }
                     _ => {
                         let pushes = inst.pushes();
                         if pushes > 0 {
-                            self.push_stack((0..pushes).map(|_| BlockId::default()).collect());
+                            self.push_stack((0..pushes).map(|_| Offset::default()).collect());
                         }
                     }
                 }
             }
             block
                 .last()
-                .map(|last| Next::Jmp(BlockId(last.next() as u128)))
+                .map(|last| Next::Jmp(last.next()))
                 .unwrap_or(Next::Stop)
         } else {
             Next::Stop
@@ -193,25 +193,25 @@ impl<'a> FlowBuilder<'a> {
 enum BranchingState {
     JumpIf {
         jmp: CndJmp,
-        stack: Vec<BlockId>,
+        stack: Vec<Offset>,
         true_br: Branch,
     },
     TrueBranch {
         jmp: CndJmp,
         true_br: Branch,
         false_br: Branch,
-        stack: Vec<BlockId>,
+        stack: Vec<Offset>,
     },
     IF {
         jmp: CndJmp,
         true_br: Branch,
         false_br: Branch,
-        stack: Vec<BlockId>,
+        stack: Vec<Offset>,
     },
 }
 
 impl BranchingState {
-    pub fn new(block: BlockId, true_br: BlockId, false_br: BlockId, stack: Vec<BlockId>) -> Self {
+    pub fn new(block: Offset, true_br: Offset, false_br: Offset, stack: Vec<Offset>) -> Self {
         BranchingState::JumpIf {
             jmp: CndJmp {
                 block,
@@ -235,7 +235,7 @@ impl BranchingState {
         }
     }
 
-    pub fn set_end(self, end: BlockId) -> BranchingState {
+    pub fn set_end(self, end: Offset) -> BranchingState {
         match self {
             BranchingState::JumpIf {
                 jmp,
@@ -284,7 +284,7 @@ impl BranchingState {
         }
     }
 
-    pub fn stack(&self) -> &Vec<BlockId> {
+    pub fn stack(&self) -> &Vec<Offset> {
         match self {
             BranchingState::JumpIf { stack, .. } => stack,
             BranchingState::TrueBranch { stack, .. } => stack,
@@ -292,7 +292,7 @@ impl BranchingState {
         }
     }
 
-    pub fn false_br(&self) -> BlockId {
+    pub fn false_br(&self) -> Offset {
         match self {
             BranchingState::JumpIf { jmp, .. } => jmp.false_br,
             BranchingState::TrueBranch { jmp, .. } => jmp.false_br,
@@ -300,7 +300,7 @@ impl BranchingState {
         }
     }
 
-    pub fn push_block(&mut self, block_id: BlockId) {
+    pub fn push_block(&mut self, block_id: Offset) {
         match self {
             BranchingState::JumpIf { true_br, .. } => {
                 true_br.blocks.push(block_id);
@@ -335,9 +335,9 @@ impl BranchingState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct CndJmp {
-    pub block: BlockId,
-    pub true_br: BlockId,
-    pub false_br: BlockId,
+    pub block: Offset,
+    pub true_br: Offset,
+    pub false_br: Offset,
 }
 
 #[derive(Debug, Clone)]
@@ -349,20 +349,20 @@ pub struct CndBranch {
 
 #[derive(Debug, Clone, Default)]
 pub struct Branch {
-    pub end: BlockId,
-    pub blocks: Vec<BlockId>,
+    pub end: Offset,
+    pub blocks: Vec<Offset>,
     pub continue_blocks: Option<Continue>,
     pub is_loop: bool,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct Continue {
-    pub loop_head: BlockId,
-    pub continue_block: BlockId,
+    pub loop_head: Offset,
+    pub continue_block: Offset,
 }
 
 impl Branch {
-    pub fn set_end(&mut self, end: BlockId) {
+    pub fn set_end(&mut self, end: Offset) {
         self.end = end;
     }
 
@@ -379,7 +379,7 @@ impl Branch {
 }
 
 impl CndBranch {
-    pub fn take_common_fail(&mut self) -> VecDeque<BlockId> {
+    pub fn take_common_fail(&mut self) -> VecDeque<Offset> {
         let mut tail = VecDeque::new();
 
         loop {
@@ -401,14 +401,14 @@ impl CndBranch {
         tail
     }
 
-    pub fn is_subset(&self, other: &[BlockId]) -> bool {
+    pub fn is_subset(&self, other: &[Offset]) -> bool {
         let mut idx = 0;
         if self.block() != other[idx] {
             return false;
         }
         idx += 1;
 
-        fn is_subset_branch(br: &Branch, other: &[BlockId]) -> bool {
+        fn is_subset_branch(br: &Branch, other: &[Offset]) -> bool {
             for (idx, block) in br.blocks.iter().enumerate() {
                 if *block != other[idx] {
                     return false;
@@ -429,13 +429,13 @@ impl CndBranch {
 
 #[derive(Clone, Copy, Debug)]
 enum Next {
-    Jmp(BlockId),
+    Jmp(Offset),
     Stop,
-    Cnd(BlockId, BlockId),
+    Cnd(Offset, Offset),
 }
 
 impl CndBranch {
-    pub fn block(&self) -> BlockId {
+    pub fn block(&self) -> Offset {
         self.jmp.block
     }
 

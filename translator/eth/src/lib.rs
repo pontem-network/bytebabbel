@@ -15,7 +15,7 @@ use program::Program;
 
 use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
-use crate::bytecode::block::BlockId;
+use crate::bytecode::block::Offset;
 use crate::bytecode::hir::ir::Hir;
 use crate::bytecode::hir::HirBuilder;
 use crate::bytecode::mir::ir::Mir;
@@ -47,7 +47,7 @@ pub fn transpile_program(
     let abi = MoveAbi::new(name, abi_entries)?;
 
     let contract = BlockIter::new(InstructionIter::new(contract_code))
-        .map(|block| (BlockId::from(block.start), block))
+        .map(|block| (Offset::from(block.start), block))
         .collect::<HashMap<_, _>>();
 
     let hir = HirBuilder::new(contract.clone(), flags)?;

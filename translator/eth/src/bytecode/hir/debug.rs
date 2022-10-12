@@ -1,7 +1,7 @@
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir::ir::{Stmt, _Expr};
 use crate::bytecode::loc::Loc;
-use crate::BlockId;
+use crate::Offset;
 use anyhow::Error;
 use std::fmt::{Display, Formatter, Write};
 
@@ -77,7 +77,7 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
 }
 
 pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> {
-    write!(buf, "{}: ", BlockId::from(stmt.start))?;
+    write!(buf, "{}: ", Offset::from(stmt.start))?;
     match stmt.as_ref() {
         Stmt::Label(label) => writeln!(buf, "'{}:", label)?,
         Stmt::Assign(var, expr) => {
@@ -143,7 +143,7 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
         Stmt::StoreStack(ctx) => {
             writeln!(buf, "[")?;
             for (id, expr) in ctx.iter() {
-                write!(buf, "{}: ", BlockId::from(expr.start))?;
+                write!(buf, "{}: ", Offset::from(expr.start))?;
                 write!(buf, "{} = ", id)?;
                 print_expr(buf, &expr)?;
                 writeln!(buf, ";")?;

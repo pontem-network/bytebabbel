@@ -1,7 +1,8 @@
+use crate::Offset;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use crate::bytecode::instruction::{Instruction, Offset};
+use crate::bytecode::instruction::Instruction;
 
 pub trait Location {
     fn start(&self) -> Offset;
@@ -15,16 +16,16 @@ pub struct Loc<C> {
 }
 
 impl<C> Loc<C> {
-    pub fn new(start: Offset, end: Offset, inner: C) -> Loc<C> {
-        Loc { start, end, inner }
+    pub fn new<B: Into<Offset>>(start: B, end: B, inner: C) -> Loc<C> {
+        Loc {
+            start: start.into(),
+            end: end.into(),
+            inner,
+        }
     }
 
     pub fn map<F: FnOnce(C) -> R, R>(self, f: F) -> Loc<R> {
         Loc::new(self.start, self.end, f(self.inner))
-    }
-
-    pub fn contains(&self, offset: Offset) -> bool {
-        self.start <= offset && self.end >= offset
     }
 
     pub fn wrap<R>(&self, inner: R) -> Loc<R> {

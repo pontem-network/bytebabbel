@@ -11,7 +11,7 @@ use crate::bytecode::hir::executor::storage::StorageOp;
 use crate::bytecode::hir::ir::_Expr;
 use crate::bytecode::instruction::Instruction;
 use crate::bytecode::loc::Loc;
-use crate::{BlockId, Hir, OpCode};
+use crate::{Hir, Offset, OpCode};
 
 pub mod call;
 pub mod code;
@@ -141,10 +141,10 @@ pub enum ExecutionResult {
     None,
     End,
     Output(_Expr),
-    Jmp(BlockId),
+    Jmp(Offset),
     CndJmp {
         cnd: Loc<_Expr>,
-        true_br: BlockId,
-        false_br: BlockId,
+        true_br: Offset,
+        false_br: Offset,
     },
 }

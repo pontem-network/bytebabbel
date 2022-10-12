@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter, Write};
 
 use crate::bytecode::hir::executor::math::TernaryOp;
-use crate::BlockId;
+use crate::Offset;
 use anyhow::Error;
 use log::log_enabled;
 use log::Level;
@@ -41,7 +41,7 @@ pub fn print_buf<B: Write>(ir: &Mir, buf: &mut B) -> Result<(), Error> {
 
 fn print_statements<B: Write>(st: &[Loc<Statement>], buf: &mut B) -> Result<(), Error> {
     for inst in st {
-        writeln!(buf, "{}: {}", BlockId::from(inst.start), inst.as_ref())?;
+        writeln!(buf, "{}: {}", Offset::from(inst.start), inst.as_ref())?;
     }
     Ok(())
 }

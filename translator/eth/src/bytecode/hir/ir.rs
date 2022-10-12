@@ -3,7 +3,7 @@ use crate::bytecode::hir::debug::print_stmt;
 use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
-use crate::BlockId;
+use crate::Offset;
 use anyhow::Error;
 use primitive_types::U256;
 use std::collections::BTreeMap;
@@ -126,16 +126,16 @@ impl _Expr {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, Ord, PartialOrd)]
 pub struct Label {
-    to: BlockId,
-    from: Option<BlockId>,
+    to: Offset,
+    from: Option<Offset>,
 }
 
 impl Label {
-    pub fn new(to: BlockId) -> Self {
+    pub fn new(to: Offset) -> Self {
         Self { to, from: None }
     }
 
-    pub fn from(self, from: BlockId) -> Self {
+    pub fn from(self, from: Offset) -> Self {
         Self {
             from: Some(from),
             ..self

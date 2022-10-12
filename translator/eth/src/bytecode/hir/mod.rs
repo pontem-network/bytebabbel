@@ -5,7 +5,7 @@ use crate::bytecode::hir::ir::{Label, VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
-use crate::{BlockId, Flags, Function, Hir, OpCode};
+use crate::{Flags, Function, Hir, Offset, OpCode};
 use anyhow::{anyhow, ensure, Context as ErrorContext, Error};
 use primitive_types::U256;
 use std::collections::{BTreeMap, HashMap};
@@ -18,13 +18,13 @@ pub mod stack;
 pub mod vars;
 
 pub struct HirBuilder {
-    contract: HashMap<BlockId, InstructionBlock>,
+    contract: HashMap<Offset, InstructionBlock>,
     flags: Flags,
     flow: FlowTrace,
 }
 
 impl HirBuilder {
-    pub fn new(contract: HashMap<BlockId, InstructionBlock>, flags: Flags) -> Result<Self, Error> {
+    pub fn new(contract: HashMap<Offset, InstructionBlock>, flags: Flags) -> Result<Self, Error> {
         let flow = Tracer::new(&contract).trace()?;
         Ok(Self {
             contract,
@@ -41,13 +41,13 @@ impl HirBuilder {
     ) -> Result<Hir, Error> {
         let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
         let mut ir = Hir::default();
-        self.translate_blocks(BlockId::default(), &mut ir, &mut ctx)?;
+        self.translate_blocks(Offset::default(), &mut ir, &mut ctx)?;
         Ok(ir)
     }
 
     fn translate_blocks(
         &self,
-        start: BlockId,
+        start: Offset,
         ir: &mut Hir,
         ctx: &mut Context,
     ) -> Result<(), Error> {
@@ -128,6 +128,7 @@ impl HirBuilder {
         ir: &mut Hir,
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
+        println!("translate block: {:?}", block.start);
         for inst in block.iter() {
             let pops = inst.pops();
             ctx.loc = inst.location();
@@ -168,12 +169,12 @@ impl HirBuilder {
                 }
             }
         }
-        Ok(BlockResult::Jmp(BlockId::from(
-            block.end + block.last().map(|i| i.size()).unwrap_or(1) as u64,
+        Ok(BlockResult::Jmp(Offset::from(
+            block.end + block.last().map(|i| i.size()).unwrap_or(1),
         )))
     }
 
-    fn block(&self, id: &BlockId) -> Result<&InstructionBlock, Error> {
+    fn block(&self, id: &Offset) -> Result<&InstructionBlock, Error> {
         self.contract
             .get(id)
             .ok_or_else(|| anyhow!("Block {:?} not found", id))
@@ -200,11 +201,11 @@ impl HirBuilder {
 }
 
 pub enum BlockResult {
-    Jmp(BlockId),
+    Jmp(Offset),
     CndJmp {
         cnd: Loc<_Expr>,
-        true_br: BlockId,
-        false_br: BlockId,
+        true_br: Offset,
+        false_br: Offset,
     },
     Stop,
 }
