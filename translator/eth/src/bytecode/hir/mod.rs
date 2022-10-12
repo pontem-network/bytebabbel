@@ -1,7 +1,7 @@
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::{Label, VarId, _Expr};
+use crate::bytecode::hir::ir::{Expr, Label, VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
 use crate::bytecode::loc::Loc;
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};

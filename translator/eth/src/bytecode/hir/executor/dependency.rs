@@ -1,7 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::_Expr;
-use crate::bytecode::loc::Loc;
+use crate::bytecode::hir::ir::{Expr, _Expr};
 use crate::Hir;
 use primitive_types::U256;
 

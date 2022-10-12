@@ -1,4 +1,4 @@
-use crate::bytecode::hir::ir::_Expr;
+use crate::bytecode::hir::ir::{Expr, _Expr};
 use crate::bytecode::loc::Loc;
 use std::fmt::{Debug, Display, Formatter};
 use std::mem;
