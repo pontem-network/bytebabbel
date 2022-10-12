@@ -3,18 +3,17 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use anyhow::{anyhow, Context as ErrContext, Error};
 
 use crate::bytecode::block::InstructionBlock;
-use crate::bytecode::instruction::Offset;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
-use crate::{BlockId, OpCode, U256};
+use crate::{Offset, OpCode, U256};
 
 #[derive(Clone, Debug)]
 pub struct Tracer<'a> {
-    blocks: &'a HashMap<BlockId, InstructionBlock>,
+    blocks: &'a HashMap<Offset, InstructionBlock>,
     executor: Executor,
 }
 
 impl<'a> Tracer<'a> {
-    pub fn new(blocks: &'a HashMap<BlockId, InstructionBlock>) -> Self {
+    pub fn new(blocks: &'a HashMap<Offset, InstructionBlock>) -> Self {
         Self {
             blocks,
             executor: Executor::default(),
@@ -23,27 +22,17 @@ impl<'a> Tracer<'a> {
 
     pub fn trace(&mut self) -> Result<FlowTrace, Error> {
         let io = self.calculate_io()?;
-        let mut loops = self.clone().find_loops()?;
-        loops = loops
-            .iter()
-            .map(|(id, lp)| {
-                let mut lp = lp.clone();
-                self.fill_io(&mut lp, &loops).map(|_| (*id, lp))
-            })
-            .collect::<Result<_, Error>>()?;
+        let loops = self.clone().find_loops()?;
         let funcs = self.clone().find_funcs(&loops);
         Ok(FlowTrace { io, funcs, loops })
     }
 
-    fn next_block(block: &InstructionBlock) -> BlockId {
-        block
-            .last()
-            .map(|lst| BlockId::from(lst.offset() + lst.size() as Offset))
-            .unwrap()
+    fn next_block(block: &InstructionBlock) -> Offset {
+        block.last().map(|lst| lst.offset() + lst.size()).unwrap()
     }
 
-    fn find_funcs(&mut self, loops: &HashMap<BlockId, Loop>) -> HashMap<BlockId, Func> {
-        let mut funcs: HashMap<BlockId, Func> = HashMap::new();
+    fn find_funcs(&mut self, loops: &HashMap<Offset, Loop>) -> HashMap<Offset, Func> {
+        let mut funcs: HashMap<Offset, Func> = HashMap::new();
 
         for (id, block) in self.blocks {
             let last = if let Some(last) = block.last() {
@@ -62,7 +51,7 @@ impl<'a> Tracer<'a> {
             let call_addr = if let Some(inst) = block.get(block.len() - 2) {
                 if let OpCode::Push(vec) = &inst.1 {
                     let val = U256::from(vec.as_slice());
-                    BlockId::from(val)
+                    Offset::from(val)
                 } else {
                     continue;
                 }
@@ -89,17 +78,17 @@ impl<'a> Tracer<'a> {
             .collect()
     }
 
-    fn check_func(&self, _id: &BlockId, _fun: &Func, _loops: &HashMap<BlockId, Loop>) -> bool {
+    fn check_func(&self, _id: &Offset, _fun: &Func, _loops: &HashMap<Offset, Loop>) -> bool {
         //todo filter out functions that are not really functions)
         true
     }
 
-    fn find_loops(&mut self) -> Result<HashMap<BlockId, Loop>, Error> {
-        let mut id = BlockId::default();
+    fn find_loops(&mut self) -> Result<HashMap<Offset, Loop>, Error> {
+        let mut id = Offset::default();
         let mut stack: Vec<Fork> = vec![];
-        let mut loop_candidates: HashMap<BlockId, (BlockId, Vec<BlockId>)> = HashMap::new();
-        let mut loops: HashMap<BlockId, Loop> = HashMap::new();
-        let mut breaks: HashMap<BlockId, BlockId> = HashMap::new();
+        let mut loop_candidates: HashMap<Offset, (Offset, Vec<Offset>)> = HashMap::new();
+        let mut loops: HashMap<Offset, Loop> = HashMap::new();
+        let mut breaks: HashMap<Offset, Offset> = HashMap::new();
         loop {
             let block = self
                 .blocks
@@ -207,17 +196,13 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    fn calculate_io(&self) -> Result<HashMap<BlockId, BlockIO>, Error> {
-        let mut io: HashMap<BlockId, BlockIO> = HashMap::new();
+    fn calculate_io(&self) -> Result<HashMap<Offset, BlockIO>, Error> {
+        let mut io: HashMap<Offset, BlockIO> = HashMap::new();
         for (id, block) in self.blocks {
             let mut exec = Executor::default();
             let res = exec.exec_one(block);
 
-            let outputs = res
-                .output
-                .into_iter()
-                .map(|i| (i.offset().0 as u64, i))
-                .collect();
+            let outputs = res.output.into_iter().map(|i| (i.offset(), i)).collect();
 
             let inputs = res
                 .input
@@ -233,7 +218,7 @@ impl<'a> Tracer<'a> {
         Ok(io)
     }
 
-    pub fn fill_io(&self, lp: &mut Loop, loops: &HashMap<BlockId, Loop>) -> Result<(), Error> {
+    pub fn fill_io(&self, lp: &mut Loop, loops: &HashMap<Offset, Loop>) -> Result<(), Error> {
         let mut exec = Executor::default();
         let mut block_id = lp.root;
         let exit = lp.loop_exit;
@@ -285,13 +270,13 @@ impl<'a> Tracer<'a> {
 
 #[derive(Debug, Clone, Default)]
 pub struct LoopCtx {
-    pub block: BlockId,
+    pub block: Offset,
     pub output: Vec<StackItem>,
     pub input: HashSet<StackItem>,
 }
 
 impl LoopCtx {
-    pub fn new(block: BlockId, exec: &Executor) -> Self {
+    pub fn new(block: Offset, exec: &Executor) -> Self {
         LoopCtx {
             block,
             output: exec.call_stack().clone(),
@@ -302,51 +287,51 @@ impl LoopCtx {
 
 pub struct Context {
     pub executor: Executor,
-    pub false_br: BlockId,
+    pub false_br: Offset,
 }
 
 #[derive(Debug)]
 pub struct Func {
-    pub entry_point: BlockId,
-    pub calls: HashMap<BlockId, Call>,
+    pub entry_point: Offset,
+    pub calls: HashMap<Offset, Call>,
 }
 
 #[derive(Debug)]
 pub struct Call {
-    pub entry_point: BlockId,
-    pub return_point: BlockId,
+    pub entry_point: Offset,
+    pub return_point: Offset,
 }
 
 #[derive(Clone, Debug)]
 pub struct Fork {
-    pub id: BlockId,
+    pub id: Offset,
     pub exec: Executor,
-    pub state: (BlockId, BlockId),
-    pub next_br: Option<BlockId>,
+    pub state: (Offset, Offset),
+    pub next_br: Option<Offset>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Loop {
-    pub root: BlockId,
-    pub loop_exit: BlockId,
-    pub loop_br: BlockId,
-    pub continuous: BlockId,
-    pub breaks: HashSet<BlockId>,
+    pub root: Offset,
+    pub loop_exit: Offset,
+    pub loop_br: Offset,
+    pub continuous: Offset,
+    pub breaks: HashSet<Offset>,
     pub fork: Fork,
     pub loop_ctx: LoopCtx,
 }
 
 #[derive(Debug)]
 pub struct FlowTrace {
-    pub io: HashMap<BlockId, BlockIO>,
-    pub funcs: HashMap<BlockId, Func>,
-    pub loops: HashMap<BlockId, Loop>,
+    pub io: HashMap<Offset, BlockIO>,
+    pub funcs: HashMap<Offset, Func>,
+    pub loops: HashMap<Offset, Loop>,
 }
 
 pub type ID = usize;
 
 #[derive(Debug, Clone)]
 pub struct BlockIO {
-    pub inputs: Vec<(ID, BlockId)>,
+    pub inputs: Vec<(ID, Offset)>,
     pub outputs: BTreeMap<Offset, StackItem>,
 }

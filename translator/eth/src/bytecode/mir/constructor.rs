@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::bytecode::loc::Loc;
 use primitive_types::U256;
 
 use crate::bytecode::mir::ir::expression::Expression;
@@ -11,31 +12,22 @@ use crate::Mir;
 pub fn make_constructor(store: HashMap<U256, U256>) -> Mir {
     let mut mir = Mir::default();
     let mut variables = Variables::new(vec![SType::Signer]);
-    mir.push(Statement::InitStorage(variables.borrow_param(0)));
-    let store_var = variables.borrow_global(SType::Storage);
-    mir.push(Statement::Assign(
+    let loc: Loc<()> = Loc::default();
+    mir.push(loc.wrap(Statement::InitStorage(variables.borrow_param(0))));
+    let store_var = variables.borrow(SType::Storage);
+    mir.push(loc.wrap(Statement::Assign(
         store_var,
-        Expression::GetStore.ty(SType::Storage),
-    ));
+        loc.wrap(Expression::GetStore.ty(SType::Storage)),
+    )));
 
-    let key_var = variables.borrow_global(SType::Num);
-    let value_var = variables.borrow_global(SType::Num);
     for (key, value) in store {
-        mir.push(Statement::Assign(
-            key_var,
-            Expression::Const(Value::from(key)).ty(SType::Num),
-        ));
-        mir.push(Statement::Assign(
-            value_var,
-            Expression::Const(Value::from(value)).ty(SType::Num),
-        ));
-        mir.push(Statement::SStore {
+        mir.push(loc.wrap(Statement::SStore {
             storage: store_var,
-            key: key_var,
-            val: value_var,
-        });
+            key: loc.wrap(Expression::Const(Value::from(key)).ty(SType::Num)),
+            val: loc.wrap(Expression::Const(Value::from(value)).ty(SType::Num)),
+        }));
     }
-    mir.push(Statement::Result(vec![]));
+    mir.push(loc.wrap(Statement::Result(vec![])));
     mir.set_locals(variables.locals());
     mir
 }

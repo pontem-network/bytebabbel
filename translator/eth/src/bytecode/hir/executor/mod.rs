@@ -8,9 +8,10 @@ use crate::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
 use crate::bytecode::hir::executor::memory::MemoryOp;
 use crate::bytecode::hir::executor::stack::StackOp;
 use crate::bytecode::hir::executor::storage::StorageOp;
-use crate::bytecode::hir::ir::var::VarId;
+use crate::bytecode::hir::ir::{Expr, _Expr};
 use crate::bytecode::instruction::Instruction;
-use crate::{BlockId, Hir, OpCode};
+
+use crate::{Hir, Offset, OpCode};
 
 pub mod call;
 pub mod code;
@@ -23,19 +24,19 @@ pub mod stack;
 pub mod storage;
 
 pub trait InstructionHandler {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult;
+    fn handle(&self, params: Vec<Expr>, ir: &mut Hir, context: &mut Context) -> ExecutionResult;
 }
 
 struct NoOp;
 
 impl InstructionHandler for NoOp {
-    fn handle(&self, _: Vec<VarId>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
         ExecutionResult::None
     }
 }
 
 impl InstructionHandler for Instruction {
-    fn handle(&self, params: Vec<VarId>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
+    fn handle(&self, params: Vec<Expr>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
         match &self.1 {
             OpCode::Add => BinaryOp::Add.handle(params, ir, context),
             OpCode::Mul => BinaryOp::Mul.handle(params, ir, context),
@@ -105,8 +106,7 @@ impl InstructionHandler for Instruction {
             OpCode::SStore => StorageOp::SStore.handle(params, ir, context),
 
             OpCode::Push(val) => StackOp::Push(val.to_vec()).handle(params, ir, context),
-            OpCode::Dup(val) => StackOp::Dup(*val).handle(params, ir, context),
-            OpCode::Swap(val) => StackOp::Swap(*val).handle(params, ir, context),
+            OpCode::Dup(_) | OpCode::Swap(_) => unreachable!(),
             OpCode::Pop => StackOp::Pop.handle(params, ir, context),
 
             OpCode::Log(size) => EventOp(*size).handle(params, ir, context),
@@ -128,18 +128,13 @@ impl InstructionHandler for Instruction {
 }
 
 pub enum ExecutionResult {
-    Abort(u8),
     None,
-    Output(Vec<VarId>),
-    Result {
-        offset: VarId,
-        len: VarId,
-    },
-    Stop,
-    Jmp(VarId, BlockId),
+    End,
+    Output(_Expr),
+    Jmp(Offset),
     CndJmp {
-        cnd: VarId,
-        true_br: BlockId,
-        false_br: BlockId,
+        cnd: Expr,
+        true_br: Offset,
+        false_br: Offset,
     },
 }

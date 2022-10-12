@@ -15,6 +15,12 @@ pub enum SType {
     Bytes,
 }
 
+impl SType {
+    pub fn is_num(&self) -> bool {
+        matches!(self, SType::Num)
+    }
+}
+
 impl Display for SType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(

@@ -28,9 +28,17 @@ pub fn test_strings() {
     vm.deploy("0x42", bytecode);
 
     vm.run("0x42::Strings::constructor", "0x42", None).unwrap();
-    let res = vm
-        .run("0x42::Strings::const_str", "0x42", Some(""))
-        .unwrap()
-        .to_result_str();
-    assert_eq!("String(\"hello\")", res);
+    // let res = vm
+    //     .run("0x42::Strings::const_str", "0x42", Some(""))
+    //     .unwrap()
+    //     .to_result_str();
+    // assert_eq!("String(\"hello\")", res);
+    //
+    // let res = vm
+    //     .run(
+    //         "0x42::Strings::set_state",
+    //         "0x42",
+    //         Some("This is a vary vary long string that is longer than 32 bytes"),
+    //     )
+    //     .unwrap();
 }

@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Error};
-use log::log_enabled;
-use log::Level;
+use log::{log_enabled, Level};
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::Signature;
 use move_binary_format::CompiledModule;
@@ -54,16 +53,19 @@ impl Module {
     }
 }
 
-fn print_move_module(module: &CompiledModule) {
+pub fn print_move_module(module: &CompiledModule) {
     if !log_enabled!(Level::Trace) {
         return;
     }
+
     let source_mapping = SourceMapping::new_from_view(
         BinaryIndexedView::Module(module),
         Spanned::unsafe_no_loc(()).loc,
     )
     .unwrap();
-    let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
+    let mut ops = DisassemblerOptions::new();
+    ops.only_externally_visible = true;
+    let disassembler = Disassembler::new(source_mapping, ops);
     let dissassemble_string = disassembler.disassemble().unwrap();
-    log::trace!("{}", dissassemble_string);
+    println!("{}", dissassemble_string);
 }

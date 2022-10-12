@@ -1,10 +1,10 @@
 use crate::bytecode::flow_graph::builder::CndJmp;
-use crate::BlockId;
+use crate::Offset;
 
 #[derive(Debug, Clone)]
 pub enum Flow {
-    Continue(BlockId),
-    Block(BlockId),
+    Continue(Offset),
+    Block(Offset),
     Loop(LoopFlow),
     IF(IfFlow),
     Sequence(Vec<Flow>),
@@ -17,7 +17,7 @@ pub struct LoopFlow {
 }
 
 impl LoopFlow {
-    pub fn break_block(&self) -> BlockId {
+    pub fn break_block(&self) -> Offset {
         if self.br.is_true_br_loop() {
             self.jmp.false_br
         } else {
