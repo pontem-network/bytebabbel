@@ -156,7 +156,8 @@ impl<'a> MirTranslator<'a> {
                     self.translate_ret(offset, len)?;
                 }
                 Stmt::BrunchTrue(cnd, label) => {
-                    let expr = self.translate_expr(cnd)?;
+                    let cnd = self.translate_expr(cnd)?;
+                    let expr = self.cast_expr(cnd, SType::Bool)?;
                     self.mir.push(Statement::BrTrue(expr, label).loc(self.loc));
                 }
                 Stmt::Brunch(label) => {
