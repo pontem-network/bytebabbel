@@ -47,6 +47,7 @@ pub enum Expression {
         address: Variable,
     },
     GasPrice,
+    GasLimit,
 }
 
 impl Expression {

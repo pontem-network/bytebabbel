@@ -359,6 +359,9 @@ impl MvIrTranslator {
             Expression::GasPrice => {
                 self.code.call(Info::GasPrice, vec![]);
             }
+            Expression::GasLimit => {
+                self.code.call(Info::MaximumGasUnits, vec![]);
+            }
         }
     }
 

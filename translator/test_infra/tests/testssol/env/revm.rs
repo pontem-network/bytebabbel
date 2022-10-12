@@ -26,7 +26,7 @@ fn memory_vicinity() -> Result<MemoryVicinity> {
         block_coinbase: H160::zero(),
         block_timestamp: U256::from(now),
         block_difficulty: U256::zero(),
-        block_gas_limit: U256::zero(),
+        block_gas_limit: U256::from(10_000_000),
     })
 }
 

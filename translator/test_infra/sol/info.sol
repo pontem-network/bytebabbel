@@ -35,6 +35,15 @@ library Info {
         return gasPrice;
     }
 
+    // # gas_limit ()
+    function gas_limit() public view returns (uint){
+        uint256 limit;
+        assembly {
+            limit := gaslimit()
+        }
+        return limit;
+    }
+
     // # ignore_block_height()
     function block_height() public view returns (uint){
         return block.number;
