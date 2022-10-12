@@ -449,12 +449,12 @@ module self::u256 {
 
     // API
     public fun eq(a: U256, b: U256): bool {
-        compare(&a, &b) == EQUAL
+        a == b
     }
 
     // API
-    fun ne(a: U256, b: U256): bool {
-        compare(&a, &b) != EQUAL
+    public fun ne(a: U256, b: U256): bool {
+        a != b
     }
 
     // API

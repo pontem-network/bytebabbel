@@ -570,12 +570,26 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::{eq, one};
+    use self::u256::{eq, one, ne};
 
     #[test]
     fun test_one() {
         let a = one();
         assert!(eq(a, from_u128(1)), 0);
+    }
+
+    #[test]
+    fun test_eq() {
+        assert!(eq(from_u128(2927), from_string(&b"2927")), 0);
+        assert!(from_u128(2927) == from_string(&b"2927"), 1);
+        assert!(get_negative(from_u128(10)) == from_string(&b"-10"), 2);
+    }
+
+    #[test]
+    fun test_ne() {
+        assert!(!(ne(from_u128(2927), from_string(&b"2927"))), 0);
+        assert!(!(from_u128(2927) != from_string(&b"2927")), 1);
+        assert!(!(get_negative(from_u128(10)) != from_string(&b"-10")), 2);
     }
 
     #[test]
