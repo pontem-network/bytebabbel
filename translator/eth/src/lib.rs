@@ -50,7 +50,7 @@ pub fn transpile_program(
         .map(|block| (Offset::from(block.start), block))
         .collect::<HashMap<_, _>>();
 
-    let hir = HirBuilder::new(contract.clone(), flags)?;
+    let hir = HirBuilder::new(contract, flags)?;
     let functions = abi
         .functions()
         .iter()

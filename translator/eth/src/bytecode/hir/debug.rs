@@ -11,12 +11,12 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
         _Expr::Var(var) => write!(buf, "{}", var)?,
         _Expr::MLoad(offset) => {
             write!(buf, "mload(")?;
-            print_expr(buf, &offset)?;
+            print_expr(buf, offset)?;
             write!(buf, ")")?
         }
         _Expr::SLoad(key) => {
             write!(buf, "sload(")?;
-            print_expr(buf, &key)?;
+            print_expr(buf, key)?;
             write!(buf, ")")?
         }
         _Expr::Signer => write!(buf, "signer")?,
@@ -24,52 +24,52 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
         _Expr::ArgsSize => write!(buf, "args_size")?,
         _Expr::Args(idx) => {
             write!(buf, "args(")?;
-            print_expr(buf, &idx)?;
+            print_expr(buf, idx)?;
             write!(buf, ")")?
         }
         _Expr::UnaryOp(cmd, arg) => {
             write!(buf, "(")?;
             write!(buf, "{}", cmd)?;
-            print_expr(buf, &arg)?;
+            print_expr(buf, arg)?;
             write!(buf, ")")?
         }
         _Expr::BinaryOp(cmd, arg1, arg2) => {
             write!(buf, "(")?;
-            print_expr(buf, &arg1)?;
+            print_expr(buf, arg1)?;
             write!(buf, " {} ", cmd)?;
-            print_expr(buf, &arg2)?;
+            print_expr(buf, arg2)?;
             write!(buf, ")")?
         }
         _Expr::TernaryOp(cmd, arg1, arg2, arg3) => match cmd {
             TernaryOp::AddMod => {
                 write!(buf, "((")?;
-                print_expr(buf, &arg1)?;
+                print_expr(buf, arg1)?;
                 write!(buf, " + ")?;
-                print_expr(buf, &arg2)?;
+                print_expr(buf, arg2)?;
                 write!(buf, ") % ")?;
-                print_expr(buf, &arg3)?;
+                print_expr(buf, arg3)?;
                 write!(buf, ")")?
             }
             TernaryOp::MulMod => {
                 write!(buf, "((")?;
-                print_expr(buf, &arg1)?;
+                print_expr(buf, arg1)?;
                 write!(buf, " * ")?;
-                print_expr(buf, &arg2)?;
+                print_expr(buf, arg2)?;
                 write!(buf, ") % ")?;
-                print_expr(buf, &arg3)?;
+                print_expr(buf, arg3)?;
                 write!(buf, ")")?
             }
         },
         _Expr::Hash(offset, len) => {
             write!(buf, "hash(")?;
-            print_expr(buf, &offset)?;
+            print_expr(buf, offset)?;
             write!(buf, ", ")?;
-            print_expr(buf, &len)?;
+            print_expr(buf, len)?;
             write!(buf, ")")?
         }
         _Expr::Copy(cp) => {
             write!(buf, "copy(")?;
-            print_expr(buf, &cp)?;
+            print_expr(buf, cp)?;
             write!(buf, ")")?
         }
     }
@@ -77,26 +77,26 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
 }
 
 pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> {
-    write!(buf, "{}: ", Offset::from(stmt.start))?;
+    write!(buf, "{}: ", stmt.start)?;
     match stmt.as_ref() {
         Stmt::Label(label) => writeln!(buf, "'{}:", label)?,
         Stmt::Assign(var, expr) => {
             write!(buf, "{} = ", var)?;
-            print_expr(buf, &expr)?;
+            print_expr(buf, expr)?;
             writeln!(buf, ";")?;
         }
         Stmt::MemStore8 { addr, val: var } => {
             write!(buf, "mstore8(")?;
-            print_expr(buf, &addr)?;
+            print_expr(buf, addr)?;
             write!(buf, ", ")?;
-            print_expr(buf, &var)?;
+            print_expr(buf, var)?;
             writeln!(buf, ");")?;
         }
         Stmt::MemStore { addr, val: var } => {
             write!(buf, "mstore(")?;
-            print_expr(buf, &addr)?;
+            print_expr(buf, addr)?;
             write!(buf, ", ")?;
-            print_expr(buf, &var)?;
+            print_expr(buf, var)?;
             writeln!(buf, ");")?;
         }
         Stmt::SStore {
@@ -104,9 +104,9 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
             val: var,
         } => {
             write!(buf, "sstore(")?;
-            print_expr(buf, &addr)?;
+            print_expr(buf, addr)?;
             write!(buf, ", ")?;
-            print_expr(buf, &var)?;
+            print_expr(buf, var)?;
             writeln!(buf, ");")?;
         }
         Stmt::Log {
@@ -115,9 +115,9 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
             topics,
         } => {
             write!(buf, "log(")?;
-            print_expr(buf, &offset)?;
+            print_expr(buf, offset)?;
             write!(buf, ", ")?;
-            print_expr(buf, &len)?;
+            print_expr(buf, len)?;
             for topic in topics {
                 write!(buf, ", ")?;
                 print_expr(buf, topic)?;
@@ -132,9 +132,9 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
         }
         Stmt::Result { offset, len } => {
             write!(buf, "result(")?;
-            print_expr(buf, &offset)?;
+            print_expr(buf, offset)?;
             write!(buf, ", ")?;
-            print_expr(buf, &len)?;
+            print_expr(buf, len)?;
             writeln!(buf, ");")?;
         }
         Stmt::Brunch(label) => {
@@ -143,15 +143,15 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
         Stmt::StoreStack(ctx) => {
             writeln!(buf, "[")?;
             for (id, expr) in ctx.iter() {
-                write!(buf, "{}: ", Offset::from(expr.start))?;
+                write!(buf, "{}: ", expr.start)?;
                 write!(buf, "{} = ", id)?;
-                print_expr(buf, &expr)?;
+                print_expr(buf, expr)?;
                 writeln!(buf, ";")?;
             }
             writeln!(buf, "]")?;
         }
         Stmt::BrunchTrue(cnd, true_br) => {
-            print_expr(buf, &cnd)?;
+            print_expr(buf, cnd)?;
             writeln!(buf, "\nBrTrue {};", true_br)?;
         }
     }

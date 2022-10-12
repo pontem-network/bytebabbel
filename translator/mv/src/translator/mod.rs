@@ -406,8 +406,8 @@ impl MvIrTranslator {
         ];
 
         topics
-            .into_iter()
-            .map(|topic| CallOp::Expr(topic))
+            .iter()
+            .map(CallOp::Expr)
             .for_each(|arg| args.push(arg));
         self.call(fun, args);
     }
