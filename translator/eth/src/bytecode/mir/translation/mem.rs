@@ -7,11 +7,7 @@ use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
 
 impl<'a> MirTranslator<'a> {
-    pub(super) fn translate_mem_store(
-        &mut self,
-        offset: Loc<_Expr>,
-        val: Loc<_Expr>,
-    ) -> Result<(), Error> {
+    pub(super) fn translate_mem_store(&mut self, offset: Expr, val: Expr) -> Result<(), Error> {
         let offset = self.translate_expr(offset)?;
         let val = self.translate_expr(val)?;
         let val = self.cast_expr(val, SType::Num)?;
@@ -28,11 +24,7 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    pub(super) fn translate_mem_store8(
-        &mut self,
-        offset: Loc<_Expr>,
-        val: Loc<_Expr>,
-    ) -> Result<(), Error> {
+    pub(super) fn translate_mem_store8(&mut self, offset: Expr, val: Expr) -> Result<(), Error> {
         let offset = self.translate_expr(offset)?;
         let val = self.translate_expr(val)?;
         let val = self.cast_expr(val, SType::Num)?;

@@ -168,10 +168,7 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_store_stack(
-        &mut self,
-        hir_stack: BTreeMap<VarId, Loc<_Expr>>,
-    ) -> Result<(), Error> {
+    fn translate_store_stack(&mut self, hir_stack: BTreeMap<VarId, Expr>) -> Result<(), Error> {
         let mut mir_stack = BTreeMap::new();
         for (var, expr) in hir_stack {
             let expr = self.translate_expr(expr)?;
@@ -187,7 +184,7 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_set_var(&mut self, id: VarId, expr: Loc<_Expr>) -> Result<(), Error> {
+    fn translate_set_var(&mut self, id: VarId, expr: Expr) -> Result<(), Error> {
         let expr = self.translate_expr(expr)?;
         if id.is_tmp() {
             let var = self.vars.borrow(expr.ty);
@@ -204,12 +201,7 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_log(
-        &mut self,
-        offset: Loc<_Expr>,
-        len: Loc<_Expr>,
-        topics: Vec<Loc<_Expr>>,
-    ) -> Result<(), Error> {
+    fn translate_log(&mut self, offset: Expr, len: Expr, topics: Vec<Expr>) -> Result<(), Error> {
         let topics = topics
             .into_iter()
             .map(|t| self.translate_expr(t))
@@ -260,7 +252,7 @@ impl<'a> MirTranslator<'a> {
         Ok(())
     }
 
-    fn translate_ret(&mut self, offset: Loc<_Expr>, len: Loc<_Expr>) -> Result<(), Error> {
+    fn translate_ret(&mut self, offset: Expr, len: Expr) -> Result<(), Error> {
         if self.flags.hidden_output {
             self.mir.push(self.loc.wrap(Statement::Result(vec![])));
             return Ok(());

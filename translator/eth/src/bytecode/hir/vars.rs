@@ -1,4 +1,4 @@
-use crate::bytecode::hir::ir::{VarId, _Expr};
+use crate::bytecode::hir::ir::{Expr, VarId, _Expr};
 use crate::bytecode::loc::Loc;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 #[derive(Default, Clone)]
 pub struct Vars {
-    vars: HashMap<VarId, Loc<_Expr>>,
+    vars: HashMap<VarId, Expr>,
     var_seq: Rc<Cell<u32>>,
 }
 
@@ -19,11 +19,11 @@ impl Vars {
         var
     }
 
-    pub fn get(&self, var: &VarId) -> Option<&Loc<_Expr>> {
+    pub fn get(&self, var: &VarId) -> Option<&Expr> {
         self.vars.get(var)
     }
 
-    pub fn set(&mut self, var: VarId, expr: Loc<_Expr>) {
+    pub fn set(&mut self, var: VarId, expr: Expr) {
         if let _Expr::Var(id) = expr.as_ref() {
             let expr = self.vars.get(id).expect("var not found").clone();
             self.vars.insert(var, expr);

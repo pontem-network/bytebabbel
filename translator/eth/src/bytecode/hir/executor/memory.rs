@@ -13,12 +13,7 @@ pub enum MemoryOp {
 }
 
 impl InstructionHandler for MemoryOp {
-    fn handle(
-        &self,
-        mut params: Vec<Loc<_Expr>>,
-        ir: &mut Hir,
-        ctx: &mut Context,
-    ) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         match self {
             MemoryOp::MLoad => {
                 let addr = Box::new(params.remove(0));

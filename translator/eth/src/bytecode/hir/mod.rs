@@ -171,7 +171,9 @@ impl HirBuilder {
                 }
             }
         }
-        Ok(BlockResult::Jmp(block.end + block.last().map(|i| i.size()).unwrap_or(1)))
+        Ok(BlockResult::Jmp(
+            block.end + block.last().map(|i| i.size()).unwrap_or(1),
+        ))
     }
 
     fn block(&self, id: &Offset) -> Result<&InstructionBlock, Error> {
@@ -203,7 +205,7 @@ impl HirBuilder {
 pub enum BlockResult {
     Jmp(Offset),
     CndJmp {
-        cnd: Loc<_Expr>,
+        cnd: Expr,
         true_br: Offset,
         false_br: Offset,
     },

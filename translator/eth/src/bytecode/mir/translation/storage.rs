@@ -7,11 +7,7 @@ use crate::bytecode::mir::ir::types::SType;
 use crate::MirTranslator;
 
 impl<'a> MirTranslator<'a> {
-    pub(super) fn translate_s_store(
-        &mut self,
-        key: Loc<_Expr>,
-        val: Loc<_Expr>,
-    ) -> Result<(), Error> {
+    pub(super) fn translate_s_store(&mut self, key: Expr, val: Expr) -> Result<(), Error> {
         let key = self.translate_expr(key)?;
         let val = self.translate_expr(val)?;
         let val = self.cast_expr(val, SType::Num)?;

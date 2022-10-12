@@ -31,7 +31,7 @@ impl UnaryOp {
 }
 
 impl InstructionHandler for UnaryOp {
-    fn handle(&self, mut params: Vec<Loc<_Expr>>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
         ExecutionResult::Output(_Expr::UnaryOp(*self, Box::new(params.remove(0))))
     }
 }
@@ -62,12 +62,7 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(
-        &self,
-        mut params: Vec<Loc<_Expr>>,
-        ir: &mut Hir,
-        ctx: &mut Context,
-    ) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let b = params.remove(1);
         let a = params.remove(0);
         if !ctx.is_in_loop() {
@@ -220,12 +215,7 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(
-        &self,
-        mut params: Vec<Loc<_Expr>>,
-        ir: &mut Hir,
-        ctx: &mut Context,
-    ) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let op3 = params.remove(2);
         let op2 = params.remove(1);
         let op1 = params.remove(0);

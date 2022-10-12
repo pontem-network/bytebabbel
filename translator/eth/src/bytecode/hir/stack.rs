@@ -7,7 +7,7 @@ pub const FRAME_SIZE: usize = 32;
 
 #[derive(Default, Clone)]
 pub struct Stack {
-    stack: Vec<Loc<_Expr>>,
+    stack: Vec<Expr>,
 }
 
 impl Stack {
@@ -15,11 +15,11 @@ impl Stack {
         self.stack.clear();
     }
 
-    pub fn pop(&mut self) -> Option<Loc<_Expr>> {
+    pub fn pop(&mut self) -> Option<Expr> {
         self.stack.pop()
     }
 
-    pub fn pop_vec(&mut self, count: usize) -> Vec<Loc<_Expr>> {
+    pub fn pop_vec(&mut self, count: usize) -> Vec<Expr> {
         let mut res = Vec::with_capacity(count);
         for _ in 0..count {
             if let Some(item) = self.stack.pop() {
@@ -29,11 +29,11 @@ impl Stack {
         res
     }
 
-    pub fn push(&mut self, push: Loc<_Expr>) {
+    pub fn push(&mut self, push: Expr) {
         self.stack.push(push);
     }
 
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Loc<_Expr>> {
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Expr> {
         let idx = self.stack.len() - idx;
         self.stack.get_mut(idx)
     }
@@ -52,7 +52,11 @@ impl Stack {
         self.stack.len()
     }
 
-    pub fn take(&mut self) -> Vec<Loc<_Expr>> {
+    pub fn is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
+
+    pub fn take(&mut self) -> Vec<Expr> {
         mem::take(&mut self.stack)
     }
 }

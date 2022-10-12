@@ -24,29 +24,19 @@ pub mod stack;
 pub mod storage;
 
 pub trait InstructionHandler {
-    fn handle(
-        &self,
-        params: Vec<Loc<_Expr>>,
-        ir: &mut Hir,
-        context: &mut Context,
-    ) -> ExecutionResult;
+    fn handle(&self, params: Vec<Expr>, ir: &mut Hir, context: &mut Context) -> ExecutionResult;
 }
 
 struct NoOp;
 
 impl InstructionHandler for NoOp {
-    fn handle(&self, _: Vec<Loc<_Expr>>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
+    fn handle(&self, _: Vec<Expr>, _: &mut Hir, _: &mut Context) -> ExecutionResult {
         ExecutionResult::None
     }
 }
 
 impl InstructionHandler for Instruction {
-    fn handle(
-        &self,
-        params: Vec<Loc<_Expr>>,
-        ir: &mut Hir,
-        context: &mut Context,
-    ) -> ExecutionResult {
+    fn handle(&self, params: Vec<Expr>, ir: &mut Hir, context: &mut Context) -> ExecutionResult {
         match &self.1 {
             OpCode::Add => BinaryOp::Add.handle(params, ir, context),
             OpCode::Mul => BinaryOp::Mul.handle(params, ir, context),
@@ -143,7 +133,7 @@ pub enum ExecutionResult {
     Output(_Expr),
     Jmp(Offset),
     CndJmp {
-        cnd: Loc<_Expr>,
+        cnd: Expr,
         true_br: Offset,
         false_br: Offset,
     },

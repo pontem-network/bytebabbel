@@ -8,7 +8,7 @@ use crate::bytecode::mir::translation::variables::Variable;
 use crate::MirTranslator;
 
 impl<'a> MirTranslator<'a> {
-    pub fn translate_expr(&mut self, expr: Loc<_Expr>) -> Result<Loc<TypedExpr>, Error> {
+    pub fn translate_expr(&mut self, expr: Expr) -> Result<Loc<TypedExpr>, Error> {
         let loc = expr.wrap(());
         let res = match expr.inner() {
             _Expr::Val(val) => val.into(),
@@ -47,11 +47,11 @@ impl<'a> MirTranslator<'a> {
             }
             .ty(SType::Num),
             _Expr::ArgsSize => self.args_size()?,
-            _Expr::Args(offset) => self.args(offset)?,
-            _Expr::UnaryOp(op, arg) => self.translate_unary_op(op, arg)?,
-            _Expr::BinaryOp(op, arg1, arg2) => self.translate_binary_op(op, arg1, arg2)?,
+            _Expr::Args(offset) => self.args(*offset)?,
+            _Expr::UnaryOp(op, arg) => self.translate_unary_op(op, *arg)?,
+            _Expr::BinaryOp(op, arg1, arg2) => self.translate_binary_op(op, *arg1, *arg2)?,
             _Expr::TernaryOp(op, arg1, arg2, arg3) => {
-                self.translate_ternary_op(op, arg1, arg2, arg3)?
+                self.translate_ternary_op(op, *arg1, *arg2, *arg3)?
             }
             _Expr::Hash(offset, len) => {
                 let offset = self.translate_expr(*offset)?;
@@ -115,7 +115,7 @@ impl<'a> MirTranslator<'a> {
             Expression::MoveVar(param).ty(param.ty())
         } else {
             let data = self.vars.borrow_param(self.args_index);
-            let offset = self.translate_expr(*offset)?;
+            let offset = self.translate_expr(offset)?;
             ensure!(offset.ty == SType::Num, "offset must be of type num");
             ensure!(data.ty() == SType::Bytes, "args must be of type bytes");
             Expression::ReadNum { data, offset }.ty(SType::Num)

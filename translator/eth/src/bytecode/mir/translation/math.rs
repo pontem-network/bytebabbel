@@ -14,8 +14,8 @@ impl<'a> MirTranslator<'a> {
         arg: Expr,
         arg1: Expr,
     ) -> Result<TypedExpr, Error> {
-        let arg = self.translate_expr(*arg)?;
-        let arg1 = self.translate_expr(*arg1)?;
+        let arg = self.translate_expr(arg)?;
+        let arg1 = self.translate_expr(arg1)?;
 
         let (arg, arg1) = if op == BinaryOp::Eq {
             if arg.ty == SType::Bool && arg1.ty == SType::Bool {
@@ -48,9 +48,9 @@ impl<'a> MirTranslator<'a> {
         arg1: Expr,
         arg2: Expr,
     ) -> Result<TypedExpr, Error> {
-        let arg = self.translate_expr(*arg)?;
-        let arg1 = self.translate_expr(*arg1)?;
-        let arg2 = self.translate_expr(*arg2)?;
+        let arg = self.translate_expr(arg)?;
+        let arg1 = self.translate_expr(arg1)?;
+        let arg2 = self.translate_expr(arg2)?;
         Ok(Expression::Ternary(
             op,
             self.cast_expr(arg, SType::Num)?,
@@ -65,7 +65,7 @@ impl<'a> MirTranslator<'a> {
         op: UnaryOp,
         arg: Expr,
     ) -> Result<TypedExpr, Error> {
-        let expr = self.translate_expr(*arg)?;
+        let expr = self.translate_expr(arg)?;
         match expr.ty {
             SType::Num => Ok(self.unary_with_num(op, expr)),
             SType::Bool => self.unary_with_bool(op, expr),

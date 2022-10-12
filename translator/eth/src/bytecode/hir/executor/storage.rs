@@ -10,12 +10,7 @@ pub enum StorageOp {
 }
 
 impl InstructionHandler for StorageOp {
-    fn handle(
-        &self,
-        mut params: Vec<Loc<_Expr>>,
-        ir: &mut Hir,
-        ctx: &mut Context,
-    ) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         match self {
             StorageOp::SLoad => {
                 let addr = Box::new(params.remove(0));

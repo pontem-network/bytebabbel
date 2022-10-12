@@ -18,56 +18,56 @@ pub struct Hir {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Label(Label),
-    StoreStack(BTreeMap<VarId, Loc<_Expr>>),
-    Assign(VarId, Loc<_Expr>),
+    StoreStack(BTreeMap<VarId, Expr>),
+    Assign(VarId, Expr),
     MemStore8 {
-        addr: Loc<_Expr>,
-        val: Loc<_Expr>,
+        addr: Expr,
+        val: Expr,
     },
     MemStore {
-        addr: Loc<_Expr>,
-        val: Loc<_Expr>,
+        addr: Expr,
+        val: Expr,
     },
     SStore {
-        key: Loc<_Expr>,
-        val: Loc<_Expr>,
+        key: Expr,
+        val: Expr,
     },
     Log {
-        offset: Loc<_Expr>,
-        len: Loc<_Expr>,
-        topics: Vec<Loc<_Expr>>,
+        offset: Expr,
+        len: Expr,
+        topics: Vec<Expr>,
     },
     Stop,
     Abort(u8),
     Result {
-        offset: Loc<_Expr>,
-        len: Loc<_Expr>,
+        offset: Expr,
+        len: Expr,
     },
-    BrunchTrue(Loc<_Expr>, Label),
+    BrunchTrue(Expr, Label),
     Brunch(Label),
 }
 
-pub type Expr = Box<Loc<_Expr>>;
+pub type Expr = Loc<_Expr>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum _Expr {
     Val(U256),
     Var(VarId),
-    MLoad(Expr),
-    SLoad(Expr),
+    MLoad(Box<Expr>),
+    SLoad(Box<Expr>),
     Signer,
     MSize,
     ArgsSize,
-    Args(Expr),
-    UnaryOp(UnaryOp, Expr),
-    BinaryOp(BinaryOp, Expr, Expr),
-    TernaryOp(TernaryOp, Expr, Expr, Expr),
-    Hash(Expr, Expr),
-    Copy(Expr),
+    Args(Box<Expr>),
+    UnaryOp(UnaryOp, Box<Expr>),
+    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
+    TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
+    Hash(Box<Expr>, Box<Expr>),
+    Copy(Box<Expr>),
 }
 
-impl Loc<_Expr> {
-    pub fn unvar(&self, ctx: &Context) -> Loc<_Expr> {
+impl Expr {
+    pub fn unvar(&self, ctx: &Context) -> Expr {
         match self.as_ref() {
             _Expr::Var(id) => {
                 let expr = ctx.vars.get(id).expect("variable not found").clone();
@@ -195,7 +195,7 @@ impl Display for Label {
 }
 
 impl Hir {
-    pub fn assign(&mut self, expr: Loc<_Expr>, vars: &mut Vars) -> VarId {
+    pub fn assign(&mut self, expr: Expr, vars: &mut Vars) -> VarId {
         let var = vars.gen_tmp();
         self.statement
             .push(expr.wrap(Stmt::Assign(var, expr.clone())));
@@ -207,7 +207,7 @@ impl Hir {
         self.statement.push(loc.wrap(Stmt::Abort(code)));
     }
 
-    pub fn result(&mut self, loc: &Loc<()>, offset: Loc<_Expr>, len: Loc<_Expr>) {
+    pub fn result(&mut self, loc: &Loc<()>, offset: Expr, len: Expr) {
         self.statement.push(loc.wrap(Stmt::Result { offset, len }));
     }
 
@@ -215,42 +215,36 @@ impl Hir {
         self.statement.push(loc.wrap(Stmt::Stop));
     }
 
-    pub fn return_(&mut self, loc: &Loc<()>, offset: Loc<_Expr>, len: Loc<_Expr>) {
+    pub fn return_(&mut self, loc: &Loc<()>, offset: Expr, len: Expr) {
         self.statement.push(loc.wrap(Stmt::Result { offset, len }));
     }
 
-    pub fn mstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
+    pub fn mstore(&mut self, loc: &Loc<()>, addr: Expr, var: Expr) {
         self.statement
             .push(loc.wrap(Stmt::MemStore { addr, val: var }));
     }
 
-    pub fn mstore8(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
+    pub fn mstore8(&mut self, loc: &Loc<()>, addr: Expr, var: Expr) {
         self.statement
             .push(loc.wrap(Stmt::MemStore8 { addr, val: var }));
     }
 
-    pub fn save_stack(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Loc<_Expr>>) {
+    pub fn save_stack(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Expr>) {
         self.statement.push(loc.wrap(Stmt::StoreStack(context)));
     }
 
-    pub fn sstore(&mut self, loc: &Loc<()>, addr: Loc<_Expr>, var: Loc<_Expr>) {
+    pub fn sstore(&mut self, loc: &Loc<()>, addr: Expr, var: Expr) {
         self.statement.push(loc.wrap(Stmt::SStore {
             key: addr,
             val: var,
         }));
     }
 
-    pub fn true_brunch(&mut self, loc: &Loc<()>, cnd: Loc<_Expr>, label: Label) {
+    pub fn true_brunch(&mut self, loc: &Loc<()>, cnd: Expr, label: Label) {
         self.statement.push(loc.wrap(Stmt::BrunchTrue(cnd, label)));
     }
 
-    pub fn log(
-        &mut self,
-        loc: &Loc<()>,
-        offset: Loc<_Expr>,
-        len: Loc<_Expr>,
-        topics: Vec<Loc<_Expr>>,
-    ) {
+    pub fn log(&mut self, loc: &Loc<()>, offset: Expr, len: Expr, topics: Vec<Expr>) {
         self.statement.push(loc.wrap(Stmt::Log {
             offset,
             len,
