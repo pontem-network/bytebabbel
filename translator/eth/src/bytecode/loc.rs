@@ -139,12 +139,12 @@ impl Move for Loc<Vec<Instruction>> {
 
 impl<C: Debug> Debug for Loc<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\nLoc: [{}; {}]\n{:?}", self.start, self.end, self.inner)
+        write!(f, "Loc: [{}; {}]{:?}", self.start, self.end, self.inner)
     }
 }
 
 impl<C: Display> Display for Loc<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\nBlock: [{}; {}]\n{}", self.start, self.end, self.inner)
+        write!(f, "Block: [{}; {}]{}", self.start, self.end, self.inner)
     }
 }

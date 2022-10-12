@@ -73,7 +73,48 @@ impl Loc<_Expr> {
                 let expr = ctx.vars.get(id).expect("variable not found").clone();
                 expr.unvar(ctx)
             }
-            _ => self.clone(),
+            _Expr::Val(_) | _Expr::Signer | _Expr::MSize | _Expr::ArgsSize => self.clone(),
+            _Expr::MLoad(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::MLoad(Box::new(expr)))
+            }
+            _Expr::SLoad(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::SLoad(Box::new(expr)))
+            }
+            _Expr::Args(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::Args(Box::new(expr)))
+            }
+            _Expr::UnaryOp(cmd, expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::UnaryOp(*cmd, Box::new(expr)))
+            }
+            _Expr::BinaryOp(cmd, expr1, expr2) => {
+                let expr1 = expr1.unvar(ctx);
+                let expr2 = expr2.unvar(ctx);
+                self.wrap(_Expr::BinaryOp(*cmd, Box::new(expr1), Box::new(expr2)))
+            }
+            _Expr::TernaryOp(cmd, expr1, expr2, expr3) => {
+                let expr1 = expr1.unvar(ctx);
+                let expr2 = expr2.unvar(ctx);
+                let expr3 = expr3.unvar(ctx);
+                self.wrap(_Expr::TernaryOp(
+                    *cmd,
+                    Box::new(expr1),
+                    Box::new(expr2),
+                    Box::new(expr3),
+                ))
+            }
+            _Expr::Hash(expr, expr1) => {
+                let expr = expr.unvar(ctx);
+                let expr1 = expr1.unvar(ctx);
+                self.wrap(_Expr::Hash(Box::new(expr), Box::new(expr1)))
+            }
+            _Expr::Copy(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::Copy(Box::new(expr)))
+            }
         }
     }
 }
@@ -292,7 +333,7 @@ impl Debug for VarId {
 }
 
 impl Display for VarId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.1 {
             write!(f, "tmp{}", self.0)
         } else {

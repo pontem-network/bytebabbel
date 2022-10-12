@@ -33,12 +33,12 @@ pub fn test_strings() {
     //     .unwrap()
     //     .to_result_str();
     // assert_eq!("String(\"hello\")", res);
-
-    let res = vm
-        .run(
-            "0x42::Strings::set_state",
-            "0x42",
-            Some("This is a vary vary long string that is longer than 32 bytes"),
-        )
-        .unwrap();
+    //
+    // let res = vm
+    //     .run(
+    //         "0x42::Strings::set_state",
+    //         "0x42",
+    //         Some("This is a vary vary long string that is longer than 32 bytes"),
+    //     )
+    //     .unwrap();
 }

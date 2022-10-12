@@ -41,7 +41,7 @@ impl DerefMut for Instruction {
 
 impl Display for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}   ", self)?;
+        write!(f, "{}   ", self.0)?;
         match &self.1 {
             OpCode::Push(data) => write!(f, "Push({})", hex::encode(data)),
             OpCode::Dup(val) => write!(f, "Dup{}", val),
