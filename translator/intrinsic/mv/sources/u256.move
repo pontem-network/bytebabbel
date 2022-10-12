@@ -540,7 +540,7 @@ module self::u256 {
     // API
     /// Multiples two `U256`.
     public fun overflowing_mul(a: U256, b: U256): U256 {
-        let ret = zero_d();
+        let ret = zero();
 
         let i = 0;
         while (i < WORDS) {
@@ -548,16 +548,18 @@ module self::u256 {
             let b1 = get(&b, i);
 
             let j = 0;
-            while (j < WORDS) {
+
+            // j + i < 4
+            while (j + i < WORDS) {
                 let a1 = get(&a, j);
 
                 if (a1 != 0 || carry != 0) {
                     let (hi, low) = split_u128((a1 as u128) * (b1 as u128));
 
                     let overflow = {
-                        let existing_low = get_d(&ret, i + j);
+                        let existing_low = get(&ret, i + j);
                         let (low, o) = overflowing_add_u64(low, existing_low);
-                        put_d(&mut ret, i + j, low);
+                        put(&mut ret, i + j, low);
                         if (o) {
                             1
                         } else {
@@ -565,12 +567,16 @@ module self::u256 {
                         }
                     };
 
+                    if (i + j + 1 >= WORDS) {
+                        break
+                    };
+
                     carry = {
-                        let existing_hi = get_d(&ret, i + j + 1);
+                        let existing_hi = get(&ret, i + j + 1);
                         let hi = hi + overflow;
                         let (hi, o0) = overflowing_add_u64(hi, carry);
                         let (hi, o1) = overflowing_add_u64(hi, existing_hi);
-                        put_d(&mut ret, i + j + 1, hi);
+                        put(&mut ret, i + j + 1, hi);
 
                         if (o0 || o1) {
                             1
@@ -586,8 +592,7 @@ module self::u256 {
             i = i + 1;
         };
 
-        let (r, _overflow) = u512_to_u256(ret);
-        r
+        ret
     }
 
     use self::utiles::overflowing_sub_u64;
@@ -693,7 +698,6 @@ module self::u256 {
 
     // API
     /// Exponentiation.
-    /// todo use U512 for intermediate calculations
     public fun exp(a: U256, b: U256): U256 {
         let ret = one();
         let i = 0;

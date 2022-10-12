@@ -707,10 +707,13 @@ module self::u256_tests {
     #[test]
     fun test_mul_overflow() {
         let max = (U64_MAX as u64);
-
         let a = new_u256(max, max, max, max);
 
-        let _ = overflowing_mul(a, from_u128(2));
+        let res = overflowing_mul(a, from_u128(2));
+        assert!(compare(&res, &from_string(&b"-2")) == 0, 0);
+
+        let res = overflowing_mul(a, a);
+        assert!(compare(&res, &from_string(&b"1")) == 0, 0);
     }
 
     #[test_only]
