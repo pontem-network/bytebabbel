@@ -94,3 +94,26 @@ pub fn test_do_while() {
         .to_result_str();
     assert_eq!("Uint(100)", res);
 }
+
+#[test]
+pub fn using() {
+    init_log();
+    let evm = build_sol(sol_path().join("uniswap/9_using.sol")).unwrap();
+    let bytecode = make_move_module(
+        &format!("0x42::{}", evm.name()),
+        evm.contract().bin(),
+        "",
+        evm.contract().abi(),
+        Flags::default(),
+    )
+    .unwrap();
+    let mut vm = MoveExecutor::new(
+        serde_json::from_str(evm.contract().abi()).unwrap(),
+        Flags::default(),
+    );
+    vm.deploy("0x42", bytecode);
+
+    vm.run("0x42::Using::constructor", "0x42", None).unwrap();
+
+    vm.run("0x42::Using::add", "0x42", Some("1,2")).unwrap();
+}
