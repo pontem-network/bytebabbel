@@ -224,6 +224,15 @@ impl Display for TypedExpr {
             Expression::GasPrice => {
                 write!(buf, "gas_price()")?;
             }
+            Expression::GasLimit => {
+                write!(buf, "gas_limit()")?;
+            }
+            Expression::BlockNumber => {
+                write!(buf, "block_number()")?;
+            }
+            Expression::BlockTimestamp => {
+                write!(buf, "block_timestamp()")?;
+            }
         }
     }
 }

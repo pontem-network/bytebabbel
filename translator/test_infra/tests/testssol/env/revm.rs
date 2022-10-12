@@ -22,7 +22,7 @@ fn memory_vicinity() -> Result<MemoryVicinity> {
             "00000000000000001ebf88508a03865c71d452e25f4d51194196a1d22b6653dc".parse()?,
             "00000000000000010ff5414c5cfbe9eae982e8cef7eb2399a39118e1206c8247".parse()?,
         ],
-        block_number: U256::from(0u8),
+        block_number: U256::from(1),
         block_coinbase: H160::zero(),
         block_timestamp: U256::from(now),
         block_difficulty: U256::zero(),

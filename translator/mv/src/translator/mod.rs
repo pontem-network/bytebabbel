@@ -362,6 +362,12 @@ impl MvIrTranslator {
             Expression::GasLimit => {
                 self.code.call(Info::MaximumGasUnits, vec![]);
             }
+            Expression::BlockNumber => {
+                self.code.call(Info::BlockHeight, vec![]);
+            }
+            Expression::BlockTimestamp => {
+                self.code.call(Info::EpochIntervalSecs, vec![]);
+            }
         }
     }
 

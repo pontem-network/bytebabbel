@@ -66,9 +66,15 @@ impl InstructionHandler for TxMeta {
                 return call_data_size(ctx);
             }
             TxMeta::Blockhash => U256::zero(),
-            TxMeta::Timestamp => U256::zero(),
+            TxMeta::Timestamp => {
+                let id = ir.create_var(Expr::BlockTimestamp);
+                return ExecutionResult::Output(vec![id]);
+            }
             TxMeta::Difficulty => U256::zero(),
-            TxMeta::Number => U256::zero(),
+            TxMeta::Number => {
+                let id = ir.create_var(Expr::BlockNumber);
+                return ExecutionResult::Output(vec![id]);
+            }
             TxMeta::GasPrice => {
                 let id = ir.create_var(Expr::GasPrice);
                 return ExecutionResult::Output(vec![id]);

@@ -48,6 +48,8 @@ pub enum Expression {
     },
     GasPrice,
     GasLimit,
+    BlockNumber,
+    BlockTimestamp,
 }
 
 impl Expression {

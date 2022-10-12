@@ -49,10 +49,9 @@ library Info {
         return block.number;
     }
 
-    // # ignore_epoch_interval_secs()
+    // # epoch_interval_secs()
     function epoch_interval_secs() public view returns (uint){
         return block.timestamp;
     }
-
 }
 

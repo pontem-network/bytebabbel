@@ -85,6 +85,8 @@ impl<'a> MirTranslator<'a> {
             }
             Expr::GasPrice => Expression::GasPrice.ty(SType::Num),
             Expr::GasLimit => Expression::GasLimit.ty(SType::Num),
+            Expr::BlockNumber => Expression::BlockNumber.ty(SType::Num),
+            Expr::BlockTimestamp => Expression::BlockTimestamp.ty(SType::Num),
         };
         Ok(res.loc(loc))
     }
