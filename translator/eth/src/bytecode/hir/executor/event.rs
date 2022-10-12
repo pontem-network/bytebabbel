@@ -1,6 +1,6 @@
 use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
-use crate::bytecode::hir::ir::{Expr};
+use crate::bytecode::hir::ir::Expr;
 
 use crate::Hir;
 

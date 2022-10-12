@@ -1,4 +1,4 @@
-use crate::bytecode::hir::ir::{Expr};
+use crate::bytecode::hir::ir::Expr;
 
 use anyhow::{ensure, Error};
 
