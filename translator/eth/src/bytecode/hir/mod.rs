@@ -57,11 +57,15 @@ impl HirBuilder {
             match self.translate_block(block, ir, ctx)? {
                 BlockResult::Jmp(block) => {
                     if self.flow.loops.contains_key(&block) {
-                        if ir.has_label(Label::new(block)) {
-                            self.flush_context(ctx, ir)?;
-                            ir.goto(&ctx.loc, Label::new(block));
-                        } else {
+                        self.flush_context(ctx, ir);
+                        let (from, new_loop) = ctx.create_loop(block, block_id);
+                        let label = Label::new(block).from(from);
+                        if new_loop {
+                            ir.label(&ctx.loc, label);
                             block_id = block;
+                        } else {
+                            ir.goto(&ctx.loc, label);
+                            return Ok(());
                         }
                     } else {
                         block_id = block;
@@ -74,7 +78,7 @@ impl HirBuilder {
                 } => {
                     let jmp_id = ctx.next_jmp_id();
                     let cnd = ir.assign(cnd, &mut ctx.vars);
-                    self.flush_context(ctx, ir)?;
+                    self.flush_context(ctx, ir);
                     ir.true_brunch(
                         &ctx.loc,
                         ctx.loc.wrap(_Expr::Var(cnd)),
@@ -96,7 +100,7 @@ impl HirBuilder {
         }
     }
 
-    fn flush_context(&self, ctx: &mut Context, ir: &mut Hir) -> Result<(), Error> {
+    fn flush_context(&self, ctx: &mut Context, ir: &mut Hir) {
         let stack = ctx.stack.take();
         let mut stack_dump = BTreeMap::new();
         let last_idx = stack.len() - 1;
@@ -119,7 +123,6 @@ impl HirBuilder {
         }
         ctx.vars = vars;
         ir.save_stack(&ctx.loc, stack_dump);
-        Ok(())
     }
 
     fn translate_block(
@@ -129,8 +132,6 @@ impl HirBuilder {
         ctx: &mut Context,
     ) -> Result<BlockResult, Error> {
         for inst in block.iter() {
-            println!("translate instr: {}", inst.0);
-
             let pops = inst.pops();
             ctx.loc = inst.location();
             if let OpCode::Swap(_) = inst.1 {

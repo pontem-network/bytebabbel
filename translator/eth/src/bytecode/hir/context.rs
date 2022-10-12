@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub struct Context<'a> {
     address: U256,
     fun: &'a Function,
-    loop_input: HashMap<Offset, (Stack, Offset)>,
+    loops: HashMap<Offset, (Offset, Offset)>,
     loop_stack_size: usize,
     static_analysis: bool,
     code_size: u128,
@@ -31,7 +31,7 @@ impl<'a> Context<'a> {
             address: contract_address,
             stack: Stack::default(),
             fun,
-            loop_input: Default::default(),
+            loops: Default::default(),
             loop_stack_size: 0,
             static_analysis: true,
             code_size,
@@ -67,20 +67,11 @@ impl<'a> Context<'a> {
         self.code_size
     }
 
-    pub fn create_loop(&mut self, block_id: Offset, break_br: Offset) {
-        self.loop_input
-            .insert(block_id, (self.stack.clone(), break_br));
-    }
-
-    pub fn get_loop(&self, block_id: &Offset) -> Option<&Stack> {
-        self.loop_input.get(block_id).map(|(stack, _)| stack)
-    }
-
     pub fn is_in_loop(&self) -> bool {
         self.loop_stack_size != 0
     }
 
-    pub fn enter_loop(&mut self) {
+    fn enter_loop(&mut self) {
         self.loop_stack_size += 1;
     }
 
@@ -90,5 +81,26 @@ impl<'a> Context<'a> {
 
     pub fn flags(&self) -> &Flags {
         &self.flags
+    }
+
+    pub fn has_loop(&self, lp: Offset) -> bool {
+        self.loops.contains_key(&lp)
+    }
+
+    pub fn create_loop(&mut self, lp: Offset, from: Offset) -> (Offset, bool) {
+        self.enter_loop();
+        if let Some((from_lp, idx)) = self.loops.get(&lp).cloned() {
+            if from == lp {
+                let id = (from, self.next_jmp_id());
+                self.loops.insert(lp, id);
+                (id.0 + id.1, true)
+            } else {
+                (from_lp + idx, false)
+            }
+        } else {
+            let id = (from, self.next_jmp_id());
+            self.loops.insert(lp, id);
+            (id.0 + id.1, true)
+        }
     }
 }
