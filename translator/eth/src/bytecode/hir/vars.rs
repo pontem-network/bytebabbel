@@ -1,5 +1,5 @@
 use crate::bytecode::hir::ir::{Expr, VarId, _Expr};
-use crate::bytecode::loc::Loc;
+
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};

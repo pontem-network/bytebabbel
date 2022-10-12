@@ -1,5 +1,5 @@
-use crate::bytecode::hir::ir::{Expr, _Expr};
-use crate::bytecode::loc::Loc;
+use crate::bytecode::hir::ir::{Expr};
+
 use anyhow::{ensure, Error};
 
 use crate::bytecode::mir::ir::statement::Statement;

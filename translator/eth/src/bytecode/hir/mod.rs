@@ -3,7 +3,7 @@ use crate::bytecode::hir::context::Context;
 use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::{Expr, Label, VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
-use crate::bytecode::loc::Loc;
+
 use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
 use crate::{Flags, Function, Hir, Offset, OpCode};
 use anyhow::{anyhow, ensure, Context as ErrorContext, Error};

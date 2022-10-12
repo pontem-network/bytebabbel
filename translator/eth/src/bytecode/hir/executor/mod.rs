@@ -10,7 +10,7 @@ use crate::bytecode::hir::executor::stack::StackOp;
 use crate::bytecode::hir::executor::storage::StorageOp;
 use crate::bytecode::hir::ir::{Expr, _Expr};
 use crate::bytecode::instruction::Instruction;
-use crate::bytecode::loc::Loc;
+
 use crate::{Hir, Offset, OpCode};
 
 pub mod call;

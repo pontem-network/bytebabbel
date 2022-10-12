@@ -1,5 +1,5 @@
-use crate::bytecode::hir::ir::{Expr, _Expr};
-use crate::bytecode::loc::Loc;
+use crate::bytecode::hir::ir::{Expr};
+
 use std::fmt::{Debug, Display, Formatter};
 use std::mem;
 
