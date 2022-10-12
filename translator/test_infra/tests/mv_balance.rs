@@ -13,8 +13,7 @@ use crate::testssol::env::executor::MoveExecutor;
 #[allow(dead_code)]
 mod testssol;
 
-const TEST_HELPER_MOVE: &str =
-    "./resources/test_helper/build/test_helper/bytecode_modules/balance.mv";
+const TEST_HELPER_MOVE: &str = "./resources/mv/build/test_helper/bytecode_modules/balance.mv";
 
 #[test]
 pub fn test_balance() {

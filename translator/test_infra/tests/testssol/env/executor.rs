@@ -34,7 +34,7 @@ use crate::testssol::env::stdlib::publish_std;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
 const BALANCE_MV: &str =
-    "./translator/test_infra/resources/test_helper/build/test_helper/bytecode_modules/balance.mv";
+    "./translator/test_infra/resources/mv/build/mv/bytecode_modules/balance.mv";
 
 pub struct MoveExecutor {
     resolver: Resolver,

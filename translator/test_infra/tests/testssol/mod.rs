@@ -27,7 +27,7 @@ const TEST_NAME: &str = "sol";
 lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
     static ref BALANCE_MV: Vec<u8> =
-        fs::read("./resources/test_helper/build/test_helper/bytecode_modules/balance.mv").unwrap();
+        fs::read("./resources/mv/build/test_helper/bytecode_modules/balance.mv").unwrap();
 }
 
 #[derive(Debug)]
@@ -82,13 +82,18 @@ impl STest {
 
         // move result
         let result_mv = return_val_to_string(self.run_mv());
+        // @todo
+        // dbg!(&result_mv);
+
         // sol result
         let result_evm = return_val_to_string(self.run_evm());
+        // dbg!(&result_evm);
+
         log::info!(
             "{wait}: {module_address}::{test:?} {result_evm}",
             wait = color::font_blue("WAIT")
         );
-        ensure!(result_evm == result_mv, "returned: {result_mv}",);
+        ensure!(result_evm == result_mv, "returned: {result_mv}");
 
         Ok(())
     }
@@ -138,12 +143,14 @@ impl STest {
             Flags::default(),
         )?;
         let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
+
+        // balance
         vm.deploy("0x1", BALANCE_MV.clone());
         vm.run("0x1::balance::x42_1_000_000", "0x1", None)?;
 
+        // deploy contract
         vm.deploy("0x42", bytecode);
-        vm.run(&format!("{}::constructor", module_address), "0x42", None)
-            .unwrap();
+        vm.run(&format!("{}::constructor", module_address), "0x42", None)?;
 
         let func_address = format!("{module_address}::{}", &self.test.func);
         vm.run(&func_address, "0x42", Some(&self.test.params))

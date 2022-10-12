@@ -20,7 +20,7 @@ fn publish<S: MoveResolver>(session: &mut Session<'_, '_, S>, dir: &str) {
     // @todo
     let aptos_fw_dir = translator_dir
         .join("..")
-        .join("./test_infra/resources/test_helper/build/test_helper/bytecode_modules/dependencies")
+        .join("./test_infra/resources/mv/build/test_helper/bytecode_modules/dependencies")
         .join(dir);
 
     session

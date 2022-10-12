@@ -3,12 +3,12 @@ use std::process::Command;
 
 use anyhow::{ensure, Result};
 
-const TEST_HELPER_MOVE: &str = "./resources/test_helper";
+const TEST_HELPER_MOVE: &str = "./resources/mv";
 
 pub fn main() -> Result<()> {
     let path = PathBuf::from(TEST_HELPER_MOVE).canonicalize()?;
 
-    // building the move test_helper project
+    // building the move mv project
     let r = Command::new("aptos")
         .current_dir(&path)
         .args(["move", "test"])
