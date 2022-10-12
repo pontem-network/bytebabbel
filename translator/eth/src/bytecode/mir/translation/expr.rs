@@ -74,6 +74,15 @@ impl<'a> MirTranslator<'a> {
                     bail!("Only variables can be copied")
                 }
             }
+            Expr::Balance(address_id) => {
+                let var = self.get_var(*address_id)?;
+                let address_var = self.cast(var, SType::Address)?;
+
+                Expression::Balance {
+                    address: address_var,
+                }
+                .ty(SType::Num)
+            }
         };
         Ok(res.loc(loc))
     }

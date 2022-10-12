@@ -46,7 +46,14 @@ pub enum TxMeta {
 impl InstructionHandler for TxMeta {
     fn handle(&self, params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
-            TxMeta::Balance => U256::zero(),
+            TxMeta::Balance => {
+                if let Some(addr) = params.get(0) {
+                    let id = ir.create_var(Expr::Balance(*addr));
+                    return ExecutionResult::Output(vec![id]);
+                } else {
+                    U256::zero()
+                }
+            }
             TxMeta::Origin => return ExecutionResult::Output(_Expr::Signer),
             TxMeta::Caller => {
                 return ExecutionResult::Output(_Expr::Signer);

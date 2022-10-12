@@ -2,6 +2,7 @@ module self::info {
     use aptos_framework::block;
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::AptosCoin;
+    use aptos_framework::account;
     use self::u256::{U256, from_u64};
 
     #[test_only]
@@ -12,7 +13,13 @@ module self::info {
 
     /// AptosCoin - balance
     fun balance(account: address): U256 {
-        let balance = coin::balance<AptosCoin>(account);
+        let balance;
+        if( account::exists_at(account) ){
+            balance = coin::balance<AptosCoin>(account);
+        }else{
+            balance = 0;
+        };
+
         from_u64(balance)
     }
 

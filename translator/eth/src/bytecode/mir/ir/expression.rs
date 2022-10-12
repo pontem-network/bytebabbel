@@ -43,6 +43,9 @@ pub enum Expression {
         offset: Loc<TypedExpr>,
         len: Loc<TypedExpr>,
     },
+    Balance {
+        address: Variable,
+    },
 }
 
 impl Expression {

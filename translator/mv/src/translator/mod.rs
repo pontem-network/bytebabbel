@@ -16,7 +16,7 @@ use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
 use eth::Flags;
-use intrinsic::table::{self_address_index, Memory as Mem, Persist, U256 as Num};
+use intrinsic::table::{self_address_index, Info, Memory as Mem, Persist, U256 as Num};
 use intrinsic::{template, Function};
 
 use crate::mv_ir::func::Func;
@@ -351,6 +351,10 @@ impl MvIrTranslator {
             Expression::Binary(op, arg, arg1) => self.translate_binary(*op, arg, arg1),
             Expression::Ternary(op, arg, arg1, arg2) => {
                 self.translate_ternary(*op, arg, arg1, arg2)
+            }
+            Expression::Balance { address } => {
+                self.code
+                    .call(Info::AptosBalance, vec![CallOp::Var(*address)]);
             }
         }
     }
