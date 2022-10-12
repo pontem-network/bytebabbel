@@ -40,16 +40,6 @@ pub enum ###ENUM_NAME### {
     ###ENUM_BODY###
 }
 
-impl ###ENUM_NAME### {
-    pub fn token() -> SignatureToken {
-        ###ENUM_INDEX_TOKEN###
-    }
-
-    pub fn instance() -> StructDefinitionIndex {
-        StructDefinitionIndex(###ENUM_INDEX_DEFINITION###)
-    }
-}
-
 impl Function for ###ENUM_NAME### {
     fn name(&self) -> &'static str {
         match self {
@@ -61,6 +51,17 @@ impl Function for ###ENUM_NAME### {
         match self {
             ###ENUM_FN_HANDLER###
         }
+    }
+}
+";
+
+const TEMPLATE_ENUM_STRUCTURE: &str = "\
+impl ###ENUM_NAME### {
+    pub fn token() -> SignatureToken {
+        ###ENUM_INDEX_TOKEN###
+    }
+    pub fn instance() -> StructDefinitionIndex {
+        StructDefinitionIndex(###ENUM_INDEX_DEFINITION###)
     }
 }
 ";
@@ -128,17 +129,69 @@ const U256_TABLE: [(&str, &str); 37] = [
     ("MulMod", "mul_mod"),
 ];
 
+const INFO_TABLE: [(&str, &str); 5] = [
+    ("AptosBalance", "balance"),
+    ("BlockHeight", "get_current_block_height"),
+    ("EpochIntervalSecs", "get_epoch_interval_secs"),
+    ("GasPrice", "gas_price"),
+    ("MaximumGasUnits", "maximum_number_of_gas_units"),
+];
+
+enum EnumType<'a> {
+    Structure {
+        name: &'a str,
+        mut_token: bool,
+        table: Vec<(&'a str, &'a str)>,
+    },
+    Module {
+        name: &'a str,
+        table: Vec<(&'a str, &'a str)>,
+    },
+}
+
+impl EnumType<'_> {
+    pub fn name(&self) -> &str {
+        match self {
+            EnumType::Structure { name, .. } => *name,
+            EnumType::Module { name, .. } => *name,
+        }
+    }
+
+    pub fn talbe_ref(&self) -> &Vec<(&str, &str)> {
+        match self {
+            EnumType::Structure { table, .. } => table,
+            EnumType::Module { table, .. } => table,
+        }
+    }
+}
+
 pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
     let template_mv_cont = fs::read(&paths.template_mv)?;
     let template = CompiledModule::deserialize(&template_mv_cont).unwrap();
 
     let mut result = [
-        (false, "Memory", MEMORY_TABLE.to_vec()),
-        (true, "Persist", PERSIST_TABLE.to_vec()),
-        (false, "U256", U256_TABLE.to_vec()),
+        EnumType::Structure {
+            name: "Memory",
+            mut_token: false,
+            table: MEMORY_TABLE.to_vec(),
+        },
+        EnumType::Structure {
+            name: "Persist",
+            mut_token: true,
+            table: PERSIST_TABLE.to_vec(),
+        },
+        EnumType::Structure {
+            name: "U256",
+            mut_token: false,
+            table: U256_TABLE.to_vec(),
+        },
+        EnumType::Module {
+            name: "Info",
+            table: INFO_TABLE.to_vec(),
+        },
     ]
     .into_iter()
-    .map(|(mut_token, struct_name, table)| gen_enum_code(&template, mut_token, struct_name, &table))
+    .map(|data| gen_enum_code(&template, data))
     .collect::<Result<Vec<String>>>()?
     .join("\n");
 
@@ -156,28 +209,15 @@ pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
     Ok(())
 }
 
-fn gen_enum_code(
-    template_mv: &CompiledModule,
-    mut_token: bool,
-    struct_name: &str,
-    table: &[(&str, &str)],
-) -> Result<String> {
+fn gen_enum_code(template_mv: &CompiledModule, data: EnumType) -> Result<String> {
+    let name = data.name();
+    let table = data.talbe_ref();
+
     let enum_body = table
         .iter()
         .map(|(name, ..)| format!("{name},"))
         .collect::<Vec<String>>()
         .join("\n    ");
-
-    let structure_handle = template_mv
-        .find_struct_def_by_name(IdentStr::new(struct_name)?)
-        .ok_or_else(|| anyhow!("{struct_name:?} not found in the module"))?;
-    let enum_index_handle = structure_handle.struct_handle.to_string();
-    let enum_index_definition = template_mv
-        .struct_defs
-        .iter()
-        .position(|item| item == structure_handle)
-        .ok_or_else(|| anyhow!("{struct_name:?} not found in the module"))?
-        .to_string();
 
     let enum_fn_name = table
         .iter()
@@ -195,21 +235,39 @@ fn gen_enum_code(
         .collect::<Result<Vec<String>>>()?
         .join("\n            ");
 
-    let result = TEMPLATE_ENUM
-        .replace("###ENUM_NAME###", struct_name)
+    let mut result = TEMPLATE_ENUM
+        .replace("###ENUM_NAME###", name)
         .replace("###ENUM_BODY###", &enum_body)
-        .replace(
-            "###ENUM_INDEX_TOKEN###",
-            if mut_token {
-                TEMPLATE_ENUM_TOKEN_MUT
-            } else {
-                TEMPLATE_ENUM_TOKEN
-            },
-        )
-        .replace("###ENUM_INDEX_HANDLE###", &enum_index_handle)
-        .replace("###ENUM_INDEX_DEFINITION###", &enum_index_definition)
         .replace("###ENUM_FN_NAME###", &enum_fn_name)
         .replace("###ENUM_FN_HANDLER###", &enum_fn_handler);
+
+    // structure
+    if let EnumType::Structure { mut_token, .. } = data {
+        let structure_handle = template_mv
+            .find_struct_def_by_name(IdentStr::new(name)?)
+            .ok_or_else(|| anyhow!("{name:?} not found in the module"))?;
+        let enum_index_handle = structure_handle.struct_handle.to_string();
+        let enum_index_definition = template_mv
+            .struct_defs
+            .iter()
+            .position(|item| item == structure_handle)
+            .ok_or_else(|| anyhow!("{name:?} not found in the module"))?
+            .to_string();
+
+        result += TEMPLATE_ENUM_STRUCTURE
+            .replace("###ENUM_NAME###", name)
+            .replace(
+                "###ENUM_INDEX_TOKEN###",
+                if mut_token {
+                    TEMPLATE_ENUM_TOKEN_MUT
+                } else {
+                    TEMPLATE_ENUM_TOKEN
+                },
+            )
+            .replace("###ENUM_INDEX_HANDLE###", &enum_index_handle)
+            .replace("###ENUM_INDEX_DEFINITION###", &enum_index_definition)
+            .as_str();
+    }
 
     Ok(result)
 }
