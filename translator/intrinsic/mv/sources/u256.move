@@ -103,7 +103,6 @@ module self::u256 {
     }
 
     // API
-    // TODO
     public fun from_signer(addr: &signer): U256 {
         let encoded = std::bcs::to_bytes(addr);
         let i = 0u64;
@@ -117,7 +116,6 @@ module self::u256 {
     }
 
     // API
-    // TODO
     fun from_address(addr: address): U256 {
         let encoded = std::bcs::to_bytes(&addr);
         let i = 0u64;
