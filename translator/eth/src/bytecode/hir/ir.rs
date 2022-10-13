@@ -71,6 +71,8 @@ pub enum _Expr {
     BlockHeight,
     BlockTimestamp,
     BlockHash,
+    BlockCoinbase,
+    BlockDifficulty,
 }
 
 impl Expr {
@@ -84,14 +86,14 @@ impl Expr {
             | _Expr::Signer
             | _Expr::MSize
             | _Expr::ArgsSize
+            | _Expr::Gas
             | _Expr::GasLimit
             | _Expr::GasPrice
             | _Expr::BlockHeight
             | _Expr::BlockHash
-            | _Expr::BlockTimestamp => self.clone(),
-            _Expr::Gas => {
-                todo!()
-            }
+            | _Expr::BlockTimestamp
+            | _Expr::BlockCoinbase
+            | _Expr::BlockDifficulty => self.clone(),
             _Expr::MLoad(expr) => {
                 let expr = expr.unvar(ctx);
                 self.wrap(_Expr::MLoad(Box::new(expr)))
@@ -174,14 +176,14 @@ impl _Expr {
             _Expr::Copy(expr) => expr.resolve(ir, ctx),
 
             _Expr::Balance(_) => None,
-            _Expr::Gas => {
-                todo!()
-            }
+            _Expr::Gas => None,
             _Expr::GasPrice => None,
             _Expr::GasLimit => None,
             _Expr::BlockHeight => None,
             _Expr::BlockTimestamp => None,
             _Expr::BlockHash => None,
+            _Expr::BlockCoinbase => None,
+            _Expr::BlockDifficulty => None,
         }
     }
 

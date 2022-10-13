@@ -78,7 +78,7 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
             write!(buf, ")")?
         }
         _Expr::Gas => {
-            todo!()
+            write!(buf, "gas()")?;
         }
         _Expr::GasPrice => {
             write!(buf, "gas_price()")?;
@@ -94,6 +94,12 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
         }
         _Expr::BlockHash => {
             write!(buf, "block_hash()")?;
+        }
+        _Expr::BlockDifficulty => {
+            write!(buf, "block_difficulty()")?;
+        }
+        _Expr::BlockCoinbase => {
+            write!(buf, "block_coinbase()")?;
         }
     }
     Ok(())

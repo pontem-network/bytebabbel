@@ -222,7 +222,7 @@ impl Display for TypedExpr {
                 write!(f, "balance({address:?})")
             }
             Expression::Gas => {
-                todo!()
+                write!(f, "block_gas()")
             }
             Expression::GasPrice => {
                 write!(f, "gas_price()")
@@ -237,7 +237,13 @@ impl Display for TypedExpr {
                 write!(f, "block_height()")
             }
             Expression::BlockHash => {
-                todo!()
+                write!(f, "block_hash()")
+            }
+            Expression::BlockCoinbase => {
+                write!(f, "block_coinbase()")
+            }
+            Expression::BlockDifficulty => {
+                write!(f, "block_difficulty()")
             }
         }
     }

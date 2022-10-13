@@ -129,12 +129,16 @@ const U256_TABLE: [(&str, &str); 37] = [
     ("MulMod", "mul_mod"),
 ];
 
-const INFO_TABLE: [(&str, &str); 5] = [
+const INFO_TABLE: [(&str, &str); 9] = [
     ("AptosBalance", "balance"),
-    ("BlockHeight", "get_current_block_height"),
-    ("EpochIntervalSecs", "get_epoch_interval_secs"),
+    ("Gas", "gas"),
     ("GasPrice", "gas_price"),
-    ("MaximumGasUnits", "maximum_number_of_gas_units"),
+    ("GasLimit", "gas_limit"),
+    ("BlockHash", "block_hash"),
+    ("BlockHeight", "block_height"),
+    ("BlockTimestamp", "block_timestamp"),
+    ("BlockDifficulty", "block_difficulty"),
+    ("BlockCoinbase", "block_coinbase"),
 ];
 
 enum EnumType<'a> {

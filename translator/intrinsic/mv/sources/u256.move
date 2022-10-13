@@ -210,7 +210,7 @@ module self::u256 {
     }
 
     /// API
-    fun to_address(a: U256): address {
+    public fun to_address(a: U256): address {
         let encoded = to_bytes(&a);
         return aptos_framework::util::address_from_bytes(encoded)
     }

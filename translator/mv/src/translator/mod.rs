@@ -356,22 +356,28 @@ impl MvIrTranslator {
                 self.call(Info::AptosBalance, vec![CallOp::Expr(address)]);
             }
             Expression::Gas => {
-                todo!()
+                self.call(Info::Gas, vec![]);
             }
             Expression::GasPrice => {
                 self.call(Info::GasPrice, vec![]);
             }
             Expression::GasLimit => {
-                self.call(Info::MaximumGasUnits, vec![]);
+                self.call(Info::GasLimit, vec![]);
             }
             Expression::BlockHeight => {
                 self.call(Info::BlockHeight, vec![]);
             }
             Expression::BlockTimestamp => {
-                self.call(Info::EpochIntervalSecs, vec![]);
+                self.call(Info::BlockTimestamp, vec![]);
             }
             Expression::BlockHash => {
-                todo!()
+                self.call(Info::BlockHash, vec![]);
+            }
+            Expression::BlockDifficulty => {
+                self.call(Info::BlockDifficulty, vec![]);
+            }
+            Expression::BlockCoinbase => {
+                self.call(Info::BlockCoinbase, vec![]);
             }
         }
     }

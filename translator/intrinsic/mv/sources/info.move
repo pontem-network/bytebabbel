@@ -3,16 +3,14 @@ module self::info {
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_framework::account;
-    use self::u256::{U256, from_u64};
 
-    #[test_only]
-    use aptos_framework::aptos_account::{create_account, transfer};
+    use self::u256::{U256, from_u64, to_address};
 
-    #[test_only]
-    use std::signer;
 
     /// AptosCoin - balance
-    fun balance(account: address): U256 {
+    fun balance(account256: U256): U256 {
+        let account = to_address(account256);
+
         let balance;
         if( account::exists_at(account) ){
             balance = coin::balance<AptosCoin>(account);
@@ -23,12 +21,9 @@ module self::info {
         from_u64(balance)
     }
 
-    fun get_current_block_height(): U256 {
-        from_u64(block::get_current_block_height())
-    }
-
-    fun get_epoch_interval_secs(): U256 {
-        from_u64(block::get_epoch_interval_secs())
+    fun gas():U256{
+        // @todo
+        from_u64(100)
     }
 
     fun gas_price():U256{
@@ -36,28 +31,31 @@ module self::info {
         from_u64(100)
     }
 
-    fun maximum_number_of_gas_units():U256{
+    fun gas_limit():U256{
         // @todo It needs to be replaced as soon as it becomes possible to get the cost from Aptos
         from_u64(10000000)
     }
 
-    #[test(core = @0x1, test_admin = @test_token_admin, test_account = @test_account)]
-    public fun test_balance(core: signer, test_admin: signer, test_account: address) {
-        let (burn_cap, mint_cap) = aptos_framework::aptos_coin::initialize_for_test(&core);
-        create_account(signer::address_of(&test_admin));
-        coin::deposit(signer::address_of(&test_admin), coin::mint(10000, &mint_cap));
+    fun block_timestamp(): U256 {
+        from_u64(block::get_epoch_interval_secs())
+    }
 
-        transfer(&test_admin, test_account, 500);
+    fun block_height(): U256 {
+        from_u64(block::get_current_block_height())
+    }
 
-        assert!(coin::balance<AptosCoin>(signer::address_of(&test_admin)) == 9500, 1);
-        assert!(coin::balance<AptosCoin>(test_account) == 500, 2);
+    fun block_hash(): U256 {
+        // @todo
+        from_u64(0)
+    }
 
-        let admin_balance = balance(signer::address_of(&test_admin));
-        assert!(admin_balance == from_u64(9500), 3);
-        let test_account_balance = balance(test_account);
-        assert!(test_account_balance == from_u64(500), 4);
+    fun block_difficulty(): U256 {
+        // @todo
+        from_u64(0)
+    }
 
-        coin::destroy_burn_cap(burn_cap);
-        coin::destroy_mint_cap(mint_cap);
+    fun block_coinbase(): U256 {
+        // @todo
+        from_u64(0)
     }
 }

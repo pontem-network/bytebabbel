@@ -52,6 +52,8 @@ pub enum Expression {
     BlockHeight,
     BlockTimestamp,
     BlockHash,
+    BlockDifficulty,
+    BlockCoinbase,
 }
 
 impl Expression {

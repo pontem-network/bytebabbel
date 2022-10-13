@@ -79,10 +79,10 @@ impl InstructionHandler for Instruction {
             OpCode::Blockhash => TxMeta::Blockhash.handle(params, ir, context),
             OpCode::Timestamp => TxMeta::BlockTimestamp.handle(params, ir, context),
             OpCode::GasLimit => TxMeta::GasLimit.handle(params, ir, context),
-            OpCode::Difficulty => TxMeta::Difficulty.handle(params, ir, context),
+            OpCode::Difficulty => TxMeta::BlockDifficulty.handle(params, ir, context),
             OpCode::Number => TxMeta::BlockHeight.handle(params, ir, context),
             OpCode::GasPrice => TxMeta::GasPrice.handle(params, ir, context),
-            OpCode::Coinbase => TxMeta::Coinbase.handle(params, ir, context),
+            OpCode::Coinbase => TxMeta::BlockCoinbase.handle(params, ir, context),
             OpCode::Gas => TxMeta::Gas.handle(params, ir, context),
 
             OpCode::CodeSize => CodeOp::CodeSize.handle(params, ir, context),
