@@ -43,6 +43,17 @@ pub enum Expression {
         offset: Loc<TypedExpr>,
         len: Loc<TypedExpr>,
     },
+    Balance {
+        address: Loc<TypedExpr>,
+    },
+    Gas,
+    GasPrice,
+    GasLimit,
+    BlockHeight,
+    BlockTimestamp,
+    BlockHash,
+    BlockDifficulty,
+    BlockCoinbase,
 }
 
 impl Expression {

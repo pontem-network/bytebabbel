@@ -64,6 +64,15 @@ pub enum _Expr {
     TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
     Hash(Box<Expr>, Box<Expr>),
     Copy(Box<Expr>),
+    Balance(Box<Expr>),
+    Gas,
+    GasPrice,
+    GasLimit,
+    BlockHeight,
+    BlockTimestamp,
+    BlockHash,
+    BlockCoinbase,
+    BlockDifficulty,
 }
 
 impl Expr {
@@ -73,7 +82,18 @@ impl Expr {
                 let expr = ctx.vars.get(id).expect("variable not found").clone();
                 expr.unvar(ctx)
             }
-            _Expr::Val(_) | _Expr::Signer | _Expr::MSize | _Expr::ArgsSize => self.clone(),
+            _Expr::Val(_)
+            | _Expr::Signer
+            | _Expr::MSize
+            | _Expr::ArgsSize
+            | _Expr::Gas
+            | _Expr::GasLimit
+            | _Expr::GasPrice
+            | _Expr::BlockHeight
+            | _Expr::BlockHash
+            | _Expr::BlockTimestamp
+            | _Expr::BlockCoinbase
+            | _Expr::BlockDifficulty => self.clone(),
             _Expr::MLoad(expr) => {
                 let expr = expr.unvar(ctx);
                 self.wrap(_Expr::MLoad(Box::new(expr)))
@@ -115,6 +135,10 @@ impl Expr {
                 let expr = expr.unvar(ctx);
                 self.wrap(_Expr::Copy(Box::new(expr)))
             }
+            _Expr::Balance(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::Balance(Box::new(expr)))
+            }
         }
     }
 }
@@ -150,6 +174,16 @@ impl _Expr {
             }
             _Expr::Hash(_, _) => None,
             _Expr::Copy(expr) => expr.resolve(ir, ctx),
+
+            _Expr::Balance(_) => None,
+            _Expr::Gas => None,
+            _Expr::GasPrice => None,
+            _Expr::GasLimit => None,
+            _Expr::BlockHeight => None,
+            _Expr::BlockTimestamp => None,
+            _Expr::BlockHash => None,
+            _Expr::BlockCoinbase => None,
+            _Expr::BlockDifficulty => None,
         }
     }
 

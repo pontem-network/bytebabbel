@@ -27,26 +27,25 @@ impl InstructionHandler for Address {
 }
 
 pub enum TxMeta {
-    Balance,
     Origin,
     Caller,
     CallValue,
     CallDataLoad,
     CallDataSize,
-    Blockhash,
-    Timestamp,
-    GasLimit,
-    Difficulty,
-    Number,
-    GasPrice,
-    Coinbase,
+    BlockDifficulty,
+    Balance,
     Gas,
+    GasPrice,
+    GasLimit,
+    BlockHeight,
+    BlockTimestamp,
+    Blockhash,
+    BlockCoinbase,
 }
 
 impl InstructionHandler for TxMeta {
     fn handle(&self, params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
-            TxMeta::Balance => U256::zero(),
             TxMeta::Origin => return ExecutionResult::Output(_Expr::Signer),
             TxMeta::Caller => {
                 return ExecutionResult::Output(_Expr::Signer);
@@ -58,14 +57,18 @@ impl InstructionHandler for TxMeta {
             TxMeta::CallDataSize => {
                 return call_data_size(ctx);
             }
-            TxMeta::Blockhash => U256::zero(),
-            TxMeta::Timestamp => U256::zero(),
-            TxMeta::Difficulty => U256::zero(),
-            TxMeta::Number => U256::zero(),
-            TxMeta::GasPrice => U256::zero(),
-            TxMeta::Coinbase => U256::zero(),
-            TxMeta::GasLimit => U256::MAX,
-            TxMeta::Gas => U256::MAX,
+            TxMeta::Balance => {
+                let addr = params[0].clone();
+                return ExecutionResult::Output(_Expr::Balance(Box::new(addr)));
+            }
+            TxMeta::Gas => return ExecutionResult::Output(_Expr::Gas),
+            TxMeta::GasPrice => return ExecutionResult::Output(_Expr::GasPrice),
+            TxMeta::GasLimit => return ExecutionResult::Output(_Expr::GasLimit),
+            TxMeta::BlockTimestamp => return ExecutionResult::Output(_Expr::BlockTimestamp),
+            TxMeta::BlockHeight => return ExecutionResult::Output(_Expr::BlockHeight),
+            TxMeta::Blockhash => return ExecutionResult::Output(_Expr::BlockHash),
+            TxMeta::BlockCoinbase => return ExecutionResult::Output(_Expr::BlockCoinbase),
+            TxMeta::BlockDifficulty => return ExecutionResult::Output(_Expr::BlockDifficulty),
         };
         ExecutionResult::Output(val.into())
     }

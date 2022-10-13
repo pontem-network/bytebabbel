@@ -74,6 +74,21 @@ impl<'a> MirTranslator<'a> {
                     bail!("Only variables can be copied")
                 }
             }
+            _Expr::Balance(address_num) => {
+                let address_num = self.translate_expr(*address_num)?;
+                Expression::Balance {
+                    address: address_num,
+                }
+                .ty(SType::Num)
+            }
+            _Expr::Gas => Expression::Gas.ty(SType::Num),
+            _Expr::GasPrice => Expression::GasPrice.ty(SType::Num),
+            _Expr::GasLimit => Expression::GasLimit.ty(SType::Num),
+            _Expr::BlockHeight => Expression::BlockHeight.ty(SType::Num),
+            _Expr::BlockTimestamp => Expression::BlockTimestamp.ty(SType::Num),
+            _Expr::BlockHash => Expression::BlockHash.ty(SType::Address),
+            _Expr::BlockCoinbase => Expression::BlockCoinbase.ty(SType::Num),
+            _Expr::BlockDifficulty => Expression::BlockDifficulty.ty(SType::Num),
         };
         Ok(res.loc(loc))
     }

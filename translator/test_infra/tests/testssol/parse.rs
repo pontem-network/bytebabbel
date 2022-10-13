@@ -1,9 +1,10 @@
 use std::ffi::OsStr;
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::{fmt, fs, usize};
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Error, Result};
 use ethabi::{Contract, ParamType};
 use rand::Rng;
 
@@ -130,12 +131,35 @@ fn pathsol_to_solfile(sol_path: PathBuf) -> Option<SolFile> {
 pub struct SolTest {
     pub func: String,
     pub params: String,
+    pub preinit: PreInit,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum PreInit {
+    Block,
+    Balance,
+    None,
+}
+
+impl FromStr for PreInit {
+    type Err = Error;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let result = match s {
+            "balance" => PreInit::Balance,
+            "block" => PreInit::Block,
+            "" => PreInit::None,
+            _ => bail!("Not found {s:?}"),
+        };
+        Ok(result)
+    }
 }
 
 impl TryFrom<&str> for SolTest {
     type Error = anyhow::Error;
     fn try_from(instruction: &str) -> Result<Self> {
-        let (name, part) = instruction
+        let (preinic, part) = instruction.split_once('#').unwrap_or(("", instruction));
+
+        let (name, part) = part
             .split_once('(')
             .ok_or_else(|| anyhow!("Function name and parameters not found: {}", instruction))?;
         let (params, ..) = part
@@ -145,6 +169,7 @@ impl TryFrom<&str> for SolTest {
         Ok(SolTest {
             func: name.trim().to_string(),
             params: params.trim().to_string(),
+            preinit: PreInit::from_str(preinic.trim())?,
         })
     }
 }
