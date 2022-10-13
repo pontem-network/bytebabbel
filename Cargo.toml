@@ -32,3 +32,7 @@ move-ir-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c
 move-stdlib = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
 move-vm-runtime = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
 move-vm-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
+
+#EVM
+evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
+evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
