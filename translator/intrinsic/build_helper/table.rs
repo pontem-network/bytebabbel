@@ -118,7 +118,7 @@ const U256_TABLE: [(&str, &str); 37] = [
     ("SGt", "sgt"),
     ("SMod", "smod"),
     ("Exp", "exp"),
-    ("SignExtend", "sexp"),
+    ("SignExtend", "signextend"),
     ("Sar", "sar"),
     ("FromAddress", "from_address"),
     ("ToAddress", "to_address"),
