@@ -17,5 +17,5 @@ tempdir = "0.3.7"
 # types
 evm.workspace = true
 evm-core.workspace = true
-primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
-move-core-types = { workspace = true, features = ["address32"] }
+primitive-types.workspace = true
+move-core-types.workspace = true

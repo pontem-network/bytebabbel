@@ -18,7 +18,7 @@ tempfile = "3.3"
 serde_yaml = "0.9.11"
 
 #
-move-core-types = { workspace = true, features = ["address32"] }
+move-core-types.workspace = true
 
 # local
 translator = { path = "../../translator" }

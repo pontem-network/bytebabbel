@@ -10,7 +10,7 @@ rand = "0.8.5"
 lazy_static = "1.4.0"
 
 move-binary-format = { workspace = true }
-move-core-types = { workspace = true, features = ["address32"] }
+move-core-types.workspace = true
 
 [dev-dependencies]
 move-bytecode-verifier = { workspace = true }
@@ -19,4 +19,4 @@ move-bytecode-verifier = { workspace = true }
 anyhow = "1.0.62"
 
 move-binary-format = { workspace = true }
-move-core-types = { workspace = true, features = ["address32"] }
+move-core-types.workspace = true

@@ -22,8 +22,8 @@ intrinsic = { path = "../intrinsic" }
 move-bytecode-source-map = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
 move-ir-types = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
 #
-evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
-primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
+evm.workspace = true
+primitive-types.workspace = true
 
 rand = "0.8.5"
 hex = "0.4"
@@ -36,7 +36,7 @@ tempdir = "0.3.7"
 
 move-vm-runtime = { workspace = true, features = ["testing"] }
 move-vm-types = { workspace = true }
-move-core-types = { workspace = true, features = ["address32"] }
+move-core-types.workspace = true
 move-binary-format = { workspace = true }
 move-stdlib = { workspace = true, features = ["testing"] }
 
