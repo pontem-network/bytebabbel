@@ -7,3 +7,18 @@ members = [
     "translator/test_infra",
     "cli/e2m",
 ]
+
+[workspace.dependencies]
+#Aptos
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+move-deps = { git = "https://github.com/aptos-labs/aptos-core", rev = "8c59034a6c2076780ca261fc2cdad730a298bbc0" }
+
+#MOVE
