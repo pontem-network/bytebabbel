@@ -43,7 +43,7 @@ library Info {
         return limit;
     }
 
-    // #block#  ignore_block_height()
+    // #block#  block_height()
     function block_height() public view returns (uint){
         return block.number;
     }

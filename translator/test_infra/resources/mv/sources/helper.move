@@ -7,9 +7,10 @@ module self::helper {
     use aptos_framework::aptos_account::{create_account};
 
     #[test_only]
-    entry fun genesis_inic(_: signer) {
+    entry fun genesis_inic(core: signer) {
         use aptos_framework::genesis;
         genesis::setup();
+        block::update_epoch_interval_microsecs(&core,10000123000000);
     }
 
     #[test_only]
