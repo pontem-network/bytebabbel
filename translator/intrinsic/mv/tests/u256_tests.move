@@ -855,4 +855,20 @@ module self::u256_tests {
         write(&addr, &mut bytes, 0);
         assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
     }
+
+    #[test_only]
+    use self::u256::signextend;
+
+    #[test]
+    fun test_signextend() {
+        let a = from_u128(10);
+        let b = from_u128(2);
+        let c = signextend(a, b);
+        assert!(c == from_u128(2), 0);
+
+        let a = from_u128(15);
+        let b = from_string(&b"-531323222");
+        let c = signextend(a, b);
+        assert!(c == from_string(&b"-531323222"), 1);
+    }
 }

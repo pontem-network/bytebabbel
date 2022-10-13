@@ -717,10 +717,22 @@ module self::u256 {
     }
 
     // API
-    /// Signed exponentiation.
-    fun sexp(a: U256, b: U256): U256 {
-        // todo replace with signed exp
-        exp(a, b)
+    /// SIGNEXTEND opcode
+    /// TODO more tests
+    public fun signextend(a: U256, b: U256): U256 {
+        if (le(a, from_u128(32))) {
+            let bit_index: u64 = (8 * get(&a, 0) + 7);
+            // ?
+            let bit = bitand(shr_u8(b, ((256 - bit_index) as u8)), one());
+            let mask = overflowing_sub(shl_u8(one(), (bit_index as u8)), one());
+            if (get(&bit, 0) == 1) {
+                bitor(b, bitnot(mask))
+            } else {
+                bitand(b, mask)
+            }
+        } else {
+            b
+        }
     }
 
     // API
