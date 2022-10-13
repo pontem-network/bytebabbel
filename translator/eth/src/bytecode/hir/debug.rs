@@ -72,6 +72,29 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
             print_expr(buf, cp)?;
             write!(buf, ")")?
         }
+        _Expr::Balance(address) => {
+            write!(buf, "copy(")?;
+            print_expr(buf, address)?;
+            write!(buf, ")")?
+        }
+        _Expr::Gas => {
+            todo!()
+        }
+        _Expr::GasPrice => {
+            write!(buf, "gas_price()")?;
+        }
+        _Expr::GasLimit => {
+            write!(buf, "gas_limit()")?;
+        }
+        _Expr::BlockHeight => {
+            write!(buf, "block_height()")?;
+        }
+        _Expr::BlockTimestamp => {
+            write!(buf, "block_timestamp()")?;
+        }
+        _Expr::BlockHash => {
+            write!(buf, "block_hash()")?;
+        }
     }
     Ok(())
 }

@@ -36,12 +36,6 @@ pub fn test_balance() {
     assert_eq!("Uint(1000000)", result.to_result_str());
 }
 
-fn blocks_height(vm: &mut MoveExecutor) -> Result<String> {
-    Ok(vm
-        .run("0x1::helper::block_height", "0x1", None)?
-        .to_result_str())
-}
-
 #[test]
 pub fn test_blocks() {
     init_log();
@@ -56,17 +50,25 @@ pub fn test_blocks() {
     vm.deploy("0x1", bytecode);
 
     vm.run("0x1::helper::genesis_inic", "0x1", None).unwrap();
-    vm.run("0x1::helper::fake_block", "0x0", Some("0x990"))
-        .unwrap();
-    vm.run("0x1::helper::fake_block", "0x0", Some("0x991"))
-        .unwrap();
 
-    assert_eq!("Uint(1)", &blocks_height(&mut vm).unwrap());
+    let height = fake_block(&mut vm, &["0x990", "0x991"]).unwrap();
+    assert_eq!("Uint(1)", &height);
 
-    vm.run("0x1::helper::fake_block", "0x0", Some("0x992"))
-        .unwrap();
-    vm.run("0x1::helper::fake_block", "0x0", Some("0x993"))
-        .unwrap();
+    let height = fake_block(&mut vm, &["0x992", "0x993"]).unwrap();
+    assert_eq!("Uint(3)", &height);
+}
 
-    assert_eq!("Uint(3)", &blocks_height(&mut vm).unwrap());
+fn fake_block(vm: &mut MoveExecutor, addresses: &[&str]) -> Result<String> {
+    addresses
+        .iter()
+        .map(|addr| vm.run("0x1::helper::fake_block", "0x0", Some(addr)))
+        .collect::<Result<Vec<_>>>()?;
+    blocks_height(vm)
+}
+
+#[inline]
+fn blocks_height(vm: &mut MoveExecutor) -> Result<String> {
+    Ok(vm
+        .run("0x1::helper::block_height", "0x1", None)?
+        .to_result_str())
 }

@@ -219,19 +219,25 @@ impl Display for TypedExpr {
                 write!(f, "{}.Hash({}, {})", mem, offset.as_ref(), len.as_ref())
             }
             Expression::Balance { address } => {
-                write!(buf, "balance({address:?})")?;
+                write!(f, "balance({address:?})")
+            }
+            Expression::Gas => {
+                todo!()
             }
             Expression::GasPrice => {
-                write!(buf, "gas_price()")?;
+                write!(f, "gas_price()")
             }
             Expression::GasLimit => {
-                write!(buf, "gas_limit()")?;
-            }
-            Expression::BlockNumber => {
-                write!(buf, "block_number()")?;
+                write!(f, "gas_limit()")
             }
             Expression::BlockTimestamp => {
-                write!(buf, "block_timestamp()")?;
+                write!(f, "block_timestamp()")
+            }
+            Expression::BlockHeight => {
+                write!(f, "block_height()")
+            }
+            Expression::BlockHash => {
+                todo!()
             }
         }
     }

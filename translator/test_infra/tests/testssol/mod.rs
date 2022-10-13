@@ -141,25 +141,8 @@ impl STest {
         )?;
         let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
 
-        // balance
-        dbg!("balance");
-        vm.deploy("0x1", HELPER_MV.clone());
-
-        dbg!("0x1::helper::genesis_inic");
-        vm.run("0x1::helper::genesis_inic", "0x1", None)?;
-
-        todo!();
-
-        // dbg!("0x1::helper::fake_block");
-        // vm.run("0x1::helper::fake_block", "0x0", None)?;
-        //
-        // dbg!("0x1::helper::x42_1_000_000");
-        // vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
-        //
-        // dbg!("0x1::helper::block_height");
-        // // let t = vm.run("0x1::helper::block_height", "0x1", None)?;
-        // // dbg!(t);
-        // dbg!("end balance");
+        // genesis, balance, blocks
+        preinic(&mut vm)?;
 
         // deploy contract
         vm.deploy("0x42", bytecode);
@@ -210,4 +193,35 @@ fn return_val_to_string(val: Result<String>) -> String {
 
 pub fn sol_path() -> PathBuf {
     PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("sol")
+}
+
+#[inline]
+fn log_initialization(text: &str) {
+    log::trace!("[{}] {text}", color::font_blue("INITIALIZATION"));
+}
+
+#[inline]
+fn log_run(text: &str) {
+    log::trace!("[{}] {text}", color::font_blue("RUN"));
+}
+
+fn preinic(vm: &mut MoveExecutor) -> Result<()> {
+    log_initialization("test helper");
+    vm.deploy("0x1", HELPER_MV.clone());
+
+    log_run("0x1::helper::genesis_inic");
+    vm.run("0x1::helper::genesis_inic", "0x1", None)?;
+
+    // log_text_inic("0x1::helper::fake_block");
+    // vm.run("0x1::helper::fake_block", "0x0", None)?;
+
+    log_run("0x1::helper::x42_1_000_000");
+    vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
+
+    // log_text_inic("0x1::helper::block_height");
+    // // let t = vm.run("0x1::helper::block_height", "0x1", None)?;
+    // // log_text_inic(t);
+    // log_text_inic("end balance");
+
+    Ok(())
 }

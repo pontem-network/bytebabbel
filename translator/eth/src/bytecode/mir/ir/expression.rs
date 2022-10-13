@@ -44,12 +44,14 @@ pub enum Expression {
         len: Loc<TypedExpr>,
     },
     Balance {
-        address: Variable,
+        address: Loc<TypedExpr>,
     },
+    Gas,
     GasPrice,
     GasLimit,
-    BlockNumber,
+    BlockHeight,
     BlockTimestamp,
+    BlockHash,
 }
 
 impl Expression {

@@ -27,33 +27,25 @@ impl InstructionHandler for Address {
 }
 
 pub enum TxMeta {
-    Balance,
     Origin,
     Caller,
     CallValue,
     CallDataLoad,
     CallDataSize,
-    Blockhash,
-    Timestamp,
-    GasLimit,
-    Difficulty,
-    Number,
-    GasPrice,
     Coinbase,
+    Difficulty,
+    Balance,
     Gas,
+    GasPrice,
+    GasLimit,
+    BlockHeight,
+    BlockTimestamp,
+    Blockhash,
 }
 
 impl InstructionHandler for TxMeta {
     fn handle(&self, params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let val = match self {
-            TxMeta::Balance => {
-                if let Some(addr) = params.get(0) {
-                    let id = ir.create_var(Expr::Balance(*addr));
-                    return ExecutionResult::Output(vec![id]);
-                } else {
-                    U256::zero()
-                }
-            }
             TxMeta::Origin => return ExecutionResult::Output(_Expr::Signer),
             TxMeta::Caller => {
                 return ExecutionResult::Output(_Expr::Signer);
@@ -65,26 +57,32 @@ impl InstructionHandler for TxMeta {
             TxMeta::CallDataSize => {
                 return call_data_size(ctx);
             }
-            TxMeta::Blockhash => U256::zero(),
-            TxMeta::Timestamp => {
-                let id = ir.create_var(Expr::BlockTimestamp);
-                return ExecutionResult::Output(vec![id]);
-            }
             TxMeta::Difficulty => U256::zero(),
-            TxMeta::Number => {
-                let id = ir.create_var(Expr::BlockNumber);
-                return ExecutionResult::Output(vec![id]);
+            TxMeta::Coinbase => U256::zero(),
+            TxMeta::Balance => {
+                if let Some(addr) = params.get(0) {
+                    let addr = addr.unvar(ctx);
+                    return ExecutionResult::Output(_Expr::Balance(Box::new(addr)));
+                } else {
+                    U256::zero()
+                }
             }
             TxMeta::GasPrice => {
-                let id = ir.create_var(Expr::GasPrice);
-                return ExecutionResult::Output(vec![id]);
+                return ExecutionResult::Output(_Expr::GasPrice);
             }
-            TxMeta::Coinbase => U256::zero(),
             TxMeta::GasLimit => {
-                let id = ir.create_var(Expr::GasLimit);
-                return ExecutionResult::Output(vec![id]);
+                return ExecutionResult::Output(_Expr::GasLimit);
             }
+            TxMeta::BlockTimestamp => {
+                return ExecutionResult::Output(_Expr::BlockTimestamp);
+            }
+            TxMeta::BlockHeight => {
+                return ExecutionResult::Output(_Expr::BlockHeight);
+            }
+            // @todo
             TxMeta::Gas => U256::MAX,
+            // @todo
+            TxMeta::Blockhash => U256::zero(),
         };
         ExecutionResult::Output(val.into())
     }

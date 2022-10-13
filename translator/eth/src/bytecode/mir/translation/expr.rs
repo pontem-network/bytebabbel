@@ -74,19 +74,21 @@ impl<'a> MirTranslator<'a> {
                     bail!("Only variables can be copied")
                 }
             }
-            Expr::Balance(address_id) => {
-                let var = self.get_var(*address_id)?;
-                let address_var = self.cast(var, SType::Address)?;
-
-                Expression::Balance {
-                    address: address_var,
-                }
-                .ty(SType::Num)
+            _Expr::Balance(address_num) => {
+                let address_num = self.translate_expr(*address_num)?;
+                let address = self.cast_expr(address_num, SType::Address)?;
+                ensure!(
+                    address.ty == SType::Address,
+                    "address_var must be of type address"
+                );
+                Expression::Balance { address: address }.ty(SType::Num)
             }
-            Expr::GasPrice => Expression::GasPrice.ty(SType::Num),
-            Expr::GasLimit => Expression::GasLimit.ty(SType::Num),
-            Expr::BlockNumber => Expression::BlockNumber.ty(SType::Num),
-            Expr::BlockTimestamp => Expression::BlockTimestamp.ty(SType::Num),
+            _Expr::Gas => Expression::Gas.ty(SType::Num),
+            _Expr::GasPrice => Expression::GasPrice.ty(SType::Num),
+            _Expr::GasLimit => Expression::GasLimit.ty(SType::Num),
+            _Expr::BlockHeight => Expression::BlockHeight.ty(SType::Num),
+            _Expr::BlockTimestamp => Expression::BlockTimestamp.ty(SType::Num),
+            _Expr::BlockHash => Expression::BlockHash.ty(SType::Address),
         };
         Ok(res.loc(loc))
     }

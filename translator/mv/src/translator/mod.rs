@@ -353,20 +353,25 @@ impl MvIrTranslator {
                 self.translate_ternary(*op, arg, arg1, arg2)
             }
             Expression::Balance { address } => {
-                self.code
-                    .call(Info::AptosBalance, vec![CallOp::Var(*address)]);
+                self.call(Info::AptosBalance, vec![CallOp::Expr(address)]);
+            }
+            Expression::Gas => {
+                todo!()
             }
             Expression::GasPrice => {
-                self.code.call(Info::GasPrice, vec![]);
+                self.call(Info::GasPrice, vec![]);
             }
             Expression::GasLimit => {
-                self.code.call(Info::MaximumGasUnits, vec![]);
+                self.call(Info::MaximumGasUnits, vec![]);
             }
-            Expression::BlockNumber => {
-                self.code.call(Info::BlockHeight, vec![]);
+            Expression::BlockHeight => {
+                self.call(Info::BlockHeight, vec![]);
             }
             Expression::BlockTimestamp => {
-                self.code.call(Info::EpochIntervalSecs, vec![]);
+                self.call(Info::EpochIntervalSecs, vec![]);
+            }
+            Expression::BlockHash => {
+                todo!()
             }
         }
     }
