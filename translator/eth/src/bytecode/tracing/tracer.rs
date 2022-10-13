@@ -74,12 +74,33 @@ impl<'a> Tracer<'a> {
 
         funcs
             .into_iter()
-            .filter(|(id, fun)| self.check_func(id, fun, loops))
+            .filter(|(_, fun)| fun.calls.len() > 1)
+            .filter(|(_, fun)| !loops.contains_key(&fun.entry_point))
+            .filter(|(_, fun)| {
+                fun.calls
+                    .iter()
+                    .all(|(_, call)| self.is_function(fun, call, loops))
+            })
             .collect()
     }
 
-    fn check_func(&self, _id: &Offset, _fun: &Func, _loops: &HashMap<Offset, Loop>) -> bool {
-        //todo filter out functions that are not really functions)
+    fn is_function(&self, fun: &Func, call: &Call, loops: &HashMap<Offset, Loop>) -> bool {
+        let mut block = call.entry_point;
+
+        let mut exec = Executor::default();
+        loop {
+            let block = self
+                .blocks
+                .get(&block)
+                .ok_or_else(|| {
+                    format!(
+                        "Block with id {} not found. Blocks: {:?}",
+                        block, self.blocks
+                    )
+                })
+                .unwrap();
+        }
+
         true
     }
 
@@ -216,55 +237,6 @@ impl<'a> Tracer<'a> {
             io.insert(*id, BlockIO { inputs, outputs });
         }
         Ok(io)
-    }
-
-    pub fn fill_io(&self, lp: &mut Loop, loops: &HashMap<Offset, Loop>) -> Result<(), Error> {
-        let mut exec = Executor::default();
-        let mut block_id = lp.root;
-        let exit = lp.loop_exit;
-
-        let mut ctx: Vec<Context> = vec![];
-        loop {
-            let block = self.blocks.get(&block_id).unwrap();
-            let next = exec.exec(block);
-            match next {
-                Next::Jmp(jmp) => {
-                    let jmp = jmp.as_positive().context("Invalid jmp")?;
-                    if lp.root == jmp {
-                        lp.loop_ctx = LoopCtx::new(block_id, &exec);
-                        break;
-                    }
-
-                    if let Some(_lp) = loops.get(&jmp) {
-                        todo!("Loop inside loop");
-                    } else {
-                        block_id = jmp;
-                    }
-                }
-                Next::Stop => {
-                    if let Some(ctx) = ctx.pop() {
-                        exec = ctx.executor;
-                        block_id = ctx.false_br;
-                    }
-                }
-                Next::Cnd(true_br, false_br) => {
-                    let true_br = true_br.as_positive().context("Invalid true branch")?;
-                    let false_br = false_br.as_positive().context("Invalid false branch")?;
-
-                    if true_br == exit {
-                        block_id = false_br;
-                        continue;
-                    }
-
-                    ctx.push(Context {
-                        executor: exec.clone(),
-                        false_br,
-                    });
-                    block_id = true_br;
-                }
-            }
-        }
-        Ok(())
     }
 }
 

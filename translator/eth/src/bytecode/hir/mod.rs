@@ -26,6 +26,8 @@ pub struct HirBuilder {
 impl HirBuilder {
     pub fn new(contract: HashMap<Offset, InstructionBlock>, flags: Flags) -> Result<Self, Error> {
         let flow = Tracer::new(&contract).trace()?;
+        println!("Flow trace: {:?}", flow.funcs);
+        println!("Flow loops: {:?}", flow.loops);
         Ok(Self {
             contract,
             flags,
