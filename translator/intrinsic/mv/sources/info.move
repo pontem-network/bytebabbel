@@ -12,26 +12,26 @@ module self::info {
         let account = to_address(account256);
 
         let balance;
-        if( account::exists_at(account) ){
+        if (account::exists_at(account)) {
             balance = coin::balance<AptosCoin>(account);
-        }else{
+        }else {
             balance = 0;
         };
 
         from_u64(balance)
     }
 
-    fun gas():U256{
+    fun gas(): U256 {
         // @todo
         from_u64(100)
     }
 
-    fun gas_price():U256{
+    fun gas_price(): U256 {
         // @todo It needs to be replaced as soon as it becomes possible to get the cost from Aptos
         from_u64(100)
     }
 
-    fun gas_limit():U256{
+    fun gas_limit(): U256 {
         // @todo It needs to be replaced as soon as it becomes possible to get the cost from Aptos
         from_u64(10000000)
     }

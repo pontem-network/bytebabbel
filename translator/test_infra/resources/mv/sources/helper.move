@@ -10,7 +10,7 @@ module self::helper {
     entry fun genesis_inic(core: signer) {
         use aptos_framework::genesis;
         genesis::setup();
-        block::update_epoch_interval_microsecs(&core,10000123000000);
+        block::update_epoch_interval_microsecs(&core, 10000123000000);
     }
 
     #[test_only]
@@ -21,7 +21,7 @@ module self::helper {
         block::emit_writeset_block_event(&core, @0x993);
     }
 
-    entry fun block_height(_:signer): u64 {
+    entry fun block_height(_: signer): u64 {
         block::get_current_block_height()
     }
 
