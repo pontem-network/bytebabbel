@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hex = "0.4"
+hex.workspace = true
 anyhow.workspace = true
 log.workspace = true
-ethabi = "17.2"
-serde = { version = "1.0.138", features = ["derive"] }
-serde_json = "1.0.82"
+ethabi.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 sha3 = "0.10.1"
 base32 = "0.4"
 tempdir = "0.3.7"

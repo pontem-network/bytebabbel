@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow.workspace = true
 enum-iterator = "1.2.0"
-rand = "0.8.5"
+rand.workspace = true
 lazy_static = "1.4.0"
 
 move-binary-format = { workspace = true }
