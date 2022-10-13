@@ -6,6 +6,8 @@ use anyhow::{ensure, Result};
 const TEST_HELPER_MOVE: &str = "./resources/mv";
 
 pub fn main() -> Result<()> {
+    println!("cargo:rerun-if-changed=resources/mv");
+
     let path = PathBuf::from(TEST_HELPER_MOVE).canonicalize()?;
 
     // building the move mv project
@@ -22,9 +24,9 @@ pub fn main() -> Result<()> {
         .join("build")
         .join("test_helper")
         .join("bytecode_modules")
-        .join("balance.mv");
+        .join("helper.mv");
 
-    ensure!(file_path.exists(), "file not found balance.mv");
+    ensure!(file_path.exists(), "file not found helper.mv");
 
     Ok(())
 }

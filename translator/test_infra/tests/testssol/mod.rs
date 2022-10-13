@@ -26,8 +26,8 @@ const TEST_NAME: &str = "sol";
 
 lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
-    static ref BALANCE_MV: Vec<u8> =
-        fs::read("./resources/mv/build/test_helper/bytecode_modules/balance.mv").unwrap();
+    static ref HELPER_MV: Vec<u8> =
+        fs::read("./resources/mv/build/test_helper/bytecode_modules/helper.mv").unwrap();
 }
 
 #[derive(Debug)]
@@ -142,8 +142,24 @@ impl STest {
         let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
 
         // balance
-        vm.deploy("0x1", BALANCE_MV.clone());
-        vm.run("0x1::balance::x42_1_000_000", "0x1", None)?;
+        dbg!("balance");
+        vm.deploy("0x1", HELPER_MV.clone());
+
+        dbg!("0x1::helper::genesis_inic");
+        vm.run("0x1::helper::genesis_inic", "0x1", None)?;
+
+        todo!();
+
+        // dbg!("0x1::helper::fake_block");
+        // vm.run("0x1::helper::fake_block", "0x0", None)?;
+        //
+        // dbg!("0x1::helper::x42_1_000_000");
+        // vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
+        //
+        // dbg!("0x1::helper::block_height");
+        // // let t = vm.run("0x1::helper::block_height", "0x1", None)?;
+        // // dbg!(t);
+        // dbg!("end balance");
 
         // deploy contract
         vm.deploy("0x42", bytecode);

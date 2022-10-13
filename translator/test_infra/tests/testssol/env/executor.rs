@@ -33,8 +33,7 @@ use eth::Flags;
 use crate::testssol::env::stdlib::publish_std;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
-const BALANCE_MV: &str =
-    "./translator/test_infra/resources/mv/build/mv/bytecode_modules/balance.mv";
+const BALANCE_MV: &str = "./translator/test_infra/resources/mv/build/mv/bytecode_modules/helper.mv";
 
 pub struct MoveExecutor {
     resolver: Resolver,
@@ -59,10 +58,6 @@ impl MoveExecutor {
                 let mut session = vm.new_session(&adapter, id);
                 publish_std(&mut session);
 
-                // let t = fs::read(BALANCE_MV).unwrap();
-                // todo!();
-
-                // session.publish_module(fs::read())
                 let output = session
                     .finish()
                     .unwrap()
