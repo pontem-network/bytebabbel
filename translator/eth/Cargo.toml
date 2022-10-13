@@ -18,4 +18,4 @@ tempdir = "0.3.7"
 evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
-move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
+move-core-types = { workspace = true, features = ["address32"] }

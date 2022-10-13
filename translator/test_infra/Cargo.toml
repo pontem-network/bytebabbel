@@ -34,11 +34,11 @@ once_cell = "1.13.1"
 itertools = "0.10.3"
 tempdir = "0.3.7"
 
-move-vm-runtime = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["testing"] }
-move-vm-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
-move-binary-format = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-stdlib = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["testing"] }
+move-vm-runtime = { workspace = true, features = ["testing"] }
+move-vm-types = { workspace = true }
+move-core-types = { workspace = true, features = ["address32"] }
+move-binary-format = { workspace = true }
+move-stdlib = { workspace = true, features = ["testing"] }
 
 aptos-vm = { workspace = true, features = ["testing"] }
 aptos-gas = { workspace = true }
