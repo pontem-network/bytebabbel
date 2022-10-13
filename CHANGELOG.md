@@ -3,6 +3,11 @@
 ## [Unreleased]
 ### Added
 - Support of 'do-while' loop.
+- Support of `addmod`, `mulmod`
+- Support of `SignExtend`
+
+### Fixed
+- Verified exp
 
 
 ## [0.0.2] - 2022-10-04
