@@ -8,21 +8,20 @@ library Info {
         return msg.sender;
     }
 
-    // # sender_balance ()
+    // #balance# sender_balance ()
     function sender_balance() public view returns (uint){
         return msg.sender.balance;
     }
 
+    // #balance# x42_balance ()
+    function x42_balance() public view returns (uint){
+        address user = 0x0000000000000000000000000000000000000042;
+        return user.balance;
+    }
 
     // # non_existent_address ()
     function non_existent_address() public view returns (uint){
         address user = 0x0000000000000000000000000000000000000066;
-        return user.balance;
-    }
-
-    // # x42_balance ()
-    function x42_balance() public view returns (uint){
-        address user = 0x0000000000000000000000000000000000000042;
         return user.balance;
     }
 
@@ -44,12 +43,12 @@ library Info {
         return limit;
     }
 
-    // # ignore_block_height()
+    // #block#  ignore_block_height()
     function block_height() public view returns (uint){
         return block.number;
     }
 
-    // # epoch_interval_secs()
+    // #block# epoch_interval_secs()
     function epoch_interval_secs() public view returns (uint){
         return block.timestamp;
     }

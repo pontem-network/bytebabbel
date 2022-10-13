@@ -10,6 +10,7 @@ use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
 
+use crate::testssol::parse::PreInit;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::call::EthEncodeByString;
 use eth::compile::EvmPack;
@@ -142,7 +143,7 @@ impl STest {
         let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
 
         // genesis, balance, blocks
-        preinic(&mut vm)?;
+        preinit(&mut vm, self.test.preinit)?;
 
         // deploy contract
         vm.deploy("0x42", bytecode);
@@ -205,23 +206,32 @@ fn log_run(text: &str) {
     log::trace!("[{}] {text}", color::font_blue("RUN"));
 }
 
-fn preinic(vm: &mut MoveExecutor) -> Result<()> {
-    log_initialization("test helper");
-    vm.deploy("0x1", HELPER_MV.clone());
+fn preinit(vm: &mut MoveExecutor, preinit: PreInit) -> Result<()> {
+    log::trace!("preinic");
 
-    log_run("0x1::helper::genesis_inic");
-    vm.run("0x1::helper::genesis_inic", "0x1", None)?;
+    match preinit {
+        PreInit::Block => {
+            log_initialization("test helper");
+            vm.deploy("0x1", HELPER_MV.clone());
 
-    // log_text_inic("0x1::helper::fake_block");
-    // vm.run("0x1::helper::fake_block", "0x0", None)?;
+            log_run("0x1::helper::genesis_inic");
+            vm.run("0x1::helper::genesis_inic", "0x1", None)?;
 
-    log_run("0x1::helper::x42_1_000_000");
-    vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
+            log_run("0x1::helper::fake_block()");
+            vm.run("0x1::helper::fake_block", "0x0", None)?;
+        }
+        PreInit::Balance => {
+            log_initialization("test helper");
+            vm.deploy("0x1", HELPER_MV.clone());
 
-    // log_text_inic("0x1::helper::block_height");
-    // // let t = vm.run("0x1::helper::block_height", "0x1", None)?;
-    // // log_text_inic(t);
-    // log_text_inic("end balance");
+            // Topping up the balance on account 0x42
+            log_run("0x1::helper::x42_1_000_000");
+            vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
+        }
+        PreInit::None => {
+            log::trace!("Preinic: None");
+        }
+    }
 
     Ok(())
 }

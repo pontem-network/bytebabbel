@@ -13,8 +13,11 @@ module self::helper {
     }
 
     #[test_only]
-    entry fun fake_block(core: signer, fake_address:address) {
-        block::emit_writeset_block_event(&core, fake_address);
+    entry fun fake_block(core: signer) {
+        block::emit_writeset_block_event(&core, @0x990);
+        block::emit_writeset_block_event(&core, @0x991);
+        block::emit_writeset_block_event(&core, @0x992);
+        block::emit_writeset_block_event(&core, @0x993);
     }
 
     entry fun block_height(_:signer): u64 {

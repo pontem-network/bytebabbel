@@ -110,11 +110,12 @@ impl MoveExecutor {
         self.resolver.apply(output);
     }
 
-    pub fn run(
+    fn _run(
         &mut self,
         ident: &str,
         signer: &str,
         params: Option<&str>,
+        flag: Flags,
     ) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
         let id = SessionId::Txn {
@@ -128,12 +129,13 @@ impl MoveExecutor {
         let mut session = self.vm.new_session(&adapter, id);
         let fn_name = ident.as_str();
 
-        let args = if self.flags.native_input {
+        let args = if flag.native_input {
             let fun = session.load_function(&module_id, &ident, &[]);
             self.prepare_move_args(signer, params, &fun.unwrap())?
         } else {
             self.prepare_eth_args(signer, params, fn_name)?
         };
+
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
@@ -141,9 +143,9 @@ impl MoveExecutor {
         let events = result.events.clone();
         let output = result.into_change_set(&mut (), 3).unwrap();
 
-        let returns = if self.flags.hidden_output {
+        let returns = if flag.hidden_output {
             vec![]
-        } else if self.flags.native_output {
+        } else if flag.native_output {
             self.decode_result_move(returns)?
         } else {
             self.decode_result_eth(returns, fn_name)?
@@ -152,6 +154,24 @@ impl MoveExecutor {
         self.resolver.apply(output);
 
         Ok(ExecutionResult { returns, events })
+    }
+
+    pub fn run(
+        &mut self,
+        ident: &str,
+        signer: &str,
+        params: Option<&str>,
+    ) -> Result<ExecutionResult> {
+        self._run(ident, signer, params, self.flags.clone())
+    }
+
+    pub fn run_native(
+        &mut self,
+        ident: &str,
+        signer: &str,
+        params: Option<&str>,
+    ) -> Result<ExecutionResult> {
+        self._run(ident, signer, params, Flags::native_interface())
     }
 
     fn decode_result_move(&self, result: Vec<(Vec<u8>, MoveTypeLayout)>) -> Result<Vec<Token>> {
