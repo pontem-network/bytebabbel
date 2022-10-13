@@ -7,6 +7,10 @@ contract Strings {
         return "hello";
     }
 
+//    function const_str_2() public pure returns (string memory) {
+//        return "This is a vary vary long string that is longer than 32 bytes";
+//    }
+
     //    function get_state() public view returns (string memory) {
     //        return state;
     //    }

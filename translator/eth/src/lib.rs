@@ -15,10 +15,9 @@ use program::Program;
 
 use crate::abi::call::FunHash;
 use crate::abi::MoveAbi;
-use crate::bytecode::block::BlockId;
-use crate::bytecode::flow_graph::FlowBuilder;
+use crate::bytecode::block::Offset;
 use crate::bytecode::hir::ir::Hir;
-use crate::bytecode::hir::HirTranslator;
+use crate::bytecode::hir::HirBuilder;
 use crate::bytecode::mir::ir::Mir;
 use crate::bytecode::mir::translation::MirTranslator;
 use crate::bytecode::types::Function;
@@ -48,14 +47,10 @@ pub fn transpile_program(
     let abi = MoveAbi::new(name, abi_entries)?;
 
     let contract = BlockIter::new(InstructionIter::new(contract_code))
-        .map(|block| (BlockId::from(block.start), block))
+        .map(|block| (block.start, block))
         .collect::<HashMap<_, _>>();
 
-    let mut flow_builder = FlowBuilder::new(&contract)?;
-    let contract_flow = flow_builder.make_flow();
-    let flow_trace = flow_builder.flow_trace();
-    let hir = HirTranslator::new(&contract, contract_flow, flow_trace, flags);
-
+    let hir = HirBuilder::new(contract, flags)?;
     let functions = abi
         .functions()
         .iter()
@@ -68,13 +63,16 @@ pub fn transpile_program(
 }
 
 pub fn translate_function(
-    hir_translator: &HirTranslator,
+    hir: &HirBuilder,
     fun: &Function,
     contract_addr: U256,
     code_size: u128,
     flags: Flags,
 ) -> Result<Mir, Error> {
-    let hir = hir_translator.translate_fun(fun, contract_addr, code_size)?;
+    let hir = hir.translate_fun(fun, contract_addr, code_size)?;
+    let mut buff = String::new();
+    hir.print(&mut buff)?;
+    trace!("{}", buff);
     let mir_translator = MirTranslator::new(fun, flags);
     let mir = mir_translator.translate(hir)?;
     mir.print(&fun.name);

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::bytecode::instruction::{Instruction, Offset};
+use crate::bytecode::instruction::Instruction;
 
 pub struct InstructionIter {
     offset: usize,
@@ -23,7 +23,7 @@ impl Iterator for InstructionIter {
             let op_code = OpCode::from(&self.buffer[self.offset..]);
             let offset = self.offset;
             self.offset += op_code.size();
-            Some(Instruction::new(offset as Offset, op_code))
+            Some(Instruction::new(offset, op_code))
         }
     }
 }

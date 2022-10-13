@@ -37,9 +37,9 @@
     - [ ] AddMod (a + b) % N
     - [ ] MulMod (a * b) % N
 - [ ] Looping
-    - [x] For❗
-    - [x] While❗
-    - [ ] Do-While
+    - [x] For
+    - [x] While
+    - [x] Do-While
 - [ ] Dynamic types (string, bytes, etc.)
 - [ ] Dependency
     - [x] Message signer

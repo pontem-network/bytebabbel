@@ -1,14 +1,17 @@
-use std::fmt::Write;
+use std::fmt::{Display, Formatter, Write};
+
+use crate::bytecode::hir::executor::math::TernaryOp;
 
 use anyhow::Error;
 use log::log_enabled;
 use log::Level;
 
-use crate::bytecode::hir::executor::math::TernaryOp;
-use crate::bytecode::mir::ir::expression::{Expression, StackOp};
+use crate::bytecode::loc::Loc;
+use crate::bytecode::mir::ir::expression::{Expression, TypedExpr};
 use crate::bytecode::mir::ir::statement::Statement;
 use crate::bytecode::mir::ir::types::Value;
 use crate::bytecode::mir::ir::Mir;
+use crate::bytecode::mir::translation::variables::Variable;
 
 pub fn print_ir(ir: &Mir, name: &str) {
     if log_enabled!(Level::Trace) {
@@ -16,19 +19,19 @@ pub fn print_ir(ir: &Mir, name: &str) {
         buf.push_str("\nIR for ");
         buf.push_str(name);
         buf.push('\n');
-        if let Err(err) = print_buf(ir, &mut buf, 0) {
+        if let Err(err) = print_buf(ir, &mut buf) {
             log::error!("Failed to print mir: {}", err);
         }
         log::trace!("MIR:\n{}", buf);
     }
 }
 
-pub fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> {
+pub fn print_buf<B: Write>(ir: &Mir, buf: &mut B) -> Result<(), Error> {
     writeln!(
         buf,
         "================================================================================="
     )?;
-    print_statements(ir.statements(), buf, width)?;
+    print_statements(ir.statements(), buf)?;
     writeln!(
         buf,
         "================================================================================="
@@ -36,270 +39,204 @@ pub fn print_buf(ir: &Mir, buf: &mut String, width: usize) -> Result<(), Error> 
     Ok(())
 }
 
-fn print_statements(st: &[Statement], buf: &mut String, width: usize) -> Result<(), Error> {
+fn print_statements<B: Write>(st: &[Loc<Statement>], buf: &mut B) -> Result<(), Error> {
     for inst in st {
-        print_statement(inst, buf, width)?;
+        writeln!(buf, "{}: {}", inst.start, inst.as_ref())?;
     }
     Ok(())
 }
 
-fn print_statement(inst: &Statement, buf: &mut String, width: usize) -> Result<(), Error> {
-    match inst {
-        Statement::Assign(var, value) => {
-            write!(
-                buf,
-                "{:width$}let var_{:?}: {} = ",
-                " ",
-                var.index(),
-                var.ty()
-            )?;
-            print_expr(&value.expr, buf, width + 4)?;
-            writeln!(buf, ";")?;
-        }
-        Statement::IF {
-            cnd,
-            true_br,
-            false_br,
-        } => {
-            write!(buf, "{:width$}if ", " ")?;
-            print_expr(&cnd.expr, buf, width + 4)?;
-            writeln!(buf, " {{")?;
-            print_statements(true_br, buf, width + 4)?;
-            writeln!(buf, "{:width$}}} else {{", " ",)?;
-            print_statements(false_br, buf, width + 4)?;
-            writeln!(buf, "{:width$}}}", " ")?;
-        }
-        Statement::Loop {
-            id,
-            cnd_calc,
-            cnd,
-            body,
-        } => {
-            writeln!(buf, "{:width$}'l{}: loop {{", " ", id)?;
-            print_statements(cnd_calc, buf, width + 4)?;
-            write!(buf, "{:width$}if ", " ", width = width + 4)?;
-            print_expr(cnd, buf, width)?;
-            writeln!(buf, "{:width$}{{", " ",)?;
-            writeln!(buf, "{:width$} break 'l{};", " ", id, width = width + 4)?;
-            writeln!(buf, "{:width$}}} else {{", " ", width = width + 4)?;
-            print_statements(body, buf, width + 4)?;
-            writeln!(buf, "{:width$}}}", " ",)?;
-            writeln!(buf, "{:width$}}}", " ",)?;
-        }
-        Statement::Abort(code) => {
-            writeln!(buf, "{:width$}abort({:?});", " ", code)?;
-        }
-        Statement::Result(ret) => {
-            write!(buf, "{:width$}return (", " ")?;
-            for (i, value) in ret.iter().enumerate() {
-                if i > 0 {
-                    write!(buf, ", ")?;
+impl Display for Statement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::InitStorage(var) => {
+                write!(f, "InitStorage({})", var)
+            }
+            Statement::StoreStack(ctx) => {
+                writeln!(f, "[")?;
+                for (var, loc) in ctx {
+                    writeln!(f, "  {}: {};", var, loc.as_ref())?;
                 }
-                write!(buf, "var_{:?}", value.index())?;
+                write!(f, "]")
             }
-            writeln!(buf, ");")?;
-        }
-        Statement::Continue(id) => {
-            writeln!(buf, "{:width$}continue 'l{:?};", " ", id)?;
-        }
-        Statement::MStore {
-            memory,
-            offset,
-            val,
-        } => {
-            writeln!(
-                buf,
-                "{:width$}{:?}.mem_store(var_{:?}, var_{:?});",
-                " ",
-                memory.index(),
-                offset.index(),
-                val.index()
-            )?;
-        }
-        Statement::MStore8 {
-            memory,
-            offset,
-            val,
-        } => {
-            writeln!(
-                buf,
-                "{:width$}{:?}.mem_store8(var_{:?}, var_{:?});",
-                " ",
-                memory.index(),
-                offset.index(),
-                val.index()
-            )?;
-        }
-        Statement::SStore {
-            storage,
-            key: offset,
-            val,
-        } => {
-            writeln!(
-                buf,
-                "{:width$}{:?}.state_store(var_{:?}, var_{:?});",
-                " ",
-                storage.index(),
-                offset.index(),
-                val.index()
-            )?;
-        }
-        Statement::InitStorage(var) => {
-            writeln!(buf, "{:width$}init_storage(var_{:?});", " ", var.index(),)?;
-        }
-        Statement::Log {
-            storage: _,
-            memory: _,
-            offset,
-            len,
-            topics,
-        } => {
-            let topics = topics
-                .iter()
-                .map(|t| format!("var_{:?}", t.index()))
-                .collect::<Vec<_>>()
-                .join(", ");
-            writeln!(
-                buf,
-                "{:width$}log(mem[{}:+{}], {})",
-                " ",
-                offset.index(),
-                len.index(),
-                topics
-            )?;
+            Statement::Assign(var, expr) => {
+                write!(f, "{} = {};", var, expr.as_ref())
+            }
+            Statement::MStore {
+                memory,
+                offset,
+                val,
+            } => {
+                write!(
+                    f,
+                    "{}.MStore({}, {});",
+                    memory,
+                    offset.as_ref(),
+                    val.as_ref()
+                )
+            }
+            Statement::MStore8 {
+                memory,
+                offset,
+                val,
+            } => {
+                write!(
+                    f,
+                    "{}.MStore8({}, {});",
+                    memory,
+                    offset.as_ref(),
+                    val.as_ref()
+                )
+            }
+            Statement::SStore { storage, key, val } => {
+                write!(f, "{}.SStore({}, {});", storage, key.as_ref(), val.as_ref())
+            }
+            Statement::Abort(code) => {
+                write!(f, "Abort({});", code)
+            }
+            Statement::Result(vars) => {
+                write!(f, "Result(")?;
+                for (i, var) in vars.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", var)?;
+                }
+                write!(f, ");")
+            }
+            Statement::Log {
+                storage,
+                memory,
+                offset,
+                len,
+                topics,
+            } => {
+                write!(
+                    f,
+                    "{}.Log({}, {}, {}, [",
+                    storage,
+                    memory,
+                    offset.as_ref(),
+                    len.as_ref()
+                )?;
+                for (i, topic) in topics.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", topic.as_ref())?;
+                }
+                write!(f, "]);")
+            }
+            Statement::Label(l) => {
+                write!(f, "'{}:", l)
+            }
+            Statement::BrTrue(cnd, l) => {
+                write!(f, "if {} goto '{};", cnd.as_ref(), l)
+            }
+            Statement::Br(l) => {
+                write!(f, "goto '{};", l)
+            }
         }
     }
-    Ok(())
 }
 
-pub fn print_expr(expr: &Expression, buf: &mut String, width: usize) -> Result<(), Error> {
-    match expr {
-        Expression::Const(val) => match val {
-            Value::Number(val) => write!(buf, "{}", val)?,
-            Value::Bool(val) => write!(buf, "{}", val)?,
-        },
-        Expression::Var(val) => write!(buf, "var_{}", val.index())?,
-        Expression::StackOps(ops) => {
-            writeln!(buf, "{{")?;
-            for op in &ops.vec {
-                print_stack_op(op, buf, width + 2)?;
-                writeln!(buf, ";")?;
+impl Display for TypedExpr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.expr.as_ref() {
+            Expression::Const(val) => {
+                write!(f, "{}", val)
             }
-            write!(buf, "{:width$}}}", " ")?;
-        }
-        Expression::MLoad { memory, offset } => {
-            write!(
-                buf,
-                "var_{:?}.mem_load(var_{:?})",
-                memory.index(),
-                offset.index()
-            )?;
-        }
-        Expression::SLoad { storage, offset } => {
-            write!(
-                buf,
-                "var_{:?}.state_load(var_{:?})",
-                storage.index(),
-                offset.index()
-            )?;
-        }
-        Expression::MSize { memory } => {
-            write!(buf, "var_{:?}.mem_len()", memory.index())?;
-        }
-        Expression::GetMem => {
-            write!(buf, "contract_memory()")?;
-        }
-        Expression::GetStore => {
-            write!(buf, "borrow_storage()")?;
-        }
-        Expression::Cast(var, cast) => {
-            print_expr(&var.expr, buf, width)?;
-            write!(buf, "as {:?}", cast.to())?;
-        }
-        Expression::MSlice {
-            memory,
-            offset,
-            len,
-        } => {
-            write!(
-                buf,
-                "var_{:?}.mem_slice(var_{:?}, var_{:?})",
-                memory.index(),
-                offset.index(),
-                len.index()
-            )?;
-        }
-        Expression::BytesLen(bytes) => {
-            write!(buf, "var_{:?}.len()", bytes.index())?;
-        }
-        Expression::ReadNum { data, offset } => {
-            write!(
-                buf,
-                "var_{:?}.read_num(var_{:?})",
-                data.index(),
-                offset.index()
-            )?;
-        }
-        Expression::Hash { mem, offset, len } => {
-            write!(
-                buf,
-                "var_{:?}.hash(var_{:?}, var_{:?})",
-                mem.index(),
-                offset.index(),
-                len.index()
-            )?;
-        }
-        Expression::Unary(op, arg) => {
-            write!(buf, "{:?}", op)?;
-            print_expr(&arg.expr, buf, width)?;
-        }
-        Expression::Binary(op, arg1, arg2) => {
-            print_expr(&arg1.expr, buf, width)?;
-            write!(buf, " {:?} ", op)?;
-            print_expr(&arg2.expr, buf, width)?;
-        }
-        Expression::Ternary(op, arg1, arg2, arg3) => match op {
-            TernaryOp::AddMod => {
-                write!(buf, "((")?;
-                print_expr(&arg1.expr, buf, width)?;
-                write!(buf, " + ")?;
-                print_expr(&arg2.expr, buf, width)?;
-                write!(buf, ") % ")?;
-                print_expr(&arg3.expr, buf, width)?;
-                write!(buf, ")")?;
+            Expression::GetMem => {
+                write!(f, "GetMem()")
             }
-            TernaryOp::MulMod => {
-                write!(buf, "((")?;
-                print_expr(&arg1.expr, buf, width)?;
-                write!(buf, " * ")?;
-                print_expr(&arg2.expr, buf, width)?;
-                write!(buf, ") % ")?;
-                print_expr(&arg3.expr, buf, width)?;
-                write!(buf, ")")?;
+            Expression::GetStore => {
+                write!(f, "GetStore()")
             }
-        },
+            Expression::MLoad { memory, offset } => {
+                write!(f, "{}.MLoad({})", memory, offset.as_ref())
+            }
+            Expression::MSlice {
+                memory,
+                offset,
+                len,
+            } => {
+                write!(
+                    f,
+                    "{}.MSlice({}, {})",
+                    memory,
+                    offset.as_ref(),
+                    len.as_ref()
+                )
+            }
+            Expression::SLoad { storage, key } => {
+                write!(f, "{}.SLoad({})", storage, key.as_ref())
+            }
+            Expression::MSize { memory } => {
+                write!(f, "{}.MSize()", memory)
+            }
+            Expression::MoveVar(var) => {
+                write!(f, "move({})", var)
+            }
+            Expression::CopyVar(var) => {
+                write!(f, "copy({})", var)
+            }
+            Expression::Unary(op, arg) => {
+                write!(f, "{}({})", op, arg.as_ref())
+            }
+            Expression::Binary(op, arg, arg1) => {
+                write!(f, "({} {} {})", arg.as_ref(), op, arg1.as_ref())
+            }
+            Expression::Ternary(op, arg1, arg2, arg3) => match op {
+                TernaryOp::AddMod => {
+                    write!(
+                        f,
+                        "addmod({}, {}, {})",
+                        arg1.as_ref(),
+                        arg2.as_ref(),
+                        arg3.as_ref()
+                    )
+                }
+                TernaryOp::MulMod => {
+                    write!(
+                        f,
+                        "mulmod({}, {}, {})",
+                        arg1.as_ref(),
+                        arg2.as_ref(),
+                        arg3.as_ref()
+                    )
+                }
+            },
+            Expression::Cast(expr, cast) => {
+                write!(f, "({} as {})", expr.as_ref(), cast.to())
+            }
+            Expression::BytesLen(var) => {
+                write!(f, "{}.BytesLen()", var)
+            }
+            Expression::ReadNum { data, offset } => {
+                write!(f, "{}.ReadNum({})", data, offset.as_ref())
+            }
+            Expression::Hash { mem, offset, len } => {
+                write!(f, "{}.Hash({}, {})", mem, offset.as_ref(), len.as_ref())
+            }
+        }
     }
-    Ok(())
 }
 
-fn print_stack_op(op: &StackOp, buf: &mut String, width: usize) -> Result<(), Error> {
-    match op {
-        StackOp::PushBoolVar(val) => {
-            write!(buf, "{:width$}push var_{}", " ", val.index())?;
-        }
-        StackOp::Not => {
-            write!(buf, "{:width$}!", " ")?;
-        }
-        StackOp::PushBool(val) => {
-            write!(buf, "{:width$}push {}", " ", val)?;
-        }
-        StackOp::Eq => {
-            write!(buf, "{:width$}eq", " ")?;
-        }
-        StackOp::PushExpr(expr) => {
-            write!(buf, "{:width$}push ", " ")?;
-            print_expr(&expr.expr, buf, width)?;
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Number(v) => {
+                write!(f, "{}", v)
+            }
+            Value::Bool(v) => {
+                write!(f, "{}", v)
+            }
         }
     }
-    Ok(())
+}
+
+impl Display for Variable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "var_{}", self.index())
+    }
 }

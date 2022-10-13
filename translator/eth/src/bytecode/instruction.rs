@@ -1,16 +1,15 @@
+use crate::bytecode::loc::Loc;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use crate::OpCode;
-
-pub type Offset = u64;
+use crate::{Offset, OpCode};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Instruction(pub Offset, pub OpCode);
 
 impl Instruction {
-    pub fn new(offset: Offset, code: OpCode) -> Self {
-        Self(offset, code)
+    pub fn new<B: Into<Offset>>(offset: B, code: OpCode) -> Self {
+        Self(offset.into(), code)
     }
 
     pub fn offset(&self) -> Offset {
@@ -18,7 +17,11 @@ impl Instruction {
     }
 
     pub fn next(&self) -> Offset {
-        self.0 + self.size() as Offset
+        self.0 + self.size()
+    }
+
+    pub fn location(&self) -> Loc<()> {
+        Loc::new(self.0, self.next(), ())
     }
 }
 
@@ -38,7 +41,7 @@ impl DerefMut for Instruction {
 
 impl Display for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#06x}   ", self.0)?;
+        write!(f, "{}   ", self.0)?;
         match &self.1 {
             OpCode::Push(data) => write!(f, "Push({})", hex::encode(data)),
             OpCode::Dup(val) => write!(f, "Dup{}", val),
