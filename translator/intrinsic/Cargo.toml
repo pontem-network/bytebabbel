@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.62"
+anyhow.workspace = true
 enum-iterator = "1.2.0"
 rand = "0.8.5"
 lazy_static = "1.4.0"
@@ -16,7 +16,7 @@ move-core-types.workspace = true
 move-bytecode-verifier = { workspace = true }
 
 [build-dependencies]
-anyhow = "1.0.62"
+anyhow.workspace = true
 
 move-binary-format = { workspace = true }
 move-core-types.workspace = true
