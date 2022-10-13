@@ -162,7 +162,7 @@ impl MoveExecutor {
         signer: &str,
         params: Option<&str>,
     ) -> Result<ExecutionResult> {
-        self._run(ident, signer, params, self.flags.clone())
+        self._run(ident, signer, params, self.flags)
     }
 
     pub fn run_native(

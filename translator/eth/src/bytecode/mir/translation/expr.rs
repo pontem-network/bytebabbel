@@ -81,7 +81,7 @@ impl<'a> MirTranslator<'a> {
                     address.ty == SType::Address,
                     "address_var must be of type address"
                 );
-                Expression::Balance { address: address }.ty(SType::Num)
+                Expression::Balance { address }.ty(SType::Num)
             }
             _Expr::Gas => Expression::Gas.ty(SType::Num),
             _Expr::GasPrice => Expression::GasPrice.ty(SType::Num),

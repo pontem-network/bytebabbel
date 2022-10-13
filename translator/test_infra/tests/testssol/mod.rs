@@ -83,10 +83,9 @@ impl STest {
 
         // move result
         let result_mv = return_val_to_string(self.run_mv());
-        dbg!(&result_mv);
+
         // sol result
         let result_evm = return_val_to_string(self.run_evm());
-        dbg!(&result_evm);
 
         log::info!(
             "{wait}: {module_address}::{test:?} {result_evm}",

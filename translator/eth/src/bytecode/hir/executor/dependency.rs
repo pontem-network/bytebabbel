@@ -35,11 +35,13 @@ pub enum TxMeta {
     Coinbase,
     Difficulty,
     Balance,
+    // @todo
     Gas,
     GasPrice,
     GasLimit,
     BlockHeight,
     BlockTimestamp,
+    // @todo
     Blockhash,
 }
 
