@@ -7,16 +7,16 @@ edition = "2021"
 anyhow.workspace = true
 enum-iterator = "1.2.0"
 rand.workspace = true
-lazy_static = "1.4.0"
+lazy_static.workspace = true
 
-move-binary-format = { workspace = true }
+move-binary-format.workspace = true
 move-core-types.workspace = true
 
 [dev-dependencies]
-move-bytecode-verifier = { workspace = true }
+move-bytecode-verifier.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true
 
-move-binary-format = { workspace = true }
+move-binary-format.workspace = true
 move-core-types.workspace = true

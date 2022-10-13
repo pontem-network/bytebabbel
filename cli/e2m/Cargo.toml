@@ -43,7 +43,6 @@ aptos-vm = { workspace = true, optional = true }
 aptos-types = { workspace = true, optional = true }
 framework = { workspace = true, optional = true }
 cached-packages = { workspace = true, optional = true }
-
 move-binary-format = { workspace = true, optional = true }
 
 [features]

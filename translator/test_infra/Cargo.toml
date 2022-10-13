@@ -6,11 +6,11 @@ edition = "2021"
 [dependencies]
 # logs
 log.workspace = true
-lazy_static = "1.4"
+lazy_static.workspace = true
 termion = "1.5.6"
 chrono = "0.4"
 anyhow.workspace = true
-regex = "1.6"
+regex.workspace = true
 ethabi.workspace = true
 
 [dev-dependencies]
@@ -19,8 +19,8 @@ eth = { path = "../eth" }
 translator = { path = ".." }
 intrinsic = { path = "../intrinsic" }
 
-move-bytecode-source-map = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
-move-ir-types = { git = "https://github.com/move-language/move", rev = "f3c921433758340cb95075ae9918095878686d3c" }
+move-bytecode-source-map.workspace = true
+move-ir-types.workspace = true
 #
 evm.workspace = true
 primitive-types.workspace = true
@@ -51,7 +51,7 @@ aptos-state-view = { workspace = true }
 
 # for test *.sol
 libtest-mimic = "0.4"
-regex = "1.6"
+regex.workspace = true
 
 # logs
 env_logger = "0.9"
