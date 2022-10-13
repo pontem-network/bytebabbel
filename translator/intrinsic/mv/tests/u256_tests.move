@@ -871,4 +871,40 @@ module self::u256_tests {
         let c = signextend(a, b);
         assert!(c == from_string(&b"-531323222"), 1);
     }
+
+    #[test_only]
+    use self::u256::sar;
+
+    #[test]
+    fun test_signed_shift_right() {
+        let a = from_u128(100);
+        let b = sar(a, from_u128(2));
+        assert!(as_u128(b) == 25, 0);
+
+        let a = from_u128(2472);
+        let b = sar(a, from_u128(4));
+        assert!(as_u128(b) == 154, 1);
+
+        let a = from_string(&b"-200");
+        let b = sar(a, from_u128(2));
+        assert!(b == from_string(&b"-50"), 2);
+
+        let a = from_string(&b"-200");
+        let b = sar(a, from_u128(17));
+        assert!(b == from_string(&b"-1"), 3);
+
+
+        let a = from_string(&b"0");
+        let b = sar(a, from_u128(17));
+        assert!(b == from_string(&b"0"), 4);
+
+        let a = from_string(&b"-20000000120482421");
+        let b = sar(a, from_u128(300));
+        assert!(b == from_string(&b"-1"), 5);
+
+        let a = from_string(&b"200");
+        let b = sar(a, from_u128(300));
+        assert!(b == from_string(&b"0"), 6);
+    }
+
 }

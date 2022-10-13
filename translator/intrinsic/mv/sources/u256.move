@@ -737,9 +737,20 @@ module self::u256 {
 
     // API
     /// Signed shift right.
-    fun sar(a: U256, b: U256): U256 {
-        // todo repalce with signed shift right
-        shr(a, b)
+    public fun sar(a: U256, shift: U256): U256 {
+        if (a == zero() || ge(shift, from_u128(255))) {
+            if (is_negative(&a)) {
+                get_negative(one())
+            } else {
+                zero()
+            }
+        } else {
+            if (is_negative(&a)) {
+                get_negative(overflowing_add(shr(overflowing_sub(get_negative(a), one()), shift), one()))
+            } else {
+                shr(a, shift)
+            }
+        }
     }
 
     public fun one(): U256 {

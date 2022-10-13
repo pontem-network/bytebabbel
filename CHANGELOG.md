@@ -8,7 +8,7 @@
 
 ### Fixed
 - Verified exp
-
+- Verified sar
 
 ## [0.0.2] - 2022-10-04
 

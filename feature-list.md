@@ -25,7 +25,7 @@
     - [x] BitAnd
     - [x] BitXor
     - [x] Shl
-    - [x] Sar❗(shift right with sign)
+    - [x] Sar (shift right with sign)
     - [x] Shr
     - [x] Lt
     - [x] Gt
