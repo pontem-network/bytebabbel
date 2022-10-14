@@ -92,8 +92,10 @@ pub fn print_expr<B: Write>(buf: &mut B, expr: &_Expr) -> Result<(), Error> {
         _Expr::BlockTimestamp => {
             write!(buf, "block_timestamp()")?;
         }
-        _Expr::BlockHash => {
-            write!(buf, "block_hash()")?;
+        _Expr::BlockHash(num) => {
+            write!(buf, "block_hash(")?;
+            print_expr(buf, num)?;
+            write!(buf, ")")?
         }
         _Expr::BlockDifficulty => {
             write!(buf, "block_difficulty()")?;

@@ -76,7 +76,7 @@ impl InstructionHandler for Instruction {
             OpCode::CallValue => TxMeta::CallValue.handle(params, ir, context),
             OpCode::CallDataLoad => TxMeta::CallDataLoad.handle(params, ir, context),
             OpCode::CallDataSize => TxMeta::CallDataSize.handle(params, ir, context),
-            OpCode::Blockhash => TxMeta::Blockhash.handle(params, ir, context),
+            OpCode::Blockhash => TxMeta::BlockHash.handle(params, ir, context),
             OpCode::Timestamp => TxMeta::BlockTimestamp.handle(params, ir, context),
             OpCode::GasLimit => TxMeta::GasLimit.handle(params, ir, context),
             OpCode::Difficulty => TxMeta::BlockDifficulty.handle(params, ir, context),

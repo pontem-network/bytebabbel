@@ -370,8 +370,8 @@ impl MvIrTranslator {
             Expression::BlockTimestamp => {
                 self.call(Info::BlockTimestamp, vec![]);
             }
-            Expression::BlockHash => {
-                self.call(Info::BlockHash, vec![]);
+            Expression::BlockHash { number } => {
+                self.call(Info::BlockHash, vec![CallOp::Expr(number)]);
             }
             Expression::BlockDifficulty => {
                 self.call(Info::BlockDifficulty, vec![]);

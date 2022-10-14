@@ -236,8 +236,8 @@ impl Display for TypedExpr {
             Expression::BlockHeight => {
                 write!(f, "block_height()")
             }
-            Expression::BlockHash => {
-                write!(f, "block_hash()")
+            Expression::BlockHash { number } => {
+                write!(f, "block_hash({number:?})")
             }
             Expression::BlockCoinbase => {
                 write!(f, "block_coinbase()")

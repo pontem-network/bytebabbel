@@ -32,15 +32,15 @@ pub enum TxMeta {
     CallValue,
     CallDataLoad,
     CallDataSize,
-    BlockDifficulty,
     Balance,
     Gas,
     GasPrice,
     GasLimit,
     BlockHeight,
     BlockTimestamp,
-    Blockhash,
+    BlockHash,
     BlockCoinbase,
+    BlockDifficulty,
 }
 
 impl InstructionHandler for TxMeta {
@@ -66,7 +66,10 @@ impl InstructionHandler for TxMeta {
             TxMeta::GasLimit => return ExecutionResult::Output(_Expr::GasLimit),
             TxMeta::BlockTimestamp => return ExecutionResult::Output(_Expr::BlockTimestamp),
             TxMeta::BlockHeight => return ExecutionResult::Output(_Expr::BlockHeight),
-            TxMeta::Blockhash => return ExecutionResult::Output(_Expr::BlockHash),
+            TxMeta::BlockHash => {
+                let addr = params[0].clone();
+                return ExecutionResult::Output(_Expr::BlockHash(Box::new(addr)));
+            }
             TxMeta::BlockCoinbase => return ExecutionResult::Output(_Expr::BlockCoinbase),
             TxMeta::BlockDifficulty => return ExecutionResult::Output(_Expr::BlockDifficulty),
         };
