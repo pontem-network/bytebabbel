@@ -70,7 +70,7 @@ pub enum _Expr {
     GasLimit,
     BlockHeight,
     BlockTimestamp,
-    BlockHash,
+    BlockHash(Box<Expr>),
     BlockCoinbase,
     BlockDifficulty,
 }
@@ -90,7 +90,6 @@ impl Expr {
             | _Expr::GasLimit
             | _Expr::GasPrice
             | _Expr::BlockHeight
-            | _Expr::BlockHash
             | _Expr::BlockTimestamp
             | _Expr::BlockCoinbase
             | _Expr::BlockDifficulty => self.clone(),
@@ -139,6 +138,10 @@ impl Expr {
                 let expr = expr.unvar(ctx);
                 self.wrap(_Expr::Balance(Box::new(expr)))
             }
+            _Expr::BlockHash(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::BlockHash(Box::new(expr)))
+            }
         }
     }
 }
@@ -181,7 +184,7 @@ impl _Expr {
             _Expr::GasLimit => None,
             _Expr::BlockHeight => None,
             _Expr::BlockTimestamp => None,
-            _Expr::BlockHash => None,
+            _Expr::BlockHash(_) => None,
             _Expr::BlockCoinbase => None,
             _Expr::BlockDifficulty => None,
         }

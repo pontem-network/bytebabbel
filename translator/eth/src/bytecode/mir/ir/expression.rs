@@ -51,7 +51,9 @@ pub enum Expression {
     GasLimit,
     BlockHeight,
     BlockTimestamp,
-    BlockHash,
+    BlockHash {
+        number: Loc<TypedExpr>,
+    },
     BlockDifficulty,
     BlockCoinbase,
 }

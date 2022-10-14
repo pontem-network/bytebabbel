@@ -86,7 +86,10 @@ impl<'a> MirTranslator<'a> {
             _Expr::GasLimit => Expression::GasLimit.ty(SType::Num),
             _Expr::BlockHeight => Expression::BlockHeight.ty(SType::Num),
             _Expr::BlockTimestamp => Expression::BlockTimestamp.ty(SType::Num),
-            _Expr::BlockHash => Expression::BlockHash.ty(SType::Address),
+            _Expr::BlockHash(num) => {
+                let number = self.translate_expr(*num)?;
+                Expression::BlockHash { number }.ty(SType::Address)
+            }
             _Expr::BlockCoinbase => Expression::BlockCoinbase.ty(SType::Num),
             _Expr::BlockDifficulty => Expression::BlockDifficulty.ty(SType::Num),
         };

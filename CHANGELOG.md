@@ -5,7 +5,7 @@
 - Support of 'do-while' loop.
 - Support of `addmod`, `mulmod`
 - Support of `SignExtend`
-- Support <ACCOUNT>.balance, gasprice(), gaslimit(), block.number, block.timestamp
+- Support <ACCOUNT>.balance, gasprice(), gaslimit(), block.number, block.timestamp, block.blockhash
 
 ### Fixed
 - Verified exp
