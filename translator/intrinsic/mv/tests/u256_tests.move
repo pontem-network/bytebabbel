@@ -516,6 +516,16 @@ module self::u256_tests {
         let b = from_u128(3);
         let c = exp(a, b);
         assert!(c == from_u128(8), 0);
+
+        let a = from_u128(0);
+        let b = from_u128(0);
+        let c = exp(a, b);
+        assert!(c == from_u128(1), 1);
+
+        let a = from_u128(83);
+        let b = from_u128(13);
+        let c = exp(a, b);
+        assert!(c == from_string(&b"8871870642308873326043363"), 2);
     }
 
     #[test_only]
@@ -560,12 +570,26 @@ module self::u256_tests {
     }
 
     #[test_only]
-    use self::u256::{eq, one};
+    use self::u256::{eq, one, ne};
 
     #[test]
     fun test_one() {
         let a = one();
         assert!(eq(a, from_u128(1)), 0);
+    }
+
+    #[test]
+    fun test_eq() {
+        assert!(eq(from_u128(2927), from_string(&b"2927")), 0);
+        assert!(from_u128(2927) == from_string(&b"2927"), 1);
+        assert!(get_negative(from_u128(10)) == from_string(&b"-10"), 2);
+    }
+
+    #[test]
+    fun test_ne() {
+        assert!(!(ne(from_u128(2927), from_string(&b"2927"))), 0);
+        assert!(!(from_u128(2927) != from_string(&b"2927")), 1);
+        assert!(!(get_negative(from_u128(10)) != from_string(&b"-10")), 2);
     }
 
     #[test]
@@ -707,10 +731,13 @@ module self::u256_tests {
     #[test]
     fun test_mul_overflow() {
         let max = (U64_MAX as u64);
-
         let a = new_u256(max, max, max, max);
 
-        let _ = overflowing_mul(a, from_u128(2));
+        let res = overflowing_mul(a, from_u128(2));
+        assert!(compare(&res, &from_string(&b"-2")) == 0, 0);
+
+        let res = overflowing_mul(a, a);
+        assert!(compare(&res, &from_string(&b"1")) == 0, 0);
     }
 
     #[test_only]
@@ -828,4 +855,56 @@ module self::u256_tests {
         write(&addr, &mut bytes, 0);
         assert!(from_bytes(&bytes, from_u128(0)) == addr, (val as u64));
     }
+
+    #[test_only]
+    use self::u256::signextend;
+
+    #[test]
+    fun test_signextend() {
+        let a = from_u128(10);
+        let b = from_u128(2);
+        let c = signextend(a, b);
+        assert!(c == from_u128(2), 0);
+
+        let a = from_u128(15);
+        let b = from_string(&b"-531323222");
+        let c = signextend(a, b);
+        assert!(c == from_string(&b"-531323222"), 1);
+    }
+
+    #[test_only]
+    use self::u256::sar;
+
+    #[test]
+    fun test_signed_shift_right() {
+        let a = from_u128(100);
+        let b = sar(a, from_u128(2));
+        assert!(as_u128(b) == 25, 0);
+
+        let a = from_u128(2472);
+        let b = sar(a, from_u128(4));
+        assert!(as_u128(b) == 154, 1);
+
+        let a = from_string(&b"-200");
+        let b = sar(a, from_u128(2));
+        assert!(b == from_string(&b"-50"), 2);
+
+        let a = from_string(&b"-200");
+        let b = sar(a, from_u128(17));
+        assert!(b == from_string(&b"-1"), 3);
+
+
+        let a = from_string(&b"0");
+        let b = sar(a, from_u128(17));
+        assert!(b == from_string(&b"0"), 4);
+
+        let a = from_string(&b"-20000000120482421");
+        let b = sar(a, from_u128(300));
+        assert!(b == from_string(&b"-1"), 5);
+
+        let a = from_string(&b"200");
+        let b = sar(a, from_u128(300));
+        assert!(b == from_string(&b"0"), 6);
+    }
+
 }

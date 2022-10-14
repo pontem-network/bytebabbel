@@ -19,13 +19,13 @@
     - [x] SMod
     - [x] SLt
     - [x] SGt
-    - [x] Exp❗
-    - [x] SignExtend❗
+    - [x] Exp
+    - [x] SignExtend
     - [x] BitOr
     - [x] BitAnd
     - [x] BitXor
     - [x] Shl
-    - [x] Sar❗(shift right with sign)
+    - [x] Sar (shift right with sign)
     - [x] Shr
     - [x] Lt
     - [x] Gt
@@ -34,8 +34,8 @@
     - [x] BitNot
     - [x] IsZero
     - [x] Byte❗
-    - [ ] AddMod (a + b) % N
-    - [ ] MulMod (a * b) % N
+    - [x] AddMod (a + b) % N
+    - [x] MulMod (a * b) % N
 - [ ] Looping
     - [x] For
     - [x] While
