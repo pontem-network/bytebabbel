@@ -481,6 +481,8 @@ module self::u256 {
 
     // API
     public fun byte(i: U256, x: U256): U256 {
+        assert!(lt(i, from_u128(32)), EWORDS_OVERFLOW);
+
         let shift = 248 - as_u128(i) * 8;
         bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
     }

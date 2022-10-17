@@ -503,6 +503,16 @@ module self::u256_tests {
         assert!(byte(from_u128(17), max) == from_u128(255), 6);
     }
 
+    #[test]
+    #[expected_failure(abort_code = 1)]
+    fun test_byte_aborts() {
+        let m = (U64_MAX as u64);
+        let max = new_u256(m, m, m, m);
+
+        let _ = byte(from_u128(32), max);
+    }
+
+
     #[test_only]
     use self::u256::compare;
 
