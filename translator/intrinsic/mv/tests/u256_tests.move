@@ -488,11 +488,19 @@ module self::u256_tests {
 
     #[test]
     fun test_byte() {
-        let a = from_string(&b"1024");
+        let a = from_string(&b"12387123871231238728283172387");
 
-        std::debug::print(&a);
-        let b = byte(from_u128(30), a);
-        std::debug::print(&b);
+        assert!(byte(from_u128(20), a) == from_u128(40), 0);
+        assert!(byte(from_u128(25), a) == from_u128(15), 1);
+        assert!(byte(from_u128(30), a) == from_u128(174), 2);
+
+        let m = (U64_MAX as u64);
+        let max = new_u256(m, m, m, m);
+
+        assert!(byte(from_u128(2), max) == from_u128(255), 3);
+        assert!(byte(from_u128(1), max) == from_u128(255), 4);
+        assert!(byte(from_u128(0), max) == from_u128(255), 5);
+        assert!(byte(from_u128(17), max) == from_u128(255), 6);
     }
 
     #[test_only]
