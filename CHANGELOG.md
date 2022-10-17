@@ -10,6 +10,7 @@
 ### Fixed
 - Verified exp
 - Verified sar
+- Verified byte
 
 ## [0.0.2] - 2022-10-04
 

@@ -484,6 +484,18 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::byte;
+
+    #[test]
+    fun test_byte() {
+        let a = from_string(&b"1024");
+
+        std::debug::print(&a);
+        let b = byte(from_u128(30), a);
+        std::debug::print(&b);
+    }
+
+    #[test_only]
     use self::u256::compare;
 
     #[test]
