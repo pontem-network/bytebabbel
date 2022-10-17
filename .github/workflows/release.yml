@@ -32,6 +32,7 @@ jobs:
       - name: Aptos latest version
         uses: pontem-network/get-aptos@main
         with:
+          version: "aptos-cli-v0.3.9"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Main build
@@ -78,6 +79,7 @@ jobs:
       - name: Aptos latest version
         uses: pontem-network/get-aptos@main
         with:
+          version: "aptos-cli-v0.3.9"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Main build
@@ -124,6 +126,7 @@ jobs:
       - name: Aptos latest version
         uses: pontem-network/get-aptos@main
         with:
+          version: "aptos-cli-v0.3.9"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Main build
