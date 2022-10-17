@@ -489,11 +489,12 @@ module self::u256 {
 
     // API
     public fun byte(i: U256, x: U256): U256 {
-        if (lt(i, from_u128(32))) {
+        if (ge(i, from_u128(32))) {
             return zero()
         };
 
-        let shift = 248 - as_u128_safe(i) * 8;
+        let (j, _o) = as_u128_safe(i);
+        let shift = 248 - j * 8;
         bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
     }
 
@@ -828,7 +829,7 @@ module self::u256 {
     // API
     fun shr(a: U256, shift: U256): U256 {
         let ret = zero();
-        let shift = as_u128_safe(shift);
+        let (shift, _o) = as_u128_safe(shift);
 
         if (is_zero(a) || shift >= 256) {
             return ret
@@ -840,7 +841,7 @@ module self::u256 {
     // API
     fun shl(a: U256, shift: U256): U256 {
         let ret = zero();
-        let shift = as_u128_safe(shift);
+        let (shift, _o) = as_u128_safe(shift);
 
         if (is_zero(a) || shift >= 256) {
             return ret

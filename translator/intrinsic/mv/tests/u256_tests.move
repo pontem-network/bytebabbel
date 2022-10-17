@@ -178,7 +178,6 @@ module self::u256_tests {
         // max u128 + 2
         let a = from_string(&b"340282366920938463463374607431768211457");
         let (b, o) = as_u128_safe(a);
-        std::debug::print(&b);
         assert!(b == 1, 6);
         assert!(o, 7);
     }
@@ -536,8 +535,9 @@ module self::u256_tests {
     fun test_byte_aborts() {
         let m = (U64_MAX as u64);
         let max = new_u256(m, m, m, m);
+        let res = byte(from_u128(32), max);
 
-        let _ = byte(from_u128(32), max);
+        assert!(res != zero(), 1);
     }
 
 
