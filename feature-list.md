@@ -33,7 +33,7 @@
     - [x] Neq
     - [x] BitNot
     - [x] IsZero
-    - [x] Byte❗
+    - [x] Byte
     - [x] AddMod (a + b) % N
     - [x] MulMod (a * b) % N
 - [ ] Looping
