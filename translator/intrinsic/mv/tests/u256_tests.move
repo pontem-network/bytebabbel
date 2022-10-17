@@ -156,6 +156,34 @@ module self::u256_tests {
     }
 
     #[test_only]
+    use self::u256::as_u128_safe;
+
+    #[test]
+    fun test_as_u128_safe() {
+        let a = from_u128(0);
+        let (b, o) = as_u128_safe(a);
+        assert!(b == 0, 0);
+        assert!(!o, 1);
+
+        let a = from_u128(1);
+        let (b, o) = as_u128_safe(a);
+        assert!(b == 1, 2);
+        assert!(!o, 3);
+
+        let a = from_u128(0xffffffffffffffff);
+        let (b, o) = as_u128_safe(a);
+        assert!(b == 0xffffffffffffffff, 4);
+        assert!(!o, 5);
+
+        // max u128 + 2
+        let a = from_string(&b"340282366920938463463374607431768211457");
+        let (b, o) = as_u128_safe(a);
+        std::debug::print(&b);
+        assert!(b == 1, 6);
+        assert!(o, 7);
+    }
+
+    #[test_only]
     use self::u256::{zero, get};
 
     #[test]
@@ -807,12 +835,11 @@ module self::u256_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2)]
-    fun test_add_mod_abort() {
+    fun test_add_mod_zero() {
         let a = from_string(&b"1000000000");
         let b = from_string(&b"1");
         let mod = from_string(&b"0");
-        let _ = add_mod(a, b, mod);
+        assert!(add_mod(a, b, mod) == zero(), 0);
     }
 
     #[test_only]

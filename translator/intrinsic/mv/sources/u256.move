@@ -202,6 +202,14 @@ module self::u256 {
         ((a.v1 as u128) << 64) + (a.v0 as u128)
     }
 
+    /// Convert `U256` to `u128` returns (val, is_overflow).
+    public fun as_u128_safe(a: U256): (u128, bool) {
+        (
+            ((a.v1 as u128) << 64) + (a.v0 as u128),
+            (a.v2 != 0 || a.v3 != 0)
+        )
+    }
+
     /// Convert `U256` to `u64`
     public fun as_u64(a: U256): u64 {
         a.v0
@@ -481,9 +489,11 @@ module self::u256 {
 
     // API
     public fun byte(i: U256, x: U256): U256 {
-        assert!(lt(i, from_u128(32)), EWORDS_OVERFLOW);
+        if (lt(i, from_u128(32))) {
+            return zero()
+        };
 
-        let shift = 248 - as_u128(i) * 8;
+        let shift = 248 - as_u128_safe(i) * 8;
         bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
     }
 
@@ -818,7 +828,7 @@ module self::u256 {
     // API
     fun shr(a: U256, shift: U256): U256 {
         let ret = zero();
-        let shift = as_u128(shift);
+        let shift = as_u128_safe(shift);
 
         if (is_zero(a) || shift >= 256) {
             return ret
@@ -830,7 +840,7 @@ module self::u256 {
     // API
     fun shl(a: U256, shift: U256): U256 {
         let ret = zero();
-        let shift = as_u128(shift);
+        let shift = as_u128_safe(shift);
 
         if (is_zero(a) || shift >= 256) {
             return ret
@@ -888,7 +898,9 @@ module self::u256 {
     use self::u512::overflowing_add_d;
 
     public fun add_mod(a: U256, b: U256, mod: U256): U256 {
-        assert!(compare(&mod, &zero()) != EQUAL, EDIV);
+        if (eq(mod, zero())) {
+            return zero()
+        };
 
         let a_d = u256_to_u512(&a);
         let b_d = u256_to_u512(&b);
@@ -898,24 +910,31 @@ module self::u256 {
 
         let (res, o) = u512_to_u256(res);
 
-        assert!(!o, 2);
-
-        res
+        if (o) {
+            let max = (U64_MAX as u64);
+            new_u256(max, max, max, max)
+        } else {
+            res
+        }
     }
 
     use self::u512::mod_d;
 
     public fun mul_mod(a: U256, b: U256, mod: U256): U256 {
-        // mod != 0
-        assert!(compare(&mod, &zero()) != EQUAL, 2);
+        if (eq(mod, zero())) {
+            return zero()
+        };
 
         let res = mod_d(overflowing_mul_d(a, b), u256_to_u512(&mod));
 
         let (res, o) = u512_to_u256(res);
 
-        assert!(!o, 2);
-
-        res
+        if (o) {
+            let max = (U64_MAX as u64);
+            new_u256(max, max, max, max)
+        } else {
+            res
+        }
     }
 
 
