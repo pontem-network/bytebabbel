@@ -43,18 +43,18 @@
 - [ ] Dynamic types (string, bytes, etc.)
 - [ ] Dependency
     - [x] Message signer
-    - [ ] Balance
+    - [x] Balance
     - [ ] Origin
     - [ ] Caller
     - [ ] CallValue
     - [ ] CallDataLoad
     - [ ] CallDataSize
-    - [ ] Blockhash
-    - [ ] Timestamp
-    - [ ] GasLimit
+    - [x] Blockhash
+    - [x] Timestamp
+    - [x] GasLimit
     - [ ] Difficulty
-    - [ ] Number
-    - [ ] GasPrice
+    - [x] Number
+    - [x] GasPrice
     - [ ] Coinbase
     - [ ] Gas
 - [ ] Call between contracts
