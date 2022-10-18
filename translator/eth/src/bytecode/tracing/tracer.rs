@@ -79,36 +79,67 @@ impl<'a> Tracer<'a> {
             .filter(|(_, fun)| {
                 fun.calls
                     .iter()
-                    .all(|(_, call)| self.is_function(fun, call, loops))
+                    .all(|(_, call)| self.is_function(fun, call, loops).unwrap_or(false))
             })
             .collect()
     }
 
-    fn is_function(&self, fun: &Func, call: &Call, loops: &HashMap<Offset, Loop>) -> bool {
-        let mut block = call.entry_point;
-        println!("is_function: {:?}", fun);
+    fn is_function(
+        &self,
+        fun: &Func,
+        call: &Call,
+        loops: &HashMap<Offset, Loop>,
+    ) -> Result<bool, Error> {
+        let mut block_id = call.entry_point;
+        let ret = call.return_point;
 
+        let mut br_stack = Vec::new();
+
+        let mut visited_loops = HashSet::new();
         let mut exec = Executor::default();
         loop {
-            let block = self
-                .blocks
-                .get(&block)
-                .ok_or_else(|| {
-                    format!(
-                        "Block with id {} not found. Blocks: {:?}",
-                        block, self.blocks
-                    )
-                })
-                .unwrap();
+            let block = self.blocks.get(&block_id).ok_or_else(|| {
+                anyhow!(
+                    "Block with id {} not found. Blocks: {:?}",
+                    block_id,
+                    self.blocks
+                )
+            })?;
             let next = exec.exec(block);
             match next {
-                Next::Jmp(val) => {}
-                Next::Stop => {}
-                Next::Cnd(_, _) => {}
+                Next::Jmp(val) => {
+                    let jmp = val.as_positive()?;
+                    if jmp == ret {
+                        return Ok(true);
+                    }
+                    if loops.contains_key(&jmp) {
+                        if !visited_loops.insert(jmp) {
+                            if let Some((br, br_state)) = br_stack.pop() {
+                                block_id = br;
+                                exec = br_state;
+                            } else {
+                                return Ok(false);
+                            }
+                        }
+                    }
+                    block_id = jmp;
+                }
+                Next::Stop => {
+                    if let Some((br, br_state)) = br_stack.pop() {
+                        block_id = br;
+                        exec = br_state;
+                    } else {
+                        return Ok(false);
+                    }
+                }
+                Next::Cnd(true_br, false_br) => {
+                    let true_br = true_br.as_positive()?;
+                    let false_br = false_br.as_positive()?;
+                    br_stack.push((false_br, exec.clone()));
+                    block_id = true_br;
+                }
             }
         }
-
-        true
     }
 
     fn find_loops(&mut self) -> Result<HashMap<Offset, Loop>, Error> {
