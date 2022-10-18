@@ -86,6 +86,7 @@ impl<'a> Tracer<'a> {
 
     fn is_function(&self, fun: &Func, call: &Call, loops: &HashMap<Offset, Loop>) -> bool {
         let mut block = call.entry_point;
+        println!("is_function: {:?}", fun);
 
         let mut exec = Executor::default();
         loop {
@@ -99,6 +100,12 @@ impl<'a> Tracer<'a> {
                     )
                 })
                 .unwrap();
+            let next = exec.exec(block);
+            match next {
+                Next::Jmp(val) => {}
+                Next::Stop => {}
+                Next::Cnd(_, _) => {}
+            }
         }
 
         true
