@@ -18,6 +18,7 @@ runs:
           ~/.cargo
           ~/.solc
           ~/.aptos
+          ~/.move
         key: ${{ inputs.os }}-compile
 
     - name: Install Rust toolchain
