@@ -14,8 +14,8 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
+          ~/work/eth2move/eth2move/target
           ~/.solc
-          target/
           ~/.cargo
           ~/.aptos
           ~/.move
