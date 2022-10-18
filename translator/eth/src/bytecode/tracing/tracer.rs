@@ -44,10 +44,6 @@ impl<'a> Tracer<'a> {
                 continue;
             }
 
-            if block.len() < 2 {
-                continue;
-            }
-
             let call_addr = if let Some(inst) = block.get(block.len() - 2) {
                 if let OpCode::Push(vec) = &inst.1 {
                     let val = U256::from(vec.as_slice());
@@ -79,24 +75,19 @@ impl<'a> Tracer<'a> {
             .filter(|(_, fun)| {
                 fun.calls
                     .iter()
-                    .all(|(_, call)| self.is_function(fun, call, loops).unwrap_or(false))
+                    .all(|(_, call)| self.is_function(call, loops).unwrap_or(false))
             })
             .collect()
     }
 
-    fn is_function(
-        &self,
-        fun: &Func,
-        call: &Call,
-        loops: &HashMap<Offset, Loop>,
-    ) -> Result<bool, Error> {
+    fn is_function(&self, call: &Call, loops: &HashMap<Offset, Loop>) -> Result<bool, Error> {
         let mut block_id = call.entry_point;
         let ret = call.return_point;
 
         let mut br_stack = Vec::new();
 
         let mut visited_loops = HashSet::new();
-        let mut exec = Executor::default();
+        let mut entry_exec = Executor::default();
         loop {
             let block = self.blocks.get(&block_id).ok_or_else(|| {
                 anyhow!(
@@ -105,7 +96,7 @@ impl<'a> Tracer<'a> {
                     self.blocks
                 )
             })?;
-            let next = exec.exec(block);
+            let next = entry_exec.exec(block);
             match next {
                 Next::Jmp(val) => {
                     let jmp = val.as_positive()?;
@@ -116,7 +107,8 @@ impl<'a> Tracer<'a> {
                         if !visited_loops.insert(jmp) {
                             if let Some((br, br_state)) = br_stack.pop() {
                                 block_id = br;
-                                exec = br_state;
+                                entry_exec = br_state;
+                                continue;
                             } else {
                                 return Ok(false);
                             }
@@ -127,7 +119,7 @@ impl<'a> Tracer<'a> {
                 Next::Stop => {
                     if let Some((br, br_state)) = br_stack.pop() {
                         block_id = br;
-                        exec = br_state;
+                        entry_exec = br_state;
                     } else {
                         return Ok(false);
                     }
@@ -135,7 +127,7 @@ impl<'a> Tracer<'a> {
                 Next::Cnd(true_br, false_br) => {
                     let true_br = true_br.as_positive()?;
                     let false_br = false_br.as_positive()?;
-                    br_stack.push((false_br, exec.clone()));
+                    br_stack.push((false_br, entry_exec.clone()));
                     block_id = true_br;
                 }
             }
