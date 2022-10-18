@@ -17,7 +17,7 @@ runs:
           target/
           ~/.cargo
           ~/.solc
-          ~/.aptos/releases.json
+          ~/.aptos
         key: ${{ inputs.os }}-compile
 
     - name: Install Rust toolchain
