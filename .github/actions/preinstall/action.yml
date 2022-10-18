@@ -14,8 +14,11 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
+          ~/work/eth2move/eth2move/target
           ~/.solc
-          # ~/.aptos
+          ~/.cargo
+          ~/.aptos
+          ~/.move
         key: ${{ inputs.os }}-compile
 
     - name: Install Rust toolchain
@@ -37,5 +40,3 @@ runs:
       uses: pontem-network/get-aptos@main
       with:
         token: ${{ inputs.github_token }}
-        version: "aptos-cli-v0.3.9"
-
