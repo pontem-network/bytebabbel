@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.0.3] - 2022-10-18
+
 ### Added
 - Support of 'do-while' loop.
 - Support of `addmod`, `mulmod`
