@@ -1,9 +1,10 @@
 [package]
 name = "e2m"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 authors = [
     "Maxim Vladimirov <maxim@pontem.network>",
+    "Stepan Sinyakov <stepan.sinyakov@pontem.network>",
     "Dm. Yakushev <dmitryyakushev@dfinance.co>",
 ]
 license = "MIT"
