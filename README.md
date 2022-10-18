@@ -32,7 +32,7 @@ How to install **aptos**, [see the documentation](https://aptos.dev/cli-tools/ap
 
 ## Checking aptos
 
-The **aptos** version must be at least **0.3.8**
+The **aptos** version must be at least **1.0.0**
 
 ```bash
 aptos --version
@@ -47,9 +47,12 @@ in the system for this file.
 > In all examples, e2m will be called via an alias
 
 
-> **! IMPORTANT**\
+> **! IMPORTANT**
+> 
+> **Creating an account "default" and "demo"**
 > Before running the examples, you will need to create a private key.
 > It will be used both for the module address and for publishing on the node.
+> 
 > Default profile:
 > ```bash
 > aptos init
@@ -59,6 +62,20 @@ in the system for this file.
 > aptos init --profile demo
 > ```
 > See more: [aptos init](https://aptos.dev/cli-tools/aptos-cli-tool/use-aptos-cli/#step-1-run-aptos-init)
+> 
+> 
+> **Replenishment of the balance in "devnet"**
+> 
+> Default profile:
+> ```bash
+> aptos account fund-with-faucet --account default --amount 10000000
+> ```
+> Demo profile:
+> ```bash
+> aptos account fund-with-faucet --account demo --amount 10000000
+> ```
+>
+> See more: [aptos account](https://aptos.dev/cli-tools/aptos-cli-tool/use-aptos-cli/#fund-an-account-with-the-faucet)
 
 ### See help:
 

@@ -150,19 +150,20 @@ impl CmdResources {
             .to_address()?,
             Some(address) => address,
         }
-        .to_hex();
+        .to_hex_literal();
 
         let path = resource_path.to_string();
 
         let url_string = match self.query {
             ListQuery::Balance | ListQuery::Modules | ListQuery::Resources => unreachable!(),
             ListQuery::Resource => {
-                format!("{request_url_base}/accounts/{account_hex}/resource/{path}")
+                format!("{request_url_base}v1/accounts/{account_hex}/resource/{path}")
             }
             ListQuery::Events => {
-                format!("{request_url_base}/accounts/{account_hex}/events/{path}?limit={limit}&start={start}", limit = self.limit, start = self.start)
+                format!("{request_url_base}v1/accounts/{account_hex}/events/{path}?limit={limit}&start={start}", limit = self.limit, start = self.start)
             }
         };
+
         let url = Url::from_str(&url_string)?;
         Ok(url)
     }
