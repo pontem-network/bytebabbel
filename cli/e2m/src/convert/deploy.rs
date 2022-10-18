@@ -41,7 +41,7 @@ impl CmdConvert {
             ])
             .map_err(|err| anyhow!("Invalid profile parameter. {err}"))?;
 
-        let binarycode = fs::read(&result_convert.mv_path)?;
+        let binarycode = fs::read(&result_convert.binary_code_path)?;
 
         // Send the compiled module and metadata using the code::publish_package_txn.
         let metadata = gen_meta(result_convert, &binarycode)?;

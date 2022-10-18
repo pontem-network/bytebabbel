@@ -15,13 +15,7 @@ pub fn move_interface(
     let mut buff = String::new();
     let id = module.self_id();
 
-    let addr = if flags.package_interface {
-        "self".to_string()
-    } else {
-        format!("0x{}", id.address().short_str_lossless())
-    };
-
-    writeln!(buff, "module {}::{} {{", addr, id.name())?;
+    writeln!(buff, "module self::{} {{", id.name())?;
 
     write_constants(&mut buff)?;
     writeln!(buff)?;
