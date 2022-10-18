@@ -14,8 +14,10 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
+          target/
+          ~/.cargo
           ~/.solc
-          # ~/.aptos
+          ~/.aptos/releases.json
         key: ${{ inputs.os }}-compile
 
     - name: Install Rust toolchain
