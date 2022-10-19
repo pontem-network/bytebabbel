@@ -102,13 +102,12 @@ e2m convert --help
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
 * `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
 * `-a`, `--args`        Parameters for initialization
-* `-i`, `--interface_package`   Generate an interface project
 * `--native-input`      Input params of native type
 * `--native-output`     Output value of native type
 * `--u128_io`           Use u128 instead of u256
 * `-d`, `--deploy`      Deploying the module in aptos node
 * `--max-gas`           Maximum amount of gas units to be used to send this transaction
-* `--save-abi`          Save solidity abi
+
 
 ### Example
 
@@ -128,8 +127,9 @@ The file can be extensions:
   will be translated into **move binarycode**
 
 The name from the passed **solidity library** will be used as the filename and the name of the **move module**.\
-After completing the command, you will see the path to the created file (Example: "./NameSolModule.mv").
-By default, the file is saved to the current directory.
+After executing the command, you will see the path to the created directory (Example: "./NameSolModule/"). 
+The directory will contain the **interface** for interacting with the module, the **abi** and the **move binarycode** file.
+By default, the directory is saved to the current directory.
 
 #### examples/a_plus_b.sol
 
@@ -139,7 +139,7 @@ e2m convert examples/a_plus_b.sol
 
 ##### Result:
 
-> Saved in "./APlusB.mv
+> Saved in the "./APlusB"
 
 Move module address: **Address from the "default" profile**\
 Move module name: **APlusB**
@@ -186,31 +186,31 @@ e2m convert examples/BinNotFound.abi
 
 ### Path to save
 
-The `-o`, `--output` parameter is responsible for specifying the location where the converted file will be saved.
+The `-o`, `--output` parameter is responsible for specifying the location of the directory where the result will be saved.
 
 #### examples/const_fn.sol
 
 ```bash
-e2m convert examples/const_fn.sol -o ./Test.mv
+e2m convert examples/const_fn.sol -o ./Test
 ```
 
 ##### Result:
 
-> Saved in "./Test.mv"
+> Saved in "./Test"
 
-The move binary file will be created in the current directory named **Test.vm**\
+The move binary file will be created in the directory named **./Test/ConstFn.mv**\
 Move module address: **Address from the "default" profile** \
-Move module name: **Cons**
+Move module name: **ConstFn**
 
 #### examples/APlusB.bin
 
 ```bash
-e2m convert examples/APlusB.bin -o ./AB.mv
+e2m convert examples/APlusB.bin -o ./AB
 ```
 
 ##### Result:
 
-> Saved in "./AB.mv"
+> Saved in "./AB"
 
 Move module address: **Address from the "default" profile** \
 Move module name: **APlusB**
@@ -227,7 +227,7 @@ e2m convert examples/APlusB.abi --module ApB
 
 ##### Result:
 
-> Saved in "./APlusB.mv"
+> Saved in "./ApB"
 
 Move module address: **Address from the "default" profile** \
 Move module name: **ApB**
@@ -240,7 +240,7 @@ e2m convert examples/two_functions.sol --module TF
 
 ##### Result:
 
-> Saved in "./TwoFunctions.mv"
+> Saved in "./TF"
 
 Move module address: **Address from the "default" profile** \
 Move module name: **TF**
@@ -261,7 +261,7 @@ e2m convert examples/const_fn.sol -p 0x3
 
 ##### Result:
 
-> Saved in "./ConstFn.mv"
+> Saved in "./ConstFn"
 
 Move module address: **0x3** \
 Move module name: **ConstFn**
@@ -274,7 +274,7 @@ e2m convert examples/two_functions.sol --profile demo
 
 ##### Result:
 
-> Saved in "./TwoFunctions.mv"
+> Saved in "./TwoFunctions"
 
 Move module address: **Address from the "demo" profile** \
 Move module name: **TwoFunctions**
@@ -282,12 +282,12 @@ Move module name: **TwoFunctions**
 #### Combined arguments
 
 ```bash
- e2m convert examples/const_fn.sol -o ./MyMove.mv --module DemoName --profile 0x3 
+ e2m convert examples/const_fn.sol -o ./MyMove --module DemoName --profile 0x3 
 ```
 
 ###### Result:
 
-> Saved in "./MyMove.mv"
+> Saved in "./MyMove"
 
 Move module address: **0x3** \
 Move module name: **DemoName**
@@ -309,7 +309,7 @@ e2m convert examples/two_functions.sol -d --max-gas 20000
 #### examples/APlusB.abi
 
 ```bash
-e2m convert examples/APlusB.abi -o ./module.mv --profile demo --deploy --max-gas 20000
+e2m convert examples/APlusB.abi -o ./module --profile demo --deploy --max-gas 20000
 ```
 
 ### Generate an interface project
@@ -318,8 +318,7 @@ e2m convert examples/APlusB.abi -o ./module.mv --profile demo --deploy --max-gas
 
 ```bash
 e2m convert examples/a_plus_b.sol \
-    -o ./aplusb.mv \
-    -i
+    -o ./aplusb
 ```
 
 A "move" project will be created in the current directory. This interface is necessary for accessing the published
@@ -337,8 +336,7 @@ input and output parameters.
 ```bash
 e2m convert examples/a_plus_b.sol \
     --native-input \
-    --native-output \
-    -i
+    --native-output
 ```
 
 #### U128
@@ -347,8 +345,7 @@ e2m convert examples/a_plus_b.sol \
 e2m convert examples/a_plus_b.sol \
     --native-input \
     --native-output \
-    --u128-io \
-    -i
+    --u128-io
 ```
 
 ## Call.
@@ -423,9 +420,7 @@ e2m convert ./examples/users.sol \
    -a self \
    --native-input \
    --native-output \
-   -i \
    --max-gas 25000 \
-   --save-abi \
    -d
 ```
 
@@ -579,14 +574,13 @@ e2m convert ./examples/users.sol \
    --module EthUsers \
    -o ./examples/i_users_ethtypes \
    -a self \
-   -i \
    --max-gas 30000 \
    -d
 ```
 
 #### Publishing a script
 
-Publishing a ./examples/sc_users for interacting
+Publishing a ./examples/sc_users_ethtypes for interacting
 with the module
 
 > **Important** don't forget to replace the address
@@ -732,7 +726,7 @@ e2m resources --query events --resource-path default::Users::Persist::events
 ```bash
 e2m resources --query events \
   --resource-path default::Users::Persist::events \
-  --abi ./examples/i_users.abi
+  --abi ./examples/i_users/Users.abi
 ```
 
 ### Decoding by the specified types
