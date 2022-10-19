@@ -136,6 +136,21 @@ impl Display for Statement {
             Statement::Br(l) => {
                 write!(f, "goto '{};", l)
             }
+            Statement::CallLocal {
+                name,
+                storage,
+                memory,
+                context,
+            } => {
+                write!(f, "{}.CallLocal({}, {}, [", storage, memory, name)?;
+                for (i, var) in context.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", var)?;
+                }
+                write!(f, "]);")
+            }
         }
     }
 }

@@ -163,6 +163,7 @@ impl<'a> MirTranslator<'a> {
                 Stmt::Brunch(label) => {
                     self.mir.push(Statement::Br(label).loc(self.loc));
                 }
+                Stmt::CallLocal(label, params) => {}
             }
         }
         Ok(())

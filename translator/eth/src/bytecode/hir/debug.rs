@@ -154,6 +154,16 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
             print_expr(buf, cnd)?;
             writeln!(buf, "\nBrTrue {};", true_br)?;
         }
+        Stmt::CallLocal(label, expr) => {
+            write!(buf, "call_local {}(", label)?;
+            for (i, arg) in expr.iter().enumerate() {
+                if i > 0 {
+                    write!(buf, ", ")?;
+                }
+                print_expr(buf, arg)?;
+            }
+            writeln!(buf, ");")?;
+        }
     }
     Ok(())
 }

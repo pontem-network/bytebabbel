@@ -241,6 +241,9 @@ impl MvIrTranslator {
             Statement::Br(goto) => {
                 self.code.jmp(*goto, false);
             }
+            Statement::CallLocal { .. } => {
+                todo!("CallLocal");
+            }
         }
     }
 

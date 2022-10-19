@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::mem;
 
-use anyhow::{anyhow, Context as ErrContext, Error};
+use anyhow::{anyhow, Error};
 
 use crate::bytecode::block::InstructionBlock;
 use crate::bytecode::tracing::exec::{Executor, Next, StackItem};
@@ -21,10 +22,9 @@ impl<'a> Tracer<'a> {
     }
 
     pub fn trace(&mut self) -> Result<FlowTrace, Error> {
-        let io = self.calculate_io()?;
         let loops = self.clone().find_loops()?;
         let funcs = self.clone().find_funcs(&loops);
-        Ok(FlowTrace { io, funcs, loops })
+        Ok(FlowTrace { funcs, loops })
     }
 
     fn next_block(block: &InstructionBlock) -> Offset {
@@ -58,6 +58,8 @@ impl<'a> Tracer<'a> {
             let func = funcs.entry(call_addr).or_insert_with(|| Func {
                 entry_point: call_addr,
                 calls: Default::default(),
+                input: vec![],
+                output: vec![],
             });
             func.calls.insert(
                 *id,
@@ -72,22 +74,46 @@ impl<'a> Tracer<'a> {
             .into_iter()
             .filter(|(_, fun)| fun.calls.len() > 1)
             .filter(|(_, fun)| !loops.contains_key(&fun.entry_point))
-            .filter(|(_, fun)| {
-                fun.calls
-                    .iter()
-                    .all(|(_, call)| self.is_function(call, loops).unwrap_or(false))
+            .filter_map(|(offset, mut fun)| {
+                for call in &fun.calls {
+                    match self.calc_func_io(call.1, loops) {
+                        Ok((input, output)) => {
+                            if fun.input.is_empty() && fun.output.is_empty() {
+                                fun.input = input;
+                                fun.output = output;
+                            } else {
+                                if fun.input != input || fun.output != output {
+                                    return None;
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            log::warn!("Failed to calculate function IO: {}", err);
+                            return None;
+                        }
+                    }
+                }
+
+                Some((offset, fun))
             })
             .collect()
     }
 
-    fn is_function(&self, call: &Call, loops: &HashMap<Offset, Loop>) -> Result<bool, Error> {
+    fn calc_func_io(
+        &self,
+        call: &Call,
+        loops: &HashMap<Offset, Loop>,
+    ) -> Result<(Vec<StackItem>, Vec<StackItem>), Error> {
         let mut block_id = call.entry_point;
         let ret = call.return_point;
 
         let mut br_stack = Vec::new();
 
+        let mut io_states = Vec::new();
         let mut visited_loops = HashSet::new();
         let mut entry_exec = Executor::default();
+        let mut fun_exec = Executor::default();
+
         loop {
             let block = self.blocks.get(&block_id).ok_or_else(|| {
                 anyhow!(
@@ -97,37 +123,47 @@ impl<'a> Tracer<'a> {
                 )
             })?;
             let next = entry_exec.exec(block);
+
+            if call.entry_point != block_id {
+                fun_exec.exec(block);
+            }
+
             match next {
                 Next::Jmp(val) => {
                     let jmp = val.as_positive()?;
                     if jmp == ret {
-                        return Ok(true);
+                        io_states.push(fun_exec);
+                        return self.branch_io_to_fun_io(io_states);
                     }
                     if loops.contains_key(&jmp) {
                         if !visited_loops.insert(jmp) {
-                            if let Some((br, br_state)) = br_stack.pop() {
+                            if let Some((br, entry_br_exec, mut func_br_exec)) = br_stack.pop() {
                                 block_id = br;
-                                entry_exec = br_state;
+                                entry_exec = entry_br_exec;
+                                mem::swap(&mut fun_exec, &mut func_br_exec);
+                                io_states.push(func_br_exec);
                                 continue;
                             } else {
-                                return Ok(false);
+                                return Err(anyhow!("Not a function:{}", call.entry_point));
                             }
                         }
                     }
                     block_id = jmp;
                 }
                 Next::Stop => {
-                    if let Some((br, br_state)) = br_stack.pop() {
+                    if let Some((br, entry_br_exec, mut func_br_exec)) = br_stack.pop() {
                         block_id = br;
-                        entry_exec = br_state;
+                        entry_exec = entry_br_exec;
+                        mem::swap(&mut fun_exec, &mut func_br_exec);
+                        io_states.push(func_br_exec);
                     } else {
-                        return Ok(false);
+                        return Err(anyhow!("Not a function:{}", call.entry_point));
                     }
                 }
                 Next::Cnd(true_br, false_br) => {
                     let true_br = true_br.as_positive()?;
                     let false_br = false_br.as_positive()?;
-                    br_stack.push((false_br, entry_exec.clone()));
+                    br_stack.push((false_br, entry_exec.clone(), fun_exec.clone()));
                     block_id = true_br;
                 }
             }
@@ -247,26 +283,26 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    fn calculate_io(&self) -> Result<HashMap<Offset, BlockIO>, Error> {
-        let mut io: HashMap<Offset, BlockIO> = HashMap::new();
-        for (id, block) in self.blocks {
-            let mut exec = Executor::default();
-            let res = exec.exec_one(block);
+    fn branch_io_to_fun_io(
+        &self,
+        mut executors: Vec<Executor>,
+    ) -> Result<(Vec<StackItem>, Vec<StackItem>), Error> {
+        let exec = executors
+            .pop()
+            .ok_or_else(|| anyhow!("Empty function io"))?;
+        let (mut input, mut output) = exec.into_io();
 
-            let outputs = res.output.into_iter().map(|i| (i.offset(), i)).collect();
-
-            let inputs = res
-                .input
-                .into_iter()
-                .map(|i| {
-                    i.as_negative()
-                        .ok_or_else(|| anyhow!("Invalid input: {:?}. Block:{}", i, id))
-                })
-                .collect::<Result<_, _>>()?;
-
-            io.insert(*id, BlockIO { inputs, outputs });
+        for exec in executors {
+            let (i, o) = exec.into_io();
+            if i.len() > input.len() {
+                input = i;
+            }
+            if o.len() > output.len() {
+                output = o;
+            }
         }
-        Ok(io)
+
+        return Ok((input, output));
     }
 }
 
@@ -274,28 +310,25 @@ impl<'a> Tracer<'a> {
 pub struct LoopCtx {
     pub block: Offset,
     pub output: Vec<StackItem>,
-    pub input: HashSet<StackItem>,
+    pub input: Vec<StackItem>,
 }
 
 impl LoopCtx {
     pub fn new(block: Offset, exec: &Executor) -> Self {
         LoopCtx {
             block,
-            output: exec.call_stack().clone(),
-            input: exec.negative_item_used().clone(),
+            output: exec.call_stack().to_vec(),
+            input: exec.negative_stack().to_vec(),
         }
     }
-}
-
-pub struct Context {
-    pub executor: Executor,
-    pub false_br: Offset,
 }
 
 #[derive(Debug)]
 pub struct Func {
     pub entry_point: Offset,
     pub calls: HashMap<Offset, Call>,
+    pub input: Vec<StackItem>,
+    pub output: Vec<StackItem>,
 }
 
 #[derive(Debug)]
@@ -325,7 +358,6 @@ pub struct Loop {
 
 #[derive(Debug)]
 pub struct FlowTrace {
-    pub io: HashMap<Offset, BlockIO>,
     pub funcs: HashMap<Offset, Func>,
     pub loops: HashMap<Offset, Loop>,
 }

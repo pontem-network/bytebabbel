@@ -11,7 +11,7 @@ pub struct Executor {
     call_stack: Vec<StackItem>,
     pub path: Vec<Offset>,
     negative_stack_seq: usize,
-    negative_item_used: HashSet<StackItem>,
+    negative_stack: Vec<StackItem>,
 }
 
 impl Executor {
@@ -20,10 +20,12 @@ impl Executor {
         for _ in 0..count {
             res.push(self.call_stack.pop().unwrap_or_else(|| {
                 self.negative_stack_seq += 1;
-                StackItem::Negative {
+                let item = StackItem::Negative {
                     id: self.negative_stack_seq,
                     offset,
-                }
+                };
+                self.negative_stack.push(item.clone());
+                item
             }));
         }
         res
@@ -33,21 +35,16 @@ impl Executor {
         self.call_stack.extend(to_push.into_iter().rev());
     }
 
-    pub fn exec_one(&mut self, block: &InstructionBlock) -> BlockResult {
-        let next = self.exec(block);
-        BlockResult {
-            next,
-            input: self.negative_item_used.clone(),
-            output: mem::take(&mut self.call_stack),
-        }
+    pub fn negative_stack(&self) -> &[StackItem] {
+        &self.negative_stack
     }
 
-    pub fn negative_item_used(&self) -> &HashSet<StackItem> {
-        &self.negative_item_used
-    }
-
-    pub fn call_stack(&self) -> &Vec<StackItem> {
+    pub fn call_stack(&self) -> &[StackItem] {
         &self.call_stack
+    }
+
+    pub fn into_io(self) -> (Vec<StackItem>, Vec<StackItem>) {
+        (self.negative_stack, self.call_stack)
     }
 
     pub fn exec(&mut self, block: &InstructionBlock) -> Next {
@@ -99,12 +96,6 @@ impl Executor {
                 }
                 OpCode::Pop => {}
                 _ => {
-                    for op in ops {
-                        if op.is_negative() {
-                            self.negative_item_used.insert(op);
-                        }
-                    }
-
                     let pushes = inst.pushes();
                     if pushes > 0 {
                         self.push_stack(
@@ -193,6 +184,6 @@ pub enum Next {
 #[derive(Clone, Debug)]
 pub struct BlockResult {
     pub next: Next,
-    pub input: HashSet<StackItem>,
+    pub input: Vec<StackItem>,
     pub output: Vec<StackItem>,
 }
