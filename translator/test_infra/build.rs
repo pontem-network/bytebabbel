@@ -6,7 +6,8 @@ use anyhow::{ensure, Result};
 const TEST_HELPER_MOVE: &str = "./resources/mv";
 
 pub fn main() -> Result<()> {
-    println!("cargo:rerun-if-changed=resources/mv");
+    println!("cargo:rerun-if-changed=resources/mv/sources");
+    println!("cargo:rerun-if-changed=resources/mv/Move.toml");
 
     let path = PathBuf::from(TEST_HELPER_MOVE).canonicalize()?;
 
