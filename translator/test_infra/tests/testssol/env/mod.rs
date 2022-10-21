@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+pub mod client_executor;
 pub mod executor;
 pub mod generator;
 #[cfg(test)]

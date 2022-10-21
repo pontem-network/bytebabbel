@@ -45,11 +45,16 @@ pub fn build_sol<P: AsRef<Path>>(path: P) -> Result<EvmPack> {
     let contract = dir.path().join(name);
     fs::write(&contract, fs::read_to_string(&path)?)?;
 
+    dbg!("--combined-json", "abi,bin");
+
     let output = Command::new("solc")
         .current_dir(&dir)
         .args(["--combined-json", "abi,bin"])
         .arg(&path)
         .output()?;
+    // @todo
+    dbg!(&dir);
+    dbg!(&path);
 
     ensure!(
         output.status.success(),

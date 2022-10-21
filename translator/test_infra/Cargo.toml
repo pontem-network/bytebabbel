@@ -40,13 +40,15 @@ move-core-types.workspace = true
 move-binary-format = { workspace = true }
 move-stdlib = { workspace = true, features = ["testing"] }
 
+aptos = { workspace = true }
 aptos-vm = { workspace = true, features = ["testing"] }
 aptos-gas = { workspace = true }
 aptos-types = { workspace = true }
-framework = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-aggregator = { workspace = true }
 aptos-state-view = { workspace = true }
+move-deps = { workspace = true }
+framework = { workspace = true }
 
 # for test *.sol
 libtest-mimic = "0.4"
