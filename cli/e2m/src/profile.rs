@@ -20,7 +20,6 @@ impl ProfileValue {
         Ok(address)
     }
 
-    #[cfg(feature = "deploy")]
     pub fn name_profile(&self) -> Result<&String> {
         match self {
             ProfileValue::Address(..) => {
