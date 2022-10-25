@@ -5,6 +5,7 @@ use crate::bytecode::hir::ir::{Expr, Label, VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
 
 use crate::bytecode::hir::func::PrivateFunc;
+use crate::bytecode::loc::Loc;
 use crate::bytecode::tracing::tracer::{FlowTrace, Func, Tracer};
 use crate::bytecode::types::EthType;
 use crate::{Flags, Function, Hir, Offset, OpCode};
@@ -55,18 +56,40 @@ impl HirBuilder {
     }
 
     fn translate_private_fun(&self, fun: &Func) -> Result<PrivateFunc, Error> {
-        let f = Function {
+        let def = Function {
             hash: Default::default(),
-            name: "".to_string(),
+            name: fun.name(),
             eth_input: vec![],
             native_input: fun.input.iter().map(|v| EthType::U256).collect(),
             eth_output: vec![],
             native_output: fun.output.iter().map(|v| EthType::U256).collect(),
         };
-        let mut ctx = Context::new(&f, self.contract_address, self.code_size, self.flags);
+        let mut ctx = Context::new(
+            &def,
+            self.contract_address,
+            self.code_size,
+            Flags {
+                native_input: true,
+                native_output: true,
+                hidden_output: false,
+                u128_io: false,
+                package_interface: false,
+            },
+        );
+        ctx.private_func = true;
+        let mut ir = Hir::default();
 
-        // let mut ir = Hir::default();
+        let fn_loc = Loc::new(fun.entry_point.0, fun.entry_point.0, ());
+        for (idx, _) in fun.input.iter().enumerate() {
+            ctx.stack
+                .push(fn_loc.wrap(_Expr::Args(Box::new(fn_loc.wrap(_Expr::Val(idx.into()))))));
+        }
+
+        self.translate_blocks(Offset::default(), &mut ir, &mut ctx)?;
         println!("fun: {:?}", fun);
+        let mut s = String::new();
+        ir.print(&mut s)?;
+        println!("{}", s);
         todo!()
     }
 

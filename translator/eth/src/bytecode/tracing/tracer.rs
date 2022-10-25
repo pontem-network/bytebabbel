@@ -331,6 +331,12 @@ pub struct Func {
     pub output: Vec<StackItem>,
 }
 
+impl Func {
+    pub fn name(&self) -> String {
+        format!("func_{}", self.entry_point)
+    }
+}
+
 #[derive(Debug)]
 pub struct Call {
     pub entry_point: Offset,

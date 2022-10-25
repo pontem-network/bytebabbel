@@ -18,6 +18,7 @@ pub struct Context<'a> {
     pub stack: Stack,
     pub vars: Vars,
     jmp_id: usize,
+    pub private_func: bool,
 }
 
 impl<'a> Context<'a> {
@@ -39,6 +40,7 @@ impl<'a> Context<'a> {
             vars: Default::default(),
             loc: Loc::new(0u128, 0u128, ()),
             jmp_id: 0,
+            private_func: false,
         }
     }
 
