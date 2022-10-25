@@ -2,7 +2,7 @@ use anyhow::{anyhow, Error};
 use log::{log_enabled, Level};
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::Signature;
-use move_binary_format::CompiledModule;
+use move_binary_format::{file_format::FunctionHandleIndex, CompiledModule};
 use move_bytecode_source_map::mapping::SourceMapping;
 use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_disassembler::disassembler::Disassembler;
@@ -11,6 +11,7 @@ use move_ir_types::location::Spanned;
 
 use crate::mv_ir::func::Func;
 
+pub mod crop;
 pub mod func;
 pub mod interface;
 
@@ -37,7 +38,21 @@ impl Module {
         }
         module.signatures = self.signatures;
 
-        print_move_module(&module);
+        let set = crop::find_all_functions(&module).unwrap();
+
+        // generate vec of FunctionHandleIndexes to delete
+        // TODO: transfer this code to crop.rs
+        let mut indexes_to_delete: Vec<FunctionHandleIndex> = (0..module.function_handles.len())
+            .map(|x| FunctionHandleIndex(x as u16))
+            .collect();
+        let mut vec_from_set: Vec<FunctionHandleIndex> = Vec::from_iter(set.into_iter());
+        vec_from_set.sort();
+        vec_from_set.reverse();
+        for el in &vec_from_set {
+            indexes_to_delete.remove(el.0 as usize);
+        }
+
+        let _ = crop::remove_function(&mut module, &indexes_to_delete);
 
         CodeUnitVerifier::verify_module(&VerifierConfig::default(), &module).map_err(|err| {
             anyhow!(
