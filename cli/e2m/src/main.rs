@@ -1,4 +1,3 @@
-#[cfg(feature = "deploy")]
 use std::future::Future;
 
 use anyhow::Result;
@@ -12,11 +11,8 @@ use crate::convert::CmdConvert;
 pub mod convert;
 pub mod profile;
 
-#[cfg(feature = "deploy")]
 pub mod call;
-#[cfg(feature = "deploy")]
 pub mod resources;
-#[cfg(feature = "deploy")]
 pub mod txflags;
 
 pub trait Cmd {
@@ -30,11 +26,9 @@ pub enum Args {
     Convert(CmdConvert),
 
     /// Run a Move function
-    #[cfg(feature = "deploy")]
     Call(crate::call::CmdCall),
 
     /// Command to list resources, modules, or other items owned by an address
-    #[cfg(feature = "deploy")]
     Resources(crate::resources::CmdResources),
 }
 
@@ -42,11 +36,7 @@ impl Cmd for Args {
     fn execute(&self) -> Result<String> {
         match self {
             Args::Convert(data) => data.execute(),
-
-            #[cfg(feature = "deploy")]
             Args::Call(data) => data.execute(),
-
-            #[cfg(feature = "deploy")]
             Args::Resources(data) => data.execute(),
         }
     }
@@ -65,7 +55,6 @@ fn main() {
     }
 }
 
-#[cfg(feature = "deploy")]
 pub fn wait<F: Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

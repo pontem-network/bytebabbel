@@ -13,7 +13,6 @@ use translator::{translate, Target};
 
 use crate::{profile, Cmd};
 
-#[cfg(feature = "deploy")]
 mod deploy;
 pub mod flags;
 
@@ -45,12 +44,10 @@ pub struct CmdConvert {
     #[clap(long = "args", short = 'a', default_value = "")]
     init_args: String,
 
-    #[cfg(feature = "deploy")]
     #[clap(flatten)]
     pub(crate) transaction_flags: crate::txflags::TransactionFlags,
 
     /// Publishes the modules in a Move package to the Aptos blockchain
-    #[cfg(feature = "deploy")]
     #[clap(long = "deploy", short = 'd', value_parser)]
     pub deploy: bool,
 
@@ -62,7 +59,6 @@ impl Cmd for CmdConvert {
     fn execute(&self) -> Result<String> {
         let result = self.convert()?;
 
-        #[cfg(feature = "deploy")]
         if self.deploy {
             return self.publish(&result);
         }

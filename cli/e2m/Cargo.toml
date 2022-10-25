@@ -17,48 +17,32 @@ anyhow.workspace = true
 log.workspace = true
 tempfile = "3.3"
 serde_yaml = "0.9.11"
+serde_json.workspace = true
+tokio = { version = "1.21", features = ["full"] }
+reqwest = { version = "0.11" }
+bcs.workspace = true
+sha2 = "0.10.5"
+hex.workspace = true
 
-#
+# EVM
+ethabi.workspace = true
+
+# Aptos
+aptos.workspace = true
+aptos-vm.workspace = true
+aptos-types.workspace = true
+framework.workspace = true
+cached-packages.workspace = true
+
+# Move
 move-core-types.workspace = true
+move-binary-format.workspace = true
 
 # local
 translator = { path = "../../translator" }
 test_infra = { path = "../../translator/test_infra" }
 eth = { path = "../../translator/eth" }
 
-# FEATURE DEPLOY
-# It is necessary to monitor the relevance. At the moment, this particular client is working with devnet
-# You need to download a working client from https://github.com/aptos-labs/aptos-core/releases
-#   test it and find out the commit using "aptos info".
 
-bcs = { workspace = true, optional = true }
-sha2 = { version = "0.10.5", optional = true }
-hex = { workspace = true, optional = true }
-tokio = { version = "1.21", features = ["full"], optional = true }
-serde_json = { workspace = true, optional = true }
-ethabi = { workspace = true, optional = true }
-reqwest = { version = "0.11", optional = true }
 
-aptos = { workspace = true, optional = true }
-aptos-vm = { workspace = true, optional = true }
-aptos-types = { workspace = true, optional = true }
-framework = { workspace = true, optional = true }
-cached-packages = { workspace = true, optional = true }
-move-binary-format = { workspace = true, optional = true }
 
-[features]
-deploy = [
-    "bcs",
-    "sha2",
-    "hex",
-    "ethabi",
-    "tokio",
-    "serde_json",
-    "reqwest",
-    "aptos",
-    "aptos-vm",
-    "aptos-types",
-    "framework",
-    "cached-packages",
-    "move-binary-format",
-]
