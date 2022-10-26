@@ -8,7 +8,7 @@ use move_core_types::account_address::AccountAddress;
 /// Converting a profile name to an address
 pub(crate) fn profile_to_address(name_or_address: &str) -> Result<AccountAddress> {
     if name_or_address.starts_with("0x") {
-        return Ok(AccountAddress::from_hex_literal(&name_or_address)?);
+        return Ok(AccountAddress::from_hex_literal(name_or_address)?);
     }
 
     let profile = CliConfig::load_profile(Some(name_or_address), ConfigSearchMode::CurrentDir)?
