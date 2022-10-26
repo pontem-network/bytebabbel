@@ -1,15 +1,12 @@
-use std::str::FromStr;
-
 use anyhow::{anyhow, Result};
-use aptos::common::types::CliCommand;
+use aptos::common::types::{CliCommand, ProfileOptions};
 use clap::Parser;
 use ethabi::ParamType;
 
 use eth::abi::call::to_token;
 use test_infra::color::font_green;
 
-use crate::profile;
-use crate::profile::ProfileValue;
+use crate::profile::profile_to_address;
 use crate::wait;
 use crate::Cmd;
 
@@ -30,15 +27,8 @@ pub struct CmdCall {
     #[clap(short, long = "function-id")]
     function_id: String,
 
-    /// Profile name or address. The address must start with "0x". Needed for the module address
-    #[clap(
-        long = "profile",
-        display_order = 5,
-        short = 'p',
-        default_value = "default",
-        value_parser
-    )]
-    profile_or_address: profile::ProfileValue,
+    #[clap(flatten)]
+    profile_options: ProfileOptions,
 
     /// Encode input params
     #[clap(long)]
@@ -56,7 +46,7 @@ impl Cmd for CmdCall {
     fn execute(&self) -> Result<String> {
         use aptos::move_tool::RunFunction;
 
-        let profile = self.profile_or_address.name_profile().map_err(|_| {
+        let profile_name = self.profile_options.profile_name().ok_or_else(|| {
             anyhow!(
                 "For deploy, you need to specify the profile name. \n\n\
                     Example: \n\
@@ -71,7 +61,7 @@ impl Cmd for CmdCall {
         let mut move_run_args = [
             "subcommand",
             "--profile",
-            profile,
+            profile_name,
             "--max-gas",
             &self.transaction_flags.max_gas.to_string(),
             "--assume-yes",
@@ -122,11 +112,7 @@ fn args_encode(args: &[String]) -> Result<String> {
 
             let mut val_str = val_str.to_string();
             if matches!(tp, ParamType::Address) {
-                val_str = ProfileValue::from_str(&val_str)
-                    .and_then(|prof| prof.to_address())
-                    .map(|add| hex::encode(add.as_ref()))
-                    .unwrap_or_else(|_| val_str.to_string());
-                val_str = format!("0x{}", val_str);
+                val_str = profile_to_address(&val_str)?.to_hex_literal();
             }
 
             let value = to_token(&(tp, &val_str))?;

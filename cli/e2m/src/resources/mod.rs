@@ -16,7 +16,6 @@ use query::ListQuery;
 use resource_path::ResourcePath;
 use test_infra::color::{bold, font_yellow};
 
-use crate::profile::ProfileValue;
 use crate::{wait, Cmd};
 
 pub mod decode;
@@ -144,10 +143,7 @@ impl CmdResources {
             .to_string();
 
         let account_hex = match self.account {
-            None => ProfileValue::from_str(
-                self.profile_options.profile.as_deref().unwrap_or("default"),
-            )?
-            .to_address()?,
+            None => self.profile_options.account_address()?,
             Some(address) => address,
         }
         .to_hex_literal();

@@ -3,7 +3,7 @@ use std::string::{String, ToString};
 
 use anyhow::{anyhow, Error};
 
-use crate::profile::ProfileValue;
+use crate::profile::profile_to_address;
 
 #[derive(Debug)]
 pub(crate) struct ResourcePath {
@@ -38,10 +38,10 @@ impl FromStr for ResourcePath {
             anyhow!("`--resource_path` the `<ADDRESS>::<MODULE>::<STRUCTURE>` format was expected")
         };
 
-        let address = parts.next().ok_or_else(err_format)?.to_string();
-        let address_hex = ProfileValue::from_str(&address)?
-            .to_address()?
-            .to_hex_literal();
+        let mut address_hex = parts.next().ok_or_else(err_format)?.to_string();
+        if !address_hex.starts_with("0x") {
+            address_hex = profile_to_address(&address_hex)?.to_hex_literal();
+        }
 
         Ok(ResourcePath {
             address: address_hex,
