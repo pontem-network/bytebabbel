@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use move_binary_format::{
     access::ModuleAccess,
     file_format::Visibility,
@@ -26,24 +26,24 @@ pub fn find_all_functions(module: &CompiledModule) -> Result<HashSet<FunctionHan
     }
 
     loop {
-        let f = queue.pop_front().unwrap();
-        let res = find_functions(module, f);
+        if let Some(f) = queue.pop_front() {
+            let res = find_functions(module, f, &mut queue)?;
 
-        for el in res.unwrap() {
-            if used_functions.insert(el) {
-                queue.push_back(el);
+            for el in res {
+                used_functions.insert(*el);
             }
-        }
 
-        if queue.is_empty() {
-            break;
+            if queue.is_empty() {
+                break;
+            }
         }
     }
 
     // insert "to_bytes"
     // there's a few handles "to_bytes"
-    // we need handle with ModuleHandleIndex(4)
+    // we need handle with ModuleHandleIndex(4) - aptos_coin
     // TODO: delete constant this constant
+    // find Module by name!
     let f = module.function_handles.iter().position(|f| {
         module.identifier_at(f.name).as_str() == "to_bytes" && f.module == ModuleHandleIndex(4)
     });
@@ -55,37 +55,31 @@ pub fn find_all_functions(module: &CompiledModule) -> Result<HashSet<FunctionHan
     Ok(used_functions)
 }
 
-fn find_functions(
+fn find_functions<'a>(
     module: &CompiledModule,
     func_id: FunctionHandleIndex,
-) -> Result<Vec<FunctionHandleIndex>, Error> {
+    set: &'a mut VecDeque<FunctionHandleIndex>,
+) -> Result<&'a VecDeque<FunctionHandleIndex>, Error> {
     // TODO: change Vec to HashSet
     let mut iter_all_functions = module.function_defs.iter();
-    let mut set: Vec<FunctionHandleIndex> = vec![];
+    // let mut set: Vec<FunctionHandleIndex> = vec![];
 
     let main_f_def = iter_all_functions.find(|&function_index| function_index.function == func_id);
 
-    if main_f_def.is_none() {
-        // here function_instations in use and
-        // address_of, exists_at, create_account
-        return Ok(vec![]);
-    }
+    let main_f_def = match main_f_def {
+        Some(fun_def) => fun_def,
+        None => return Ok(set),
+    };
 
-    let main_f_def = main_f_def.unwrap();
-
-    for code_unit in &main_f_def.code {
+    if let Some(code_unit) = &main_f_def.code {
         for code in &code_unit.code {
-            if let Bytecode::Call(function_index) = code {
-                if set.contains(function_index) {
-                    continue;
-                }
-                set.push(*function_index);
-            } else if let Bytecode::CallGeneric(function_inst) = code {
-                let el = &module.function_instantiation_at(*function_inst).handle;
-                if set.contains(el) {
-                    continue;
-                }
-                set.push(*el);
+            let idx = match code {
+                Bytecode::Call(idx) => *idx,
+                Bytecode::CallGeneric(idx) => module.function_instantiation_at(*idx).handle,
+                _ => continue,
+            };
+            if !set.contains(&idx) {
+                set.push_back(idx);
             }
         }
     }
@@ -140,12 +134,28 @@ pub fn remove_function(
 
     // change Calls in function defs
     for def in module.function_defs.iter_mut() {
-        def.function = *index_transaction.get(&def.function).unwrap();
+        def.function = match index_transaction.get(&def.function) {
+            Some(idx) => *idx,
+            None => {
+                return Err(anyhow!(
+                    "Error while removing function_handles:\nno handler for {:?}",
+                    def.function
+                ))
+            }
+        };
 
         if let Some(ref mut code_unit) = def.code {
             for code in code_unit.code.iter_mut() {
                 if let Bytecode::Call(func_handle) = code {
-                    let new_handle = *index_transaction.get(func_handle).unwrap();
+                    let new_handle = match index_transaction.get(func_handle) {
+                        Some(idx) => *idx,
+                        None => {
+                            return Err(anyhow!(
+                                "Error while changing Call(function_handle) opcode:\nno handler for {:?}",
+                                def.function
+                            ))
+                        }
+                    };
                     *code = Bytecode::Call(new_handle);
                 }
             }
@@ -189,7 +199,7 @@ pub fn remove_function(
         }
     }
 
-    // signatures
+    // identifiers
 
     Ok(())
 }

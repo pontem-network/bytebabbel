@@ -1,7 +1,8 @@
-use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::{make_move_module, sol_path};
 use eth::compile::build_sol;
 use eth::Flags;
+use intrinsic::TEMPLATE_MODULE;
+use move_binary_format::{CompiledModule, IndexKind};
 use test_infra::init_log;
 
 #[allow(dead_code)]
@@ -19,23 +20,33 @@ pub fn test_template_crop() {
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(
-        serde_json::from_str(evm.contract().abi()).unwrap(),
-        Flags::default(),
+
+    let empty_module = CompiledModule::deserialize(TEMPLATE_MODULE).unwrap();
+    let module = CompiledModule::deserialize(&bytecode).unwrap();
+
+    // println!("default template vs module");
+
+    // let skip_indexes = [
+    //     IndexKind::LocalPool,
+    //     IndexKind::CodeDefinition,
+    //     IndexKind::FieldDefinition,
+    //     IndexKind::TypeParameter,
+    //     IndexKind::MemberCount,
+    // ];
+    // for index in IndexKind::variants() {
+    //     if skip_indexes.contains(index) {
+    //         continue;
+    //     }
+    //     println!("{:?}", index);
+    //     println!(
+    //         "{:?} vs {:?}",
+    //         empty_module.kind_count(*index),
+    //         module.kind_count(*index)
+    //     );
+    // }
+    assert!(
+        module.kind_count(IndexKind::FunctionHandle)
+            < empty_module.kind_count(IndexKind::FunctionHandle),
+        "completed module has more FunctionHandles than default template"
     );
-    vm.deploy("0x42", bytecode);
-
-    vm.run("0x42::AddMod::constructor", "0x42", None).unwrap();
-
-    let res = vm
-        .run("0x42::AddMod::add_mod_u256", "0x42", Some("25, 10, 10"))
-        .unwrap()
-        .to_result_str();
-    assert_eq!("Uint(5)", res);
-
-    let res = vm
-        .run("0x42::AddMod::add_mod_u256_max", "0x42", Some(""))
-        .unwrap()
-        .to_result_str();
-    assert_eq!("Uint(202)", res);
 }
