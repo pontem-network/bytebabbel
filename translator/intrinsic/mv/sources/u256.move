@@ -743,7 +743,7 @@ module self::u256 {
 
     // API
     /// SIGNEXTEND opcode
-    /// TODO more tests
+    /// TODO more examples
     public fun signextend(a: U256, b: U256): U256 {
         if (le(a, from_u128(32))) {
             let bit_index: u64 = (8 * get(&a, 0) + 7);

@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- Update to aptos 1.0.1
 
 ## [0.0.4] - 2022-11-08
 

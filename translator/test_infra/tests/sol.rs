@@ -49,6 +49,6 @@ fn main() {
 
     let configs = Arguments::from_args();
 
-    // run tests
+    // run examples
     libtest_mimic::run_tests(&configs, tests, |test| (test.data)()).exit()
 }

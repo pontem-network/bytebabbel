@@ -121,7 +121,7 @@ module self::u256_tests {
 
         let a = leading_zeros_u64(64);
         assert!(a == 57, 2);
-        // TODO: more tests.
+        // TODO: more examples.
     }
 
     #[test_only]

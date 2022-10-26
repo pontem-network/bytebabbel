@@ -3,30 +3,30 @@
 use std::fs;
 use std::path::PathBuf;
 
+use anyhow::Result;
 use ethabi::Contract;
 
 use eth::Flags;
+use move_executor::{MoveExecutor, MoveExecutorInstance};
 use test_infra::init_log;
 
-use crate::testssol::env::executor::MoveExecutor;
+fn me() -> Result<MoveExecutor> {
+    let path = PathBuf::from("./resources/mv/build/test_helper/bytecode_modules/helper.mv")
+        .canonicalize()?;
+    let bytecode = fs::read(&path)?;
+    let abi: Contract = serde_json::from_str("[]")?;
 
-#[allow(dead_code)]
-mod testssol;
+    let mut vm = MoveExecutor::new(abi, Flags::native_interface(), MoveExecutorInstance::Aptos);
+    vm.deploy("0x1", bytecode)?;
 
-const HELPER_MV: &str = "./resources/mv/build/test_helper/bytecode_modules/helper.mv";
+    Ok(vm)
+}
 
 #[test]
 pub fn test_balance() {
     init_log();
 
-    let path = PathBuf::from(HELPER_MV).canonicalize().unwrap();
-
-    let bytecode = fs::read(&path).unwrap();
-    let abi: Contract = serde_json::from_str("[]").unwrap();
-
-    let mut vm = MoveExecutor::new(abi, Flags::native_interface());
-
-    vm.deploy("0x1", bytecode);
+    let mut vm = me().unwrap();
 
     // Topping up the balance on account 0x42
     vm.run("0x1::helper::x42_1_000_000", "0x1", None).unwrap();
@@ -39,14 +39,7 @@ pub fn test_balance() {
 pub fn test_blocks() {
     init_log();
 
-    let path = PathBuf::from(HELPER_MV).canonicalize().unwrap();
-
-    let bytecode = fs::read(&path).unwrap();
-    let abi: Contract = serde_json::from_str("[]").unwrap();
-
-    let mut vm = MoveExecutor::new(abi, Flags::default());
-
-    vm.deploy("0x1", bytecode);
+    let mut vm = me().unwrap();
 
     vm.run("0x1::helper::genesis_inic", "0x1", None).unwrap();
     vm.run("0x1::helper::fake_block", "0x0", None).unwrap();

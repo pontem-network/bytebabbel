@@ -4,65 +4,45 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 
 use eth::compile::build_sol;
 use eth::Flags;
+use move_executor::{solidity::FromSolidity, MoveExecutor, MoveExecutorInstance};
 use test_infra::init_log;
 
-use crate::testssol::env::executor::MoveExecutor;
 use crate::testssol::make_move_module;
 
 #[allow(dead_code)]
 mod testssol;
+
+const ALICE: &str = "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00";
+const BOB: &str = "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0";
 
 #[test]
 pub fn test_for_users() {
     init_log();
 
     fn test(flags: Flags) {
-        let evm = build_sol("../../examples/users.sol").unwrap();
-        let bytecode = make_move_module(
-            &format!(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::{}",
-                evm.name()
-            ),
-            evm.contract().bin(),
-            "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
-            evm.contract().abi(),
+        let mut vm = MoveExecutor::from_sol(
+            "../../examples/users.sol",
+            AccountAddress::from_hex_literal(ALICE).unwrap(),
+            BOB,
             flags,
         )
         .unwrap();
 
-        let mut vm = MoveExecutor::new(serde_json::from_str(evm.contract().abi()).unwrap(), flags);
-        vm.deploy(
-            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-            bytecode,
-        );
-
-        vm.run(
-            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::constructor",
-            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-            None,
-        )
+        vm.run(&format!("{ALICE}::Users::constructor"), ALICE, None)
             .unwrap();
+
         let res = vm
-            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+            .run(&format!("{ALICE}::Users::create_user"), ALICE, Some(""))
             .unwrap();
         let new_user_event = &res.events[0];
 
         let mut guid = vec![4, 0, 0, 0, 0, 0, 0, 0];
-        guid.extend(
-            AccountAddress::from_hex_literal(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-            )
-            .unwrap()
-            .as_slice(),
-        );
+        guid.extend(AccountAddress::from_hex_literal(ALICE).unwrap().as_slice());
         assert_eq!(guid, new_user_event.0);
         assert_eq!(0, new_user_event.1);
         assert_eq!(
             TypeTag::Struct(Box::new(StructTag {
-                address: AccountAddress::from_hex_literal(
-                    "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00"
-                )
-                .unwrap(),
+                address: AccountAddress::from_hex_literal(ALICE).unwrap(),
                 module: Identifier::new("Users").unwrap(),
                 name: Identifier::new("Event").unwrap(),
                 type_params: vec![],
@@ -71,81 +51,56 @@ pub fn test_for_users() {
         );
 
         let res = vm
-            .run(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_id",
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-                Some(""),
-            )
+            .run(&format!("{ALICE}::Users::get_id"), ALICE, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!(res, "Uint(2)");
 
         let res = vm
-            .run(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_id",
-                "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
-                Some(""),
-            )
+            .run(&format!("{ALICE}::Users::get_id"), BOB, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!(res, "Uint(1)");
 
         let res = vm
-            .run(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::is_owner",
-                "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
-                Some(""),
-            )
+            .run(&format!("{ALICE}::Users::is_owner"), BOB, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!("Bool(true)", res);
 
         let res = vm
-            .run(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::is_owner",
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-                Some(""),
-            )
+            .run(&format!("{ALICE}::Users::is_owner"), ALICE, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!("Bool(false)", res);
 
         let res = vm
-            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0", Some(""))
+            .run(&format!("{ALICE}::Users::get_balance"), BOB, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!("Uint(10000000000000000000000000000)", res);
 
         let res = vm
-            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+            .run(&format!("{ALICE}::Users::get_balance"), ALICE, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!("Uint(0)", res);
 
         let res = vm
             .run(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::transfer",
-                "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
-                Some("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00, 1000"),
+                &format!("{ALICE}::Users::transfer"),
+                BOB,
+                Some(&format!("{ALICE}, 1000")),
             )
             .unwrap();
         let new_user_event = &res.events[0];
         let mut guid = vec![4, 0, 0, 0, 0, 0, 0, 0];
-        guid.extend(
-            AccountAddress::from_hex_literal(
-                "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-            )
-            .unwrap()
-            .as_slice(),
-        );
+        guid.extend(AccountAddress::from_hex_literal(ALICE).unwrap().as_slice());
         assert_eq!(guid, new_user_event.0);
         assert_eq!(1, new_user_event.1);
         assert_eq!(
             TypeTag::Struct(Box::new(StructTag {
-                address: AccountAddress::from_hex_literal(
-                    "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00"
-                )
-                .unwrap(),
+                address: AccountAddress::from_hex_literal(ALICE).unwrap(),
                 module: Identifier::new("Users").unwrap(),
                 name: Identifier::new("Event").unwrap(),
                 type_params: vec![],
@@ -154,25 +109,24 @@ pub fn test_for_users() {
         );
 
         let res = vm
-            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0", Some(""))
+            .run(&format!("{ALICE}::Users::get_balance"), BOB, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!("Uint(9999999999999999999999999000)", res);
 
         let res = vm
-            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+            .run(&format!("{ALICE}::Users::get_balance"), ALICE, Some(""))
             .unwrap()
             .to_result_str();
         assert_eq!("Uint(1000)", res);
 
-        let res = vm
-            .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""));
+        let res = vm.run(&format!("{ALICE}::Users::create_user"), ALICE, Some(""));
         assert!(res.is_err());
 
         let res = vm.run(
-            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::transfer",
-            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-            Some("0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0, 1001"),
+            &format!("{ALICE}::Users::transfer"),
+            ALICE,
+            Some(&format!("{BOB}, 1001")),
         );
         assert!(res.is_err());
     }
@@ -197,36 +151,26 @@ pub fn test_for_users_with_hidden_result() {
     };
     let evm = build_sol("../../examples/users.sol").unwrap();
     let bytecode = make_move_module(
-        &format!(
-            "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::{}",
-            evm.name()
-        ),
+        &format!("{ALICE}::{}", evm.name()),
         evm.contract().bin(),
-        "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0",
+        BOB,
         evm.contract().abi(),
         flags,
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(serde_json::from_str(evm.contract().abi()).unwrap(), flags);
-    vm.deploy(
-        "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-        bytecode,
-    );
+    let mut vm = MoveExecutor::new(evm.abi().unwrap(), flags, MoveExecutorInstance::Aptos);
+    vm.deploy(ALICE, bytecode).unwrap();
 
-    vm.run(
-        "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::constructor",
-        "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00",
-        None,
-    )
-    .unwrap();
+    vm.run(&format!("{ALICE}::Users::constructor"), ALICE, None)
+        .unwrap();
 
     let res = vm
-        .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::create_user", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+        .run(&format!("{ALICE}::Users::create_user"), ALICE, Some(""))
         .unwrap();
     assert_eq!(0, res.returns.len());
 
     let res = vm
-        .run("0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00::Users::get_balance", "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00", Some(""))
+        .run(&format!("{ALICE}::Users::get_balance"), ALICE, Some(""))
         .unwrap()
         .returns;
     assert_eq!(0, res.len());

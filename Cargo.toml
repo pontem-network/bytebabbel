@@ -5,6 +5,7 @@ members = [
     "translator/intrinsic",
     "translator",
     "translator/test_infra",
+    "translator/me",
     "cli/e2m",
 ]
 
@@ -39,7 +40,7 @@ evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2mo
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
 
 
-anyhow = "1.0.58"
+anyhow = "1.0.66"
 log = "0.4"
 hex = "0.4"
 
