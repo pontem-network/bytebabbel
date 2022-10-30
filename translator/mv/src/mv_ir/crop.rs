@@ -8,6 +8,7 @@ use move_binary_format::{
 };
 
 use crate::translator::identifier::IdentidierWriter;
+use crate::translator::signature::SignatureWriter;
 
 use move_binary_format::internals::ModuleIndex;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -61,6 +62,7 @@ pub fn crop(module: &mut CompiledModule) -> Result<(), Error> {
     reidex_indetifiers(module)?;
 
     // signature
+    reidex_signatures(module)?;
 
     Ok(())
 }
@@ -359,6 +361,70 @@ fn reidex_indetifiers(module: &mut CompiledModule) -> Result<(), Error> {
     }
 
     module.identifiers = writer.freeze();
+
+    Ok(())
+}
+
+fn reidex_signatures(module: &mut CompiledModule) -> Result<(), Error> {
+    let mut writer = SignatureWriter::new(&[]);
+    // TODO: delete clone
+    // problem: cannot move module.identifiers because of mut ref
+    let old_signatures = module.signatures.clone();
+
+    for fun_insta in module.function_instantiations.iter_mut() {
+        let sign = &old_signatures[fun_insta.type_parameters.into_index()];
+        let new_index = writer.make_signature(sign.0.to_vec());
+        fun_insta.type_parameters = new_index;
+    }
+
+    for fun_handler in module.function_handles.iter_mut() {
+        let sign = &old_signatures[fun_handler.parameters.into_index()];
+        let new_index = writer.make_signature(sign.0.to_vec());
+        fun_handler.parameters = new_index;
+
+        let sign = &old_signatures[fun_handler.return_.into_index()];
+        let new_index = writer.make_signature(sign.0.to_vec());
+        fun_handler.return_ = new_index;
+    }
+
+    for struct_def_insta in module.struct_def_instantiations.iter_mut() {
+        let sign = &old_signatures[struct_def_insta.type_parameters.into_index()];
+        let new_index = writer.make_signature(sign.0.to_vec());
+        struct_def_insta.type_parameters = new_index;
+    }
+
+    for field_insta in module.field_instantiations.iter_mut() {
+        let sign = &old_signatures[field_insta.type_parameters.into_index()];
+        let new_index = writer.make_signature(sign.0.to_vec());
+        field_insta.type_parameters = new_index;
+    }
+
+    for fun_def in module.function_defs.iter_mut() {
+        if let Some(code_unit) = &mut fun_def.code {
+            let sign = &old_signatures[code_unit.locals.into_index()];
+            let new_index = writer.make_signature(sign.0.to_vec());
+            code_unit.locals = new_index;
+
+            for code in &mut code_unit.code {
+                let idx = match code {
+                    Bytecode::VecPack(idx, _len) => idx,
+                    Bytecode::VecLen(idx) => idx,
+                    Bytecode::VecImmBorrow(idx) => idx,
+                    Bytecode::VecMutBorrow(idx) => idx,
+                    Bytecode::VecPushBack(idx) => idx,
+                    Bytecode::VecPopBack(idx) => idx,
+                    Bytecode::VecUnpack(idx, _len) => idx,
+                    Bytecode::VecSwap(idx) => idx,
+                    _ => continue,
+                };
+                let sign = &old_signatures[idx.into_index()];
+                let new_index = writer.make_signature(sign.0.to_vec());
+                *idx = new_index;
+            }
+        }
+    }
+
+    module.signatures = writer.freeze();
 
     Ok(())
 }
