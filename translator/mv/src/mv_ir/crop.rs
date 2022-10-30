@@ -1,11 +1,13 @@
 use anyhow::{anyhow, Error};
 use move_binary_format::{
     access::ModuleAccess,
-    file_format::Visibility,
     file_format::{Bytecode, FunctionInstantiationIndex},
-    file_format::{ConstantPoolIndex, FunctionHandleIndex, ModuleHandleIndex, TableIndex},
+    file_format::{ConstantPoolIndex, FunctionHandleIndex, TableIndex},
+    file_format::{SignatureToken, StructDefinitionIndex, StructFieldInformation, Visibility},
     CompiledModule,
 };
+
+use crate::translator::identifier::IdentidierWriter;
 
 use move_binary_format::internals::ModuleIndex;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -45,11 +47,20 @@ pub fn crop(module: &mut CompiledModule) -> Result<(), Error> {
     remove_constants(module, &Vec::from_iter(constants_to_remove))?;
 
     // structs
-    // fields
-    // modules
+    // let set = find_all_structs(module)?;
+    // let all_structs: HashSet<StructDefinitionIndex> = HashSet::from_iter(
+    //     (0..module.struct_defs.len()).map(|x| StructDefinitionIndex(x as TableIndex)),
+    // );
+    // let mut struct_index_to_delete: Vec<StructDefinitionIndex> =
+    //     Vec::from_iter(all_structs.difference(&set).copied());
+    // struct_index_to_delete.sort();
+
+    // remove_structs(module, &struct_index_to_delete)?;
+
+    // identifiers
+    reidex_indetifiers(module)?;
 
     // signature
-    // identifiers
 
     Ok(())
 }
@@ -70,15 +81,26 @@ fn remove_functions(
         if let Some(position) = pos {
             module.function_defs[position].function = handler_to_delete_index;
         }
-
         // instantiations
         let pos = module
             .function_instantiations
             .iter()
             .position(|x| x.handle == *el);
         if let Some(position) = pos {
+            // TODO
+            let _sign_index = module.function_instantiations[position].type_parameters;
+
             module.function_instantiations[position].handle = handler_to_delete_index
         }
+        // signatures
+        // TODO
+        // let identifier_index_to_delete = module.function_handles[el.into_index()].name;
+        // let (_sign_param, _sign_return) = (
+        //     module.function_handles[el.into_index()].parameters,
+        //     module.function_handles[el.into_index()].return_,
+        // );
+        // // identifiers
+        // module.identifiers[identifier_index_to_delete.0 as usize] = Identifier::from_str("<SELF>")?;
         // handles
         module.function_handles[el.into_index()] = handler_to_delete.clone();
     }
@@ -228,6 +250,119 @@ fn remove_constants(
     Ok(())
 }
 
+#[allow(dead_code)]
+fn remove_structs(
+    module: &mut CompiledModule,
+    indexes_to_delete: &[StructDefinitionIndex],
+) -> Result<(), Error> {
+    let mut index_transaction: HashMap<StructDefinitionIndex, StructDefinitionIndex> =
+        HashMap::new();
+    let mut last_not_delete: StructDefinitionIndex = StructDefinitionIndex(0);
+
+    for indx in 0..module.struct_defs.len() {
+        if !indexes_to_delete.contains(&StructDefinitionIndex(indx as TableIndex)) {
+            index_transaction.insert(StructDefinitionIndex(indx as TableIndex), last_not_delete);
+            last_not_delete.0 += 1;
+        }
+    }
+
+    // TODO: also delete handles
+    // for indx in indexes_to_delete.iter().rev() {
+    //     let handle_index = module.struct_defs[indx.into_index()].struct_handle.0 as usize;
+    //     module.struct_handles[handle_index] = StructHandle {};
+    // }
+
+    for indx in indexes_to_delete.iter().rev() {
+        module.struct_defs.remove(indx.into_index());
+    }
+
+    for def in module.function_defs.iter_mut() {
+        if let Some(ref mut code_unit) = def.code {
+            for code in code_unit.code.iter_mut() {
+                let el = match code {
+                    Bytecode::Pack(idx) => idx,
+                    Bytecode::Unpack(idx) => idx,
+                    Bytecode::MutBorrowGlobal(idx) => idx,
+                    Bytecode::ImmBorrowGlobal(idx) => idx,
+                    Bytecode::Exists(idx) => idx,
+                    Bytecode::MoveFrom(idx) => idx,
+                    Bytecode::MoveTo(idx) => idx,
+                    _ => continue,
+                };
+                *el = match index_transaction.get(el) {
+                    Some(idx) => *idx,
+                    None => continue,
+                };
+            }
+        }
+
+        for el in def.acquires_global_resources.iter_mut() {
+            *el = match index_transaction.get(el) {
+                Some(idx) => *idx,
+                None => continue,
+            };
+        }
+    }
+
+    for el in module.struct_def_instantiations.iter_mut() {
+        el.def = match index_transaction.get(&el.def) {
+            Some(idx) => *idx,
+            None => continue,
+        };
+    }
+
+    for field_handler in module.field_handles.iter_mut() {
+        field_handler.owner = match index_transaction.get(&field_handler.owner) {
+            Some(idx) => *idx,
+            None => continue,
+        };
+    }
+
+    Ok(())
+}
+
+fn reidex_indetifiers(module: &mut CompiledModule) -> Result<(), Error> {
+    let mut writer = IdentidierWriter::new(&[]);
+    // TODO: delete clone
+    // problem: cannot move module.identifiers because of mut ref
+    let old_identidiers = module.identifiers.clone();
+
+    // module_handles
+    for module_handle in module.module_handles.iter_mut() {
+        let ident = &old_identidiers[module_handle.name.into_index()];
+        module_handle.name = writer.make_identifier(ident.as_str())?;
+    }
+
+    // fun handles
+    for fun_handler in module.function_handles.iter_mut() {
+        let ident = &old_identidiers[fun_handler.name.into_index()];
+        fun_handler.name = writer.make_identifier(ident.as_str())?;
+    }
+
+    // struct handles
+    for struct_handler in module.struct_handles.iter_mut() {
+        let ident = &old_identidiers[struct_handler.name.into_index()];
+        struct_handler.name = writer.make_identifier(ident.as_str())?;
+    }
+
+    // field defs
+    for struct_def in module.struct_defs.iter_mut() {
+        let field_defs = match &mut struct_def.field_information {
+            StructFieldInformation::Native => continue,
+            StructFieldInformation::Declared(field_definitions) => field_definitions,
+        };
+
+        for field_def in field_defs.iter_mut() {
+            let ident = &old_identidiers[field_def.name.into_index()];
+            field_def.name = writer.make_identifier(ident.as_str())?;
+        }
+    }
+
+    module.identifiers = writer.freeze();
+
+    Ok(())
+}
+
 // Find functions
 
 // TODO change VecDeque to another structure
@@ -243,6 +378,25 @@ fn find_all_functions(module: &CompiledModule) -> Result<HashSet<FunctionHandleI
         }
     }
 
+    // insert "to_bytes"
+    // there's a few handles "to_bytes"
+    // we need handle with any ModuleHandle
+    // TODO: delete constant this constant
+    // find Module by name!
+    let f = module
+        .function_handles
+        .iter()
+        .enumerate()
+        .filter(|(_, f)| module.identifier_at(f.name).as_str() == "to_bytes")
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+
+    for pos in f {
+        let handler = FunctionHandleIndex(pos as TableIndex);
+        used_functions.insert(handler);
+        queue.push_back(handler);
+    }
+
     loop {
         if let Some(f) = queue.pop_front() {
             let res = find_functions(module, f, &mut queue)?;
@@ -255,19 +409,6 @@ fn find_all_functions(module: &CompiledModule) -> Result<HashSet<FunctionHandleI
                 break;
             }
         }
-    }
-
-    // insert "to_bytes"
-    // there's a few handles "to_bytes"
-    // we need handle with ModuleHandleIndex(4) - aptos_coin
-    // TODO: delete constant this constant
-    // find Module by name!
-    let f = module.function_handles.iter().position(|f| {
-        module.identifier_at(f.name).as_str() == "to_bytes" && f.module == ModuleHandleIndex(4)
-    });
-
-    if let Some(pos) = f {
-        used_functions.insert(FunctionHandleIndex(pos as TableIndex));
     }
 
     Ok(used_functions)
@@ -321,4 +462,72 @@ fn find_bytecode_fun_defs(
         }
     }
     set
+}
+
+#[allow(dead_code)]
+fn find_all_structs(module: &CompiledModule) -> Result<HashSet<StructDefinitionIndex>, Error> {
+    let mut set: HashSet<StructDefinitionIndex> = HashSet::new();
+
+    for def in module.function_defs.iter() {
+        if let Some(code_unit) = &def.code {
+            for code in code_unit.code.iter() {
+                let el = match code {
+                    // defs
+                    Bytecode::Pack(idx) => *idx,
+                    Bytecode::Unpack(idx) => *idx,
+                    Bytecode::MutBorrowGlobal(idx) => *idx,
+                    Bytecode::ImmBorrowGlobal(idx) => *idx,
+                    Bytecode::Exists(idx) => *idx,
+                    Bytecode::MoveFrom(idx) => *idx,
+                    Bytecode::MoveTo(idx) => *idx,
+
+                    // instantiation
+                    Bytecode::PackGeneric(insta) => module.struct_instantiation_at(*insta).def,
+                    Bytecode::UnpackGeneric(insta) => module.struct_instantiation_at(*insta).def,
+                    Bytecode::MutBorrowGlobalGeneric(insta) => {
+                        module.struct_instantiation_at(*insta).def
+                    }
+                    Bytecode::ImmBorrowGlobalGeneric(insta) => {
+                        module.struct_instantiation_at(*insta).def
+                    }
+                    Bytecode::ExistsGeneric(insta) => module.struct_instantiation_at(*insta).def,
+                    Bytecode::MoveFromGeneric(insta) => module.struct_instantiation_at(*insta).def,
+                    Bytecode::MoveToGeneric(insta) => module.struct_instantiation_at(*insta).def,
+
+                    _ => continue,
+                };
+
+                set.insert(el);
+            }
+        }
+
+        for el in def.acquires_global_resources.iter() {
+            set.insert(*el);
+        }
+    }
+
+    // TODO: search in cropped signatures pool
+    for sign in module.signatures.iter() {
+        for token in &sign.0 {
+            let handle = match token {
+                // handles
+                SignatureToken::Struct(handle) => *handle,
+                SignatureToken::StructInstantiation(handle, _v) => *handle,
+                _ => continue,
+            };
+
+            let pos = module
+                .struct_defs
+                .iter()
+                .position(|def| def.struct_handle == handle);
+            match pos {
+                Some(position) => {
+                    set.insert(StructDefinitionIndex(position as TableIndex));
+                }
+                None => continue,
+            }
+        }
+    }
+
+    Ok(set)
 }

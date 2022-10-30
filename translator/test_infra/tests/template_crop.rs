@@ -24,7 +24,7 @@ pub fn test_template_crop() {
     let empty_module = CompiledModule::deserialize(TEMPLATE_MODULE).unwrap();
     let module = CompiledModule::deserialize(&bytecode).unwrap();
 
-    // println!("default template vs module");
+    println!("default template vs module");
 
     // let skip_indexes = [
     //     IndexKind::LocalPool,

@@ -26,6 +26,7 @@ use crate::translator::writer::Code;
 
 pub mod bytecode;
 pub mod signature;
+pub mod identifier;
 pub mod writer;
 
 pub struct MvIrTranslator {
