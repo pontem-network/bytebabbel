@@ -1,21 +1,37 @@
-use std::fs;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Error, Result};
+
+use aptos::common::types::{CliConfig, ConfigSearchMode};
 use move_core_types::account_address::AccountAddress;
-use serde_yaml::Value;
+
+/// Converting a profile name to an address
+pub(crate) fn profile_to_address(name_or_address: &str) -> Result<AccountAddress> {
+    if name_or_address.starts_with("0x") {
+        return Ok(AccountAddress::from_hex_literal(name_or_address)?);
+    }
+
+    let profile = CliConfig::load_profile(Some(name_or_address), ConfigSearchMode::CurrentDir)?
+        .ok_or_else(|| anyhow!("Profile {name_or_address} not found"))?;
+    profile
+        .account
+        .ok_or_else(|| anyhow!("The address is not specified in the profile {name_or_address}"))
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProfileValue {
     Address(AccountAddress),
-    Profile(ProfileConfig),
+    Profile {
+        name: String,
+        address: AccountAddress,
+    },
 }
 
 impl ProfileValue {
     pub fn to_address(&self) -> Result<AccountAddress> {
         let address = match self {
             ProfileValue::Address(address) => *address,
-            ProfileValue::Profile(profile_name) => profile_name.address,
+            ProfileValue::Profile { address, .. } => *address,
         };
         Ok(address)
     }
@@ -25,7 +41,7 @@ impl ProfileValue {
             ProfileValue::Address(..) => {
                 anyhow::bail!("The address was transmitted. The profile name was expected.")
             }
-            ProfileValue::Profile(profile_name) => Ok(&profile_name.name),
+            ProfileValue::Profile { name, .. } => Ok(name),
         }
     }
 }
@@ -39,38 +55,10 @@ impl FromStr for ProfileValue {
                 value,
             )?))
         } else {
-            Ok(ProfileValue::Profile(ProfileConfig::load(value)?))
+            Ok(ProfileValue::Profile {
+                name: value.to_string(),
+                address: profile_to_address(value)?,
+            })
         }
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ProfileConfig {
-    pub name: String,
-    pub address: AccountAddress,
-}
-
-impl ProfileConfig {
-    pub fn load(profile_name: &str) -> Result<ProfileConfig> {
-        fs::read_to_string("./.aptos/config.yaml")
-            .map_err(|_| anyhow!("No profiles found. To create a profile, use \"$ aptos init\""))
-            .and_then(|yaml_string| {
-                serde_yaml::from_str(&yaml_string)
-                    .map_err(|err| anyhow!("Invalid profile format. Error: {err:?}"))
-            })
-            .and_then(|yaml: Value| {
-                let account: String = yaml
-                    .get("profiles")
-                    .and_then(|profiles| profiles.get(profile_name))
-                    .and_then(|profile| profile.get("account"))
-                    .and_then(|address| address.as_str().map(String::from))
-                    .ok_or_else(|| anyhow!("Account not found"))?;
-                let address = AccountAddress::from_hex_literal(&format!("0x{account}"))?;
-
-                Ok(ProfileConfig {
-                    name: profile_name.to_string(),
-                    address,
-                })
-            })
     }
 }
