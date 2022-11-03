@@ -82,8 +82,10 @@ impl MoveExecutor {
         MoveVmExt::new(
             NativeGasParameters::zeros(),
             AbstractValueSizeGasParameters::zeros(),
-            3,
-            false,
+            aptos_gas::LATEST_GAS_FEATURE_VERSION,
+            aptos_types::on_chain_config::Features::default()
+                .is_enabled(aptos_types::on_chain_config::FeatureFlag::TREAT_FRIEND_AS_PRIVATE),
+            0,
         )
         .unwrap()
     }

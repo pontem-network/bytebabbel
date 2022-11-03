@@ -43,7 +43,6 @@ move-stdlib = { workspace = true, features = ["testing"] }
 aptos-vm = { workspace = true, features = ["testing"] }
 aptos-gas = { workspace = true }
 aptos-types = { workspace = true }
-move-deps = { workspace = true }
 framework = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-aggregator = { workspace = true }
