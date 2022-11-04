@@ -5,7 +5,6 @@ use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use serde::Deserialize;
 
-// # aptos
 use aptos::common::types::{CliConfig, ConfigSearchMode, ProfileConfig};
 use aptos_crypto::HashValue;
 use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
@@ -21,7 +20,6 @@ use ethabi::{
     Contract, Token,
 };
 
-// move
 use move_core_types::{
     account_address::AccountAddress,
     effects::Event,
@@ -137,8 +135,10 @@ impl MoveExecutor {
         MoveVmExt::new(
             NativeGasParameters::zeros(),
             AbstractValueSizeGasParameters::zeros(),
-            3,
-            false,
+            aptos_gas::LATEST_GAS_FEATURE_VERSION,
+            aptos_types::on_chain_config::Features::default()
+                .is_enabled(aptos_types::on_chain_config::FeatureFlag::TREAT_FRIEND_AS_PRIVATE),
+            0,
         )
         .unwrap()
     }
@@ -161,37 +161,22 @@ impl MoveExecutor {
         let adapter = StorageAdapter::new(&self.resolver);
         let mut session = self.vm.new_session(&adapter, id);
         let fn_name = ident.as_str();
-        // @todo
-        //
-        // let t = session.load_function(&module_id, &ident, &[])?;
-        //
-        // session.
 
-        // let fun = session.load_function(&module_id, &ident, &[]).unwrap();
-        // session.
-        // dbg!(&fun);
-
-        // dbg!(1);
         let args = if flag.native_input {
             let fun = session.load_function(&module_id, &ident, &[]);
-            // dbg!(2);
             self.prepare_move_args(signer, params, &fun.unwrap())?
         } else {
-            // dbg!(3);
             self.prepare_eth_args(signer, params, fn_name)?
         };
 
-        // dbg!(4);
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
-        // let t = session.get_type_layout();
-        // dbg!(5);
+
         let result = session.finish().unwrap();
         let events = result.events.clone();
         let output = result.into_change_set(&mut (), 3).unwrap();
 
-        // dbg!(6);
         let returns = if flag.hidden_output {
             vec![]
         } else if flag.native_output {

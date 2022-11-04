@@ -13,7 +13,7 @@ use test_infra::init_log;
 fn me() -> Result<MoveExecutor> {
     let path = PathBuf::from("./resources/mv/build/test_helper/bytecode_modules/helper.mv")
         .canonicalize()?;
-    let bytecode = fs::read(&path)?;
+    let bytecode = fs::read(path)?;
     let abi: Contract = serde_json::from_str("[]")?;
 
     let mut vm = MoveExecutor::new(abi, Flags::native_interface(), MoveExecutorInstance::Aptos);

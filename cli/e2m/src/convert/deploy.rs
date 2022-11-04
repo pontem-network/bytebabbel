@@ -59,7 +59,7 @@ impl CmdConvert {
         let result = wait(fut).map(aptos::common::types::TransactionSummary::from)?;
 
         Ok(serde_json::to_string_pretty(&serde_json::to_value(
-            &result,
+            result,
         )?)?)
     }
 }

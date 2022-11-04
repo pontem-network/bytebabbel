@@ -1,9 +1,6 @@
-use anyhow::{anyhow, Error, Result};
-// @todo
-// use move_core_types::account_address::AccountAddress;
-use std::str::FromStr;
-
 use crate::profile::ProfileValue;
+use anyhow::{anyhow, Error, Result};
+use std::str::FromStr;
 
 const FUNCTION_ID_EXPECTED_FORMAT: &str = "<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>";
 
@@ -31,12 +28,6 @@ impl FunctionId {
 
         Ok(())
     }
-
-    // @todo
-    // pub fn to_address(&self) -> Result<AccountAddress> {
-    //     let address = AccountAddress::from_hex_literal(&self.address)?;
-    //     Ok(address)
-    // }
 }
 
 impl FromStr for FunctionId {

@@ -95,7 +95,7 @@ impl CmdConvert {
 
         // save the abi
         let abi_path = interface_dir_path.join(&module_name).with_extension("abi");
-        fs::write(&abi_path, pack.contract().abi.as_str())?;
+        fs::write(abi_path, pack.contract().abi.as_str())?;
 
         Ok(ResultConvert {
             interface_dir_path,

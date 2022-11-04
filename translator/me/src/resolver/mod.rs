@@ -16,7 +16,7 @@ pub mod print_access_path;
 #[derive(Default, Clone)]
 pub struct Resolver {
     pub state_data: HashMap<StateKey, Vec<u8>>,
-    pub handler_data: HashMap<AccountAddress, HandleData>,
+    pub handler_data: HashMap<AccountAddress, HandleRequest>,
 }
 
 impl StateView for Resolver {
@@ -71,9 +71,8 @@ impl Resolver {
     }
 }
 
-// @todo HandleLoadData
 #[derive(Debug, Clone)]
-pub struct HandleData {
+pub struct HandleRequest {
     pub url: Url,
     pub key_type: String,
     pub value_type: String,

@@ -108,7 +108,7 @@ impl Cmd for CmdCall {
         }
         let result = wait(aptos_run_cli.execute())?;
         Ok(serde_json::to_string_pretty(&serde_json::to_value(
-            &result,
+            result,
         )?)?)
     }
 }
@@ -132,7 +132,7 @@ impl CmdCall {
         }
 
         let abi_str =
-            fs::read_to_string(&abi_path).map_err(|err| anyhow!("{err}.\nPath: {abi_path:?}"))?;
+            fs::read_to_string(abi_path).map_err(|err| anyhow!("{err}.\nPath: {abi_path:?}"))?;
         let abi: Contract = serde_json::from_str(&abi_str)?;
 
         let fn_abi = abi.function(&self.function_id.function)?;

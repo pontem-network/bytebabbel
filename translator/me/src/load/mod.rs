@@ -18,7 +18,7 @@ mod response;
 use crate::{
     load::response::{MoveModuleId, MoveResource},
     profile_to_address,
-    resolver::{print_access_path::AccessPathToString, HandleData},
+    resolver::{print_access_path::AccessPathToString, HandleRequest},
     MoveExecutor,
 };
 
@@ -54,7 +54,7 @@ impl LoadRemoteData for MoveExecutor {
 }
 
 /// https://fullnode.devnet.aptoslabs.com/v1/tables/{table_handle}/item
-pub fn load_table_handle_u256(data: &HandleData, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
+pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         "Content-Type",
@@ -104,7 +104,7 @@ pub fn load_table_handle_u256(data: &HandleData, key: &Vec<u8>) -> Result<Option
 
 /// handle
 /// URL: https://fullnode.devnet.aptoslabs.com/v1/accounts/{address}/resources
-fn load_handel_link(profile: &ProfileConfig) -> Result<HashMap<AccountAddress, HandleData>> {
+fn load_handel_link(profile: &ProfileConfig) -> Result<HashMap<AccountAddress, HandleRequest>> {
     let address = profile_to_address(profile)?;
     let address_hex = address.to_hex_literal();
 
@@ -137,7 +137,7 @@ fn load_handel_link(profile: &ProfileConfig) -> Result<HashMap<AccountAddress, H
 
             Some((
                 handle,
-                HandleData {
+                HandleRequest {
                     url: Url::from_str(&format!("{rest_url}/v1/tables/{table_handle}/item"))
                         .ok()?,
                     key_type: u256_address.clone(),
