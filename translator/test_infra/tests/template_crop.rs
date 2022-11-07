@@ -26,24 +26,24 @@ pub fn test_template_crop() {
 
     println!("default template vs module");
 
-    // let skip_indexes = [
-    //     IndexKind::LocalPool,
-    //     IndexKind::CodeDefinition,
-    //     IndexKind::FieldDefinition,
-    //     IndexKind::TypeParameter,
-    //     IndexKind::MemberCount,
-    // ];
-    // for index in IndexKind::variants() {
-    //     if skip_indexes.contains(index) {
-    //         continue;
-    //     }
-    //     println!("{:?}", index);
-    //     println!(
-    //         "{:?} vs {:?}",
-    //         empty_module.kind_count(*index),
-    //         module.kind_count(*index)
-    //     );
-    // }
+    let skip_indexes = [
+        IndexKind::LocalPool,
+        IndexKind::CodeDefinition,
+        IndexKind::FieldDefinition,
+        IndexKind::TypeParameter,
+        IndexKind::MemberCount,
+    ];
+    for index in IndexKind::variants() {
+        if skip_indexes.contains(index) {
+            continue;
+        }
+        println!("{:?}", index);
+        println!(
+            "{:?} vs {:?}",
+            empty_module.kind_count(*index),
+            module.kind_count(*index)
+        );
+    }
     assert!(
         module.kind_count(IndexKind::FunctionHandle)
             < empty_module.kind_count(IndexKind::FunctionHandle),

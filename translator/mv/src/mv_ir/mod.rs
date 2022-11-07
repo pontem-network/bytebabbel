@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Error};
 use log::{log_enabled, Level};
 use move_binary_format::binary_views::BinaryIndexedView;
+use move_binary_format::check_bounds::BoundsChecker;
 use move_binary_format::file_format::CompiledModule;
 use move_binary_format::file_format::Signature;
 use move_bytecode_source_map::mapping::SourceMapping;
@@ -50,6 +51,8 @@ impl Module {
                 err.indices()
             )
         })?;
+        BoundsChecker::verify_module(&module)?;
+
         Ok(module)
     }
 }

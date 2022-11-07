@@ -1,19 +1,23 @@
+use crate::translator::{identifier::IdentidierWriter, signature::SignatureWriter};
 use anyhow::{anyhow, Error};
+use intrinsic::{table::Info, Function};
+use move_binary_format::internals::ModuleIndex;
 use move_binary_format::{
     access::ModuleAccess,
-    file_format::{Bytecode, FunctionInstantiationIndex},
-    file_format::{ConstantPoolIndex, FunctionHandleIndex, TableIndex},
-    file_format::{SignatureToken, StructDefinitionIndex, StructFieldInformation, Visibility},
+    file_format::{
+        AbilitySet, Bytecode, Signature, SignatureToken, StructFieldInformation, StructHandle,
+        Visibility,
+    },
+    file_format::{
+        ConstantPoolIndex, FieldHandleIndex, FieldInstantiationIndex, FunctionHandleIndex,
+        FunctionInstantiationIndex, IdentifierIndex, ModuleHandleIndex,
+        StructDefInstantiationIndex, StructDefinitionIndex, StructHandleIndex, TableIndex,
+    },
     CompiledModule,
 };
+use move_core_types::identifier::Identifier;
 
-use crate::translator::identifier::IdentidierWriter;
-use crate::translator::signature::SignatureWriter;
-
-use move_binary_format::internals::ModuleIndex;
 use std::collections::{HashMap, HashSet, VecDeque};
-
-use intrinsic::{table::Info, Function};
 
 /// remove unused resources in module
 pub fn crop(module: &mut CompiledModule) -> Result<(), Error> {
@@ -40,7 +44,7 @@ pub fn crop(module: &mut CompiledModule) -> Result<(), Error> {
                 *index
             } else {
                 // never get here
-                ConstantPoolIndex(0)
+                unreachable!();
             }
         })
         .collect();
@@ -48,15 +52,15 @@ pub fn crop(module: &mut CompiledModule) -> Result<(), Error> {
     remove_constants(module, &Vec::from_iter(constants_to_remove))?;
 
     // structs
-    // let set = find_all_structs(module)?;
-    // let all_structs: HashSet<StructDefinitionIndex> = HashSet::from_iter(
-    //     (0..module.struct_defs.len()).map(|x| StructDefinitionIndex(x as TableIndex)),
-    // );
-    // let mut struct_index_to_delete: Vec<StructDefinitionIndex> =
-    //     Vec::from_iter(all_structs.difference(&set).copied());
-    // struct_index_to_delete.sort();
+    let set = find_all_structs(module)?;
+    let all_structs: HashSet<StructHandleIndex> = HashSet::from_iter(
+        (0..module.struct_handles.len()).map(|x| StructHandleIndex(x as TableIndex)),
+    );
+    let mut struct_index_to_delete: Vec<StructHandleIndex> =
+        Vec::from_iter(all_structs.difference(&set).copied());
+    struct_index_to_delete.sort();
 
-    // remove_structs(module, &struct_index_to_delete)?;
+    remove_structs(module, &struct_index_to_delete)?;
 
     // identifiers
     reidex_indetifiers(module)?;
@@ -71,6 +75,8 @@ fn remove_functions(
     module: &mut CompiledModule,
     indexes_to_delete: &[FunctionHandleIndex],
 ) -> Result<(), Error> {
+    // TODO: don't make empty function in move,
+    // create empty object the same way as remove_structs
     // empty function
     let a = Info::ToDelete;
     let handler_to_delete_index = a.handler();
@@ -89,20 +95,8 @@ fn remove_functions(
             .iter()
             .position(|x| x.handle == *el);
         if let Some(position) = pos {
-            // TODO
-            let _sign_index = module.function_instantiations[position].type_parameters;
-
             module.function_instantiations[position].handle = handler_to_delete_index
         }
-        // signatures
-        // TODO
-        // let identifier_index_to_delete = module.function_handles[el.into_index()].name;
-        // let (_sign_param, _sign_return) = (
-        //     module.function_handles[el.into_index()].parameters,
-        //     module.function_handles[el.into_index()].return_,
-        // );
-        // // identifiers
-        // module.identifiers[identifier_index_to_delete.0 as usize] = Identifier::from_str("<SELF>")?;
         // handles
         module.function_handles[el.into_index()] = handler_to_delete.clone();
     }
@@ -159,7 +153,6 @@ fn remove_functions(
         FunctionInstantiationIndex,
     > = HashMap::new();
     let mut last_not_delete: FunctionInstantiationIndex = FunctionInstantiationIndex(0);
-
     for (indx, func_instation) in module.function_instantiations.iter().enumerate() {
         if func_instation.handle != handler_to_delete_index {
             insta_index_transaction.insert(
@@ -216,7 +209,7 @@ fn remove_constants(
     let mut index_transaction: HashMap<ConstantPoolIndex, ConstantPoolIndex> = HashMap::new();
     let mut last_not_delete: ConstantPoolIndex = ConstantPoolIndex(0);
 
-    // is it ok to use empty vector to mark constant to delete?
+    // mark constants to delete
     for indx in constants_to_delete {
         module.constant_pool[indx.0 as usize].data = vec![];
     }
@@ -252,34 +245,133 @@ fn remove_constants(
     Ok(())
 }
 
-#[allow(dead_code)]
 fn remove_structs(
     module: &mut CompiledModule,
-    indexes_to_delete: &[StructDefinitionIndex],
+    indexes_to_delete: &[StructHandleIndex],
 ) -> Result<(), Error> {
-    let mut index_transaction: HashMap<StructDefinitionIndex, StructDefinitionIndex> =
+    // create empty handler to delete
+    let handler_to_delete = StructHandle {
+        module: ModuleHandleIndex(0),
+        name: IdentifierIndex(module.identifiers.len() as TableIndex),
+        abilities: AbilitySet::EMPTY,
+        type_parameters: vec![],
+    };
+    let handler_to_delete_index = StructHandleIndex(module.struct_handles.len() as TableIndex);
+    module.struct_handles.push(handler_to_delete.clone());
+    module
+        .identifiers
+        .push(Identifier::new("struct_to_delete".to_string())?);
+
+    // mark structs to delete
+    for indx in indexes_to_delete.iter() {
+        // defs
+        let pos = module
+            .struct_defs
+            .iter()
+            .position(|x| x.struct_handle == *indx);
+        if let Some(def_position) = pos {
+            module.struct_defs[def_position].struct_handle = handler_to_delete_index;
+        }
+        // handles
+        module.struct_handles[indx.into_index()] = handler_to_delete.clone();
+    }
+
+    // defs index transaction
+    let mut defs_index_transaction: HashMap<StructDefinitionIndex, StructDefinitionIndex> =
         HashMap::new();
     let mut last_not_delete: StructDefinitionIndex = StructDefinitionIndex(0);
-
-    for indx in 0..module.struct_defs.len() {
-        if !indexes_to_delete.contains(&StructDefinitionIndex(indx as TableIndex)) {
-            index_transaction.insert(StructDefinitionIndex(indx as TableIndex), last_not_delete);
+    for (indx, el) in module.struct_defs.iter().enumerate() {
+        if el.struct_handle != handler_to_delete_index {
+            defs_index_transaction
+                .insert(StructDefinitionIndex(indx as TableIndex), last_not_delete);
             last_not_delete.0 += 1;
         }
     }
 
-    // TODO: also delete handles
-    // for indx in indexes_to_delete.iter().rev() {
-    //     let handle_index = module.struct_defs[indx.into_index()].struct_handle.0 as usize;
-    //     module.struct_handles[handle_index] = StructHandle {};
-    // }
-
-    for indx in indexes_to_delete.iter().rev() {
-        module.struct_defs.remove(indx.into_index());
+    // instantations index transaction
+    let mut insta_index_transaction: HashMap<
+        StructDefInstantiationIndex,
+        StructDefInstantiationIndex,
+    > = HashMap::new();
+    let mut last_not_delete: StructDefInstantiationIndex = StructDefInstantiationIndex(0);
+    for (indx, el) in module.struct_def_instantiations.iter().enumerate() {
+        if module.struct_def_at(el.def).struct_handle != handler_to_delete_index {
+            insta_index_transaction.insert(
+                StructDefInstantiationIndex(indx as TableIndex),
+                last_not_delete,
+            );
+            last_not_delete.0 += 1;
+        }
     }
 
+    // handle index transaction
+    let mut handle_index_transaction: HashMap<StructHandleIndex, StructHandleIndex> =
+        HashMap::new();
+    let mut last_not_delete: StructHandleIndex = StructHandleIndex(0);
+    for indx in 0..module.struct_handles.len() {
+        if !indexes_to_delete.contains(&StructHandleIndex(indx as TableIndex)) {
+            handle_index_transaction.insert(StructHandleIndex(indx as TableIndex), last_not_delete);
+            last_not_delete.0 += 1;
+        }
+    }
+
+    // fileds handle index transaction
+    let mut field_index_transaction: HashMap<FieldHandleIndex, FieldHandleIndex> = HashMap::new();
+    let mut last_not_delete: FieldHandleIndex = FieldHandleIndex(0);
+    for (indx, el) in module.field_handles.iter().enumerate() {
+        if module.struct_def_at(el.owner).struct_handle != handler_to_delete_index {
+            field_index_transaction.insert(FieldHandleIndex(indx as TableIndex), last_not_delete);
+            last_not_delete.0 += 1;
+        }
+    }
+
+    // fileds instantation index transaction
+    let mut field_insta_index_transaction: HashMap<
+        FieldInstantiationIndex,
+        FieldInstantiationIndex,
+    > = HashMap::new();
+    let mut last_not_delete: FieldInstantiationIndex = FieldInstantiationIndex(0);
+    for (indx, el) in module.field_instantiations.iter().enumerate() {
+        if module
+            .struct_def_at(module.field_handle_at(el.handle).owner)
+            .struct_handle
+            != handler_to_delete_index
+        {
+            field_insta_index_transaction
+                .insert(FieldInstantiationIndex(indx as TableIndex), last_not_delete);
+            last_not_delete.0 += 1;
+        }
+    }
+
+    module.struct_def_instantiations.retain(|insta| {
+        module.struct_defs[insta.def.into_index()].struct_handle != handler_to_delete_index
+    });
+
+    module.field_instantiations.retain(|handle| {
+        module.struct_defs[module.field_handles[handle.handle.into_index()]
+            .owner
+            .into_index()]
+        .struct_handle
+            != handler_to_delete_index
+    });
+
+    module.field_handles.retain(|handle| {
+        module.struct_defs[handle.owner.into_index()].struct_handle != handler_to_delete_index
+    });
+
+    module
+        .struct_defs
+        .retain(|def| def.struct_handle != handler_to_delete_index);
+
+    module
+        .struct_handles
+        .retain(|handle| *handle != handler_to_delete);
+
+    // change code
+    // TODO: rewrite it more elegant
     for def in module.function_defs.iter_mut() {
         if let Some(ref mut code_unit) = def.code {
+            // defs
             for code in code_unit.code.iter_mut() {
                 let el = match code {
                     Bytecode::Pack(idx) => idx,
@@ -291,36 +383,208 @@ fn remove_structs(
                     Bytecode::MoveTo(idx) => idx,
                     _ => continue,
                 };
-                *el = match index_transaction.get(el) {
+                *el = match defs_index_transaction.get(el) {
                     Some(idx) => *idx,
-                    None => continue,
+                    None => {
+                        return Err(anyhow!(
+                            "Error while changing structs:\nno def for {:?}",
+                            el
+                        ))
+                    }
+                };
+            }
+            // instantations
+            for code in code_unit.code.iter_mut() {
+                let el = match code {
+                    Bytecode::PackGeneric(idx) => idx,
+                    Bytecode::UnpackGeneric(idx) => idx,
+                    Bytecode::MutBorrowGlobalGeneric(idx) => idx,
+                    Bytecode::ImmBorrowGlobalGeneric(idx) => idx,
+                    Bytecode::ExistsGeneric(idx) => idx,
+                    Bytecode::MoveFromGeneric(idx) => idx,
+                    Bytecode::MoveToGeneric(idx) => idx,
+                    _ => continue,
+                };
+                *el = match insta_index_transaction.get(el) {
+                    Some(idx) => *idx,
+                    None => {
+                        return Err(anyhow!(
+                            "Error while changing structs:\nno insta for {:?}",
+                            el
+                        ))
+                    }
                 };
             }
         }
 
         for el in def.acquires_global_resources.iter_mut() {
-            *el = match index_transaction.get(el) {
+            *el = match defs_index_transaction.get(el) {
                 Some(idx) => *idx,
-                None => continue,
+                None => {
+                    return Err(anyhow!(
+                        "Error while changing structs:\nno def for {:?} (global resources)",
+                        el
+                    ))
+                }
             };
         }
     }
 
-    for el in module.struct_def_instantiations.iter_mut() {
-        el.def = match index_transaction.get(&el.def) {
+    // change all indexes
+    for insta in module.struct_def_instantiations.iter_mut() {
+        insta.def = match defs_index_transaction.get(&insta.def) {
             Some(idx) => *idx,
-            None => continue,
+            None => {
+                return Err(anyhow!(
+                    "Error while changing structs:\nno def for {:?} (struct instantations)",
+                    insta
+                ))
+            }
+        };
+    }
+
+    for field_insta in module.field_instantiations.iter_mut() {
+        field_insta.handle = match field_index_transaction.get(&field_insta.handle) {
+            Some(idx) => *idx,
+            None => {
+                return Err(anyhow!(
+                    "Error while changing structs:\nno field_insta for {:?}",
+                    field_insta
+                ));
+            }
         };
     }
 
     for field_handler in module.field_handles.iter_mut() {
-        field_handler.owner = match index_transaction.get(&field_handler.owner) {
+        field_handler.owner = match defs_index_transaction.get(&field_handler.owner) {
             Some(idx) => *idx,
-            None => continue,
+            None => {
+                return Err(anyhow!(
+                    "Error while changing structs:\nno field_handler for {:?}",
+                    field_handler
+                ));
+            }
         };
     }
 
+    // change fields
+    // TODO: rewrite it more elegant
+    for def in module.function_defs.iter_mut() {
+        if let Some(ref mut code_unit) = def.code {
+            // field handles
+            for code in code_unit.code.iter_mut() {
+                let el = match code {
+                    Bytecode::MutBorrowField(idx) => idx,
+                    Bytecode::ImmBorrowField(idx) => idx,
+                    _ => continue,
+                };
+                *el = match field_index_transaction.get(el) {
+                    Some(idx) => *idx,
+                    None => {
+                        return Err(anyhow!(
+                            "Error while changing structs:\nno field handler for {:?}",
+                            el
+                        ))
+                    }
+                };
+            }
+            // field insta
+            for code in code_unit.code.iter_mut() {
+                let el = match code {
+                    Bytecode::MutBorrowFieldGeneric(idx) => idx,
+                    Bytecode::ImmBorrowFieldGeneric(idx) => idx,
+                    _ => continue,
+                };
+                *el = match field_insta_index_transaction.get(el) {
+                    Some(idx) => *idx,
+                    None => {
+                        return Err(anyhow!(
+                            "Error while changing structs:\nno field insta for {:?}",
+                            el
+                        ))
+                    }
+                };
+            }
+        }
+    }
+
+    for def in module.struct_defs.iter_mut() {
+        def.struct_handle = match handle_index_transaction.get(&def.struct_handle) {
+            Some(idx) => *idx,
+            None => {
+                return Err(anyhow!(
+                    "Error while changing structs:\nno def for {:?}",
+                    def
+                ))
+            }
+        };
+    }
+
+    // change signatures
+    for signature in module.signatures.iter_mut() {
+        for token in signature.0.iter_mut() {
+            change_signature(token, &handle_index_transaction, None)?;
+        }
+    }
+
+    for def in module.struct_defs.iter_mut() {
+        match def.field_information {
+            StructFieldInformation::Native => continue,
+            StructFieldInformation::Declared(ref mut v) => {
+                for field_def in v.iter_mut() {
+                    change_signature(&mut field_def.signature.0, &handle_index_transaction, None)?;
+                }
+            }
+        }
+    }
+
     Ok(())
+}
+
+// TODO: use Result in right way
+// now we iter through the whole signature_pool, we can get unused signature
+fn change_signature(
+    token: &mut SignatureToken,
+    handle_index_transaction: &HashMap<StructHandleIndex, StructHandleIndex>,
+    last_handle_index: Option<StructHandleIndex>,
+) -> Result<(), Error> {
+    match token {
+        SignatureToken::Struct(struct_handle_index) => {
+            if let Some(&new_index) = handle_index_transaction.get(struct_handle_index) {
+                *struct_handle_index = new_index;
+                Ok(())
+            } else {
+                Ok(())
+            }
+        }
+
+        SignatureToken::StructInstantiation(struct_handle_index, signs) => {
+            if let Some(&new_index) = handle_index_transaction.get(struct_handle_index) {
+                let old_index = *struct_handle_index;
+                *struct_handle_index = new_index;
+                for sign in signs.iter_mut() {
+                    change_signature(sign, handle_index_transaction, Some(old_index))?;
+                }
+                Ok(())
+            } else {
+                Ok(())
+            }
+        }
+
+        SignatureToken::Reference(sign) => {
+            change_signature(sign, handle_index_transaction, last_handle_index)
+        }
+
+        SignatureToken::MutableReference(sign) => {
+            change_signature(sign, handle_index_transaction, last_handle_index)
+        }
+
+        SignatureToken::Vector(sign) => {
+            change_signature(sign, handle_index_transaction, last_handle_index)
+        }
+
+        _ => Ok(()),
+    }
 }
 
 fn reidex_indetifiers(module: &mut CompiledModule) -> Result<(), Error> {
@@ -361,6 +625,8 @@ fn reidex_indetifiers(module: &mut CompiledModule) -> Result<(), Error> {
     }
 
     module.identifiers = writer.freeze();
+
+    // TODO: check for additional identidiers wich not exacly in compiled module
 
     Ok(())
 }
@@ -466,11 +732,9 @@ fn find_all_functions(module: &CompiledModule) -> Result<HashSet<FunctionHandleI
     loop {
         if let Some(f) = queue.pop_front() {
             let res = find_functions(module, f, &mut queue)?;
-
             for el in res {
                 used_functions.insert(*el);
             }
-
             if queue.is_empty() {
                 break;
             }
@@ -487,10 +751,7 @@ fn find_functions<'a>(
 ) -> Result<&'a VecDeque<FunctionHandleIndex>, Error> {
     // TODO: change Vec to HashSet
     let mut iter_all_functions = module.function_defs.iter();
-    // let mut set: Vec<FunctionHandleIndex> = vec![];
-
     let main_f_def = iter_all_functions.find(|&function_index| function_index.function == func_id);
-
     let main_f_def = match main_f_def {
         Some(fun_def) => fun_def,
         None => return Ok(set),
@@ -530,14 +791,13 @@ fn find_bytecode_fun_defs(
     set
 }
 
-#[allow(dead_code)]
-fn find_all_structs(module: &CompiledModule) -> Result<HashSet<StructDefinitionIndex>, Error> {
-    let mut set: HashSet<StructDefinitionIndex> = HashSet::new();
+fn find_all_structs(module: &CompiledModule) -> Result<HashSet<StructHandleIndex>, Error> {
+    let mut set: HashSet<StructHandleIndex> = HashSet::new();
 
     for def in module.function_defs.iter() {
         if let Some(code_unit) = &def.code {
             for code in code_unit.code.iter() {
-                let el = match code {
+                let def_idx = match code {
                     // defs
                     Bytecode::Pack(idx) => *idx,
                     Bytecode::Unpack(idx) => *idx,
@@ -563,18 +823,28 @@ fn find_all_structs(module: &CompiledModule) -> Result<HashSet<StructDefinitionI
                     _ => continue,
                 };
 
-                set.insert(el);
+                set.insert(module.struct_def_at(def_idx).struct_handle);
             }
         }
 
         for el in def.acquires_global_resources.iter() {
-            set.insert(*el);
+            set.insert(module.struct_def_at(*el).struct_handle);
         }
     }
 
-    // TODO: search in cropped signatures pool
-    for sign in module.signatures.iter() {
-        for token in &sign.0 {
+    // find signature
+    let mut signatures: HashSet<&Signature> = HashSet::new();
+    for fun_insta in module.function_instantiations.iter() {
+        signatures.insert(module.signature_at(fun_insta.type_parameters));
+    }
+
+    for fun_handler in module.function_handles.iter() {
+        signatures.insert(module.signature_at(fun_handler.parameters));
+        signatures.insert(module.signature_at(fun_handler.return_));
+    }
+
+    for sign in signatures.iter() {
+        for token in sign.0.iter() {
             let handle = match token {
                 // handles
                 SignatureToken::Struct(handle) => *handle,
@@ -582,16 +852,7 @@ fn find_all_structs(module: &CompiledModule) -> Result<HashSet<StructDefinitionI
                 _ => continue,
             };
 
-            let pos = module
-                .struct_defs
-                .iter()
-                .position(|def| def.struct_handle == handle);
-            match pos {
-                Some(position) => {
-                    set.insert(StructDefinitionIndex(position as TableIndex));
-                }
-                None => continue,
-            }
+            set.insert(handle);
         }
     }
 
