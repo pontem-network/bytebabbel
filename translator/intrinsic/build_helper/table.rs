@@ -157,8 +157,8 @@ enum EnumType<'a> {
 impl EnumType<'_> {
     pub fn name(&self) -> &str {
         match self {
-            EnumType::Structure { name, .. } => *name,
-            EnumType::Module { name, .. } => *name,
+            EnumType::Structure { name, .. } => name,
+            EnumType::Module { name, .. } => name,
         }
     }
 
