@@ -9,9 +9,6 @@ use test_infra::init_log;
 
 use crate::testssol::make_move_module;
 
-#[allow(dead_code)]
-mod testssol;
-
 const ALICE: &str = "0x00508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699e00";
 const BOB: &str = "0x61508c3c7d491d5911f81d90f80f064eda2a44e25db349bfc0e6d3f023699ed0";
 

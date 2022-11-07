@@ -9,9 +9,6 @@ use test_infra::init_log;
 
 use crate::testssol::make_move_module;
 
-#[allow(dead_code)]
-mod testssol;
-
 #[test]
 pub fn test_empty_constructor() {
     init_log();

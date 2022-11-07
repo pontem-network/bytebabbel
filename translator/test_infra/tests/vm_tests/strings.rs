@@ -4,9 +4,6 @@ use eth::Flags;
 use move_executor::{solidity::FromSolidity, MoveExecutor};
 use test_infra::init_log;
 
-#[allow(dead_code)]
-mod testssol;
-
 #[test]
 pub fn test_strings() {
     init_log();
@@ -20,13 +17,13 @@ pub fn test_strings() {
     .unwrap();
 
     vm.run("0x42::Strings::constructor", "0x42", None).unwrap();
-    // let res = vm
+    // let res = mod
     //     .run("0x42::Strings::const_str", "0x42", Some(""))
     //     .unwrap()
     //     .to_result_str();
     // assert_eq!("String(\"hello\")", res);
     //
-    // let res = vm
+    // let res = mod
     //     .run(
     //         "0x42::Strings::set_state",
     //         "0x42",

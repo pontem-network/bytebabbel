@@ -42,6 +42,7 @@ move-binary-format.workspace = true
 translator = { path = "../../translator" }
 test_infra = { path = "../../translator/test_infra" }
 eth = { path = "../../translator/eth" }
+move_executor = { path = "../../translator/me" }
 
 
 
