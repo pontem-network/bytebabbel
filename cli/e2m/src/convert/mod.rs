@@ -138,7 +138,7 @@ fn save_interface(base_dir: &Path, target: &Target) -> Result<()> {
         .file_name()
         .ok_or_else(|| anyhow!("Invalid path"))?;
 
-    fs::create_dir_all(&base_dir)?;
+    fs::create_dir_all(base_dir)?;
     fs::write(base_dir.join("Move.toml"), &target.manifest)?;
 
     let sources = base_dir.join("sources");

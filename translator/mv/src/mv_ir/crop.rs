@@ -546,7 +546,7 @@ fn remove_structs(
 fn change_signature(
     token: &mut SignatureToken,
     handle_index_transaction: &HashMap<StructHandleIndex, StructHandleIndex>,
-    last_handle_index: Option<StructHandleIndex>,
+    _last_handle_index: Option<StructHandleIndex>,
 ) -> Result<(), Error> {
     match token {
         SignatureToken::Struct(struct_handle_index) => {
@@ -572,15 +572,15 @@ fn change_signature(
         }
 
         SignatureToken::Reference(sign) => {
-            change_signature(sign, handle_index_transaction, last_handle_index)
+            change_signature(sign, handle_index_transaction, _last_handle_index)
         }
 
         SignatureToken::MutableReference(sign) => {
-            change_signature(sign, handle_index_transaction, last_handle_index)
+            change_signature(sign, handle_index_transaction, _last_handle_index)
         }
 
         SignatureToken::Vector(sign) => {
-            change_signature(sign, handle_index_transaction, last_handle_index)
+            change_signature(sign, handle_index_transaction, _last_handle_index)
         }
 
         _ => Ok(()),
