@@ -11,7 +11,7 @@ fn main() -> Result<()> {
     test_infra::init_log();
 
     println!("Profile name: {PROFILE_NAME}");
-    let signer_address = me::load_profile(PROFILE_NAME)?.account.unwrap();
+    let signer_address = me::profile::load_profile(PROFILE_NAME)?.account.unwrap();
     let signer_address_hex = signer_address.to_hex_literal();
     println!("Address: {signer_address_hex}");
 

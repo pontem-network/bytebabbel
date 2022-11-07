@@ -5,7 +5,6 @@ use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use serde::Deserialize;
 
-use aptos::common::types::{CliConfig, ConfigSearchMode, ProfileConfig};
 use aptos_crypto::HashValue;
 use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
 use aptos_vm::{
@@ -37,6 +36,7 @@ use eth::{
 };
 
 pub mod load;
+pub mod profile;
 pub mod resolver;
 pub mod solidity;
 mod stdlib;
@@ -352,14 +352,3 @@ impl ExecutionResult {
 
 #[derive(Deserialize)]
 pub struct U256Wrapper([u64; 4]);
-
-pub fn load_profile(profile_name: &str) -> Result<ProfileConfig> {
-    CliConfig::load_profile(Some(profile_name), ConfigSearchMode::CurrentDirAndParents)?
-        .ok_or_else(|| anyhow!("Profile {profile_name} not found"))
-}
-
-pub fn profile_to_address(profile: &ProfileConfig) -> Result<AccountAddress> {
-    profile
-        .account
-        .ok_or_else(|| anyhow!("The address in the profile is not specified"))
-}

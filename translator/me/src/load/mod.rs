@@ -5,7 +5,6 @@ use anyhow::{anyhow, Result};
 use reqwest::{header, Url};
 use serde_json::json;
 
-use aptos::common::types::ProfileConfig;
 use aptos_types::{access_path::AccessPath, state_store::state_key::StateKey};
 use move_core_types::{
     account_address::AccountAddress,
@@ -17,7 +16,7 @@ mod response;
 
 use crate::{
     load::response::{MoveModuleId, MoveResource},
-    profile_to_address,
+    profile::{profile_to_address, ProfileConfig},
     resolver::{print_access_path::AccessPathToString, HandleRequest},
     MoveExecutor,
 };

@@ -13,7 +13,7 @@ const PROFILE_DEFAULT: &str = "local";
 fn main() -> Result<()> {
     test_infra::init_log();
 
-    let profile_default = me::load_profile(PROFILE_DEFAULT)?;
+    let profile_default = me::profile::load_profile(PROFILE_DEFAULT)?;
     let signer_address_hex = profile_default.account.unwrap().to_hex_literal();
 
     let abi: Contract =

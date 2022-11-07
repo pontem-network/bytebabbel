@@ -23,10 +23,10 @@ bcs.workspace = true
 hex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_yaml = ">=0.8.26"
 log.workspace = true
 
 # aptos
-aptos.workspace = true
 aptos-types = { workspace = true }
 aptos-vm = { workspace = true, features = ["testing"] }
 aptos-gas = { workspace = true }
