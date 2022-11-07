@@ -1,13 +1,16 @@
 use std::fs;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, Result};
 use aptos::common::types::{CliCommand, ProfileOptions};
 use clap::Parser;
-use ethabi::{Contract, ParamType, StateMutability};
+use ethabi::{Contract, ParamType};
 
 use eth::abi::call::to_token;
-use test_infra::color::font_green;
+use eth::Flags;
+use move_executor as me;
+use move_executor::load::LoadRemoteData;
+use move_executor::MoveExecutorInstance;
 
 pub(crate) mod function_id;
 
@@ -36,15 +39,15 @@ pub struct CmdCall {
     profile_options: ProfileOptions,
 
     /// Encode input params
-    #[clap(long)]
+    #[clap(long, default_value = "true")]
     encode: bool,
 
     #[clap(flatten)]
     transaction_flags: crate::txflags::TransactionFlags,
 
-    /// Display only. The request will not be sent to the aptos node
+    /// Execute a locally remote contract
     #[clap(long)]
-    sandbox: bool,
+    local: bool,
 
     /// Path to abi for run view method
     #[clap(long = "abi", value_parser)]
@@ -55,8 +58,8 @@ impl Cmd for CmdCall {
     fn execute(&self) -> Result<String> {
         use aptos::move_tool::RunFunction;
 
-        if let Some(result) = self.try_local_run()? {
-            return Ok(result);
+        if self.local {
+            return self.try_local_run();
         }
 
         let profile_name = self.profile_options.profile_name().ok_or_else(|| {
@@ -98,14 +101,6 @@ impl Cmd for CmdCall {
         let aptos_run_cli: RunFunction = RunFunction::try_parse_from(&move_run_args)
             .map_err(|err| anyhow!("Invalid parameter. {err}"))?;
 
-        if self.sandbox {
-            let cmd = format!(
-                "{} aptos move run {}",
-                font_green("Sandbox$"),
-                move_run_args.join(" ")
-            );
-            return Ok(cmd);
-        }
         let result = wait(aptos_run_cli.execute())?;
         Ok(serde_json::to_string_pretty(&serde_json::to_value(
             result,
@@ -114,37 +109,36 @@ impl Cmd for CmdCall {
 }
 
 impl CmdCall {
-    fn try_local_run(&self) -> Result<Option<String>> {
-        let abi_path = match self.abi_path.as_deref() {
-            Some(path) => path,
-            None => return Ok(None),
+    fn try_local_run(&self) -> Result<String> {
+        let profile =
+            me::profile::load_profile(self.profile_options.profile_name().unwrap_or("default"))?;
+
+        let abi_path = self
+            .abi_path
+            .as_ref()
+            .ok_or_else(|| anyhow!("`--abi` parameter is required"))?;
+
+        let abi: Contract = serde_json::from_str(
+            &fs::read_to_string(abi_path).map_err(|err| anyhow!("{abi_path:?} {err:?}"))?,
+        )?;
+
+        let flags = if self.encode {
+            Flags::default()
+        } else {
+            Flags::native_interface()
         };
 
-        let module_name = abi_path
-            .with_extension("")
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
+        let mut vm = me::MoveExecutor::new(abi, flags, MoveExecutorInstance::Aptos);
+        vm.load_all(&profile)?;
 
-        if module_name != self.function_id.module {
-            return Ok(None);
-        }
-
-        let abi_str =
-            fs::read_to_string(abi_path).map_err(|err| anyhow!("{err}.\nPath: {abi_path:?}"))?;
-        let abi: Contract = serde_json::from_str(&abi_str)?;
-
-        let fn_abi = abi.function(&self.function_id.function)?;
-
-        ensure!(
-            matches!(fn_abi.state_mutability, StateMutability::View),
-            r#"The state variability should be "view" in the {} function"#,
-            &self.function_id.function
-        );
-
-        todo!()
-        // Ok(true)
+        let res = vm
+            .run(
+                &self.function_id.to_string(),
+                &me::profile::profile_to_address(&profile)?.to_hex_literal(),
+                Some(""),
+            )?
+            .to_result_str();
+        Ok(res)
     }
 }
 

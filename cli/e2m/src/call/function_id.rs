@@ -8,7 +8,7 @@ const FUNCTION_ID_EXPECTED_FORMAT: &str = "<ADDRESS>::<MODULE_ID>::<FUNCTION_NAM
 ///
 /// Example:
 /// `0x842ed41fad9640a2ad08fdd7d3e4f7f505319aac7d67e1c0dd6a7cce8732c7e3::message::set_message`
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct FunctionId {
     pub address: String,
     pub module: String,
