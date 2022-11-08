@@ -129,7 +129,7 @@ const U256_TABLE: [(&str, &str); 37] = [
     ("MulMod", "mul_mod"),
 ];
 
-const INFO_TABLE: [(&str, &str); 9] = [
+const INFO_TABLE: [(&str, &str); 10] = [
     ("AptosBalance", "balance"),
     ("Gas", "gas"),
     ("GasPrice", "gas_price"),
@@ -139,6 +139,7 @@ const INFO_TABLE: [(&str, &str); 9] = [
     ("BlockTimestamp", "block_timestamp"),
     ("BlockDifficulty", "block_difficulty"),
     ("BlockCoinbase", "block_coinbase"),
+    ("ToDelete", "empty_function"),
 ];
 
 enum EnumType<'a> {
@@ -156,8 +157,8 @@ enum EnumType<'a> {
 impl EnumType<'_> {
     pub fn name(&self) -> &str {
         match self {
-            EnumType::Structure { name, .. } => *name,
-            EnumType::Module { name, .. } => *name,
+            EnumType::Structure { name, .. } => name,
+            EnumType::Module { name, .. } => name,
         }
     }
 

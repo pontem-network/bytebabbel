@@ -25,6 +25,7 @@ use crate::translator::signature::{map_signature, signer, SignatureWriter};
 use crate::translator::writer::Code;
 
 pub mod bytecode;
+pub mod identifier;
 pub mod signature;
 pub mod writer;
 

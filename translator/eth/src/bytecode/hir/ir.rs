@@ -147,12 +147,12 @@ impl Expr {
 }
 
 impl _Expr {
-    pub fn resolve(&self, ir: &Hir, ctx: &Context) -> Option<U256> {
+    pub fn resolve(&self, _ir: &Hir, ctx: &Context) -> Option<U256> {
         match self {
             _Expr::Val(val) => Some(*val),
             _Expr::Var(var) => {
                 let expr = ctx.vars.get(var)?;
-                expr.resolve(ir, ctx)
+                expr.resolve(_ir, ctx)
             }
             _Expr::MLoad(_) => None,
             _Expr::SLoad(_) => None,
@@ -161,22 +161,22 @@ impl _Expr {
             _Expr::ArgsSize => None,
             _Expr::Args(_) => None,
             _Expr::UnaryOp(cnd, arg) => {
-                let arg = arg.resolve(ir, ctx)?;
+                let arg = arg.resolve(_ir, ctx)?;
                 Some(cnd.calc(arg))
             }
             _Expr::BinaryOp(cnd, arg1, arg2) => {
-                let arg1 = arg1.resolve(ir, ctx)?;
-                let arg2 = arg2.resolve(ir, ctx)?;
+                let arg1 = arg1.resolve(_ir, ctx)?;
+                let arg2 = arg2.resolve(_ir, ctx)?;
                 Some(cnd.calc(arg1, arg2))
             }
             _Expr::TernaryOp(cnd, arg1, arg2, arg3) => {
-                let arg1 = arg1.resolve(ir, ctx)?;
-                let arg2 = arg2.resolve(ir, ctx)?;
-                let arg3 = arg3.resolve(ir, ctx)?;
+                let arg1 = arg1.resolve(_ir, ctx)?;
+                let arg2 = arg2.resolve(_ir, ctx)?;
+                let arg3 = arg3.resolve(_ir, ctx)?;
                 Some(cnd.calc(arg1, arg2, arg3))
             }
             _Expr::Hash(_, _) => None,
-            _Expr::Copy(expr) => expr.resolve(ir, ctx),
+            _Expr::Copy(expr) => expr.resolve(_ir, ctx),
 
             _Expr::Balance(_) => None,
             _Expr::Gas => None,
