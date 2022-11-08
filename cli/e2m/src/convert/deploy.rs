@@ -31,7 +31,7 @@ impl CmdConvert {
         })?;
 
         let txn_options: aptos::common::types::TransactionOptions =
-            aptos::common::types::TransactionOptions::try_parse_from(&[
+            aptos::common::types::TransactionOptions::try_parse_from([
                 "subcommand",
                 "--profile",
                 profile,
@@ -117,7 +117,7 @@ fn source_digest(binarycode: &[u8]) -> Result<String> {
 
     // create a Sha256 object
     let mut hasher = Sha256::new();
-    hasher.update(&binarycode);
+    hasher.update(binarycode);
     let result = hasher.finalize().to_vec();
     Ok(hex::encode(result))
 }
