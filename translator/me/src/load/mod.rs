@@ -16,34 +16,35 @@ mod response;
 
 use crate::{
     load::response::{MoveModuleId, MoveResource},
-    profile::{profile_to_address, ProfileConfig},
+    profile::ProfileConfig,
     resolver::{print_access_path::AccessPathToString, HandleRequest},
     MoveExecutor,
 };
 
 pub trait LoadRemoteData {
-    fn load_all(&mut self, profile: &ProfileConfig) -> Result<()> {
-        self.load_modules(profile).and(self.load_resources(profile))
+    fn load_all(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()> {
+        self.load_modules(profile, address)
+            .and(self.load_resources(profile, address))
     }
 
-    fn load_modules(&mut self, profile: &ProfileConfig) -> Result<()>;
+    fn load_modules(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()>;
 
-    fn load_resources(&mut self, profile: &ProfileConfig) -> Result<()>;
+    fn load_resources(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()>;
 }
 
 impl LoadRemoteData for MoveExecutor {
-    fn load_modules(&mut self, profile: &ProfileConfig) -> Result<()> {
-        for (name, bytecode) in load_modules(profile)? {
+    fn load_modules(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()> {
+        for (name, bytecode) in load_modules(profile, address)? {
             log::info!("loaded module: {}", name.print_string());
             self.resolver.state_data.insert(name, bytecode);
         }
         Ok(())
     }
 
-    fn load_resources(&mut self, profile: &ProfileConfig) -> Result<()> {
-        self.resolver.handler_data = load_handel_link(profile)?;
+    fn load_resources(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()> {
+        self.resolver.handler_data = load_handel_link(profile, address)?;
 
-        for (name, bytecode) in load_resource(profile)? {
+        for (name, bytecode) in load_resource(profile, address)? {
             log::info!("loaded resource: {}", name.print_string());
             self.resolver.state_data.insert(name, bytecode);
         }
@@ -103,8 +104,10 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
 
 /// handle
 /// URL: https://fullnode.devnet.aptoslabs.com/v1/accounts/{address}/resources
-fn load_handel_link(profile: &ProfileConfig) -> Result<HashMap<AccountAddress, HandleRequest>> {
-    let address = profile_to_address(profile)?;
+fn load_handel_link(
+    profile: &ProfileConfig,
+    address: &AccountAddress,
+) -> Result<HashMap<AccountAddress, HandleRequest>> {
     let address_hex = address.to_hex_literal();
 
     let rest_url = profile
@@ -150,8 +153,10 @@ fn load_handel_link(profile: &ProfileConfig) -> Result<HashMap<AccountAddress, H
 
 /// Returns a list of modules with a bytecode
 /// URL: https://fullnode.devnet.aptoslabs.com/v1/accounts/{address}/modules
-fn load_modules(profile: &ProfileConfig) -> Result<BTreeMap<StateKey, Vec<u8>>> {
-    let address = profile_to_address(profile)?;
+fn load_modules(
+    profile: &ProfileConfig,
+    address: &AccountAddress,
+) -> Result<BTreeMap<StateKey, Vec<u8>>> {
     let address_hex = address.to_hex_literal();
 
     let rest_url = profile
@@ -174,8 +179,10 @@ fn load_modules(profile: &ProfileConfig) -> Result<BTreeMap<StateKey, Vec<u8>>> 
 
 /// Returns a list resources with a bytecode
 /// URL: https://fullnode.devnet.aptoslabs.com/v1/accounts/{address}/resources
-fn load_resource(profile: &ProfileConfig) -> Result<BTreeMap<StateKey, Vec<u8>>> {
-    let address = profile_to_address(profile)?;
+fn load_resource(
+    profile: &ProfileConfig,
+    address: &AccountAddress,
+) -> Result<BTreeMap<StateKey, Vec<u8>>> {
     let address_hex = address.to_hex_literal();
 
     let rest_url = profile
@@ -187,7 +194,7 @@ fn load_resource(profile: &ProfileConfig) -> Result<BTreeMap<StateKey, Vec<u8>>>
     let list: BTreeMap<StateKey, Vec<u8>> = request_bcs_by_url::<StructTag>(&url)?
         .into_iter()
         .map(|(st, value)| {
-            let rs = ResourceKey::new(address, st);
+            let rs = ResourceKey::new(*address, st);
             let acc = StateKey::AccessPath(AccessPath::resource_access_path(rs));
             (acc, value)
         })

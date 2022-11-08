@@ -14,14 +14,15 @@ fn main() -> Result<()> {
     test_infra::init_log();
 
     let profile_default = me::profile::load_profile(PROFILE_DEFAULT)?;
-    let signer_address_hex = profile_default.account.unwrap().to_hex_literal();
+    let signer_address = profile_default.account.unwrap();
+    let signer_address_hex = signer_address.to_hex_literal();
 
     let abi: Contract =
         serde_json::from_str(&fs::read_to_string("./AddressSupport/AddressSupport.abi")?)?;
 
     let flags = Flags::default();
     let mut vm = me::MoveExecutor::new(abi, flags, MoveExecutorInstance::Aptos);
-    vm.load_all(&profile_default)?;
+    vm.load_all(&profile_default, &signer_address)?;
 
     println!("VM RUN: {signer_address_hex}::AddressSupport::is_owner({signer_address_hex})");
     let res = vm

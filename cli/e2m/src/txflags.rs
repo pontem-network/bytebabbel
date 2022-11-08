@@ -10,6 +10,11 @@ pub struct TransactionFlags {
     /// If I want it to have a gas unit price of 2, the max gas would need to be 50 to still only have a maximum price of 100 coins.
     ///
     /// Without a value, it will determine the price based on simulating the current transaction
-    #[clap(long = "max-gas", default_value = "20000", value_parser)]
+    #[clap(
+        long = "max-gas",
+        default_value = "20000",
+        value_parser,
+        value_name = "NUMBER"
+    )]
     pub max_gas: u32,
 }

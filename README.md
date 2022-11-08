@@ -367,6 +367,7 @@ e2m call --help
   0x02::message::set_message \
   default::message::set_message
 * `--max-gas`           Maximum amount of gas units to be used to send this transaction
+* // @todo
 * `--sandbox`           Display only. The request will not be sent to the aptos node
 
 ## Resources.
@@ -547,6 +548,8 @@ aptos move run \
 ```
 
 Account **demo**
+
+// @todo or --native-type
 
 ```bash
 aptos move run \
