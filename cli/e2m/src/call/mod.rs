@@ -47,7 +47,7 @@ pub struct CmdCall {
     args: Vec<String>,
 
     /// Use native "move" types for input and output values
-    #[clap(long, display_order = 3)]
+    #[clap(long = "native", display_order = 3)]
     native_type: bool,
 
     /// [node] - Call a remote contract on a node

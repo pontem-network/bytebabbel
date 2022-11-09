@@ -2,6 +2,7 @@
 name = 'sc_users_eth'
 version = '1.0.0'
 
+# @todo
 [addresses]
 sc = "60377c1019fdf87e372cffdcaf260e8fd7e83fe17d84b19109eaa0be597e5c5f"
 
