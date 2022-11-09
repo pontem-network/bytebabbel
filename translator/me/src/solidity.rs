@@ -1,7 +1,8 @@
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use eth::{compile::build_sol, Flags};
+use log::log;
 use move_core_types::account_address::AccountAddress;
 
 use crate::{MoveExecutor, MoveExecutorInstance};
@@ -29,7 +30,8 @@ impl FromSolidity for MoveExecutor {
             initialization_args,
             flags,
         };
-        let mv = translator::translate(pack.bin_contract(), pack.abi_str(), cfg)?;
+        let mv = translator::translate(pack.bin_contract(), pack.abi_str(), cfg)
+            .map_err(|err| anyhow!("translator: {err:?}"))?;
         let mut vm = MoveExecutor::new(pack.abi()?, flags, MoveExecutorInstance::Aptos);
         vm.deploy(&signer.to_hex_literal(), mv.bytecode)?;
 

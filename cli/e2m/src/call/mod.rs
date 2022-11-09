@@ -130,18 +130,24 @@ impl CmdCall {
     /// [local-source] - Call a local contract with remote resources and display the return value
     /// [vm] - Call a local contract and display the return value
     fn call_local(&self) -> Result<String> {
+        log::trace!("call_local:");
+
         let path = self.path_to_convert.as_deref().ok_or_else(|| {
             anyhow!("Specify the path to the converted project or sol file. `--path <PATH/TO>`")
         })?;
         ensure!(path.exists(), "{path:?} not exist");
+        log::trace!("{path:?}");
 
         let profile = move_executor::profile::load_profile(&self.profile_name)?;
         let signer_address = move_executor::profile::profile_to_address(&profile)?;
         let signer_address_hex = signer_address.to_hex_literal();
+        log::trace!("{signer_address_hex}");
 
         let flag = if self.native_type {
+            log::trace!("native");
             Flags::native_interface()
         } else {
+            log::trace!("u256");
             Flags::default()
         };
 
@@ -158,6 +164,7 @@ impl CmdCall {
             vm
         };
 
+        log::info!("{:?}", &self.how_to_call);
         match self.how_to_call {
             // [local] - Call a remote contract locally and display the return value
             HowToCall::Local => {

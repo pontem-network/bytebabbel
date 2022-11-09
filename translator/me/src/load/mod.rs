@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use anyhow::{anyhow, Result};
 use reqwest::{header, Url};
-use serde_json::json;
+use serde_json::{json, Value};
 
 use aptos_types::{access_path::AccessPath, state_store::state_key::StateKey};
 use move_core_types::{
@@ -55,7 +55,8 @@ impl LoadRemoteData for MoveExecutor {
 
 /// https://fullnode.devnet.aptoslabs.com/v1/tables/{table_handle}/item
 pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
-    let u256_key = primitive_types::U256::from_little_endian(key.as_slice());
+    log::info!("{data:?}");
+    log::info!("{key:?}");
 
     let mut headers = header::HeaderMap::new();
     headers.insert(
@@ -67,6 +68,7 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
         header::HeaderValue::from_static("application/x-bcs"),
     );
 
+    let u256_key = primitive_types::U256::from_little_endian(key.as_slice());
     let body = json!({
         "key_type":data.key_type,
         "value_type":data.value_type,
@@ -77,6 +79,9 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
             "v3":format!("{}", &u256_key.0[3]),
         }
     });
+    if let Ok(b) = serde_json::to_string_pretty(&body) {
+        log::trace!("{b}");
+    }
 
     let result = match reqwest::blocking::Client::builder()
         .default_headers(headers)
@@ -88,12 +93,15 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
     {
         Ok(bytes) => {
             let result = bytes.to_vec();
-            match String::from_utf8(result.clone()) {
-                Ok(msg) => {
-                    log::error!("{msg}");
+            match String::from_utf8(result.clone())
+                .ok()
+                .and_then(|msg| serde_json::from_str::<serde_json::Value>(&msg).ok())
+            {
+                Some(err) => {
+                    log::error!("{}", serde_json::to_string_pretty(&err).unwrap());
                     None
                 }
-                Err(_) => Some(result),
+                None => Some(result),
             }
         }
         Err(error) => {
@@ -101,6 +109,7 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
             None
         }
     };
+    log::trace!("{result:?}");
 
     Ok(result)
 }
