@@ -1,4 +1,5 @@
 use anyhow::Error;
+use move_binary_format::internals::ModuleIndex;
 use move_binary_format::{
     access::ModuleAccess,
     file_format::{Bytecode, Signature, SignatureToken, Visibility},
@@ -8,7 +9,6 @@ use move_binary_format::{
     },
     CompiledModule,
 };
-
 use std::collections::HashSet;
 
 pub fn find_all_functions(module: &CompiledModule) -> Result<HashSet<FunctionHandleIndex>, Error> {
@@ -97,44 +97,26 @@ pub fn find_bytecode_fun_defs(
     set
 }
 
-pub fn find_all_structs(module: &CompiledModule) -> Result<HashSet<StructHandleIndex>, Error> {
+pub fn find_all_structs(module: &mut CompiledModule) -> Result<HashSet<StructHandleIndex>, Error> {
     let mut set: HashSet<StructHandleIndex> = HashSet::new();
 
-    for def in module.function_defs.iter() {
-        if let Some(code_unit) = &def.code {
-            for code in code_unit.code.iter() {
-                let def_idx = match code {
-                    // defs
-                    Bytecode::Pack(idx) => *idx,
-                    Bytecode::Unpack(idx) => *idx,
-                    Bytecode::MutBorrowGlobal(idx) => *idx,
-                    Bytecode::ImmBorrowGlobal(idx) => *idx,
-                    Bytecode::Exists(idx) => *idx,
-                    Bytecode::MoveFrom(idx) => *idx,
-                    Bytecode::MoveTo(idx) => *idx,
-
-                    // instantiation
-                    Bytecode::PackGeneric(insta) => module.struct_instantiation_at(*insta).def,
-                    Bytecode::UnpackGeneric(insta) => module.struct_instantiation_at(*insta).def,
-                    Bytecode::MutBorrowGlobalGeneric(insta) => {
-                        module.struct_instantiation_at(*insta).def
+    for def in module.function_defs.iter_mut() {
+        if let Some(ref mut code_unit) = def.code {
+            for code in code_unit.code.iter_mut() {
+                let def_idx = match match_bytecode(code) {
+                    IndexType::StructDef(idx) => *idx,
+                    IndexType::StructInsta(idx) => {
+                        module.struct_def_instantiations[idx.into_index()].def
                     }
-                    Bytecode::ImmBorrowGlobalGeneric(insta) => {
-                        module.struct_instantiation_at(*insta).def
-                    }
-                    Bytecode::ExistsGeneric(insta) => module.struct_instantiation_at(*insta).def,
-                    Bytecode::MoveFromGeneric(insta) => module.struct_instantiation_at(*insta).def,
-                    Bytecode::MoveToGeneric(insta) => module.struct_instantiation_at(*insta).def,
-
                     _ => continue,
                 };
 
-                set.insert(module.struct_def_at(def_idx).struct_handle);
+                set.insert(module.struct_defs[def_idx.into_index()].struct_handle);
             }
         }
 
         for el in def.acquires_global_resources.iter() {
-            set.insert(module.struct_def_at(*el).struct_handle);
+            set.insert(module.struct_defs[el.into_index()].struct_handle);
         }
     }
 
@@ -175,27 +157,29 @@ pub enum IndexType<'a> {
 
 pub fn match_bytecode(code: &mut Bytecode) -> IndexType {
     match code {
-        Bytecode::Pack(idx) => IndexType::StructDef(idx),
-        Bytecode::Unpack(idx) => IndexType::StructDef(idx),
-        Bytecode::MutBorrowGlobal(idx) => IndexType::StructDef(idx),
-        Bytecode::ImmBorrowGlobal(idx) => IndexType::StructDef(idx),
-        Bytecode::Exists(idx) => IndexType::StructDef(idx),
-        Bytecode::MoveFrom(idx) => IndexType::StructDef(idx),
-        Bytecode::MoveTo(idx) => IndexType::StructDef(idx),
+        Bytecode::Pack(idx)
+        | Bytecode::Unpack(idx)
+        | Bytecode::MutBorrowGlobal(idx)
+        | Bytecode::ImmBorrowGlobal(idx)
+        | Bytecode::Exists(idx)
+        | Bytecode::MoveFrom(idx)
+        | Bytecode::MoveTo(idx) => IndexType::StructDef(idx),
 
-        Bytecode::PackGeneric(idx) => IndexType::StructInsta(idx),
-        Bytecode::UnpackGeneric(idx) => IndexType::StructInsta(idx),
-        Bytecode::MutBorrowGlobalGeneric(idx) => IndexType::StructInsta(idx),
-        Bytecode::ImmBorrowGlobalGeneric(idx) => IndexType::StructInsta(idx),
-        Bytecode::ExistsGeneric(idx) => IndexType::StructInsta(idx),
-        Bytecode::MoveFromGeneric(idx) => IndexType::StructInsta(idx),
-        Bytecode::MoveToGeneric(idx) => IndexType::StructInsta(idx),
+        Bytecode::PackGeneric(idx)
+        | Bytecode::UnpackGeneric(idx)
+        | Bytecode::MutBorrowGlobalGeneric(idx)
+        | Bytecode::ImmBorrowGlobalGeneric(idx)
+        | Bytecode::ExistsGeneric(idx)
+        | Bytecode::MoveFromGeneric(idx)
+        | Bytecode::MoveToGeneric(idx) => IndexType::StructInsta(idx),
 
-        Bytecode::MutBorrowField(idx) => IndexType::FieldHandle(idx),
-        Bytecode::ImmBorrowField(idx) => IndexType::FieldHandle(idx),
+        Bytecode::MutBorrowField(idx) | Bytecode::ImmBorrowField(idx) => {
+            IndexType::FieldHandle(idx)
+        }
 
-        Bytecode::MutBorrowFieldGeneric(idx) => IndexType::FieldInsta(idx),
-        Bytecode::ImmBorrowFieldGeneric(idx) => IndexType::FieldInsta(idx),
+        Bytecode::MutBorrowFieldGeneric(idx) | Bytecode::ImmBorrowFieldGeneric(idx) => {
+            IndexType::FieldInsta(idx)
+        }
 
         _ => IndexType::None,
     }
