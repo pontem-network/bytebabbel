@@ -10,7 +10,7 @@ use move_core_types::account_address::AccountAddress;
 
 const CONFIG_FILE: &str = ".aptos/config.yaml";
 
-fn load_configs() -> Result<CliConfig> {
+pub fn load_configs() -> Result<CliConfig> {
     let root_dir = PathBuf::from(".");
     let mut current_dir = root_dir.as_path();
     let path_config = loop {
@@ -46,7 +46,7 @@ pub fn profile_to_address(profile: &ProfileConfig) -> Result<AccountAddress> {
 }
 
 /// Config saved to `.aptos/config.yaml`
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CliConfig {
     /// Map of profile configs
     #[serde(skip_serializing_if = "Option::is_none")]
