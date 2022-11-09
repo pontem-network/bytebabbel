@@ -1,13 +1,5 @@
-use std::collections::BTreeMap;
-use std::str::FromStr;
-
-use anyhow::{anyhow, Error, Result};
-use ethabi::{Contract, ParamType};
-
-use crate::call::function_id::FunctionId;
-use crate::profile::profile_to_address;
+use anyhow::Result;
 use eth::abi::call::to_token;
-use move_executor::profile::ProfileConfig;
 
 #[derive(Debug, Clone)]
 pub(crate) struct FunctionArgs(Vec<(String, String)>);
@@ -15,14 +7,6 @@ pub(crate) struct FunctionArgs(Vec<(String, String)>);
 impl FunctionArgs {
     pub(crate) fn value(&self) -> impl Iterator<Item = &str> {
         self.0.iter().map(|(.., val)| val.as_str())
-    }
-
-    pub(crate) fn join(&self, separator: &str) -> String {
-        self.0
-            .iter()
-            .map(|(tp, value)| format!("{tp}:{value}"))
-            .collect::<Vec<String>>()
-            .join(separator)
     }
 
     pub(crate) fn args_encode(&self) -> Result<String> {

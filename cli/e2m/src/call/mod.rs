@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, ensure, Result};
 use aptos::common::types::CliCommand;
 use clap::{Parser, ValueEnum};
-use ethabi::{Contract, ParamType};
+use ethabi::Contract;
 use itertools::Itertools;
 use move_core_types::account_address::AccountAddress;
 
@@ -13,9 +13,7 @@ pub(crate) mod function_id;
 
 use crate::call::args::FunctionArgs;
 use crate::call::function_id::FunctionId;
-use crate::profile::profile_to_address;
 use crate::{wait, Cmd};
-use eth::abi::call::to_token;
 use eth::Flags;
 use move_executor::load::LoadRemoteData;
 use move_executor::solidity::FromSolidity;
@@ -109,7 +107,7 @@ impl CmdCall {
 
         if !self.args.is_empty() {
             move_run_args.push("--args".to_string());
-            let args_string = if !self.native_type {
+            if !self.native_type {
                 move_run_args.push(format!(
                     "hex:{}",
                     FunctionArgs::from(&self.args).args_encode()?

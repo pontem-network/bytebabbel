@@ -6,7 +6,6 @@ use reqwest::{header, Url};
 use serde_json::json;
 
 use aptos_types::{access_path::AccessPath, state_store::state_key::StateKey};
-use eth::bytecode::types::EthType::U256;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
