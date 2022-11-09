@@ -25,7 +25,7 @@ primitive-types.workspace = true
 rand.workspace = true
 hex.workspace = true
 serde_json.workspace = true
-itertools = "0.10.3"
+itertools.workspace = true
 
 move-core-types.workspace = true
 move-binary-format = { workspace = true }

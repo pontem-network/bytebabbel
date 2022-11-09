@@ -6,6 +6,7 @@ use reqwest::{header, Url};
 use serde_json::json;
 
 use aptos_types::{access_path::AccessPath, state_store::state_key::StateKey};
+use eth::bytecode::types::EthType::U256;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -55,6 +56,8 @@ impl LoadRemoteData for MoveExecutor {
 
 /// https://fullnode.devnet.aptoslabs.com/v1/tables/{table_handle}/item
 pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
+    let u256_key = primitive_types::U256::from_little_endian(key.as_slice());
+
     let mut headers = header::HeaderMap::new();
     headers.insert(
         "Content-Type",
@@ -64,15 +67,15 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
         "accept",
         header::HeaderValue::from_static("application/x-bcs"),
     );
-    let key_hex = hex::encode(key);
+
     let body = json!({
         "key_type":data.key_type,
         "value_type":data.value_type,
         "key":{
-            "v0":&key_hex[0..16],
-            "v1":&key_hex[16..32],
-            "v2":&key_hex[32..48],
-            "v3":&key_hex[48..64],
+            "v0":format!("{}", &u256_key.0[0]),
+            "v1":format!("{}", &u256_key.0[1]),
+            "v2":format!("{}", &u256_key.0[2]),
+            "v3":format!("{}", &u256_key.0[3]),
         }
     });
 
@@ -99,6 +102,7 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
             None
         }
     };
+
     Ok(result)
 }
 
