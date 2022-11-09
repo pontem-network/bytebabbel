@@ -69,9 +69,4 @@ module self::info {
         from_u64(0)
     }
 
-    // tmp fucntion to delete
-    fun empty_function() {
-        assert!(false,0);
-    }
-
 }
