@@ -9,30 +9,32 @@ use primitive_types::{H160, U256};
 
 use eth::compile::EvmPack;
 
+const ADDRESS: &str = "0000000000000000000000000000000000000042";
+
 fn memory_vicinity() -> Result<MemoryVicinity> {
     Ok(MemoryVicinity {
         block_base_fee_per_gas: U256::max_value(),
-        gas_price: U256::from(1),
+        gas_price: U256::from(100),
         origin: H160::random(),
         chain_id: U256::from(1u8),
         block_hashes: vec![
             "00000000000000001ebf88508a03865c71d452e25f4d51194196a1d22b6653dc".parse()?,
             "00000000000000010ff5414c5cfbe9eae982e8cef7eb2399a39118e1206c8247".parse()?,
         ],
-        block_number: U256::from(0u8),
+        block_number: U256::from(3),
         block_coinbase: H160::zero(),
-        block_timestamp: U256::from(1529891469u128),
+        block_timestamp: U256::from(10_000_123),
         block_difficulty: U256::zero(),
-        block_gas_limit: U256::zero(),
+        block_gas_limit: U256::from(10_000_000),
     })
 }
 
 fn context() -> Result<Context> {
     Ok(Context {
         // Execution address.
-        address: "5cbdd86a2fa8dc4bddd8a8f69dba48572eec07fb".parse()?,
+        address: ADDRESS.parse()?,
         // The calling EVM.
-        caller: "5cbdd86a2fa8dc4bddd8a8f69dba48572eec07fb".parse()?,
+        caller: ADDRESS.parse()?,
         // The apparent value of the EVM. call value, if non-zero, must have payable
         apparent_value: U256::from(0u8),
     })
@@ -71,12 +73,12 @@ impl REvm {
         let metadata = StackSubstateMetadata::new(u64::MAX, &self.config);
 
         let precompiles = BTreeMap::new();
+
+        let mut memo = MemoryStackState::new(metadata, &backend);
+        memo.deposit(ADDRESS.parse().unwrap(), U256::from(1_000_000));
+
         let mut executor: StackExecutor<MemoryStackState<MemoryBackend>, BTreeMap<_, _>> =
-            StackExecutor::new_with_precompiles(
-                MemoryStackState::new(metadata, &backend),
-                &self.config,
-                &precompiles,
-            );
+            StackExecutor::new_with_precompiles(memo, &self.config, &precompiles);
 
         let mut rt = Runtime::new(
             self.code.clone(),

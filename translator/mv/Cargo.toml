@@ -4,28 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hex = "0.4"
-anyhow = "1.0.58"
-serde = { version = "1.0.138", features = ["derive"] }
-serde_json = "1.0.82"
+hex.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 sha3 = "0.10.1"
 itertools = "0.10.3"
-uint = "0.9.3"
-log = "0.4.17"
-ethabi = "17.2"
+log.workspace = true
+ethabi.workspace = true
 
 # local dependencies
 eth = { path = "../eth" }
 intrinsic = { path = "../intrinsic" }
 
 # move:
-move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
-move-binary-format = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-bytecode-source-map = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-ir-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-bytecode-verifier = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-disassembler = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
+move-core-types.workspace = true
+move-binary-format.workspace = true
+move-bytecode-source-map.workspace = true
+move-ir-types.workspace = true
+move-bytecode-verifier.workspace = true
+move-disassembler.workspace = true
 
 [dev-dependencies]
-rand = "0.8.5"
+rand.workspace = true
 test_infra = { path = "../test_infra" }

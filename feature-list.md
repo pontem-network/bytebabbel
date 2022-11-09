@@ -19,13 +19,13 @@
     - [x] SMod
     - [x] SLt
     - [x] SGt
-    - [x] Exp❗
-    - [x] SignExtend❗
+    - [x] Exp
+    - [x] SignExtend
     - [x] BitOr
     - [x] BitAnd
     - [x] BitXor
     - [x] Shl
-    - [x] Sar❗(shift right with sign)
+    - [x] Sar (shift right with sign)
     - [x] Shr
     - [x] Lt
     - [x] Gt
@@ -33,9 +33,9 @@
     - [x] Neq
     - [x] BitNot
     - [x] IsZero
-    - [x] Byte❗
-    - [ ] AddMod (a + b) % N
-    - [ ] MulMod (a * b) % N
+    - [x] Byte
+    - [x] AddMod (a + b) % N
+    - [x] MulMod (a * b) % N
 - [ ] Looping
     - [x] For
     - [x] While
@@ -43,18 +43,18 @@
 - [ ] Dynamic types (string, bytes, etc.)
 - [ ] Dependency
     - [x] Message signer
-    - [ ] Balance
+    - [x] Balance
     - [ ] Origin
     - [ ] Caller
     - [ ] CallValue
     - [ ] CallDataLoad
     - [ ] CallDataSize
-    - [ ] Blockhash
-    - [ ] Timestamp
-    - [ ] GasLimit
+    - [x] Blockhash
+    - [x] Timestamp
+    - [x] GasLimit
     - [ ] Difficulty
-    - [ ] Number
-    - [ ] GasPrice
+    - [x] Number
+    - [x] GasPrice
     - [ ] Coinbase
     - [ ] Gas
 - [ ] Call between contracts

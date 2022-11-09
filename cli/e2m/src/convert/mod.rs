@@ -9,11 +9,10 @@ use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 
 use eth::compile::{Evm, EvmPack};
-use translator::{translate, Flags, Target};
+use translator::{translate, Target};
 
 use crate::{profile, Cmd};
 
-#[cfg(feature = "deploy")]
 mod deploy;
 pub mod flags;
 
@@ -23,7 +22,7 @@ pub struct CmdConvert {
     #[clap(value_parser)]
     path: PathBuf,
 
-    /// Where to save the converted move binary code
+    /// Directory path for saving the interface and the converted binary code.
     #[clap(short, long = "output", display_order = 3, value_parser)]
     output_path: Option<PathBuf>,
 
@@ -45,12 +44,10 @@ pub struct CmdConvert {
     #[clap(long = "args", short = 'a', default_value = "")]
     init_args: String,
 
-    #[cfg(feature = "deploy")]
     #[clap(flatten)]
     pub(crate) transaction_flags: crate::txflags::TransactionFlags,
 
     /// Publishes the modules in a Move package to the Aptos blockchain
-    #[cfg(feature = "deploy")]
     #[clap(long = "deploy", short = 'd', value_parser)]
     pub deploy: bool,
 
@@ -62,117 +59,92 @@ impl Cmd for CmdConvert {
     fn execute(&self) -> Result<String> {
         let result = self.convert()?;
 
-        #[cfg(feature = "deploy")]
         if self.deploy {
             return self.publish(&result);
         }
 
         self.convertion_flags.check()?;
 
-        Ok(format!(
-            "{}\n{}",
-            result.mv_path.to_string_lossy(),
-            result.move_path.to_string_lossy()
-        ))
+        Ok(format!("Saved in the {:?}", result.interface_dir_path))
     }
 }
 
 impl CmdConvert {
     pub fn convert(&self) -> Result<ResultConvert> {
         let pack = path_to_abibin(&self.path)?;
-        let mv_path = self
-            .output_path
-            .clone()
-            .unwrap_or_else(|| PathBuf::from("./").join(pack.name()))
-            .with_extension("mv");
-
-        let interface_path = self
-            .output_path
-            .clone()
-            .unwrap_or_else(|| PathBuf::from("./").join(pack.name()))
-            .with_extension("move");
-
         let address = self.profile_or_address.to_address()?;
-        let address_str = format!("0x{}", &address);
-
-        let mut init_args = self.init_args.clone();
-        while let Some(pos) = init_args.to_lowercase().find("self") {
-            init_args.replace_range(pos..pos + 4, &address_str);
-        }
-
         let module_name = self
             .move_module_name
             .clone()
             .unwrap_or_else(|| pack.name().to_string());
+        let interface_dir_path = self.interface_dir(&module_name)?;
 
+        // Convert
+        let binary_code_path = interface_dir_path.join(&module_name).with_extension("mv");
         let cfg = translator::Config {
             contract_addr: address,
             name: &module_name,
-            initialization_args: &init_args,
-            flags: Flags {
-                native_input: self.convertion_flags.native_input,
-                native_output: self.convertion_flags.native_output,
-                hidden_output: self.convertion_flags.hide_output,
-                u128_io: self.convertion_flags.u128_io,
-                package_interface: self.convertion_flags.interface_package,
-            },
+            initialization_args: &replacing_self_with_an_address(&self.init_args, &address),
+            flags: self.convertion_flags.into(),
         };
         let mv = translate(pack.bin_contract(), pack.abi_str(), cfg)?;
-        fs::write(&mv_path, &mv.bytecode)?;
-        save_interface(
-            &interface_path,
-            &mv,
-            self.convertion_flags.interface_package,
-        )?;
+        fs::write(&binary_code_path, &mv.bytecode)?;
 
-        let move_path = if self.convertion_flags.interface_package {
-            interface_path.with_extension("")
-        } else {
-            interface_path
-        };
+        // save the interface
+        save_interface(&interface_dir_path, &mv)?;
 
-        // save abi
-        if self.convertion_flags.save_abi {
-            let abi_path = move_path.with_extension("abi");
-            fs::write(&abi_path, pack.contract().abi.as_str())?;
-            println!("{abi_path:?}");
-        }
+        // save the abi
+        let abi_path = interface_dir_path.join(&module_name).with_extension("abi");
+        fs::write(&abi_path, pack.contract().abi.as_str())?;
 
         Ok(ResultConvert {
-            mv_path,
-            move_path,
+            interface_dir_path,
+            binary_code_path,
             module_name,
             address,
         })
     }
+
+    fn interface_dir(&self, module_name: &str) -> Result<PathBuf> {
+        let interface_dir = self
+            .output_path
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(&format!("./{module_name}")));
+        if !interface_dir.exists() {
+            fs::create_dir_all(&interface_dir)?;
+        }
+        Ok(interface_dir.canonicalize()?)
+    }
 }
 
-fn save_interface(path: &Path, target: &Target, save_as_package: bool) -> Result<()> {
-    if path.exists() {
-        if path.is_file() {
-            fs::remove_file(path)?;
-        } else {
-            fs::remove_dir_all(path)?;
-        }
-    }
+#[inline]
+fn replacing_self_with_an_address(args: &str, self_address: &AccountAddress) -> String {
+    let address_str = self_address.to_hex_literal();
 
-    if save_as_package {
-        let base_dir = path.with_extension("");
-        let name = base_dir
-            .file_name()
-            .ok_or_else(|| anyhow!("Invalid path"))?;
-
-        fs::create_dir_all(&base_dir)?;
-        fs::write(base_dir.join("Move.toml"), &target.manifest)?;
-        let sources = base_dir.join("sources");
-        fs::create_dir_all(&sources)?;
-        fs::write(sources.join(name).with_extension("move"), &target.interface)?;
-    } else {
-        fs::write(path, &target.interface)?;
+    let mut init_args = args.to_string();
+    while let Some(pos) = init_args.to_lowercase().find("self") {
+        init_args.replace_range(pos..pos + 4, &address_str);
     }
+    init_args
+}
+
+#[inline]
+fn save_interface(base_dir: &Path, target: &Target) -> Result<()> {
+    let name = base_dir
+        .file_name()
+        .ok_or_else(|| anyhow!("Invalid path"))?;
+
+    fs::create_dir_all(base_dir)?;
+    fs::write(base_dir.join("Move.toml"), &target.manifest)?;
+
+    let sources = base_dir.join("sources");
+    fs::create_dir_all(&sources)?;
+    fs::write(sources.join(name).with_extension("move"), &target.interface)?;
+
     Ok(())
 }
 
+#[inline]
 fn path_to_filename(path: &Path) -> Result<String> {
     let name = path
         .with_extension("")
@@ -187,6 +159,7 @@ fn path_to_filename(path: &Path) -> Result<String> {
 ///     sol - compiled into "bin" and "abi" and stored in a temporary directory
 ///     bin - searches next to "abi" with the same name and returns paths to them
 ///     abi - searches next to "bin" with the same name and returns paths to them
+#[inline]
 fn path_to_abibin(path: &Path) -> Result<EvmPack> {
     let ext = path
         .extension()
@@ -207,6 +180,7 @@ fn path_to_abibin(path: &Path) -> Result<EvmPack> {
 }
 
 /// Checking whether "solc" is installed on this computer
+#[inline]
 fn check_solc() -> bool {
     let output = match cli::new("solc").arg("--version").output() {
         Ok(r) => r,
@@ -228,6 +202,7 @@ fn check_solc() -> bool {
     }
 }
 
+#[inline]
 fn output_to_result(output: std::process::Output) -> Result<String> {
     if !output.status.success() {
         bail!(
@@ -239,6 +214,7 @@ fn output_to_result(output: std::process::Output) -> Result<String> {
     Ok(String::from_utf8(output.stdout).unwrap_or_default())
 }
 
+#[inline]
 fn find_abibin(path: &Path) -> Result<EvmPack> {
     let filename = path_to_filename(path)?;
     let dir = path
@@ -269,8 +245,8 @@ fn find_abibin(path: &Path) -> Result<EvmPack> {
 }
 
 pub struct ResultConvert {
-    pub mv_path: PathBuf,
-    pub move_path: PathBuf,
+    pub interface_dir_path: PathBuf,
+    pub binary_code_path: PathBuf,
     pub module_name: String,
     pub address: AccountAddress,
 }

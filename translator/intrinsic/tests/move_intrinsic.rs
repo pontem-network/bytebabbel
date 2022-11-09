@@ -6,7 +6,7 @@ pub fn test_move_intrinsic() {
         .stderr(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
         .current_dir("mv")
-        .args(&["move", "test"])
+        .args(["move", "test"])
         .output()
         .unwrap();
     assert!(

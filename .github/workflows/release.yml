@@ -38,7 +38,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --path cli/e2m --features=deploy
+          args: --path cli/e2m
 
       - uses: vimtor/action-zip@v1
         with:
@@ -84,7 +84,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --path cli/e2m --features=deploy
+          args: --path cli/e2m
 
       - uses: vimtor/action-zip@v1
         with:
@@ -130,7 +130,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --path cli/e2m --features=deploy
+          args: --path cli/e2m
 
       - uses: vimtor/action-zip@v1
         with:

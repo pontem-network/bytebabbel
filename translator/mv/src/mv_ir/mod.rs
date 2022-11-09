@@ -1,8 +1,9 @@
 use anyhow::{anyhow, Error};
 use log::{log_enabled, Level};
 use move_binary_format::binary_views::BinaryIndexedView;
+use move_binary_format::check_bounds::BoundsChecker;
+use move_binary_format::file_format::CompiledModule;
 use move_binary_format::file_format::Signature;
-use move_binary_format::CompiledModule;
 use move_bytecode_source_map::mapping::SourceMapping;
 use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_disassembler::disassembler::Disassembler;
@@ -11,6 +12,7 @@ use move_ir_types::location::Spanned;
 
 use crate::mv_ir::func::Func;
 
+pub mod crop;
 pub mod func;
 pub mod interface;
 
@@ -37,7 +39,7 @@ impl Module {
         }
         module.signatures = self.signatures;
 
-        print_move_module(&module);
+        crop::crop(&mut module)?;
 
         CodeUnitVerifier::verify_module(&VerifierConfig::default(), &module).map_err(|err| {
             anyhow!(
@@ -49,6 +51,8 @@ impl Module {
                 err.indices()
             )
         })?;
+        BoundsChecker::verify_module(&module)?;
+
         Ok(module)
     }
 }

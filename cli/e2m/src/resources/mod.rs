@@ -16,7 +16,6 @@ use query::ListQuery;
 use resource_path::ResourcePath;
 use test_infra::color::{bold, font_yellow};
 
-use crate::profile::ProfileValue;
 use crate::{wait, Cmd};
 
 pub mod decode;
@@ -144,25 +143,23 @@ impl CmdResources {
             .to_string();
 
         let account_hex = match self.account {
-            None => ProfileValue::from_str(
-                self.profile_options.profile.as_deref().unwrap_or("default"),
-            )?
-            .to_address()?,
+            None => self.profile_options.account_address()?,
             Some(address) => address,
         }
-        .to_hex();
+        .to_hex_literal();
 
         let path = resource_path.to_string();
 
         let url_string = match self.query {
             ListQuery::Balance | ListQuery::Modules | ListQuery::Resources => unreachable!(),
             ListQuery::Resource => {
-                format!("{request_url_base}/accounts/{account_hex}/resource/{path}")
+                format!("{request_url_base}v1/accounts/{account_hex}/resource/{path}")
             }
             ListQuery::Events => {
-                format!("{request_url_base}/accounts/{account_hex}/events/{path}?limit={limit}&start={start}", limit = self.limit, start = self.start)
+                format!("{request_url_base}v1/accounts/{account_hex}/events/{path}?limit={limit}&start={start}", limit = self.limit, start = self.start)
             }
         };
+
         let url = Url::from_str(&url_string)?;
         Ok(url)
     }
@@ -182,7 +179,7 @@ impl CmdResources {
 
         let mut response: Value = reqwest::blocking::get(url)?.json()?;
 
-        if let Some(path) = &self.abi {
+        if let Some(path) = self.abi.clone().or_else(find_abi_in_current_folder) {
             let abi_string = serde_json::from_str(&fs::read_to_string(path)?)?;
             decode_by_abi(&mut response, &abi_string);
         }
@@ -214,4 +211,14 @@ fn show_ignored_message(show: bool, name_args: &str) {
             event = bold("--query events"),
         )
     }
+}
+
+#[inline]
+fn find_abi_in_current_folder() -> Option<PathBuf> {
+    PathBuf::from(".")
+        .read_dir()
+        .ok()?
+        .filter_map(|path| path.ok())
+        .filter_map(|path| path.path().canonicalize().ok())
+        .find(|path| path.extension().and_then(|ext| ext.to_str()) == Some("abi"))
 }

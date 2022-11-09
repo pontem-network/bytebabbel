@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
+use itertools::Itertools;
+use serde::Deserialize;
+
 use aptos_aggregator::transaction::ChangeSetExt;
 use aptos_crypto::HashValue;
 use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
@@ -13,7 +16,6 @@ use aptos_vm::data_cache::StorageAdapter;
 use aptos_vm::move_vm_ext::{MoveVmExt, SessionId};
 use aptos_vm::natives::configure_for_unit_test;
 use ethabi::{Contract, Token};
-use itertools::Itertools;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Event;
 use move_core_types::identifier::Identifier;
@@ -24,7 +26,6 @@ use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::OnceCell;
 use primitive_types::{H160, U256};
-use serde::Deserialize;
 
 use eth::abi::call::{to_eth_address, EthEncodeByString};
 use eth::Flags;
@@ -32,6 +33,7 @@ use eth::Flags;
 use crate::testssol::env::stdlib::publish_std;
 
 static INSTANCE: OnceCell<Resolver> = OnceCell::new();
+const BALANCE_MV: &str = "./translator/test_infra/resources/mv/build/mv/bytecode_modules/helper.mv";
 
 pub struct MoveExecutor {
     resolver: Resolver,
@@ -55,6 +57,7 @@ impl MoveExecutor {
                 let adapter = StorageAdapter::new(&resolver);
                 let mut session = vm.new_session(&adapter, id);
                 publish_std(&mut session);
+
                 let output = session
                     .finish()
                     .unwrap()
@@ -79,8 +82,10 @@ impl MoveExecutor {
         MoveVmExt::new(
             NativeGasParameters::zeros(),
             AbstractValueSizeGasParameters::zeros(),
-            3,
-            false,
+            aptos_gas::LATEST_GAS_FEATURE_VERSION,
+            aptos_types::on_chain_config::Features::default()
+                .is_enabled(aptos_types::on_chain_config::FeatureFlag::TREAT_FRIEND_AS_PRIVATE),
+            0,
         )
         .unwrap()
     }
@@ -107,11 +112,12 @@ impl MoveExecutor {
         self.resolver.apply(output);
     }
 
-    pub fn run(
+    fn _run(
         &mut self,
         ident: &str,
         signer: &str,
         params: Option<&str>,
+        flag: Flags,
     ) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
         let id = SessionId::Txn {
@@ -125,12 +131,13 @@ impl MoveExecutor {
         let mut session = self.vm.new_session(&adapter, id);
         let fn_name = ident.as_str();
 
-        let args = if self.flags.native_input {
+        let args = if flag.native_input {
             let fun = session.load_function(&module_id, &ident, &[]);
             self.prepare_move_args(signer, params, &fun.unwrap())?
         } else {
             self.prepare_eth_args(signer, params, fn_name)?
         };
+
         let returns = session
             .execute_entry_function(&module_id, &ident, vec![], args, &mut UnmeteredGasMeter)?
             .return_values;
@@ -138,9 +145,9 @@ impl MoveExecutor {
         let events = result.events.clone();
         let output = result.into_change_set(&mut (), 3).unwrap();
 
-        let returns = if self.flags.hidden_output {
+        let returns = if flag.hidden_output {
             vec![]
-        } else if self.flags.native_output {
+        } else if flag.native_output {
             self.decode_result_move(returns)?
         } else {
             self.decode_result_eth(returns, fn_name)?
@@ -149,6 +156,24 @@ impl MoveExecutor {
         self.resolver.apply(output);
 
         Ok(ExecutionResult { returns, events })
+    }
+
+    pub fn run(
+        &mut self,
+        ident: &str,
+        signer: &str,
+        params: Option<&str>,
+    ) -> Result<ExecutionResult> {
+        self._run(ident, signer, params, self.flags)
+    }
+
+    pub fn run_native(
+        &mut self,
+        ident: &str,
+        signer: &str,
+        params: Option<&str>,
+    ) -> Result<ExecutionResult> {
+        self._run(ident, signer, params, Flags::native_interface())
     }
 
     fn decode_result_move(&self, result: Vec<(Vec<u8>, MoveTypeLayout)>) -> Result<Vec<Token>> {
@@ -186,7 +211,7 @@ impl MoveExecutor {
     ) -> Result<Vec<Token>> {
         if fn_name == "constructor" {
             Ok(Vec::new())
-        } else {
+        } else if !result.is_empty() {
             let result: Vec<u8> = bcs::from_bytes(&result[0].0).map_err(|e| anyhow!(e))?;
             let result = self
                 .entries
@@ -195,6 +220,8 @@ impl MoveExecutor {
                 .ok_or_else(|| anyhow!("Fn {fn_name:?} not found "))?
                 .decode_output(&result)?;
             Ok(result)
+        } else {
+            Ok(Vec::new())
         }
     }
 

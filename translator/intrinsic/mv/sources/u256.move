@@ -89,7 +89,18 @@ module self::u256 {
         }
     }
 
+    /// u64 => u256
+    public fun from_u64(val:u64): U256{
+        U256 {
+            v0: val,
+            v1: 0,
+            v2: 0,
+            v3: 0,
+        }
+    }
+
     use self::utiles::split_u128;
+
 
     /// Returns a `U256` from `u128` value.
     public fun from_u128(val: u128): U256 {
@@ -103,31 +114,29 @@ module self::u256 {
     }
 
     // API
-    // TODO
     public fun from_signer(addr: &signer): U256 {
         let encoded = std::bcs::to_bytes(addr);
-        // todo replace with riding last 20 bytes
-        let address_mask = U256 {
-            v0: 0xFFFFFFFFFFFFFFFF,
-            v1: 0xFFFFFFFFFFFFFFFF,
-            v2: 0x00000000FFFFFFFF,
-            v3: 0x0000000000000000,
+        let i = 0u64;
+
+        while (i < 12) {
+            *std::vector::borrow_mut(&mut encoded, i) = 0;
+            i = i + 1;
         };
-        bitand(from_bytes(&encoded, zero()), address_mask)
+
+        from_bytes(&encoded, zero())
     }
 
     // API
-    // TODO
     fun from_address(addr: address): U256 {
         let encoded = std::bcs::to_bytes(&addr);
-        // todo replace with riding last 20 bytes
-        let address_mask = U256 {
-            v0: 0xFFFFFFFFFFFFFFFF,
-            v1: 0xFFFFFFFFFFFFFFFF,
-            v2: 0x00000000FFFFFFFF,
-            v3: 0x0000000000000000,
+        let i = 0u64;
+
+        while (i < 12) {
+            *std::vector::borrow_mut(&mut encoded, i) = 0;
+            i = i + 1;
         };
-        bitand(from_bytes(&encoded, zero()), address_mask)
+
+        from_bytes(&encoded, zero())
     }
 
     // API
@@ -193,13 +202,21 @@ module self::u256 {
         ((a.v1 as u128) << 64) + (a.v0 as u128)
     }
 
+    /// Convert `U256` to `u128` returns (val, is_overflow).
+    public fun as_u128_safe(a: U256): (u128, bool) {
+        (
+            ((a.v1 as u128) << 64) + (a.v0 as u128),
+            (a.v2 != 0 || a.v3 != 0)
+        )
+    }
+
     /// Convert `U256` to `u64`
     public fun as_u64(a: U256): u64 {
         a.v0
     }
 
     /// API
-    fun to_address(a: U256): address {
+    public fun to_address(a: U256): address {
         let encoded = to_bytes(&a);
         return aptos_framework::util::address_from_bytes(encoded)
     }
@@ -451,12 +468,12 @@ module self::u256 {
 
     // API
     public fun eq(a: U256, b: U256): bool {
-        compare(&a, &b) == EQUAL
+        a == b
     }
 
     // API
-    fun ne(a: U256, b: U256): bool {
-        compare(&a, &b) != EQUAL
+    public fun ne(a: U256, b: U256): bool {
+        a != b
     }
 
     // API
@@ -472,7 +489,13 @@ module self::u256 {
 
     // API
     public fun byte(i: U256, x: U256): U256 {
-        let shift = 248 - as_u128(i) * 8;
+        let (j, o) = as_u128_safe(i);
+
+        if (o || j >= 32) {
+            return zero()
+        };
+
+        let shift = 248 - j * 8;
         bitand(shr_u8(x, (shift as u8)), from_u128(0xFF))
     }
 
@@ -542,7 +565,7 @@ module self::u256 {
     // API
     /// Multiples two `U256`.
     public fun overflowing_mul(a: U256, b: U256): U256 {
-        let ret = zero_d();
+        let ret = zero();
 
         let i = 0;
         while (i < WORDS) {
@@ -550,16 +573,18 @@ module self::u256 {
             let b1 = get(&b, i);
 
             let j = 0;
-            while (j < WORDS) {
+
+            // j + i < 4
+            while (j + i < WORDS) {
                 let a1 = get(&a, j);
 
                 if (a1 != 0 || carry != 0) {
                     let (hi, low) = split_u128((a1 as u128) * (b1 as u128));
 
                     let overflow = {
-                        let existing_low = get_d(&ret, i + j);
+                        let existing_low = get(&ret, i + j);
                         let (low, o) = overflowing_add_u64(low, existing_low);
-                        put_d(&mut ret, i + j, low);
+                        put(&mut ret, i + j, low);
                         if (o) {
                             1
                         } else {
@@ -567,12 +592,16 @@ module self::u256 {
                         }
                     };
 
+                    if (i + j + 1 >= WORDS) {
+                        break
+                    };
+
                     carry = {
-                        let existing_hi = get_d(&ret, i + j + 1);
+                        let existing_hi = get(&ret, i + j + 1);
                         let hi = hi + overflow;
                         let (hi, o0) = overflowing_add_u64(hi, carry);
                         let (hi, o1) = overflowing_add_u64(hi, existing_hi);
-                        put_d(&mut ret, i + j + 1, hi);
+                        put(&mut ret, i + j + 1, hi);
 
                         if (o0 || o1) {
                             1
@@ -588,8 +617,7 @@ module self::u256 {
             i = i + 1;
         };
 
-        let (r, _overflow) = u512_to_u256(ret);
-        r
+        ret
     }
 
     use self::utiles::overflowing_sub_u64;
@@ -695,7 +723,6 @@ module self::u256 {
 
     // API
     /// Exponentiation.
-    /// todo use U512 for intermediate calculations
     public fun exp(a: U256, b: U256): U256 {
         let ret = one();
         let i = 0;
@@ -715,17 +742,40 @@ module self::u256 {
     }
 
     // API
-    /// Signed exponentiation.
-    fun sexp(a: U256, b: U256): U256 {
-        // todo replace with signed exp
-        exp(a, b)
+    /// SIGNEXTEND opcode
+    /// TODO more tests
+    public fun signextend(a: U256, b: U256): U256 {
+        if (le(a, from_u128(32))) {
+            let bit_index: u64 = (8 * get(&a, 0) + 7);
+            // ?
+            let bit = bitand(shr_u8(b, ((256 - bit_index) as u8)), one());
+            let mask = overflowing_sub(shl_u8(one(), (bit_index as u8)), one());
+            if (get(&bit, 0) == 1) {
+                bitor(b, bitnot(mask))
+            } else {
+                bitand(b, mask)
+            }
+        } else {
+            b
+        }
     }
 
     // API
     /// Signed shift right.
-    fun sar(a: U256, b: U256): U256 {
-        // todo repalce with signed shift right
-        shr(a, b)
+    public fun sar(a: U256, shift: U256): U256 {
+        if (a == zero() || ge(shift, from_u128(255))) {
+            if (is_negative(&a)) {
+                get_negative(one())
+            } else {
+                zero()
+            }
+        } else {
+            if (is_negative(&a)) {
+                get_negative(overflowing_add(shr(overflowing_sub(get_negative(a), one()), shift), one()))
+            } else {
+                shr(a, shift)
+            }
+        }
     }
 
     public fun one(): U256 {
@@ -780,9 +830,9 @@ module self::u256 {
     // API
     fun shr(a: U256, shift: U256): U256 {
         let ret = zero();
-        let shift = as_u128(shift);
+        let (shift, o) = as_u128_safe(shift);
 
-        if (is_zero(a) || shift >= 256) {
+        if (is_zero(a) || o || shift >= 256) {
             return ret
         };
 
@@ -792,9 +842,9 @@ module self::u256 {
     // API
     fun shl(a: U256, shift: U256): U256 {
         let ret = zero();
-        let shift = as_u128(shift);
+        let (shift, o) = as_u128_safe(shift);
 
-        if (is_zero(a) || shift >= 256) {
+        if (is_zero(a) || o || shift >= 256) {
             return ret
         };
 
@@ -850,7 +900,9 @@ module self::u256 {
     use self::u512::overflowing_add_d;
 
     public fun add_mod(a: U256, b: U256, mod: U256): U256 {
-        assert!(compare(&mod, &zero()) != EQUAL, EDIV);
+        if (eq(mod, zero())) {
+            return zero()
+        };
 
         let a_d = u256_to_u512(&a);
         let b_d = u256_to_u512(&b);
@@ -860,24 +912,31 @@ module self::u256 {
 
         let (res, o) = u512_to_u256(res);
 
-        assert!(!o, 2);
-
-        res
+        if (o) {
+            let max = (U64_MAX as u64);
+            new_u256(max, max, max, max)
+        } else {
+            res
+        }
     }
 
     use self::u512::mod_d;
 
     public fun mul_mod(a: U256, b: U256, mod: U256): U256 {
-        // mod != 0
-        assert!(compare(&mod, &zero()) != EQUAL, 2);
+        if (eq(mod, zero())) {
+            return zero()
+        };
 
         let res = mod_d(overflowing_mul_d(a, b), u256_to_u512(&mod));
 
         let (res, o) = u512_to_u256(res);
 
-        assert!(!o, 2);
-
-        res
+        if (o) {
+            let max = (U64_MAX as u64);
+            new_u256(max, max, max, max)
+        } else {
+            res
+        }
     }
 
 

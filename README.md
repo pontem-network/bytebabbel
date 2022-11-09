@@ -9,7 +9,6 @@ Converts **solidity file** to **binary move** code. You can convert from **abi +
 > **! IMPORTANT**\
 > To convert from a **sol** file, **solc** must be installed on the computer and accessible from the terminal using the
 > short command **solc**.\
-> To publish, you need the installed **aptos** utility and **e2m** build with the flag `--features=deploy`
 
 ## Install solc
 
@@ -32,7 +31,7 @@ How to install **aptos**, [see the documentation](https://aptos.dev/cli-tools/ap
 
 ## Checking aptos
 
-The **aptos** version must be at least **0.3.8**
+The **aptos** version must be at least **1.0.0**
 
 ```bash
 aptos --version
@@ -47,9 +46,12 @@ in the system for this file.
 > In all examples, e2m will be called via an alias
 
 
-> **! IMPORTANT**\
+> **! IMPORTANT**
+> 
+> **Creating an account "default" and "demo"**
 > Before running the examples, you will need to create a private key.
 > It will be used both for the module address and for publishing on the node.
+> 
 > Default profile:
 > ```bash
 > aptos init
@@ -59,6 +61,20 @@ in the system for this file.
 > aptos init --profile demo
 > ```
 > See more: [aptos init](https://aptos.dev/cli-tools/aptos-cli-tool/use-aptos-cli/#step-1-run-aptos-init)
+> 
+> 
+> **Replenishment of the balance in "devnet"**
+> 
+> Default profile:
+> ```bash
+> aptos account fund-with-faucet --account default --amount 10000000
+> ```
+> Demo profile:
+> ```bash
+> aptos account fund-with-faucet --account demo --amount 10000000
+> ```
+>
+> See more: [aptos account](https://aptos.dev/cli-tools/aptos-cli-tool/use-aptos-cli/#fund-an-account-with-the-faucet)
 
 ### See help:
 
@@ -85,13 +101,12 @@ e2m convert --help
 * `--module`            The name of the move module. If not specified, the name will be taken from the abi path
 * `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
 * `-a`, `--args`        Parameters for initialization
-* `-i`, `--interface_package`   Generate an interface project
 * `--native-input`      Input params of native type
 * `--native-output`     Output value of native type
 * `--u128_io`           Use u128 instead of u256
 * `-d`, `--deploy`      Deploying the module in aptos node
 * `--max-gas`           Maximum amount of gas units to be used to send this transaction
-* `--save-abi`          Save solidity abi
+
 
 ### Example
 
@@ -111,8 +126,9 @@ The file can be extensions:
   will be translated into **move binarycode**
 
 The name from the passed **solidity library** will be used as the filename and the name of the **move module**.\
-After completing the command, you will see the path to the created file (Example: "./NameSolModule.mv").
-By default, the file is saved to the current directory.
+After executing the command, you will see the path to the created directory (Example: "./NameSolModule/"). 
+The directory will contain the **interface** for interacting with the module, the **abi** and the **move binarycode** file.
+By default, the directory is saved to the current directory.
 
 #### examples/a_plus_b.sol
 
@@ -122,7 +138,7 @@ e2m convert examples/a_plus_b.sol
 
 ##### Result:
 
-> Saved in "./APlusB.mv
+> Saved in the "./APlusB"
 
 Move module address: **Address from the "default" profile**\
 Move module name: **APlusB**
@@ -169,31 +185,31 @@ e2m convert examples/BinNotFound.abi
 
 ### Path to save
 
-The `-o`, `--output` parameter is responsible for specifying the location where the converted file will be saved.
+The `-o`, `--output` parameter is responsible for specifying the location of the directory where the result will be saved.
 
 #### examples/const_fn.sol
 
 ```bash
-e2m convert examples/const_fn.sol -o ./Test.mv
+e2m convert examples/const_fn.sol -o ./Test
 ```
 
 ##### Result:
 
-> Saved in "./Test.mv"
+> Saved in "./Test"
 
-The move binary file will be created in the current directory named **Test.vm**\
+The move binary file will be created in the directory named **./Test/ConstFn.mv**\
 Move module address: **Address from the "default" profile** \
-Move module name: **Cons**
+Move module name: **ConstFn**
 
 #### examples/APlusB.bin
 
 ```bash
-e2m convert examples/APlusB.bin -o ./AB.mv
+e2m convert examples/APlusB.bin -o ./AB
 ```
 
 ##### Result:
 
-> Saved in "./AB.mv"
+> Saved in "./AB"
 
 Move module address: **Address from the "default" profile** \
 Move module name: **APlusB**
@@ -210,7 +226,7 @@ e2m convert examples/APlusB.abi --module ApB
 
 ##### Result:
 
-> Saved in "./APlusB.mv"
+> Saved in "./ApB"
 
 Move module address: **Address from the "default" profile** \
 Move module name: **ApB**
@@ -223,7 +239,7 @@ e2m convert examples/two_functions.sol --module TF
 
 ##### Result:
 
-> Saved in "./TwoFunctions.mv"
+> Saved in "./TF"
 
 Move module address: **Address from the "default" profile** \
 Move module name: **TF**
@@ -244,7 +260,7 @@ e2m convert examples/const_fn.sol -p 0x3
 
 ##### Result:
 
-> Saved in "./ConstFn.mv"
+> Saved in "./ConstFn"
 
 Move module address: **0x3** \
 Move module name: **ConstFn**
@@ -257,7 +273,7 @@ e2m convert examples/two_functions.sol --profile demo
 
 ##### Result:
 
-> Saved in "./TwoFunctions.mv"
+> Saved in "./TwoFunctions"
 
 Move module address: **Address from the "demo" profile** \
 Move module name: **TwoFunctions**
@@ -265,12 +281,12 @@ Move module name: **TwoFunctions**
 #### Combined arguments
 
 ```bash
- e2m convert examples/const_fn.sol -o ./MyMove.mv --module DemoName --profile 0x3 
+ e2m convert examples/const_fn.sol -o ./MyMove --module DemoName --profile 0x3 
 ```
 
 ###### Result:
 
-> Saved in "./MyMove.mv"
+> Saved in "./MyMove"
 
 Move module address: **0x3** \
 Move module name: **DemoName**
@@ -286,13 +302,13 @@ After successful publication, you will receive complete information in json form
 #### examples/two_functions.sol
 
 ```bash
-e2m convert examples/two_functions.sol -d
+e2m convert examples/two_functions.sol -d --max-gas 20000
 ```
 
 #### examples/APlusB.abi
 
 ```bash
-e2m convert examples/APlusB.abi -o ./module.mv --profile demo --deploy
+e2m convert examples/APlusB.abi -o ./module --profile demo --deploy --max-gas 20000
 ```
 
 ### Generate an interface project
@@ -301,8 +317,7 @@ e2m convert examples/APlusB.abi -o ./module.mv --profile demo --deploy
 
 ```bash
 e2m convert examples/a_plus_b.sol \
-    -o ./aplusb.mv \
-    -i
+    -o ./aplusb
 ```
 
 A "move" project will be created in the current directory. This interface is necessary for accessing the published
@@ -320,8 +335,7 @@ input and output parameters.
 ```bash
 e2m convert examples/a_plus_b.sol \
     --native-input \
-    --native-output \
-    -i
+    --native-output
 ```
 
 #### U128
@@ -330,8 +344,7 @@ e2m convert examples/a_plus_b.sol \
 e2m convert examples/a_plus_b.sol \
     --native-input \
     --native-output \
-    --u128-io \
-    -i
+    --u128-io
 ```
 
 ## Call.
@@ -406,9 +419,7 @@ e2m convert ./examples/users.sol \
    -a self \
    --native-input \
    --native-output \
-   -i \
-   --max-gas 10000 \
-   --save-abi \
+   --max-gas 25000 \
    -d
 ```
 
@@ -422,7 +433,7 @@ module
 ```bash
 aptos move publish \
   --package-dir ./examples/sc_users \
-  --max-gas 2000 \
+  --max-gas 10000 \
   --assume-yes
 ```
 
@@ -433,7 +444,7 @@ Calling the module constructor to assign the current account as the owner
 ```bash
 aptos move run \
    --function-id default::ScUser::constructor \
-   --max-gas 2000 \
+   --max-gas 5000 \
    --assume-yes
 ```
 
@@ -442,7 +453,7 @@ aptos move run \
 ```bash
 aptos move run \
    --function-id default::ScUser::create_user \
-   --max-gas 2000 \
+   --max-gas 25000 \
    --profile demo \
    --assume-yes
 ```
@@ -455,7 +466,7 @@ account "default": id = 1
 aptos move run \
   --function-id default::ScUser::is_id \
   --args u128:1 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --assume-yes
 ```
 
@@ -465,7 +476,7 @@ account "demo": id = 2
 aptos move run \
   --function-id default::ScUser::is_id \
   --args u128:2 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --profile demo \
   --assume-yes
 ```
@@ -475,7 +486,7 @@ aptos move run \
 ```bash
 aptos move run \
    --function-id default::ScUser::is_owner \
-   --max-gas 1000 \
+   --max-gas 10000 \
    --assume-yes
 ```
 
@@ -484,7 +495,7 @@ An **error** will occur when checking from another account
 ```bash
 aptos move run \
    --function-id default::ScUser::is_owner \
-   --max-gas 1000 \
+   --max-gas 10000 \
    --profile demo \
    --assume-yes
 ```
@@ -497,7 +508,7 @@ account "default": 10000000000000000000000000000
 aptos move run \
   --function-id default::ScUser::check_balance \
   --args u128:10000000000000000000000000000 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --assume-yes
 ```
 
@@ -506,8 +517,9 @@ account "demo": 0
 ```bash
 aptos move run \
   --function-id default::ScUser::is_empty_balance \
-  --max-gas 1000 \
-  --profile demo
+  --max-gas 10000 \
+  --profile demo \
+  --assume-yes
 ```
 
 #### Transfer
@@ -518,7 +530,7 @@ Sending 200 coins from "default" to "demo"
 aptos move run \
   --function-id default::ScUser::transfer \
   --args address:demo u128:200 \
-  --max-gas 2000 \
+  --max-gas 25000 \
   --assume-yes
 ```
 
@@ -530,7 +542,7 @@ Account **default**
 aptos move run \
   --function-id default::ScUser::check_balance \
   --args u128:9999999999999999999999999800 \
-  --max-gas 1000\
+  --max-gas 10000 \
   --assume-yes
 ```
 
@@ -540,7 +552,7 @@ Account **demo**
 aptos move run \
   --function-id default::ScUser::check_balance \
   --args u128:200 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --profile demo\
   --assume-yes
 ```
@@ -561,14 +573,13 @@ e2m convert ./examples/users.sol \
    --module EthUsers \
    -o ./examples/i_users_ethtypes \
    -a self \
-   -i \
-   --max-gas 10000 \
+   --max-gas 30000 \
    -d
 ```
 
 #### Publishing a script
 
-Publishing a ./examples/sc_users for interacting
+Publishing a ./examples/sc_users_ethtypes for interacting
 with the module
 
 > **Important** don't forget to replace the address
@@ -576,7 +587,7 @@ with the module
 ```bash
 aptos move publish \
   --package-dir ./examples/sc_users_ethtypes \
-  --max-gas 2000 \
+  --max-gas 20000 \
   --assume-yes
 ```
 
@@ -587,7 +598,7 @@ Calling the module constructor to assign the current account as the owner
 ```bash
 e2m call \
    --function-id default::ScUserEth::constructor \
-   --max-gas 2000
+   --max-gas 5000
 ```
 
 #### Adding a "demo" account
@@ -595,7 +606,7 @@ e2m call \
 ```bash
 e2m call \
    --function-id default::ScUserEth::create_user \
-   --max-gas 2000 \
+   --max-gas 25000 \
    --profile demo
 ```
 
@@ -607,7 +618,7 @@ account "default": id = 1
 e2m call \
   --function-id default::ScUserEth::is_id \
   --args u128:1 \
-  --max-gas 2000 \
+  --max-gas 10000 \
   --encode
 ```
 
@@ -617,7 +628,7 @@ account "demo": id = 2
 e2m call \
   --function-id default::ScUserEth::is_id \
   --args u128:2 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --profile demo \
   --encode
 ```
@@ -627,7 +638,7 @@ e2m call \
 ```bash
 e2m call \
    --function-id default::ScUserEth::is_owner \
-   --max-gas 1000
+   --max-gas 10000
 ```
 
 An **error** will occur when checking from another account
@@ -635,7 +646,7 @@ An **error** will occur when checking from another account
 ```bash
 e2m call \
    --function-id default::ScUserEth::is_owner \
-   --max-gas 1000 \
+   --max-gas 10000 \
    --profile demo
 ```
 
@@ -647,7 +658,7 @@ account "default": 10000000000000000000000000000
 e2m call \
   --function-id default::ScUserEth::check_balance \
   --args u128:10000000000000000000000000000 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --encode
 ```
 
@@ -656,7 +667,7 @@ account "demo": 0
 ```bash
 e2m call \
   --function-id default::ScUserEth::is_empty_balance \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --profile demo
 ```
 
@@ -668,7 +679,7 @@ Sending 200 coins from "default" to "demo"
 e2m call \
   --function-id default::ScUserEth::transfer \
   --args address:demo u128:200 \
-  --max-gas 2000 \
+  --max-gas 25000 \
   --encode
 ```
 
@@ -680,7 +691,7 @@ Account **default**
 e2m call \
   --function-id default::ScUserEth::check_balance \
   --args u128:9999999999999999999999999800 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --encode
 ```
 
@@ -690,7 +701,7 @@ Account **demo**
 e2m call \
   --function-id default::ScUserEth::check_balance \
   --args u128:200 \
-  --max-gas 1000 \
+  --max-gas 10000 \
   --profile demo \
   --encode
 ```
@@ -714,7 +725,7 @@ e2m resources --query events --resource-path default::Users::Persist::events
 ```bash
 e2m resources --query events \
   --resource-path default::Users::Persist::events \
-  --abi ./examples/i_users.abi
+  --abi ./examples/i_users/Users.abi
 ```
 
 ### Decoding by the specified types

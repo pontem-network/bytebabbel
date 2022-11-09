@@ -53,11 +53,11 @@ pub fn template(
     ];
     for fun in &mut module.function_defs {
         if public_functions.contains(&fun.function) {
-            (*fun).visibility = Visibility::Public;
+            fun.visibility = Visibility::Public;
             continue;
         }
 
-        (*fun).visibility = Visibility::Private;
+        fun.visibility = Visibility::Private;
     }
 
     for ident in &mut module.identifiers {

@@ -233,6 +233,33 @@ impl Display for TypedExpr {
             Expression::Hash { mem, offset, len } => {
                 write!(f, "{}.Hash({}, {})", mem, offset.as_ref(), len.as_ref())
             }
+            Expression::Balance { address } => {
+                write!(f, "balance({address:?})")
+            }
+            Expression::Gas => {
+                write!(f, "block_gas()")
+            }
+            Expression::GasPrice => {
+                write!(f, "gas_price()")
+            }
+            Expression::GasLimit => {
+                write!(f, "gas_limit()")
+            }
+            Expression::BlockTimestamp => {
+                write!(f, "block_timestamp()")
+            }
+            Expression::BlockHeight => {
+                write!(f, "block_height()")
+            }
+            Expression::BlockHash { number } => {
+                write!(f, "block_hash({number:?})")
+            }
+            Expression::BlockCoinbase => {
+                write!(f, "block_coinbase()")
+            }
+            Expression::BlockDifficulty => {
+                write!(f, "block_difficulty()")
+            }
         }
     }
 }

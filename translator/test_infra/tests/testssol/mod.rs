@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::fmt::Debug;
+use std::fs;
 use std::path::PathBuf;
 
 use anyhow::{anyhow, ensure, Error, Result};
@@ -9,6 +10,7 @@ use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
 
+use crate::testssol::parse::PreInit;
 use env::executor::{ExecutionResult, MoveExecutor};
 use eth::abi::call::EthEncodeByString;
 use eth::compile::EvmPack;
@@ -25,6 +27,8 @@ const TEST_NAME: &str = "sol";
 
 lazy_static! {
     pub static ref REG_PARAMS: Regex = Regex::new("[^a-z0-9]+").unwrap();
+    static ref HELPER_MV: Vec<u8> =
+        fs::read("./resources/mv/build/test_helper/bytecode_modules/helper.mv").unwrap();
 }
 
 #[derive(Debug)]
@@ -79,13 +83,15 @@ impl STest {
 
         // move result
         let result_mv = return_val_to_string(self.run_mv());
+
         // sol result
         let result_evm = return_val_to_string(self.run_evm());
+
         log::info!(
             "{wait}: {module_address}::{test:?} {result_evm}",
             wait = color::font_blue("WAIT")
         );
-        ensure!(result_evm == result_mv, "returned: {result_mv}",);
+        ensure!(result_evm == result_mv, "returned: {result_mv}");
 
         Ok(())
     }
@@ -135,9 +141,13 @@ impl STest {
             Flags::default(),
         )?;
         let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
+
+        // genesis, balance, blocks
+        preinit(&mut vm, self.test.preinit)?;
+
+        // deploy contract
         vm.deploy("0x42", bytecode);
-        vm.run(&format!("{}::constructor", module_address), "0x42", None)
-            .unwrap();
+        vm.run(&format!("{}::constructor", module_address), "0x42", None)?;
 
         let func_address = format!("{module_address}::{}", &self.test.func);
         vm.run(&func_address, "0x42", Some(&self.test.params))
@@ -184,4 +194,44 @@ fn return_val_to_string(val: Result<String>) -> String {
 
 pub fn sol_path() -> PathBuf {
     PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("sol")
+}
+
+#[inline]
+fn log_initialization(text: &str) {
+    log::trace!("[{}] {text}", color::font_blue("INITIALIZATION"));
+}
+
+#[inline]
+fn log_run(text: &str) {
+    log::trace!("[{}] {text}", color::font_blue("RUN"));
+}
+
+fn preinit(vm: &mut MoveExecutor, preinit: PreInit) -> Result<()> {
+    log::trace!("preinic");
+
+    match preinit {
+        PreInit::Block => {
+            log_initialization("test helper");
+            vm.deploy("0x1", HELPER_MV.clone());
+
+            log_run("0x1::helper::genesis_inic");
+            vm.run("0x1::helper::genesis_inic", "0x1", None)?;
+
+            log_run("0x1::helper::fake_block()");
+            vm.run("0x1::helper::fake_block", "0x0", None)?;
+        }
+        PreInit::Balance => {
+            log_initialization("test helper");
+            vm.deploy("0x1", HELPER_MV.clone());
+
+            // Topping up the balance on account 0x42
+            log_run("0x1::helper::x42_1_000_000");
+            vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
+        }
+        PreInit::None => {
+            log::trace!("Preinic: None");
+        }
+    }
+
+    Ok(())
 }

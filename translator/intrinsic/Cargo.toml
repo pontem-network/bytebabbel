@@ -4,19 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.62"
+anyhow.workspace = true
 enum-iterator = "1.2.0"
-rand = "0.8.5"
-lazy_static = "1.4.0"
+rand.workspace = true
+lazy_static.workspace = true
 
-move-binary-format = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
+move-binary-format.workspace = true
+move-core-types.workspace = true
 
 [dev-dependencies]
-move-bytecode-verifier = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
+move-bytecode-verifier.workspace = true
 
 [build-dependencies]
-anyhow = "1.0.62"
+anyhow.workspace = true
 
-move-binary-format = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4" }
-move-core-types = { git = "https://github.com/move-language/move", rev = "e61c8d7c5e9c8085ce2602ef9a5ae9b2500dbfa4", features = ["address32"] }
+move-binary-format.workspace = true
+move-core-types.workspace = true

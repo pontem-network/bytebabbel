@@ -16,7 +16,7 @@ use eth::bytecode::mir::translation::variables::Variable;
 use eth::bytecode::types::EthType;
 use eth::program::Program;
 use eth::Flags;
-use intrinsic::table::{self_address_index, Memory as Mem, Persist, U256 as Num};
+use intrinsic::table::{self_address_index, Info, Memory as Mem, Persist, U256 as Num};
 use intrinsic::{template, Function};
 
 use crate::mv_ir::func::Func;
@@ -25,6 +25,7 @@ use crate::translator::signature::{map_signature, signer, SignatureWriter};
 use crate::translator::writer::Code;
 
 pub mod bytecode;
+pub mod identifier;
 pub mod signature;
 pub mod writer;
 
@@ -354,6 +355,33 @@ impl MvIrTranslator {
             Expression::Binary(op, arg, arg1) => self.translate_binary(*op, arg, arg1),
             Expression::Ternary(op, arg, arg1, arg2) => {
                 self.translate_ternary(*op, arg, arg1, arg2)
+            }
+            Expression::Balance { address } => {
+                self.call(Info::AptosBalance, vec![CallOp::Expr(address)]);
+            }
+            Expression::Gas => {
+                self.call(Info::Gas, vec![]);
+            }
+            Expression::GasPrice => {
+                self.call(Info::GasPrice, vec![]);
+            }
+            Expression::GasLimit => {
+                self.call(Info::GasLimit, vec![]);
+            }
+            Expression::BlockHeight => {
+                self.call(Info::BlockHeight, vec![]);
+            }
+            Expression::BlockTimestamp => {
+                self.call(Info::BlockTimestamp, vec![]);
+            }
+            Expression::BlockHash { number } => {
+                self.call(Info::BlockHash, vec![CallOp::Expr(number)]);
+            }
+            Expression::BlockDifficulty => {
+                self.call(Info::BlockDifficulty, vec![]);
+            }
+            Expression::BlockCoinbase => {
+                self.call(Info::BlockCoinbase, vec![]);
             }
         }
     }

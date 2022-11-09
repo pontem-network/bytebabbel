@@ -31,7 +31,7 @@ impl CmdConvert {
         })?;
 
         let txn_options: aptos::common::types::TransactionOptions =
-            aptos::common::types::TransactionOptions::try_parse_from(&[
+            aptos::common::types::TransactionOptions::try_parse_from([
                 "subcommand",
                 "--profile",
                 profile,
@@ -41,7 +41,7 @@ impl CmdConvert {
             ])
             .map_err(|err| anyhow!("Invalid profile parameter. {err}"))?;
 
-        let binarycode = fs::read(&result_convert.mv_path)?;
+        let binarycode = fs::read(&result_convert.binary_code_path)?;
 
         // Send the compiled module and metadata using the code::publish_package_txn.
         let metadata = gen_meta(result_convert, &binarycode)?;
@@ -117,7 +117,7 @@ fn source_digest(binarycode: &[u8]) -> Result<String> {
 
     // create a Sha256 object
     let mut hasher = Sha256::new();
-    hasher.update(&binarycode);
+    hasher.update(binarycode);
     let result = hasher.finalize().to_vec();
     Ok(hex::encode(result))
 }

@@ -65,6 +65,15 @@ pub enum _Expr {
     TernaryOp(TernaryOp, Box<Expr>, Box<Expr>, Box<Expr>),
     Hash(Box<Expr>, Box<Expr>),
     Copy(Box<Expr>),
+    Balance(Box<Expr>),
+    Gas,
+    GasPrice,
+    GasLimit,
+    BlockHeight,
+    BlockTimestamp,
+    BlockHash(Box<Expr>),
+    BlockCoinbase,
+    BlockDifficulty,
 }
 
 impl Expr {
@@ -74,7 +83,17 @@ impl Expr {
                 let expr = ctx.vars.get(id).expect("variable not found").clone();
                 expr.unvar(ctx)
             }
-            _Expr::Val(_) | _Expr::Signer | _Expr::MSize | _Expr::ArgsSize => self.clone(),
+            _Expr::Val(_)
+            | _Expr::Signer
+            | _Expr::MSize
+            | _Expr::ArgsSize
+            | _Expr::Gas
+            | _Expr::GasLimit
+            | _Expr::GasPrice
+            | _Expr::BlockHeight
+            | _Expr::BlockTimestamp
+            | _Expr::BlockCoinbase
+            | _Expr::BlockDifficulty => self.clone(),
             _Expr::MLoad(expr) => {
                 let expr = expr.unvar(ctx);
                 self.wrap(_Expr::MLoad(Box::new(expr)))
@@ -116,17 +135,25 @@ impl Expr {
                 let expr = expr.unvar(ctx);
                 self.wrap(_Expr::Copy(Box::new(expr)))
             }
+            _Expr::Balance(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::Balance(Box::new(expr)))
+            }
+            _Expr::BlockHash(expr) => {
+                let expr = expr.unvar(ctx);
+                self.wrap(_Expr::BlockHash(Box::new(expr)))
+            }
         }
     }
 }
 
 impl _Expr {
-    pub fn resolve(&self, ir: &Hir, ctx: &Context) -> Option<U256> {
+    pub fn resolve(&self, _ir: &Hir, ctx: &Context) -> Option<U256> {
         match self {
             _Expr::Val(val) => Some(*val),
             _Expr::Var(var) => {
                 let expr = ctx.vars.get(var)?;
-                expr.resolve(ir, ctx)
+                expr.resolve(_ir, ctx)
             }
             _Expr::MLoad(_) => None,
             _Expr::SLoad(_) => None,
@@ -135,22 +162,32 @@ impl _Expr {
             _Expr::ArgsSize => None,
             _Expr::Args(_) => None,
             _Expr::UnaryOp(cnd, arg) => {
-                let arg = arg.resolve(ir, ctx)?;
+                let arg = arg.resolve(_ir, ctx)?;
                 Some(cnd.calc(arg))
             }
             _Expr::BinaryOp(cnd, arg1, arg2) => {
-                let arg1 = arg1.resolve(ir, ctx)?;
-                let arg2 = arg2.resolve(ir, ctx)?;
+                let arg1 = arg1.resolve(_ir, ctx)?;
+                let arg2 = arg2.resolve(_ir, ctx)?;
                 Some(cnd.calc(arg1, arg2))
             }
             _Expr::TernaryOp(cnd, arg1, arg2, arg3) => {
-                let arg1 = arg1.resolve(ir, ctx)?;
-                let arg2 = arg2.resolve(ir, ctx)?;
-                let arg3 = arg3.resolve(ir, ctx)?;
+                let arg1 = arg1.resolve(_ir, ctx)?;
+                let arg2 = arg2.resolve(_ir, ctx)?;
+                let arg3 = arg3.resolve(_ir, ctx)?;
                 Some(cnd.calc(arg1, arg2, arg3))
             }
             _Expr::Hash(_, _) => None,
-            _Expr::Copy(expr) => expr.resolve(ir, ctx),
+            _Expr::Copy(expr) => expr.resolve(_ir, ctx),
+
+            _Expr::Balance(_) => None,
+            _Expr::Gas => None,
+            _Expr::GasPrice => None,
+            _Expr::GasLimit => None,
+            _Expr::BlockHeight => None,
+            _Expr::BlockTimestamp => None,
+            _Expr::BlockHash(_) => None,
+            _Expr::BlockCoinbase => None,
+            _Expr::BlockDifficulty => None,
         }
     }
 

@@ -19,7 +19,7 @@ fn publish<S: MoveResolver>(session: &mut Session<'_, '_, S>, dir: &str) {
     let translator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let aptos_fw_dir = translator_dir
         .join("..")
-        .join("intrinsic/mv/build/intrinsic/bytecode_modules/dependencies")
+        .join("./test_infra/resources/mv/build/test_helper/bytecode_modules/dependencies")
         .join(dir);
 
     session
