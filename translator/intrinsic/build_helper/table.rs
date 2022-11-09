@@ -129,7 +129,7 @@ const U256_TABLE: [(&str, &str); 37] = [
     ("MulMod", "mul_mod"),
 ];
 
-const INFO_TABLE: [(&str, &str); 10] = [
+const INFO_TABLE: [(&str, &str); 9] = [
     ("AptosBalance", "balance"),
     ("Gas", "gas"),
     ("GasPrice", "gas_price"),
@@ -139,7 +139,6 @@ const INFO_TABLE: [(&str, &str); 10] = [
     ("BlockTimestamp", "block_timestamp"),
     ("BlockDifficulty", "block_difficulty"),
     ("BlockCoinbase", "block_coinbase"),
-    ("ToDelete", "empty_function"),
 ];
 
 enum EnumType<'a> {
