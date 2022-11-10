@@ -73,7 +73,6 @@ impl HirBuilder {
                 native_output: true,
                 hidden_output: false,
                 u128_io: false,
-                package_interface: false,
             },
         );
         ctx.private_func = true;
