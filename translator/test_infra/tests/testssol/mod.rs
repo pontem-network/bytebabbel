@@ -10,18 +10,17 @@ use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use regex::Regex;
 
-use crate::testssol::parse::PreInit;
-use env::executor::{ExecutionResult, MoveExecutor};
-use eth::abi::call::EthEncodeByString;
-use eth::compile::EvmPack;
-use eth::Flags;
-use parse::{SolFile, SolTest};
+use eth::{abi::call::EthEncodeByString, compile::EvmPack, Flags};
+use move_executor::{ExecutionResult, MoveExecutor, MoveExecutorInstance};
 use test_infra::color;
 use translator::translate;
 
 pub mod convert;
 pub mod env;
 pub mod parse;
+
+use crate::testssol::parse::PreInit;
+use parse::{SolFile, SolTest};
 
 const TEST_NAME: &str = "sol";
 
@@ -140,13 +139,17 @@ impl STest {
             self.abi_str(),
             Flags::default(),
         )?;
-        let mut vm = MoveExecutor::new(self.contract.abi()?, Flags::default());
+        let mut vm = MoveExecutor::new(
+            self.contract.abi()?,
+            Flags::default(),
+            MoveExecutorInstance::Aptos,
+        );
 
         // genesis, balance, blocks
         preinit(&mut vm, self.test.preinit)?;
 
         // deploy contract
-        vm.deploy("0x42", bytecode);
+        vm.deploy("0x42", bytecode)?;
         vm.run(&format!("{}::constructor", module_address), "0x42", None)?;
 
         let func_address = format!("{module_address}::{}", &self.test.func);
@@ -212,7 +215,9 @@ fn preinit(vm: &mut MoveExecutor, preinit: PreInit) -> Result<()> {
     match preinit {
         PreInit::Block => {
             log_initialization("test helper");
-            vm.deploy("0x1", HELPER_MV.clone());
+            log::trace!("preinit block");
+
+            vm.deploy("0x1", HELPER_MV.clone())?;
 
             log_run("0x1::helper::genesis_inic");
             vm.run("0x1::helper::genesis_inic", "0x1", None)?;
@@ -222,14 +227,16 @@ fn preinit(vm: &mut MoveExecutor, preinit: PreInit) -> Result<()> {
         }
         PreInit::Balance => {
             log_initialization("test helper");
-            vm.deploy("0x1", HELPER_MV.clone());
+            log::trace!("preinit balance");
+
+            vm.deploy("0x1", HELPER_MV.clone())?;
 
             // Topping up the balance on account 0x42
             log_run("0x1::helper::x42_1_000_000");
             vm.run("0x1::helper::x42_1_000_000", "0x1", None)?;
         }
         PreInit::None => {
-            log::trace!("Preinic: None");
+            log::trace!("preinit: None");
         }
     }
 

@@ -186,7 +186,7 @@ fn object_to_hex(json: &mut Value) -> Result<()> {
 
     let u256_bytes: Vec<u8> = list_u64.into_iter().flat_map(|v| v.to_be_bytes()).collect();
 
-    let hex = format!("0x{}", hex::encode(&u256_bytes));
+    let hex = format!("0x{}", hex::encode(u256_bytes));
 
     *json = Value::String(hex);
     Ok(())

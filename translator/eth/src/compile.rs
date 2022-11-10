@@ -43,7 +43,7 @@ pub fn build_sol<P: AsRef<Path>>(path: P) -> Result<EvmPack> {
         fs::create_dir_all(dir.path())?;
     }
     let contract = dir.path().join(name);
-    fs::write(&contract, fs::read_to_string(&path)?)?;
+    fs::write(contract, fs::read_to_string(&path)?)?;
 
     let output = Command::new("solc")
         .current_dir(&dir)

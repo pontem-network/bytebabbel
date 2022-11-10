@@ -47,11 +47,11 @@ in the system for this file.
 
 
 > **! IMPORTANT**
-> 
+>
 > **Creating an account "default" and "demo"**
 > Before running the examples, you will need to create a private key.
 > It will be used both for the module address and for publishing on the node.
-> 
+>
 > Default profile:
 > ```bash
 > aptos init
@@ -61,17 +61,17 @@ in the system for this file.
 > aptos init --profile demo
 > ```
 > See more: [aptos init](https://aptos.dev/cli-tools/aptos-cli-tool/use-aptos-cli/#step-1-run-aptos-init)
-> 
-> 
+>
+>
 > **Replenishment of the balance in "devnet"**
-> 
+>
 > Default profile:
 > ```bash
-> aptos account fund-with-faucet --account default --amount 10000000
+> aptos account fund-with-faucet --account default --amount 10000000 --profile default
 > ```
 > Demo profile:
 > ```bash
-> aptos account fund-with-faucet --account demo --amount 10000000
+> aptos account fund-with-faucet --account demo --amount 10000000 --profile demo
 > ```
 >
 > See more: [aptos account](https://aptos.dev/cli-tools/aptos-cli-tool/use-aptos-cli/#fund-an-account-with-the-faucet)
@@ -107,7 +107,6 @@ e2m convert --help
 * `-d`, `--deploy`      Deploying the module in aptos node
 * `--max-gas`           Maximum amount of gas units to be used to send this transaction
 
-
 ### Example
 
 You can find the files from the examples in
@@ -126,14 +125,15 @@ The file can be extensions:
   will be translated into **move binarycode**
 
 The name from the passed **solidity library** will be used as the filename and the name of the **move module**.\
-After executing the command, you will see the path to the created directory (Example: "./NameSolModule/"). 
-The directory will contain the **interface** for interacting with the module, the **abi** and the **move binarycode** file.
+After executing the command, you will see the path to the created directory (Example: "./NameSolModule/").
+The directory will contain the **interface** for interacting with the module, the **abi** and the **move binarycode**
+file.
 By default, the directory is saved to the current directory.
 
 #### examples/a_plus_b.sol
 
 ```bash
-e2m convert examples/a_plus_b.sol 
+e2m convert examples/a_plus_b.sol
 ```
 
 ##### Result:
@@ -185,7 +185,8 @@ e2m convert examples/BinNotFound.abi
 
 ### Path to save
 
-The `-o`, `--output` parameter is responsible for specifying the location of the directory where the result will be saved.
+The `-o`, `--output` parameter is responsible for specifying the location of the directory where the result will be
+saved.
 
 #### examples/const_fn.sol
 
@@ -281,7 +282,10 @@ Move module name: **TwoFunctions**
 #### Combined arguments
 
 ```bash
- e2m convert examples/const_fn.sol -o ./MyMove --module DemoName --profile 0x3 
+ e2m convert examples/const_fn.sol \
+  -o ./MyMove \
+  --module DemoName \
+  --profile 0x3 
 ```
 
 ###### Result:
@@ -302,13 +306,18 @@ After successful publication, you will receive complete information in json form
 #### examples/two_functions.sol
 
 ```bash
-e2m convert examples/two_functions.sol -d --max-gas 20000
+e2m convert examples/two_functions.sol -d \
+  --max-gas 20000
 ```
 
 #### examples/APlusB.abi
 
 ```bash
-e2m convert examples/APlusB.abi -o ./module --profile demo --deploy --max-gas 20000
+e2m convert examples/APlusB.abi \
+  -o ./module \
+  --profile demo \
+  --deploy \
+  --max-gas 20000
 ```
 
 ### Generate an interface project
@@ -357,17 +366,29 @@ e2m call --help
 
 ### Input parameters
 
-* `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
+* `-f`, `--function-id` Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>` \
 * `-a`, `--args`        Arguments combined with their type separated by spaces. Supported types \
   **[u8, u64, u128, bool, hex, string, address, raw]** \
   Example: \
   address:0x1 bool:true u8:0
-* `-f`, `--function-id` Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>` \
   Example: \
   0x02::message::set_message \
   default::message::set_message
+* `--init-args`         Parameters for initialization. Required if a sol file is specified in the path
+
+* `--native-type`       Use native "move" types for input and output values
+* `--how`               Default: node
+
+  `node` - Call a remote contract on a node
+
+  `local` - Call a remote contract locally and display the return value
+
+  `local-source` - Call a local contract with remote resources and display the return value
+
+  `vm` - Call a local contract and display the return value
+* `--path`              Path to converted project or sol file
+* `-p`, `--profile`     Profile name or address. The address must start with "0x". [default: default]
 * `--max-gas`           Maximum amount of gas units to be used to send this transaction
-* `--sandbox`           Display only. The request will not be sent to the aptos node
 
 ## Resources.
 
@@ -384,7 +405,7 @@ e2m resources --help
 * `--decode-types`         Types for decoding. Used for decoding EVENTS
 * `-r`, `--resource-path`  Query `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>(::<FIELD_NAME>)?`
 
-  Example:
+  Example: \
   Resource: `default::ModuleName::StuctureName` \
   List of Events: `default::ModuleName::StuctureName::field_name`
 * `--abi`                  Path to abi for decoding events
@@ -448,6 +469,15 @@ aptos move run \
    --assume-yes
 ```
 
+Or
+
+```bash
+e2m call \
+   --function-id default::ScUser::constructor \
+   --max-gas 5000 \
+   --native
+```
+
 #### Adding a "demo" account
 
 ```bash
@@ -456,6 +486,16 @@ aptos move run \
    --max-gas 25000 \
    --profile demo \
    --assume-yes
+```
+
+Or
+
+```bash
+e2m call \
+   --function-id default::ScUser::create_user \
+   --max-gas 25000 \
+   --profile demo \
+   --native
 ```
 
 #### ID verification
@@ -470,6 +510,16 @@ aptos move run \
   --assume-yes
 ```
 
+or
+
+```bash
+e2m call \
+  --function-id default::ScUser::is_id \
+  --args u128:1 \
+  --max-gas 10000 \
+  --native
+```
+
 account "demo": id = 2
 
 ```bash
@@ -481,6 +531,17 @@ aptos move run \
   --assume-yes
 ```
 
+Or
+
+```bash
+e2m call \
+  --function-id default::ScUser::is_id \
+  --args u128:2 \
+  --max-gas 10000 \
+  --profile demo \
+  --native
+```
+
 #### Checking whether this account is the owner:
 
 ```bash
@@ -488,6 +549,15 @@ aptos move run \
    --function-id default::ScUser::is_owner \
    --max-gas 10000 \
    --assume-yes
+```
+
+or
+
+```bash
+e2m call \
+   --function-id default::ScUser::is_owner \
+   --max-gas 10000 \
+   --native
 ```
 
 An **error** will occur when checking from another account
@@ -512,6 +582,16 @@ aptos move run \
   --assume-yes
 ```
 
+Or
+
+```bash
+e2m call \
+  --function-id default::ScUser::check_balance \
+  --args u128:10000000000000000000000000000 \
+  --max-gas 10000 \
+  --native
+```
+
 account "demo": 0
 
 ```bash
@@ -520,6 +600,16 @@ aptos move run \
   --max-gas 10000 \
   --profile demo \
   --assume-yes
+```
+
+or
+
+```bash
+e2m call \
+  --function-id default::ScUser::is_empty_balance \
+  --max-gas 10000 \
+  --profile demo \
+  --native
 ```
 
 #### Transfer
@@ -534,6 +624,16 @@ aptos move run \
   --assume-yes
 ```
 
+Or
+
+```bash
+e2m call \
+  --function-id default::ScUser::transfer \
+  --args address:demo u128:200 \
+  --max-gas 25000 \
+  --native
+```
+
 #### Checking the transfer
 
 Account **default**
@@ -546,6 +646,16 @@ aptos move run \
   --assume-yes
 ```
 
+Or
+
+```bash
+e2m call \
+  --function-id default::ScUser::check_balance \
+  --args u128:9999999999999999999999999800 \
+  --max-gas 10000 \
+  --native
+```
+
 Account **demo**
 
 ```bash
@@ -553,8 +663,19 @@ aptos move run \
   --function-id default::ScUser::check_balance \
   --args u128:200 \
   --max-gas 10000 \
-  --profile demo\
+  --profile demo \
   --assume-yes
+```
+
+Or
+
+```bash
+e2m call \
+  --function-id default::ScUser::check_balance \
+  --args u128:200 \
+  --max-gas 10000 \
+  --native \
+  --profile demo
 ```
 
 ### Example with Ethereum Type
@@ -618,8 +739,7 @@ account "default": id = 1
 e2m call \
   --function-id default::ScUserEth::is_id \
   --args u128:1 \
-  --max-gas 10000 \
-  --encode
+  --max-gas 10000
 ```
 
 account "demo": id = 2
@@ -629,8 +749,7 @@ e2m call \
   --function-id default::ScUserEth::is_id \
   --args u128:2 \
   --max-gas 10000 \
-  --profile demo \
-  --encode
+  --profile demo 
 ```
 
 #### Checking whether this account is the owner:
@@ -658,8 +777,7 @@ account "default": 10000000000000000000000000000
 e2m call \
   --function-id default::ScUserEth::check_balance \
   --args u128:10000000000000000000000000000 \
-  --max-gas 10000 \
-  --encode
+  --max-gas 10000
 ```
 
 account "demo": 0
@@ -679,8 +797,7 @@ Sending 200 coins from "default" to "demo"
 e2m call \
   --function-id default::ScUserEth::transfer \
   --args address:demo u128:200 \
-  --max-gas 25000 \
-  --encode
+  --max-gas 25000
 ```
 
 ##### Checking the transfer
@@ -691,8 +808,7 @@ Account **default**
 e2m call \
   --function-id default::ScUserEth::check_balance \
   --args u128:9999999999999999999999999800 \
-  --max-gas 10000 \
-  --encode
+  --max-gas 10000
 ```
 
 Account **demo**
@@ -702,22 +818,75 @@ e2m call \
   --function-id default::ScUserEth::check_balance \
   --args u128:200 \
   --max-gas 10000 \
-  --profile demo \
-  --encode
+  --profile demo
 ```
+
+## Local call
+
+> **! IMPORTANT**\
+> When starting contacts locally, you cannot access other resources.
+> For this reason, the data may be incorrect or will not work: `msg.sender.balance`, `block.number`, `block.timestamp`, etc.
+
+### Call a remote contract locally
+
+`--how local` - Call a remote contract locally and display the return value
+
+```bash
+e2m call \
+  --function-id default::EthUsers::get_id \
+  --path ./examples/i_users_ethtypes \
+  --how local
+```
+
+###### Result:
+
+> Uint(1)
+
+
+#### Call a local contract with remote resources and display the return value
+
+`--how local-source` - Call a local contract with remote resources and display the return value
+
+```bash
+e2m call \
+  --function-id default::ConstFn::const_fn_10 \
+  --how local-source \
+  --path ./examples/const_fn.sol
+```
+
+###### Result:
+
+> Uint(10)
+
+#### Calling a local contract without loading a remote resource
+
+`--how vm` Call a local contract and display the return value
+
+```bash
+e2m call \
+  --function-id default::APlusB::plus \
+  --how vm \
+  --path ./examples/a_plus_b.sol
+```
+
+###### Result:
+
+> Uint(27)
 
 ## Resource
 
 ### View resource
 
 ```bash
-e2m resources --query resource --resource-path default::Users::Persist
+e2m resources --query resource \
+  --resource-path default::Users::Persist
 ```
 
 ### View the list of events
 
 ```bash
-e2m resources --query events --resource-path default::Users::Persist::events
+e2m resources --query events \
+  --resource-path default::Users::Persist::events
 ```
 
 ### Decoding the list of events using abi
@@ -735,3 +904,4 @@ e2m resources --query events \
   --resource-path default::Users::Persist::events \
   --decode-types data:address,address,u256 topics:bytes
 ```
+

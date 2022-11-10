@@ -1,32 +1,21 @@
-use eth::compile::build_sol;
+use move_core_types::account_address::AccountAddress;
+
 use eth::Flags;
+use move_executor::{solidity::FromSolidity, MoveExecutor};
 use test_infra::init_log;
-
-use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::{make_move_module, sol_path};
-
-#[allow(dead_code)]
-mod testssol;
 
 #[test]
 pub fn test_address_support() {
     init_log();
-    let evm = build_sol(sol_path().join("demo/address_support.sol")).unwrap();
 
-    let bytecode = make_move_module(
-        &format!("0x42::{}", evm.name()),
-        evm.contract().bin(),
+    let mut vm = MoveExecutor::from_sol(
+        "sol/demo/address_support.sol",
+        AccountAddress::from_hex_literal("0x42").unwrap(),
         "",
-        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
 
-    let mut vm = MoveExecutor::new(
-        serde_json::from_str(evm.contract().abi()).unwrap(),
-        Flags::default(),
-    );
-    vm.deploy("0x42", bytecode);
     vm.run("0x42::AddressSupport::constructor", "0x42", None)
         .unwrap();
 

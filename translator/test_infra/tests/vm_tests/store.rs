@@ -1,31 +1,26 @@
-use eth::compile::{build_sol, Evm};
-use eth::Flags;
+use move_core_types::account_address::AccountAddress;
+
+use eth::{
+    compile::{build_sol, Evm},
+    Flags,
+};
+use move_executor::{solidity::FromSolidity, MoveExecutor, MoveExecutorInstance};
 use test_infra::init_log;
 
-use crate::testssol::env::executor::MoveExecutor;
-use crate::testssol::{make_move_module, sol_path};
-
-#[allow(dead_code)]
-mod testssol;
+use crate::testssol::make_move_module;
 
 #[test]
 pub fn test_empty_constructor() {
     init_log();
 
-    let evm = build_sol(sol_path().join("constructors/empty.sol")).unwrap();
-    let bytecode = make_move_module(
-        &format!("0x42::{}", evm.name()),
-        evm.contract().bin(),
+    let mut vm = MoveExecutor::from_sol(
+        "sol/constructors/empty.sol",
+        AccountAddress::from_hex_literal("0x42").unwrap(),
         "",
-        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(
-        serde_json::from_str(evm.contract().abi()).unwrap(),
-        Flags::default(),
-    );
-    vm.deploy("0x42", bytecode);
+
     vm.run("0x42::empty::constructor", "0x42", None).unwrap();
     let res = vm
         .run("0x42::empty::get_val", "0x42", Some(""))
@@ -38,7 +33,7 @@ pub fn test_empty_constructor() {
 pub fn test_constructor_with_data() {
     init_log();
 
-    let evm = build_sol(sol_path().join("constructors/with_data.sol")).unwrap();
+    let evm = build_sol("sol/constructors/with_data.sol").unwrap();
 
     test(evm.contract(), "1000, true", 1000);
     test(evm.contract(), "1000, false", 42);
@@ -52,8 +47,13 @@ pub fn test_constructor_with_data() {
             Flags::default(),
         )
         .unwrap();
-        let mut vm = MoveExecutor::new(serde_json::from_str(evm.abi()).unwrap(), Flags::default());
-        vm.deploy("0x42", bytecode);
+        let mut vm = MoveExecutor::new(
+            serde_json::from_str(evm.abi()).unwrap(),
+            Flags::default(),
+            MoveExecutorInstance::Aptos,
+        );
+        vm.deploy("0x42", bytecode).unwrap();
+
         vm.run("0x42::with_data::constructor", "0x42", None)
             .unwrap();
         let res = vm
@@ -68,20 +68,13 @@ pub fn test_constructor_with_data() {
 pub fn test_store() {
     init_log();
 
-    let evm = build_sol(sol_path().join("store/load_store.sol")).unwrap();
-    let bytecode = make_move_module(
-        &format!("0x42::{}", evm.name()),
-        evm.contract().bin(),
+    let mut vm = MoveExecutor::from_sol(
+        "sol/store/load_store.sol",
+        AccountAddress::from_hex_literal("0x42").unwrap(),
         "",
-        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(
-        serde_json::from_str(evm.contract().abi()).unwrap(),
-        Flags::default(),
-    );
-    vm.deploy("0x42", bytecode);
 
     vm.run("0x42::load_store::constructor", "0x42", None)
         .unwrap();
@@ -150,20 +143,14 @@ pub fn test_store() {
 pub fn test_bool_store() {
     init_log();
 
-    let evm = build_sol(sol_path().join("store/bool_store.sol")).unwrap();
-    let bytecode = make_move_module(
-        &format!("0x42::{}", evm.name()),
-        evm.contract().bin(),
+    let mut vm = MoveExecutor::from_sol(
+        "sol/store/bool_store.sol",
+        AccountAddress::from_hex_literal("0x42").unwrap(),
         "",
-        evm.contract().abi(),
         Flags::default(),
     )
     .unwrap();
-    let mut vm = MoveExecutor::new(
-        serde_json::from_str(evm.contract().abi()).unwrap(),
-        Flags::default(),
-    );
-    vm.deploy("0x42", bytecode);
+
     vm.run("0x42::bool_store::constructor", "0x42", None)
         .unwrap();
 
