@@ -4,13 +4,13 @@ use aptos_types::{
 };
 
 pub trait AccessPathToString {
-    fn print_string(&self) -> String;
+    fn to_string(&self) -> String;
 }
 
 impl AccessPathToString for StateKey {
-    fn print_string(&self) -> String {
+    fn to_string(&self) -> String {
         match self {
-            StateKey::AccessPath(acc) => acc.print_string(),
+            StateKey::AccessPath(acc) => AccessPathToString::to_string(acc),
             StateKey::TableItem { key, handle } => {
                 format!(
                     "TableHandle: {}::{}",
@@ -18,15 +18,15 @@ impl AccessPathToString for StateKey {
                     hex::encode(key)
                 )
             }
-            StateKey::Raw(_) => {
-                todo!()
+            StateKey::Raw(data) => {
+                format!("Raw: {}", hex::encode(data))
             }
         }
     }
 }
 
 impl AccessPathToString for AccessPath {
-    fn print_string(&self) -> String {
+    fn to_string(&self) -> String {
         let path: aptos_types::access_path::Path = bcs::from_bytes(&self.path).unwrap();
         match path {
             Path::Code(code) => format!("Code {}", code),

@@ -35,7 +35,7 @@ pub trait LoadRemoteData {
 impl LoadRemoteData for MoveExecutor {
     fn load_modules(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()> {
         for (name, bytecode) in load_modules(profile, address)? {
-            log::info!("loaded module: {}", name.print_string());
+            log::info!("loaded module: {}", name.to_string());
             self.resolver.state_data.insert(name, bytecode);
         }
         Ok(())
@@ -44,9 +44,9 @@ impl LoadRemoteData for MoveExecutor {
     fn load_resources(&mut self, profile: &ProfileConfig, address: &AccountAddress) -> Result<()> {
         self.resolver.handler_data = load_handel_link(profile, address)?;
 
-        for (name, bytecode) in load_resource(profile, address)? {
-            log::info!("loaded resource: {}", name.print_string());
-            self.resolver.state_data.insert(name, bytecode);
+        for (state_key, bytecode) in load_resource(profile, address)? {
+            log::info!("loaded resource: {}", state_key.to_string());
+            self.resolver.state_data.insert(state_key, bytecode);
         }
 
         Ok(())
@@ -55,8 +55,7 @@ impl LoadRemoteData for MoveExecutor {
 
 /// https://fullnode.devnet.aptoslabs.com/v1/tables/{table_handle}/item
 pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Option<Vec<u8>>> {
-    log::info!("{data:?}");
-    log::info!("{key:?}");
+    log::info!("load_table_handle_u256 {data:?} {key:?}");
 
     let mut headers = header::HeaderMap::new();
     headers.insert(
@@ -83,29 +82,44 @@ pub fn load_table_handle_u256(data: &HandleRequest, key: &Vec<u8>) -> Result<Opt
         log::trace!("{b}");
     }
 
-    let result = match reqwest::blocking::Client::builder()
+    let response = reqwest::blocking::Client::builder()
         .default_headers(headers)
-        .build()?
+        .build()
+        .map_err(|err| {
+            log::error!("request build: {err:?}");
+            anyhow!("The resource was not found. Check that the address is correct")
+        })?
         .post(data.url.as_ref())
         .body(body.to_string())
-        .send()?
-        .bytes()
-    {
+        .send()
+        .map_err(|err| {
+            log::error!("send: {err:?}");
+            anyhow!("The resource was not found. Check that the address is correct")
+        })?;
+
+    log::trace!("status {}", response.status());
+
+    let result = match response.bytes() {
         Ok(bytes) => {
             let result = bytes.to_vec();
-            match String::from_utf8(result.clone())
-                .ok()
-                .and_then(|msg| serde_json::from_str::<serde_json::Value>(&msg).ok())
-            {
+            log::trace!("bytes: {:?}", &result);
+
+            match String::from_utf8(result.clone()).ok().and_then(|msg| {
+                log::trace!("load_table_handle_u256 response: {msg}");
+                serde_json::from_str::<serde_json::Value>(&msg).ok()
+            }) {
                 Some(err) => {
-                    log::error!("{}", serde_json::to_string_pretty(&err).unwrap());
+                    log::error!(
+                        "load_table_handle_u256 json error: {}",
+                        serde_json::to_string_pretty(&err).unwrap()
+                    );
                     None
                 }
                 None => Some(result),
             }
         }
         Err(error) => {
-            log::error!("{error:?}");
+            log::error!("load_table_handle_u256: {error:?}");
             None
         }
     };
@@ -229,8 +243,18 @@ where
         .default_headers(headers)
         .build()?
         .get(url)
-        .send()?
-        .json()?;
+        .send()
+        .map_err(|err| {
+            log::error!("send: {err:?}",);
+
+            anyhow!("The resource was not found. Check that the address is correct")
+        })?
+        .json()
+        .map_err(|err| {
+            log::error!("json error: {err:?}");
+
+            anyhow!("The resource was not found. Check that the address is correct")
+        })?;
     Ok(response)
 }
 
@@ -250,5 +274,12 @@ where
         .get(url)
         .send()?
         .bytes()?;
-    Ok(bcs::from_bytes(response.as_ref())?)
+    bcs::from_bytes(response.as_ref()).map_err(|err| {
+        log::error!(
+            "{err:?} {}",
+            String::from_utf8(response.to_vec()).unwrap_or_default()
+        );
+
+        anyhow!("The resource was not found. Check that the address is correct")
+    })
 }

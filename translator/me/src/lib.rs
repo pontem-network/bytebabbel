@@ -151,6 +151,7 @@ impl MoveExecutor {
         flag: Flags,
     ) -> Result<ExecutionResult> {
         let (module_id, ident) = Self::prepare_ident(ident);
+
         let id = SessionId::Txn {
             sender: *module_id.address(),
             sequence_number: self.seq,

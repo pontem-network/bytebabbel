@@ -24,7 +24,6 @@ sha2 = "0.10.5"
 hex.workspace = true
 itertools.workspace = true
 
-
 # EVM
 ethabi.workspace = true
 

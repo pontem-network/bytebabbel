@@ -16,6 +16,7 @@ regex.workspace = true
 move_executor = { path = "../me" }
 eth = { path = "../eth" }
 translator = { path = ".." }
+intrinsic = { path = "../intrinsic" }
 
 #
 ethabi.workspace = true

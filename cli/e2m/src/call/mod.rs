@@ -85,8 +85,12 @@ pub struct CmdCall {
     )]
     how_to_call: HowToCall,
 
+    /// Load resources from addresses 0x1
+    #[clap(long, display_order = 11, hide = true)]
+    load_0x1: bool,
+
     /// Path to converted project or sol file
-    #[clap(long = "path", value_parser, value_name = "PATH", display_order = 11)]
+    #[clap(long = "path", value_parser, value_name = "PATH", display_order = 12)]
     path_to_convert: Option<PathBuf>,
 
     #[clap(long = "profile", default_value = "default")]
@@ -193,6 +197,12 @@ impl CmdCall {
             HowToCall::Local => {
                 let function_address = AccountAddress::from_hex_literal(&self.function_id.address)?;
 
+                // loading resources from 0x1
+                if self.load_0x1 {
+                    println!("loading resources from 0x1");
+                    vm.load_all(&profile, &AccountAddress::from_hex_literal("0x1")?)?;
+                }
+
                 println!("Loading remote modules and resources for {function_address:?}");
                 vm.load_all(&profile, &function_address)?;
 
@@ -203,9 +213,21 @@ impl CmdCall {
             }
             // [local-source] - Call a local contract with remote resources and display the return value
             HowToCall::LocalSource => {
-                let function_address = AccountAddress::from_hex_literal(&self.function_id.address)?;
+                let fn_constructor = format!(
+                    "{}::{}::constructor",
+                    self.function_id.address, self.function_id.module
+                );
+                println!("LOCAL-SOURCE RUN: {fn_constructor}");
+                vm.run(&fn_constructor, &signer_address_hex, None).unwrap();
 
-                println!("Loading remote modules and resources for {function_address:?}");
+                // loading resources from 0x1
+                if self.load_0x1 {
+                    println!("loading resources from 0x1");
+                    vm.load_resources(&profile, &AccountAddress::from_hex_literal("0x1")?)?;
+                }
+
+                let function_address = AccountAddress::from_hex_literal(&self.function_id.address)?;
+                println!("Loading remote resources for {function_address:?}");
                 vm.load_resources(&profile, &function_address)?;
 
                 if function_address != signer_address {
@@ -220,7 +242,7 @@ impl CmdCall {
                     self.function_id.address, self.function_id.module
                 );
 
-                println!("LOCAL RUN: {fn_constructor}");
+                println!("VM RUN: {fn_constructor}");
                 vm.run(&fn_constructor, &signer_address_hex, None).unwrap();
             }
             HowToCall::Node => unreachable!(),

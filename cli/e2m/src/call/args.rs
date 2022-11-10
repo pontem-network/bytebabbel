@@ -39,7 +39,7 @@ impl From<&Vec<String>> for FunctionArgs {
             .map(|param| {
                 param
                     .trim()
-                    .split_once(":")
+                    .split_once(':')
                     .map_or(("", param.trim()), |(tp, value)| (tp.trim(), value.trim()))
             })
             .map(|(tp, value)| (tp.to_string(), value.to_string()))
@@ -68,7 +68,7 @@ impl From<(&str, &Vec<String>)> for FunctionArgs {
         let (self_profile_name, value) = from_value;
         let mut args = FunctionArgs::from(value);
 
-        if args.0.iter().find(|(.., value)| value == "self").is_none() {
+        if !args.0.iter().any(|(.., value)| value == "self") {
             return args;
         }
 
@@ -86,6 +86,6 @@ impl From<(&str, &Vec<String>)> for FunctionArgs {
             }
         }
 
-        return args;
+        args
     }
 }

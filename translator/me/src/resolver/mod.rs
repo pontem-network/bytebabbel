@@ -9,6 +9,7 @@ use aptos_types::state_store::{state_key::StateKey, state_storage_usage::StateSt
 use aptos_types::write_set::WriteOp;
 
 use crate::load::load_table_handle_u256;
+use crate::resolver::print_access_path::AccessPathToString;
 use move_core_types::account_address::AccountAddress;
 
 pub mod print_access_path;
@@ -21,14 +22,32 @@ pub struct Resolver {
 
 impl StateView for Resolver {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        log::info!("get_state_value: {}", state_key.to_string());
+
         let result = self.state_data.get(state_key).cloned();
         if result.is_some() {
             return Ok(result);
         }
+        log::warn!(
+            "Not found, need to download {} {state_key:?}",
+            state_key.to_string()
+        );
 
-        if let StateKey::TableItem { handle, key } = state_key {
-            if let Some(data) = self.handler_data.get(&handle.0) {
-                return load_table_handle_u256(data, key);
+        match state_key {
+            StateKey::AccessPath(resource) => {
+                log::warn!(
+                    "Need to download {} {resource:?}",
+                    AccessPathToString::to_string(resource)
+                );
+            }
+            StateKey::TableItem { handle, key } => {
+                log::trace!("handle {} {}", handle.0, hex::encode(key));
+                if let Some(data) = self.handler_data.get(&handle.0) {
+                    return load_table_handle_u256(data, key);
+                }
+            }
+            StateKey::Raw(raw) => {
+                log::warn!("Raw {}", hex::encode(raw))
             }
         }
 
