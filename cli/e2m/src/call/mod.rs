@@ -47,6 +47,25 @@ pub struct CmdCall {
     )]
     args: Vec<String>,
 
+    /// Parameters for initialization.
+    /// Required if a sol file is specified in the path
+    ///
+    /// Supported alias:
+    ///
+    /// self - account address from the profile
+    ///
+    /// <PROFILE_NAME> - account address from the profile
+    ///
+    /// Example:
+    ///
+    ///     `<PROFILE_NAME>` or `address:<PROFILE_NAME>`
+    ///
+    ///     `self` or `address:self`
+    ///
+    ///     `self true 0` or `address:self bool:true u8:0`
+    #[clap(long, default_value = "")]
+    init_args: Vec<String>,
+
     /// Use native "move" types for input and output values
     #[clap(long = "native", display_order = 3)]
     native_type: bool,
@@ -156,7 +175,11 @@ impl CmdCall {
                 ext(path).as_deref() == Some("sol"),
                 "Specify the path to sol file. Invalid file path {path:?}"
             );
-            MoveExecutor::from_sol(path, signer_address, "", flag)?
+            let init_args = FunctionArgs::from((self.profile_name.as_str(), &self.init_args))
+                .value()
+                .join(" ");
+
+            MoveExecutor::from_sol(path, signer_address, &init_args, flag)?
         } else {
             let abi = find_abi(path)?;
             let mut vm = MoveExecutor::new(abi, flag, MoveExecutorInstance::Aptos);

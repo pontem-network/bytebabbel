@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use anyhow::{anyhow, Result};
 use reqwest::{header, Url};
-use serde_json::{json, Value};
+use serde_json::json;
 
 use aptos_types::{access_path::AccessPath, state_store::state_key::StateKey};
 use move_core_types::{

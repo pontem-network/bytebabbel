@@ -45,25 +45,47 @@ impl From<&Vec<String>> for FunctionArgs {
             .map(|(tp, value)| (tp.to_string(), value.to_string()))
             .collect::<Vec<(String, String)>>();
 
-        let filter_profile_name = |row: &(String, String)| match row.0.as_str() {
-            "hex" | "address" => !row.1.starts_with("0x"),
-            _ => false,
-        };
-
         // If there is an alias address(profile name) in the arguments
-        if args.iter().any(filter_profile_name) {
-            let profiles = move_executor::profile::load_configs()
-                .unwrap_or_default()
-                .profiles
-                .unwrap_or_default();
+        let profiles = move_executor::profile::load_configs()
+            .unwrap_or_default()
+            .profiles
+            .unwrap_or_default();
 
-            for (.., value) in args.iter_mut().filter(|tp| filter_profile_name(tp)) {
-                if let Some(address) = profiles.get(value).and_then(|profile| profile.account) {
-                    *value = address.to_hex_literal();
-                }
+        for (.., value) in args.iter_mut() {
+            if let Some(address) = profiles.get(value).and_then(|profile| profile.account) {
+                *value = address.to_hex_literal();
             }
         }
 
         FunctionArgs(args)
+    }
+}
+
+/// profile name + list args
+///
+impl From<(&str, &Vec<String>)> for FunctionArgs {
+    fn from(from_value: (&str, &Vec<String>)) -> Self {
+        let (self_profile_name, value) = from_value;
+        let mut args = FunctionArgs::from(value);
+
+        if args.0.iter().find(|(.., value)| value == "self").is_none() {
+            return args;
+        }
+
+        let profile_address_hex = match move_executor::profile::load_profile(self_profile_name)
+            .ok()
+            .and_then(|profile| profile.account)
+        {
+            Some(account) => account.to_hex_literal(),
+            None => return args,
+        };
+
+        for (.., value) in args.0.iter_mut() {
+            if value == "self" {
+                *value = profile_address_hex.clone()
+            }
+        }
+
+        return args;
     }
 }

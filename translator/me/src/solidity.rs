@@ -2,7 +2,6 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 use eth::{compile::build_sol, Flags};
-use log::log;
 use move_core_types::account_address::AccountAddress;
 
 use crate::{MoveExecutor, MoveExecutorInstance};
