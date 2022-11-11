@@ -11,7 +11,7 @@ use move_core_types::account_address::AccountAddress;
 const CONFIG_FILE: &str = ".aptos/config.yaml";
 
 pub fn load_configs() -> Result<CliConfig> {
-    let root_dir = PathBuf::from(".");
+    let root_dir = PathBuf::from(".").canonicalize()?;
     let mut current_dir = root_dir.as_path();
     let path_config = loop {
         let path_config = current_dir.join(CONFIG_FILE);
