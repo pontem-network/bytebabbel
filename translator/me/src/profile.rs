@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use aptos_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use move_core_types::account_address::AccountAddress;
 
-const CONFIG_FILE: &str = ".aptos/config.yaml";
+const CONFIG_FILE: &str = "back.aptos/config.yaml";
 
 pub fn load_configs() -> Result<CliConfig> {
     let root_dir = PathBuf::from(".").canonicalize()?;
@@ -45,7 +45,7 @@ pub fn profile_to_address(profile: &ProfileConfig) -> Result<AccountAddress> {
         .ok_or_else(|| anyhow!("The address in the profile is not specified"))
 }
 
-/// Config saved to `.aptos/config.yaml`
+/// Config saved to `back.aptos/config.yaml`
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CliConfig {
     /// Map of profile configs

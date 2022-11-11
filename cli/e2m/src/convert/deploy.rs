@@ -14,7 +14,7 @@ const TEMPLATE_MOVE_TOML: &str = include_str!("../../resources/template_move.tom
 
 impl CmdConvert {
     /// Publish in aptos node
-    /// Access keys are taken from profiles (.aptos/config.yaml).
+    /// Access keys are taken from profiles (back.aptos/config.yaml).
     pub fn publish(&self, result_convert: &ResultConvert) -> Result<String> {
         use clap::Parser;
 

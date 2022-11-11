@@ -7,5 +7,5 @@ Cargo.lock
 translator/intrinsic/src/table.rs
 translator/intrinsic/mv/template.mv
 .idea
-.aptos
+back.aptos
 /translator/test_infra/resources/mv/build

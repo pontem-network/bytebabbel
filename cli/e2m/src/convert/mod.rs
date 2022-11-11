@@ -5,7 +5,7 @@ use std::process::Command as cli;
 use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use move_core_types::account_address::AccountAddress;
 
 use eth::compile::{Evm, EvmPack};
@@ -19,7 +19,7 @@ pub mod flags;
 #[derive(Parser, Debug)]
 pub struct CmdConvert {
     /// Path to the file. Specify the path to sol file or abi|bin.
-    #[clap(value_parser)]
+    #[clap(value_parser, display_order = 1)]
     path: PathBuf,
 
     /// Directory path for saving the interface and the converted binary code.
@@ -33,12 +33,12 @@ pub struct CmdConvert {
     /// Profile name or address. The address must start with "0x". Needed for the module address
     #[clap(
         long = "profile",
-        display_order = 5,
         short = 'p',
+        value_parser,
         default_value = "default",
-        value_parser
+        display_order = 5
     )]
-    pub(crate) profile_or_address: profile::ProfileValue,
+    profile_or_address: profile::ProfileValue,
 
     /// Parameters for initialization
     #[clap(long = "args", short = 'a', default_value = "")]

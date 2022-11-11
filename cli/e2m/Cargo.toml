@@ -12,7 +12,7 @@ keywords = ["solidity", "sol", "move", "translator"]
 description = "Converting the file solidity (abi + bin or sol) to binary code move"
 
 [dependencies]
-clap = { version = "3.2.11", features = ["derive"] }
+clap = { version = "3.2.23", features = ["derive"] }
 anyhow.workspace = true
 log.workspace = true
 tempfile = "3.3"
@@ -43,6 +43,9 @@ translator = { path = "../../translator" }
 test_infra = { path = "../../translator/test_infra" }
 eth = { path = "../../translator/eth" }
 move_executor = { path = "../../translator/me" }
+
+[dev-dependencies]
+tempdir.workspace = true
 
 
 
