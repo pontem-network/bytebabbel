@@ -18,7 +18,7 @@ contract Simple {
         b[0] = bytes1(uint8(0));
     }
 
-    // # f_bytes_dyn_hex ()
+    // # ignore_f_bytes_dyn_hex ()
     function f_bytes_dyn_hex() public pure {
         bytes memory b = hex"0000";
         assert(b[0] == bytes1(uint8(0)));

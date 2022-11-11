@@ -3,12 +3,12 @@
 pragma solidity ^0.8.0;
 
 library Fn {
-    // # fn_const_return_uint128 () 1
+    // # fn_const_return_uint128 ()
     function fn_const_return_uint() public pure returns (uint128){
         return 1;
     }
 
-    // # fn_const_return_bool () true
+    // # fn_const_return_bool ()
     function fn_const_return_bool() public pure returns (bool){
         return true;
     }
@@ -21,13 +21,13 @@ library Fn {
         return 2;
     }
 
-    // # one_two () 3
+    // # one_two ()
     function one_two() public pure returns (uint128){
         return one() + two();
     }
 
-    // # one_two_is_a (true) 1
-    // # one_two_is_a (false) 2
+    // # one_two_is_a (true)
+    // # one_two_is_a (false)
     function one_two_is_a(bool a) public pure returns (uint128){
         if (a) {
             return one();
@@ -39,18 +39,17 @@ library Fn {
     // # fn_const()
     function fn_const() public pure {}
 
-    // # test_3 (0, 1, 2) 1
+    // # test_3 (0, 1, 2)
     function test_3(uint128 a, uint128 b, uint128 c) public pure returns (uint128){
-        bool stop = a < 1;
-        if (stop) {
+        if (a < 1) {
             return b;
         }
 
         return b + c;
     }
 
-    // # test_1 (0, 1, 2) 1
-    // # test_1 (323232323, 1, 2) 2
+    // # test_1 (0, 1, 2)
+    // # test_1 (323232323, 1, 2)
     function test_1(uint128 a, uint128 b, uint128 c) public pure returns (uint128){
         if (a == 0) {
             return b;
