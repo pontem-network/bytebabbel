@@ -45,6 +45,7 @@ pub enum Stmt {
     },
     BrunchTrue(Expr, Label),
     Brunch(Label),
+    CallLocal(Label, Vec<Expr>),
 }
 
 pub type Expr = Loc<_Expr>;

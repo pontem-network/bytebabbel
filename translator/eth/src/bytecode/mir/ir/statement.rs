@@ -36,6 +36,12 @@ pub enum Statement {
     Label(Label),
     BrTrue(Loc<TypedExpr>, Label),
     Br(Label),
+    CallLocal {
+        name: Label,
+        storage: Variable,
+        memory: Variable,
+        context: Vec<Loc<TypedExpr>>,
+    },
 }
 
 impl Statement {

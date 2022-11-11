@@ -4,7 +4,10 @@ use crate::bytecode::hir::executor::{ExecutionResult, InstructionHandler};
 use crate::bytecode::hir::ir::{Expr, Label, VarId, _Expr};
 use crate::bytecode::hir::vars::Vars;
 
-use crate::bytecode::tracing::tracer::{FlowTrace, Tracer};
+use crate::bytecode::hir::func::PrivateFunc;
+use crate::bytecode::loc::Loc;
+use crate::bytecode::tracing::tracer::{FlowTrace, Func, Tracer};
+use crate::bytecode::types::EthType;
 use crate::{Flags, Function, Hir, Offset, OpCode};
 use anyhow::{anyhow, ensure, Context as ErrorContext, Error};
 use primitive_types::U256;
@@ -13,6 +16,7 @@ use std::collections::{BTreeMap, HashMap};
 pub mod context;
 pub mod debug;
 pub mod executor;
+pub mod func;
 pub mod ir;
 pub mod stack;
 pub mod vars;
@@ -21,25 +25,75 @@ pub struct HirBuilder {
     contract: HashMap<Offset, InstructionBlock>,
     flags: Flags,
     flow: FlowTrace,
+    contract_address: U256,
+    code_size: u128,
 }
 
 impl HirBuilder {
-    pub fn new(contract: HashMap<Offset, InstructionBlock>, flags: Flags) -> Result<Self, Error> {
+    pub fn new(
+        contract: HashMap<Offset, InstructionBlock>,
+        flags: Flags,
+        contract_address: U256,
+        code_size: u128,
+    ) -> Result<Self, Error> {
         let flow = Tracer::new(&contract).trace()?;
         Ok(Self {
             contract,
             flags,
             flow,
+            contract_address,
+            code_size,
         })
     }
 
-    pub fn translate_fun(
-        &self,
-        fun: &Function,
-        contract_address: U256,
-        code_size: u128,
-    ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
+    pub fn translate_module_base(&self) -> Result<HashMap<Offset, PrivateFunc>, Error> {
+        let mut funcs = HashMap::new();
+        for (offset, fun) in &self.flow.funcs {
+            funcs.insert(*offset, self.translate_private_fun(fun)?);
+        }
+
+        Ok(funcs)
+    }
+
+    fn translate_private_fun(&self, fun: &Func) -> Result<PrivateFunc, Error> {
+        let def = Function {
+            hash: Default::default(),
+            name: fun.name(),
+            eth_input: vec![],
+            native_input: fun.input.iter().map(|v| EthType::U256).collect(),
+            eth_output: vec![],
+            native_output: fun.output.iter().map(|v| EthType::U256).collect(),
+        };
+        let mut ctx = Context::new(
+            &def,
+            self.contract_address,
+            self.code_size,
+            Flags {
+                native_input: true,
+                native_output: true,
+                hidden_output: false,
+                u128_io: false,
+            },
+        );
+        ctx.private_func = true;
+        let mut ir = Hir::default();
+
+        let fn_loc = Loc::new(fun.entry_point.0, fun.entry_point.0, ());
+        for (idx, _) in fun.input.iter().enumerate() {
+            ctx.stack
+                .push(fn_loc.wrap(_Expr::Args(Box::new(fn_loc.wrap(_Expr::Val(idx.into()))))));
+        }
+
+        self.translate_blocks(Offset::default(), &mut ir, &mut ctx)?;
+        println!("fun: {:?}", fun);
+        let mut s = String::new();
+        ir.print(&mut s)?;
+        println!("{}", s);
+        todo!()
+    }
+
+    pub fn translate_public_fun(&self, fun: &Function) -> Result<Hir, Error> {
+        let mut ctx = Context::new(fun, self.contract_address, self.code_size, self.flags);
         let mut ir = Hir::default();
         self.translate_blocks(Offset::default(), &mut ir, &mut ctx)?;
         Ok(ir)

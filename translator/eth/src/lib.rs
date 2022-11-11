@@ -50,26 +50,18 @@ pub fn transpile_program(
         .map(|block| (block.start, block))
         .collect::<HashMap<_, _>>();
 
-    let hir = HirBuilder::new(contract, flags)?;
+    let hir = HirBuilder::new(contract, flags, contract_addr, contract_code_len as u128)?;
+    hir.translate_module_base()?;
     let functions = abi
         .functions()
         .iter()
-        .map(|(hash, fun)| {
-            translate_function(&hir, fun, contract_addr, contract_code_len as u128, flags)
-                .map(|mir| (*hash, mir))
-        })
+        .map(|(hash, fun)| translate_function(&hir, fun, flags).map(|mir| (*hash, mir)))
         .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
     Program::new(constructor, functions, abi)
 }
 
-pub fn translate_function(
-    hir: &HirBuilder,
-    fun: &Function,
-    contract_addr: U256,
-    code_size: u128,
-    flags: Flags,
-) -> Result<Mir, Error> {
-    let hir = hir.translate_fun(fun, contract_addr, code_size)?;
+pub fn translate_function(hir: &HirBuilder, fun: &Function, flags: Flags) -> Result<Mir, Error> {
+    let hir = hir.translate_public_fun(fun)?;
     let mut buff = String::new();
     hir.print(&mut buff)?;
     trace!("{}", buff);
