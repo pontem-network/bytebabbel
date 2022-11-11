@@ -5,12 +5,13 @@ use std::process::Command as cli;
 use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
-use clap::{value_parser, Parser};
+use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 
 use eth::compile::{Evm, EvmPack};
 use translator::{translate, Target};
 
+use crate::profile::ProfileValue;
 use crate::{profile, Cmd};
 
 mod deploy;
@@ -31,14 +32,8 @@ pub struct CmdConvert {
     move_module_name: Option<String>,
 
     /// Profile name or address. The address must start with "0x". Needed for the module address
-    #[clap(
-        long = "profile",
-        short = 'p',
-        value_parser,
-        default_value = "default",
-        display_order = 5
-    )]
-    profile_or_address: profile::ProfileValue,
+    #[clap(long = "profile", display_order = 5, short = 'p', value_parser)]
+    pub(crate) profile_or_address: Option<ProfileValue>,
 
     /// Parameters for initialization
     #[clap(long = "args", short = 'a', default_value = "")]
@@ -71,8 +66,16 @@ impl Cmd for CmdConvert {
 
 impl CmdConvert {
     pub fn convert(&self) -> Result<ResultConvert> {
+        log::trace!("Convert: {:?}", &self.path);
+
         let pack = path_to_abibin(&self.path)?;
-        let address = self.profile_or_address.to_address()?;
+
+        let address = match self.profile_or_address.as_ref() {
+            None => ProfileValue::default()?.to_address()?,
+            Some(profile) => profile.to_address()?,
+        };
+        log::trace!("Address: {address:?}");
+
         let module_name = self
             .move_module_name
             .clone()
