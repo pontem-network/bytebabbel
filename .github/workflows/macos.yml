@@ -31,6 +31,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           os: ${{ runner.os }}
 
+      - name: Build
+        run: RUST_BACKTRACE=1 cargo build
+        shell: bash
+
       - name: Test
         run: RUST_BACKTRACE=1 cargo test
         shell: bash

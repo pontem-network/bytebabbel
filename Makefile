@@ -1,8 +1,8 @@
 pre_commit:
 	cargo fmt
-	cargo +nightly build
-	cargo +nightly clippy -- -D warnings
-	cargo +nightly test
+	cargo build
+	cargo clippy --all-targets --all-features -- -D warnings
+	cargo test -- --nocapture
 
 clean:
 	cargo clean

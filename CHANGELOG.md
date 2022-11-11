@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-- Launching a local contract: remote all/local contact and remote resources/ local all
 
 ## [0.0.4] - 2022-11-08
 

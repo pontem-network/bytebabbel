@@ -5,9 +5,6 @@ use intrinsic::TEMPLATE_MODULE;
 use move_binary_format::{CompiledModule, IndexKind};
 use test_infra::init_log;
 
-#[allow(dead_code)]
-mod testssol;
-
 #[test]
 pub fn test_template_crop() {
     init_log();

@@ -3,9 +3,8 @@ use libtest_mimic::{Arguments, Outcome, Test};
 
 use test_infra::{init_log, init_log_with_buff_and_name, CustLogger};
 
-use crate::testssol::STest;
-
 mod testssol;
+use crate::testssol::STest;
 
 fn run_test(name: &str, test: &STest) -> Result<()> {
     init_log_with_buff_and_name(name);

@@ -2,10 +2,11 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use move_binary_format::access::ModuleAccess;
-use move_binary_format::CompiledModule;
-use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
-use move_core_types::resolver::MoveResolver;
+use move_binary_format::{access::ModuleAccess, CompiledModule};
+use move_core_types::{
+    language_storage::{ModuleId, CORE_CODE_ADDRESS},
+    resolver::MoveResolver,
+};
 use move_vm_runtime::session::Session;
 use move_vm_types::gas::UnmeteredGasMeter;
 
