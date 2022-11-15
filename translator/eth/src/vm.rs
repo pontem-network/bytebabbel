@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 
-use anyhow::{bail, Error};
+use anyhow::{anyhow, bail, Error};
 use ethabi::Contract;
 use evm::backend::{MemoryBackend, MemoryVicinity};
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
@@ -94,7 +94,9 @@ fn vicinity() -> MemoryVicinity {
 
 fn constructor_encode_params(abi: &Contract, args_str: &str) -> Result<Vec<u8>, Error> {
     if let Some(constructor) = abi.constructor() {
-        constructor.call_by_str(args_str)
+        constructor
+            .call_by_str(args_str)
+            .map_err(|err| anyhow!("constructor args: {err:?}"))
     } else {
         Ok(vec![])
     }
