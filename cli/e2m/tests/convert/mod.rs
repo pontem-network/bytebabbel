@@ -183,6 +183,8 @@ fn test_param_module_and_output() {
     );
 }
 
+/// $ e2m convert .. --args ...
+/// $ e2m convert .. --a ...
 #[test]
 fn test_param_init_arts() {
     // After the test is completed, it will be deleted
@@ -191,22 +193,34 @@ fn test_param_init_arts() {
     add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
 
     assert!(e2m(
-        &["convert", "../../examples/users.sol"],
+        &["convert", "../../examples/users.sol", "-o", "ver1"],
         tmp_project_folder.as_ref(),
     )
     .is_err());
 
     let output = e2m(
-        &["convert", "../../examples/users.sol", "--args", "0x42"],
+        &[
+            "convert",
+            "../../examples/users.sol",
+            "--args",
+            "0x42",
+            "-o",
+            "ver2",
+        ],
         tmp_project_folder.as_ref(),
     )
     .unwrap();
     println!("{output}");
 
-    checking_the_file_structure(&tmp_project_folder.as_ref().join("Users"), "Users");
-
     let output = e2m(
-        &["convert", "../../examples/users.sol", "--args", "self"],
+        &[
+            "convert",
+            "../../examples/users.sol",
+            "-a",
+            "self",
+            "-o",
+            "ver3",
+        ],
         tmp_project_folder.as_ref(),
     )
     .unwrap();
@@ -218,4 +232,6 @@ fn test_param_init_arts() {
     )
     .unwrap();
     println!("{output}");
+
+    checking_the_file_structure(&tmp_project_folder.as_ref().join("Users"), "Users");
 }
