@@ -2,7 +2,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, ensure, Result};
-use tempfile::tempdir;
 
 mod convert;
 
@@ -10,35 +9,7 @@ const LOCAL_CONFIG: &str = include_str!("../resources/config.yaml");
 
 /// Run: e2m ...
 pub(crate) fn e2m<P: AsRef<Path>>(args: &[&str], project_dir: P) -> Result<String> {
-    run_cli(std::env!("CARGO_BIN_EXE_e2m"), &args, project_dir)
-}
-
-/// Run: aptos init
-///     --profile <PROFILE_NAME>
-///     --rest-url http://localhost:8080
-///     --faucet-url http://localhost:8081
-///     --network local
-///     --assume-yes
-pub(crate) fn aptos_init_local_profile<P: AsRef<Path>>(
-    dir: P,
-    profile_name: &str,
-) -> Result<String> {
-    run_cli(
-        "aptos",
-        &[
-            "init",
-            "--profile",
-            profile_name,
-            "--rest-url",
-            "http://localhost:8080",
-            "--faucet-url",
-            "http://localhost:8081",
-            "--network",
-            "local",
-            "--assume-yes",
-        ],
-        dir,
-    )
+    run_cli(std::env!("CARGO_BIN_EXE_e2m"), args, project_dir)
 }
 
 pub(crate) fn add_aptos_config_for_test(path: &Path) -> Result<PathBuf> {
@@ -96,12 +67,10 @@ fn checking_the_file_structure(project_dir: &Path, module_name: &str) {
             .exists(),
         "Expected: sources/{module_name}.move\n\
         Found: {:?}",
-        project_dir.join("sources").read_dir().ok().and_then(|dir| {
-            Some(
-                dir.filter_map(|path| path.ok())
-                    .map(|path| path.path())
-                    .collect::<Vec<_>>(),
-            )
+        project_dir.join("sources").read_dir().ok().map(|dir| {
+            dir.filter_map(|path| path.ok())
+                .map(|path| path.path())
+                .collect::<Vec<_>>()
         })
     );
     assert!(project_dir.join(format!("{module_name}.abi")).exists());

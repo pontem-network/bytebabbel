@@ -1,9 +1,7 @@
 use std::fs;
 use tempfile::tempdir;
 
-use crate::{
-    add_aptos_config_for_test, aptos_init_local_profile, checking_the_file_structure, e2m,
-};
+use crate::{add_aptos_config_for_test, checking_the_file_structure, e2m};
 
 #[test]
 fn test_default_profile_not_found() {

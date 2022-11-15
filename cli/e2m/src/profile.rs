@@ -47,7 +47,7 @@ impl ProfileValue {
 
     pub fn default() -> Result<ProfileValue> {
         log::debug!("ProfileValue::default");
-        Ok(ProfileValue::from_str("default")?)
+        ProfileValue::from_str("default")
     }
 }
 

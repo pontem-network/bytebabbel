@@ -17,7 +17,7 @@ pub mod flags;
 
 use crate::call::args::FunctionArgs;
 use crate::profile::ProfileValue;
-use crate::{profile, Cmd};
+use crate::Cmd;
 
 #[derive(Parser, Debug)]
 pub struct CmdConvert {
@@ -127,17 +127,6 @@ impl CmdConvert {
         }
         Ok(interface_dir.canonicalize()?)
     }
-}
-
-#[inline]
-fn replacing_self_with_an_address(args: &str, self_address: &AccountAddress) -> String {
-    let address_str = self_address.to_hex_literal();
-
-    let mut init_args = args.to_string();
-    while let Some(pos) = init_args.to_lowercase().find("self") {
-        init_args.replace_range(pos..pos + 4, &address_str);
-    }
-    init_args
 }
 
 #[inline]
