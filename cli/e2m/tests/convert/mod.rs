@@ -20,7 +20,7 @@ fn test_default_profile_not_found() {
 
 /// Package address
 #[test]
-fn test_package_address() {
+fn test_set_package_address() {
     // After the test is completed, it will be deleted
     let tmp_project_folder = tempdir().unwrap();
 
@@ -36,7 +36,7 @@ fn test_package_address() {
     )
     .is_err());
 
-    e2m(
+    let output = e2m(
         &[
             "convert",
             "../../examples/a_plus_b.sol",
@@ -46,6 +46,7 @@ fn test_package_address() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
+    println!("{output}");
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
 
@@ -56,29 +57,33 @@ fn test_package_address() {
 
 /// Profile name
 #[test]
-fn test_profile_name() {
+fn test_set_profile_name() {
     // After the test is completed, it will be deleted
     let tmp_project_folder = tempdir().unwrap();
     // .aptos/config.yaml
     add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
 
     // default
-    e2m(
-        &["convert", "../../examples/a_plus_b.sol"],
+    let output = e2m(
+        &["convert", "../../examples/two_functions.sol"],
         tmp_project_folder.as_ref(),
     )
     .unwrap();
+    println!("{output}");
 
-    checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
+    checking_the_file_structure(
+        &tmp_project_folder.as_ref().join("TwoFunctions"),
+        "TwoFunctions",
+    );
 
     let move_toml_string =
-        fs::read_to_string(tmp_project_folder.as_ref().join("APlusB/Move.toml")).unwrap();
+        fs::read_to_string(tmp_project_folder.as_ref().join("TwoFunctions/Move.toml")).unwrap();
     assert!(move_toml_string.contains(
         r#"self = "0x60377c1019fdf87e372cffdcaf260e8fd7e83fe17d84b19109eaa0be597e5c5f""#
     ));
 
     // demo
-    e2m(
+    let output = e2m(
         &[
             "convert",
             "../../examples/a_plus_b.sol",
@@ -88,6 +93,7 @@ fn test_profile_name() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
+    println!("{output}");
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
 
@@ -100,7 +106,7 @@ fn test_profile_name() {
 
 /// Directory path for saving the interface and the converted binary code
 #[test]
-fn test_output() {
+fn test_param_output() {
     // After the test is completed, it will be deleted
     let tmp_project_folder = tempdir().unwrap();
     // .aptos/config.yaml
@@ -110,7 +116,7 @@ fn test_output() {
     let output = e2m(
         &[
             "convert",
-            "../../examples/a_plus_b.sol",
+            "../../examples/const_fn.sol",
             "--output",
             "package",
         ],
@@ -119,5 +125,60 @@ fn test_output() {
     .unwrap();
     println!("{output}");
 
-    checking_the_file_structure(&tmp_project_folder.as_ref().join("package"), "APlusB");
+    checking_the_file_structure(&tmp_project_folder.as_ref().join("package"), "ConstFn");
+}
+
+/// The name of the Move module. If not specified, the name will be taken from the abi path
+#[test]
+fn test_param_module() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+    // .aptos/config.yaml
+    add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
+
+    // default
+    let output = e2m(
+        &[
+            "convert",
+            "../../examples/const_fn.sol",
+            "--module",
+            "DemoModule",
+        ],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+    println!("{output}");
+
+    checking_the_file_structure(
+        &tmp_project_folder.as_ref().join("DemoModule"),
+        "DemoModule",
+    );
+}
+
+#[test]
+fn test_param_module_and_output() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+    // .aptos/config.yaml
+    add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
+
+    // default
+    let output = e2m(
+        &[
+            "convert",
+            "../../examples/const_fn.sol",
+            "--module",
+            "DemoModule",
+            "--output",
+            "folder_name",
+        ],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+    println!("{output}");
+
+    checking_the_file_structure(
+        &tmp_project_folder.as_ref().join("folder_name"),
+        "DemoModule",
+    );
 }
