@@ -68,7 +68,8 @@ impl CmdConvert {
     pub fn convert(&self) -> Result<ResultConvert> {
         log::trace!("Convert: {:?}", &self.path);
 
-        let pack = path_to_abibin(&self.path)?;
+        let pack = path_to_abibin(&self.path)
+            .map_err(|err| anyhow!("Failed to convert file {:?}. \nError: {err:?}", &self.path))?;
 
         let address = match self.profile_or_address.as_ref() {
             None => ProfileValue::default()?.to_address()?,
