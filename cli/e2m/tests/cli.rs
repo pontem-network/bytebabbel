@@ -1,35 +1,52 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, ensure, Result};
 use tempfile::tempdir;
 
 mod convert;
+
+const LOCAL_CONFIG: &str = include_str!("../resources/config.yaml");
 
 /// Run: e2m ...
 pub(crate) fn e2m<P: AsRef<Path>>(args: &[&str], project_dir: P) -> Result<String> {
     run_cli(std::env!("CARGO_BIN_EXE_e2m"), &args, project_dir)
 }
 
-/// Run: aptos init --profile <PROFILE_NAME>
+/// Run: aptos init
+///     --profile <PROFILE_NAME>
 ///     --rest-url http://localhost:8080
 ///     --faucet-url http://localhost:8081
+///     --network local
+///     --assume-yes
 pub(crate) fn aptos_init_local_profile<P: AsRef<Path>>(
     dir: P,
     profile_name: &str,
 ) -> Result<String> {
-    let args = [
-        "init",
-        "--profile",
-        profile_name,
-        " --network",
-        "local",
-        "--rest-url",
-        "http://localhost:8080",
-        "--faucet-url",
-        "http://localhost:8081",
-    ];
-    run_cli("aptos", &args, dir)
+    run_cli(
+        "aptos",
+        &[
+            "init",
+            "--profile",
+            profile_name,
+            "--rest-url",
+            "http://localhost:8080",
+            "--faucet-url",
+            "http://localhost:8081",
+            "--network",
+            "local",
+            "--assume-yes",
+        ],
+        dir,
+    )
+}
+
+pub(crate) fn add_aptos_config_for_test(path: &Path) -> Result<PathBuf> {
+    let config_aptos_dir = path.join(".aptos");
+    fs::create_dir(&config_aptos_dir)?;
+    let config_file_path = config_aptos_dir.join("config.yaml");
+    fs::write(&config_file_path, LOCAL_CONFIG)?;
+    Ok(config_file_path)
 }
 
 fn run_cli<P: AsRef<Path>>(program: &str, args: &[&str], dir: P) -> Result<String> {
@@ -37,13 +54,9 @@ fn run_cli<P: AsRef<Path>>(program: &str, args: &[&str], dir: P) -> Result<Strin
     ensure!(current_dir.exists(), "Dir {current_dir:?} does not exist",);
     ensure!(current_dir.is_dir(), "Expected directory {current_dir:?}");
 
-    dbg!(program);
-    dbg!(args);
-    dbg!(current_dir);
-
     let output = std::process::Command::new(program)
         .current_dir(current_dir)
-        .args(args)
+        .args(&args_relative_to_absolute(args)?)
         .output()?;
 
     ensure!(
@@ -55,4 +68,42 @@ fn run_cli<P: AsRef<Path>>(program: &str, args: &[&str], dir: P) -> Result<Strin
     );
 
     Ok(String::from_utf8(output.stdout)?)
+}
+
+#[inline]
+fn args_relative_to_absolute(args: &[&str]) -> Result<Vec<String>> {
+    args.iter()
+        .map(|arg| {
+            let arg = if arg.starts_with("./") || arg.starts_with("../") {
+                PathBuf::from(arg)
+                    .canonicalize()
+                    .map_err(|err| anyhow!("Incorrect path {:?}. {err:?}", arg))?
+                    .to_string_lossy()
+                    .to_string()
+            } else {
+                arg.to_string()
+            };
+            Ok(arg)
+        })
+        .collect::<Result<Vec<String>>>()
+}
+
+fn checking_the_file_structure(project_dir: &Path, module_name: &str) {
+    assert!(project_dir.join("Move.toml").exists());
+    assert!(
+        project_dir
+            .join(format!("sources/{module_name}.move"))
+            .exists(),
+        "Expected: sources/{module_name}.move\n\
+        Found: {:?}",
+        project_dir.join("sources").read_dir().ok().and_then(|dir| {
+            Some(
+                dir.filter_map(|path| path.ok())
+                    .map(|path| path.path())
+                    .collect::<Vec<_>>(),
+            )
+        })
+    );
+    assert!(project_dir.join(format!("{module_name}.abi")).exists());
+    assert!(project_dir.join(format!("{module_name}.mv")).exists());
 }

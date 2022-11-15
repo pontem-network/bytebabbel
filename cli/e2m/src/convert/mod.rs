@@ -81,6 +81,7 @@ impl CmdConvert {
             .move_module_name
             .clone()
             .unwrap_or_else(|| pack.name().to_string());
+
         let interface_dir_path = self.interface_dir(&module_name)?;
 
         // Convert
@@ -95,7 +96,7 @@ impl CmdConvert {
         fs::write(&binary_code_path, &mv.bytecode)?;
 
         // save the interface
-        save_interface(&interface_dir_path, &mv)?;
+        save_interface(&interface_dir_path, &module_name, &mv)?;
 
         // save the abi
         let abi_path = interface_dir_path.join(&module_name).with_extension("abi");
@@ -133,17 +134,16 @@ fn replacing_self_with_an_address(args: &str, self_address: &AccountAddress) -> 
 }
 
 #[inline]
-fn save_interface(base_dir: &Path, target: &Target) -> Result<()> {
-    let name = base_dir
-        .file_name()
-        .ok_or_else(|| anyhow!("Invalid path"))?;
-
+fn save_interface(base_dir: &Path, module_name: &str, target: &Target) -> Result<()> {
     fs::create_dir_all(base_dir)?;
     fs::write(base_dir.join("Move.toml"), &target.manifest)?;
 
     let sources = base_dir.join("sources");
     fs::create_dir_all(&sources)?;
-    fs::write(sources.join(name).with_extension("move"), &target.interface)?;
+    fs::write(
+        sources.join(module_name).with_extension("move"),
+        &target.interface,
+    )?;
 
     Ok(())
 }

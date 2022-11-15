@@ -16,7 +16,7 @@ pub(crate) struct FunctionId {
 }
 
 impl FunctionId {
-    /// The profile name will be replaced with the address from `back.aptos/config.yaml`
+    /// The profile name will be replaced with the address from `.aptos/config.yaml`
     fn replace_address_name_to_address(&mut self) -> Result<()> {
         if self.address.starts_with("0x") {
             return Ok(());
