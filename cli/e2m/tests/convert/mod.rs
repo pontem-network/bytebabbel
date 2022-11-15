@@ -182,3 +182,40 @@ fn test_param_module_and_output() {
         "DemoModule",
     );
 }
+
+#[test]
+fn test_param_init_arts() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+    // .aptos/config.yaml
+    add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
+
+    assert!(e2m(
+        &["convert", "../../examples/users.sol"],
+        tmp_project_folder.as_ref(),
+    )
+    .is_err());
+
+    let output = e2m(
+        &["convert", "../../examples/users.sol", "--args", "0x42"],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+    println!("{output}");
+
+    checking_the_file_structure(&tmp_project_folder.as_ref().join("Users"), "Users");
+
+    let output = e2m(
+        &["convert", "../../examples/users.sol", "--args", "self"],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+    println!("{output}");
+
+    let output = e2m(
+        &["convert", "../../examples/users.sol", "--args", "default"],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+    println!("{output}");
+}

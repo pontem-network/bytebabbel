@@ -1,5 +1,6 @@
 use anyhow::Result;
 use eth::abi::call::to_token;
+use move_core_types::account_address::AccountAddress;
 
 #[derive(Debug, Clone)]
 pub(crate) struct FunctionArgs(Vec<(String, String)>);
@@ -83,6 +84,27 @@ impl From<(&str, &Vec<String>)> for FunctionArgs {
         for (.., value) in args.0.iter_mut() {
             if value == "self" {
                 *value = profile_address_hex.clone()
+            }
+        }
+
+        args
+    }
+}
+
+/// profile name + list args
+///
+impl From<(&AccountAddress, &Vec<String>)> for FunctionArgs {
+    fn from(from_value: (&AccountAddress, &Vec<String>)) -> Self {
+        let (profile_address_hex, value) = from_value;
+        let mut args = FunctionArgs::from(value);
+
+        if !args.0.iter().any(|(.., value)| value == "self") {
+            return args;
+        }
+
+        for (.., value) in args.0.iter_mut() {
+            if value == "self" {
+                *value = profile_address_hex.to_hex_literal()
             }
         }
 

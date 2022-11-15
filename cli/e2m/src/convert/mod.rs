@@ -6,16 +6,18 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
+use itertools::Itertools;
 
 use eth::compile::{Evm, EvmPack};
+use move_core_types::account_address::AccountAddress;
 use translator::{translate, Target};
-
-use crate::profile::ProfileValue;
-use crate::{profile, Cmd};
 
 mod deploy;
 pub mod flags;
+
+use crate::call::args::FunctionArgs;
+use crate::profile::ProfileValue;
+use crate::{profile, Cmd};
 
 #[derive(Parser, Debug)]
 pub struct CmdConvert {
@@ -37,7 +39,7 @@ pub struct CmdConvert {
 
     /// Parameters for initialization
     #[clap(long = "args", short = 'a', default_value = "")]
-    init_args: String,
+    init_args: Vec<String>,
 
     #[clap(flatten)]
     pub(crate) transaction_flags: crate::txflags::TransactionFlags,
@@ -85,11 +87,16 @@ impl CmdConvert {
         let interface_dir_path = self.interface_dir(&module_name)?;
 
         // Convert
+
+        let initialization_args = FunctionArgs::from((&address, &self.init_args))
+            .value()
+            .join(" ");
+
         let binary_code_path = interface_dir_path.join(&module_name).with_extension("mv");
         let cfg = translator::Config {
             contract_addr: address,
             name: &module_name,
-            initialization_args: &replacing_self_with_an_address(&self.init_args, &address),
+            initialization_args: &initialization_args,
             flags: self.convertion_flags.into(),
         };
         let mv = translate(pack.bin_contract(), pack.abi_str(), cfg)?;

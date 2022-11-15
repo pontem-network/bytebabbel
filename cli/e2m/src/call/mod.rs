@@ -8,7 +8,7 @@ use ethabi::Contract;
 use itertools::Itertools;
 use move_core_types::account_address::AccountAddress;
 
-mod args;
+pub(crate) mod args;
 pub(crate) mod function_id;
 
 use crate::call::args::FunctionArgs;
