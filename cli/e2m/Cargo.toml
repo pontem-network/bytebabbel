@@ -46,7 +46,8 @@ move_executor = { path = "../../translator/me" }
 
 [dev-dependencies]
 tempdir.workspace = true
-
+copy_dir = "0.1.2"
+serde_yaml.workspace = true
 
 
 

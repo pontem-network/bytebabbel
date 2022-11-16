@@ -6,7 +6,7 @@ authors = [
     "Dm. Yakushev <dmitryyakushev@dfinance.co>",
     "Maxim Vladimirov <maxim@pontem.network>",
 ]
-keywords = ["move", "vm", "executor" ]
+keywords = ["move", "vm", "executor"]
 description = "Execution of the MOVE binarycode"
 
 autotests = false
@@ -23,7 +23,7 @@ bcs.workspace = true
 hex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-serde_yaml = ">=0.8.26"
+serde_yaml.workspace = true
 log.workspace = true
 
 # aptos

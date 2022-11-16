@@ -1,6 +1,8 @@
 use std::fs;
 use tempfile::tempdir;
 
+pub(crate) mod localnode_and_native_types;
+
 use crate::{add_aptos_config_for_test, checking_the_file_structure, e2m};
 
 #[test]
@@ -34,7 +36,7 @@ fn test_set_package_address() {
     )
     .is_err());
 
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/a_plus_b.sol",
@@ -44,7 +46,6 @@ fn test_set_package_address() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
 
@@ -62,12 +63,11 @@ fn test_set_profile_name() {
     add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
 
     // default
-    let output = e2m(
+    e2m(
         &["convert", "../../examples/two_functions.sol"],
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(
         &tmp_project_folder.as_ref().join("TwoFunctions"),
@@ -81,7 +81,7 @@ fn test_set_profile_name() {
     ));
 
     // demo
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/a_plus_b.sol",
@@ -91,7 +91,6 @@ fn test_set_profile_name() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
 
@@ -111,7 +110,7 @@ fn test_param_output() {
     add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
 
     // default
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/const_fn.sol",
@@ -121,7 +120,6 @@ fn test_param_output() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("package"), "ConstFn");
 }
@@ -135,7 +133,7 @@ fn test_param_module() {
     add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
 
     // default
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/const_fn.sol",
@@ -145,7 +143,6 @@ fn test_param_module() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(
         &tmp_project_folder.as_ref().join("DemoModule"),
@@ -161,7 +158,7 @@ fn test_param_module_and_output() {
     add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
 
     // default
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/const_fn.sol",
@@ -173,7 +170,6 @@ fn test_param_module_and_output() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(
         &tmp_project_folder.as_ref().join("folder_name"),
@@ -196,7 +192,7 @@ fn test_param_init_arts() {
     )
     .is_err());
 
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/users.sol",
@@ -208,9 +204,8 @@ fn test_param_init_arts() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
-    let output = e2m(
+    e2m(
         &[
             "convert",
             "../../examples/users.sol",
@@ -222,14 +217,12 @@ fn test_param_init_arts() {
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
-    let output = e2m(
+    e2m(
         &["convert", "../../examples/users.sol", "--args", "default"],
         tmp_project_folder.as_ref(),
     )
     .unwrap();
-    println!("{output}");
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("Users"), "Users");
 }
