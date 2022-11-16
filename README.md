@@ -453,7 +453,7 @@ module
 
 ```bash
 aptos move publish \
-  --package-dir ./examples/sc_users \
+  --package-dir ./examples/sc_users_native \
   --max-gas 10000 \
   --assume-yes
 ```
