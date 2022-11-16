@@ -718,7 +718,7 @@ Calling the module constructor to assign the current account as the owner
 
 ```bash
 e2m call \
-   --function-id default::ScUserEth::constructor \
+   --function-id default::ScUsersEth::constructor \
    --max-gas 5000
 ```
 
@@ -726,7 +726,7 @@ e2m call \
 
 ```bash
 e2m call \
-   --function-id default::ScUserEth::create_user \
+   --function-id default::ScUsersEth::create_user \
    --max-gas 25000 \
    --profile demo
 ```
@@ -737,7 +737,7 @@ account "default": id = 1
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::is_id \
+  --function-id default::ScUsersEth::is_id \
   --args u128:1 \
   --max-gas 10000
 ```
@@ -746,7 +746,7 @@ account "demo": id = 2
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::is_id \
+  --function-id default::ScUsersEth::is_id \
   --args u128:2 \
   --max-gas 10000 \
   --profile demo 
@@ -756,7 +756,7 @@ e2m call \
 
 ```bash
 e2m call \
-   --function-id default::ScUserEth::is_owner \
+   --function-id default::ScUsersEth::is_owner \
    --max-gas 10000
 ```
 
@@ -764,7 +764,7 @@ An **error** will occur when checking from another account
 
 ```bash
 e2m call \
-   --function-id default::ScUserEth::is_owner \
+   --function-id default::ScUsersEth::is_owner \
    --max-gas 10000 \
    --profile demo
 ```
@@ -775,7 +775,7 @@ account "default": 10000000000000000000000000000
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::check_balance \
+  --function-id default::ScUsersEth::check_balance \
   --args u128:10000000000000000000000000000 \
   --max-gas 10000
 ```
@@ -784,7 +784,7 @@ account "demo": 0
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::is_empty_balance \
+  --function-id default::ScUsersEth::is_empty_balance \
   --max-gas 10000 \
   --profile demo
 ```
@@ -795,7 +795,7 @@ Sending 200 coins from "default" to "demo"
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::transfer \
+  --function-id default::ScUsersEth::transfer \
   --args address:demo u128:200 \
   --max-gas 25000
 ```
@@ -806,7 +806,7 @@ Account **default**
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::check_balance \
+  --function-id default::ScUsersEth::check_balance \
   --args u128:9999999999999999999999999800 \
   --max-gas 10000
 ```
@@ -815,7 +815,7 @@ Account **demo**
 
 ```bash
 e2m call \
-  --function-id default::ScUserEth::check_balance \
+  --function-id default::ScUsersEth::check_balance \
   --args u128:200 \
   --max-gas 10000 \
   --profile demo

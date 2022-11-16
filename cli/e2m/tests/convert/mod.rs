@@ -1,7 +1,7 @@
 use std::fs;
 use tempfile::tempdir;
 
-pub(crate) mod localnode_and_native_types;
+pub mod localnode;
 
 use crate::{add_aptos_config_for_test, checking_the_file_structure, e2m};
 
