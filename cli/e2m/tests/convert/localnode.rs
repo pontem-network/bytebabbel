@@ -1,4 +1,4 @@
-/// !!!IMPORTANT
+/// !!! IMPORTANT
 /// Don't forget to raise the local node before starting
 ///
 /// $ ```aptos node run-local-testnet --with-faucet --force-restart --assume-yes```

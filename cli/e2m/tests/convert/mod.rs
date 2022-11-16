@@ -18,6 +18,58 @@ fn test_default_profile_not_found() {
     .is_err());
 }
 
+///  Path to the file. Specify the path to sol file or abi | bin
+#[test]
+fn test_path_abi() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+
+    // .aptos/config.yaml
+    add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
+
+    e2m(
+        &["convert", "../../examples/APlusB.abi"],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+
+    checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
+}
+
+///  Path to the file. Specify the path to sol file or abi | bin
+#[test]
+fn test_path_abi_error() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+
+    // .aptos/config.yaml
+    add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
+
+    assert!(e2m(
+        &["convert", "../../examples/BinNotFound.abi"],
+        tmp_project_folder.as_ref(),
+    )
+    .is_err());
+}
+
+///  Path to the file. Specify the path to sol file or abi | bin
+#[test]
+fn test_path_bin() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+
+    // .aptos/config.yaml
+    add_aptos_config_for_test(tmp_project_folder.as_ref()).unwrap();
+
+    e2m(
+        &["convert", "../../examples/APlusB.bin"],
+        tmp_project_folder.as_ref(),
+    )
+    .unwrap();
+
+    checking_the_file_structure(&tmp_project_folder.as_ref().join("APlusB"), "APlusB");
+}
+
 /// Package address
 #[test]
 fn test_set_package_address() {
