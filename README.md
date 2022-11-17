@@ -67,7 +67,7 @@ in the system for this file.
 >
 > Default profile:
 > ```bash
-> aptos account fund-with-faucet --account default --amount 10000000 --profile default
+> aptos account fund-with-faucet --amount 10000000
 > ```
 > Demo profile:
 > ```bash
@@ -282,10 +282,7 @@ Move module name: **TwoFunctions**
 #### Combined arguments
 
 ```bash
- e2m convert examples/const_fn.sol \
-  -o ./MyMove \
-  --module DemoName \
-  --profile 0x3 
+ e2m convert examples/const_fn.sol -o ./MyMove --module DemoName --profile 0x3 
 ```
 
 ###### Result:
@@ -306,18 +303,13 @@ After successful publication, you will receive complete information in json form
 #### examples/two_functions.sol
 
 ```bash
-e2m convert examples/two_functions.sol -d \
-  --max-gas 20000
+e2m convert examples/two_functions.sol -d --max-gas 20000 
 ```
 
 #### examples/APlusB.abi
 
 ```bash
-e2m convert examples/APlusB.abi \
-  -o ./module \
-  --profile demo \
-  --deploy \
-  --max-gas 20000
+e2m convert examples/APlusB.abi -o ./module --profile demo --deploy --max-gas 20000
 ```
 
 ### Generate an interface project
@@ -405,7 +397,7 @@ e2m resources --help
 * `--decode-types`         Types for decoding. Used for decoding EVENTS
 * `-r`, `--resource-path`  Query `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>(::<FIELD_NAME>)?`
 
-  Example: \
+  Example:
   Resource: `default::ModuleName::StuctureName` \
   List of Events: `default::ModuleName::StuctureName::field_name`
 * `--abi`                  Path to abi for decoding events
@@ -430,13 +422,14 @@ This command we will make
 
 * Converting a ./examples/users.sol file
   to "mv"
-* Generate an interface to use in source. The `./examples/i_users/` folder will appear in the current directory
+* Generate an interface to use in source. The `./examples/i_users_native/` folder will appear in the current directory
 * Module will support "move" types
 * We will publish the generated module from the "default" profile
 
 ```bash
 e2m convert ./examples/users.sol \
-   -o ./examples/i_users \
+   -o ./examples/i_users_native \
+   --module UsersNative \
    -a self \
    --native-input \
    --native-output \
@@ -446,7 +439,7 @@ e2m convert ./examples/users.sol \
 
 #### Publishing a script
 
-Publishing a ./examples/sc_users for interacting with the
+Publishing a ./examples/sc_users_native for interacting with the
 module
 
 > **Important** don't forget to replace the address
@@ -464,7 +457,7 @@ Calling the module constructor to assign the current account as the owner
 
 ```bash
 aptos move run \
-   --function-id default::ScUser::constructor \
+   --function-id default::ScUsersNative::constructor \
    --max-gas 5000 \
    --assume-yes
 ```
@@ -473,7 +466,7 @@ Or
 
 ```bash
 e2m call \
-   --function-id default::ScUser::constructor \
+   --function-id default::ScUsersNative::constructor \
    --max-gas 5000 \
    --native
 ```
@@ -482,20 +475,20 @@ e2m call \
 
 ```bash
 aptos move run \
-   --function-id default::ScUser::create_user \
+   --function-id default::ScUsersNative::create_user \
    --max-gas 25000 \
-   --profile demo \
-   --assume-yes
+   --assume-yes \
+   --profile demo
 ```
 
 Or
 
 ```bash
 e2m call \
-   --function-id default::ScUser::create_user \
+   --function-id default::ScUsersNative::create_user \
    --max-gas 25000 \
-   --profile demo \
-   --native
+   --native \
+   --profile demo
 ```
 
 #### ID verification
@@ -504,7 +497,7 @@ account "default": id = 1
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::is_id \
+  --function-id default::ScUsersNative::is_id \
   --args u128:1 \
   --max-gas 10000 \
   --assume-yes
@@ -514,7 +507,7 @@ or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::is_id \
+  --function-id default::ScUsersNative::is_id \
   --args u128:1 \
   --max-gas 10000 \
   --native
@@ -524,7 +517,7 @@ account "demo": id = 2
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::is_id \
+  --function-id default::ScUsersNative::is_id \
   --args u128:2 \
   --max-gas 10000 \
   --profile demo \
@@ -535,7 +528,7 @@ Or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::is_id \
+  --function-id default::ScUsersNative::is_id \
   --args u128:2 \
   --max-gas 10000 \
   --profile demo \
@@ -546,7 +539,7 @@ e2m call \
 
 ```bash
 aptos move run \
-   --function-id default::ScUser::is_owner \
+   --function-id default::ScUsersNative::is_owner \
    --max-gas 10000 \
    --assume-yes
 ```
@@ -555,8 +548,8 @@ or
 
 ```bash
 e2m call \
-   --function-id default::ScUser::is_owner \
-   --max-gas 10000 \
+   --function-id default::ScUsersNative::is_owner \
+   --max-gas 10000
    --native
 ```
 
@@ -564,7 +557,7 @@ An **error** will occur when checking from another account
 
 ```bash
 aptos move run \
-   --function-id default::ScUser::is_owner \
+   --function-id default::ScUsersNative::is_owner \
    --max-gas 10000 \
    --profile demo \
    --assume-yes
@@ -576,7 +569,7 @@ account "default": 10000000000000000000000000000
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::check_balance \
+  --function-id default::ScUsersNative::check_balance \
   --args u128:10000000000000000000000000000 \
   --max-gas 10000 \
   --assume-yes
@@ -586,7 +579,7 @@ Or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::check_balance \
+  --function-id default::ScUsersNative::check_balance \
   --args u128:10000000000000000000000000000 \
   --max-gas 10000 \
   --native
@@ -596,7 +589,7 @@ account "demo": 0
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::is_empty_balance \
+  --function-id default::ScUsersNative::is_empty_balance \
   --max-gas 10000 \
   --profile demo \
   --assume-yes
@@ -606,7 +599,7 @@ or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::is_empty_balance \
+  --function-id default::ScUsersNative::is_empty_balance \
   --max-gas 10000 \
   --profile demo \
   --native
@@ -618,7 +611,7 @@ Sending 200 coins from "default" to "demo"
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::transfer \
+  --function-id default::ScUsersNative::transfer \
   --args address:demo u128:200 \
   --max-gas 25000 \
   --assume-yes
@@ -628,7 +621,7 @@ Or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::transfer \
+  --function-id default::ScUsersNative::transfer \
   --args address:demo u128:200 \
   --max-gas 25000 \
   --native
@@ -640,7 +633,7 @@ Account **default**
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::check_balance \
+  --function-id default::ScUsersNative::check_balance \
   --args u128:9999999999999999999999999800 \
   --max-gas 10000 \
   --assume-yes
@@ -650,7 +643,7 @@ Or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::check_balance \
+  --function-id default::ScUsersNative::check_balance \
   --args u128:9999999999999999999999999800 \
   --max-gas 10000 \
   --native
@@ -660,7 +653,7 @@ Account **demo**
 
 ```bash
 aptos move run \
-  --function-id default::ScUser::check_balance \
+  --function-id default::ScUsersNative::check_balance \
   --args u128:200 \
   --max-gas 10000 \
   --profile demo \
@@ -671,7 +664,7 @@ Or
 
 ```bash
 e2m call \
-  --function-id default::ScUser::check_balance \
+  --function-id default::ScUsersNative::check_balance \
   --args u128:200 \
   --max-gas 10000 \
   --native \
@@ -691,7 +684,7 @@ This command we will make
 
 ```bash
 e2m convert ./examples/users.sol \
-   --module EthUsers \
+   --module UsersEth \
    -o ./examples/i_users_ethtypes \
    -a self \
    --max-gas 30000 \
@@ -825,15 +818,17 @@ e2m call \
 
 > **! IMPORTANT**\
 > When starting contacts locally, you cannot access other resources.
-> For this reason, the data may be incorrect or will not work: `msg.sender.balance`, `block.number`, `block.timestamp`, etc.
+> For this reason, the data may be incorrect or will not work: `msg.sender.balance`, `block.number`, `block.timestamp`,
+> etc.
 
 ### Call a remote contract locally
 
 `--how local` - Call a remote contract locally and display the return value
 
+
 ```bash
 e2m call \
-  --function-id default::EthUsers::get_id \
+  --function-id default::UsersEth::get_id \
   --path ./examples/i_users_ethtypes \
   --how local
 ```
@@ -841,7 +836,6 @@ e2m call \
 ###### Result:
 
 > Uint(1)
-
 
 #### Call a local contract with remote resources and display the return value
 
@@ -879,29 +873,29 @@ e2m call \
 
 ```bash
 e2m resources --query resource \
-  --resource-path default::Users::Persist
+  --resource-path default::UsersEth::Persist
 ```
 
 ### View the list of events
 
 ```bash
 e2m resources --query events \
-  --resource-path default::Users::Persist::events
+  --resource-path default::UsersEth::Persist::events
 ```
 
 ### Decoding the list of events using abi
 
 ```bash
 e2m resources --query events \
-  --resource-path default::Users::Persist::events \
-  --abi ./examples/i_users/Users.abi
+  --resource-path default::UsersEth::Persist::events \
+  --abi ./examples/i_users_ethtypes/UsersEth.abi
 ```
 
 ### Decoding by the specified types
 
 ```bash
 e2m resources --query events \
-  --resource-path default::Users::Persist::events \
+  --resource-path default::UsersEth::Persist::events \
   --decode-types data:address,address,u256 topics:bytes
 ```
 
