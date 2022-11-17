@@ -1,7 +1,10 @@
 # Changelog
 
 ## [Unreleased]
--- Launching a local contract: remote all/local contact and remote resources/ local all
+-- Running a locally remote/local contract
+-- Modified. `e2m convert .. --args <type1:value1 ..>` You can specify the profile name as the value. Example: `e2m convert .. --args address:<PROFILE_NAME>`
+-- Fixed converted by address if profiles were not created. `e2m convert ... -p 0x42`
+-- Fixed. The output of `--output` no longer affects the module name. The module name can only be redefined via `--module`
 
 ## [0.0.4] - 2022-11-08
 
