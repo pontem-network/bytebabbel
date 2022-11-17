@@ -74,7 +74,7 @@ impl CmdConvert {
             .map_err(|err| anyhow!("Failed to convert file {:?}. \nError: {err:?}", &self.path))?;
 
         let address = match self.profile_or_address.as_ref() {
-            None => ProfileValue::default()?.to_address()?,
+            None => ProfileValue::default_profile()?.to_address()?,
             Some(profile) => profile.to_address()?,
         };
         log::trace!("Address: {address:?}");

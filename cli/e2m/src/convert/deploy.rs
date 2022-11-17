@@ -19,20 +19,20 @@ impl CmdConvert {
     pub fn publish(&self, result_convert: &ResultConvert) -> Result<String> {
         use clap::Parser;
 
-        let profile = self
-            .profile_or_address
-            .clone()
-            .unwrap_or(ProfileValue::default().map_err(|_| {
-                anyhow!(
-                    "For deploy, you need to specify the profile name. \n\n\
+        let profile =
+            self.profile_or_address
+                .clone()
+                .unwrap_or(ProfileValue::default_profile().map_err(|_| {
+                    anyhow!(
+                        "For deploy, you need to specify the profile name. \n\n\
                     Example: \n\
                     $ e2m <path/to/file.sol> --profile <NameProfile>\n\n\
                     Create profile default: \n\
                     $ aptos init\n\n\
                     Create profile with name:\n\
                     $ aptos init --profile <NameProfile>"
-                )
-            })?);
+                    )
+                })?);
         let profile_name = profile.name_profile()?;
 
         let txn_options: aptos::common::types::TransactionOptions =

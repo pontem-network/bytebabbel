@@ -27,7 +27,7 @@ pub fn load_configs() -> Result<CliConfig> {
     };
 
     let profile_configurations: CliConfig =
-        serde_yaml::from_str(&fs::read_to_string(&path_config)?)?;
+        serde_yaml::from_str(&fs::read_to_string(path_config)?)?;
 
     Ok(profile_configurations)
 }
