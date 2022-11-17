@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::process::exit;
 
 use anyhow::Result;
 use clap::Parser;
@@ -51,6 +52,7 @@ fn main() {
         }
         Err(err) => {
             println!("[{}]: {err:?}", font_red("Error"));
+            exit(1)
         }
     }
 }

@@ -8,6 +8,7 @@ use framework::zip_metadata_str;
 use move_binary_format::access::ModuleAccess;
 
 use crate::convert::ResultConvert;
+use crate::profile::ProfileValue;
 use crate::{wait, CmdConvert};
 
 const TEMPLATE_MOVE_TOML: &str = include_str!("../../resources/template_move.toml");
@@ -18,23 +19,27 @@ impl CmdConvert {
     pub fn publish(&self, result_convert: &ResultConvert) -> Result<String> {
         use clap::Parser;
 
-        let profile = self.profile_or_address.name_profile().map_err(|_| {
-            anyhow!(
-                "For deploy, you need to specify the profile name. \n\n\
+        let profile =
+            self.profile_or_address
+                .clone()
+                .unwrap_or(ProfileValue::default_profile().map_err(|_| {
+                    anyhow!(
+                        "For deploy, you need to specify the profile name. \n\n\
                     Example: \n\
                     $ e2m <path/to/file.sol> --profile <NameProfile>\n\n\
                     Create profile default: \n\
                     $ aptos init\n\n\
                     Create profile with name:\n\
                     $ aptos init --profile <NameProfile>"
-            )
-        })?;
+                    )
+                })?);
+        let profile_name = profile.name_profile()?;
 
         let txn_options: aptos::common::types::TransactionOptions =
             aptos::common::types::TransactionOptions::try_parse_from([
                 "subcommand",
                 "--profile",
-                profile,
+                profile_name,
                 "--max-gas",
                 &self.transaction_flags.max_gas.to_string(),
                 "--assume-yes",

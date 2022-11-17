@@ -6,20 +6,23 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
+use itertools::Itertools;
 
 use eth::compile::{Evm, EvmPack};
+use move_core_types::account_address::AccountAddress;
 use translator::{translate, Target};
-
-use crate::{profile, Cmd};
 
 mod deploy;
 pub mod flags;
 
+use crate::call::args::FunctionArgs;
+use crate::profile::ProfileValue;
+use crate::Cmd;
+
 #[derive(Parser, Debug)]
 pub struct CmdConvert {
     /// Path to the file. Specify the path to sol file or abi|bin.
-    #[clap(value_parser)]
+    #[clap(value_parser, display_order = 1)]
     path: PathBuf,
 
     /// Directory path for saving the interface and the converted binary code.
@@ -31,18 +34,12 @@ pub struct CmdConvert {
     move_module_name: Option<String>,
 
     /// Profile name or address. The address must start with "0x". Needed for the module address
-    #[clap(
-        long = "profile",
-        display_order = 5,
-        short = 'p',
-        default_value = "default",
-        value_parser
-    )]
-    pub(crate) profile_or_address: profile::ProfileValue,
+    #[clap(long = "profile", display_order = 5, short = 'p', value_parser)]
+    pub(crate) profile_or_address: Option<ProfileValue>,
 
     /// Parameters for initialization
     #[clap(long = "args", short = 'a', default_value = "")]
-    init_args: String,
+    init_args: Vec<String>,
 
     #[clap(flatten)]
     pub(crate) transaction_flags: crate::txflags::TransactionFlags,
@@ -71,27 +68,42 @@ impl Cmd for CmdConvert {
 
 impl CmdConvert {
     pub fn convert(&self) -> Result<ResultConvert> {
-        let pack = path_to_abibin(&self.path)?;
-        let address = self.profile_or_address.to_address()?;
+        log::trace!("Convert: {:?}", &self.path);
+
+        let pack = path_to_abibin(&self.path)
+            .map_err(|err| anyhow!("Failed to convert file {:?}. \nError: {err:?}", &self.path))?;
+
+        let address = match self.profile_or_address.as_ref() {
+            None => ProfileValue::default_profile()?.to_address()?,
+            Some(profile) => profile.to_address()?,
+        };
+        log::trace!("Address: {address:?}");
+
         let module_name = self
             .move_module_name
             .clone()
             .unwrap_or_else(|| pack.name().to_string());
+
         let interface_dir_path = self.interface_dir(&module_name)?;
 
         // Convert
+
+        let initialization_args = FunctionArgs::from((&address, &self.init_args))
+            .value()
+            .join(" ");
+
         let binary_code_path = interface_dir_path.join(&module_name).with_extension("mv");
         let cfg = translator::Config {
             contract_addr: address,
             name: &module_name,
-            initialization_args: &replacing_self_with_an_address(&self.init_args, &address),
+            initialization_args: &initialization_args,
             flags: self.convertion_flags.into(),
         };
         let mv = translate(pack.bin_contract(), pack.abi_str(), cfg)?;
         fs::write(&binary_code_path, &mv.bytecode)?;
 
         // save the interface
-        save_interface(&interface_dir_path, &mv)?;
+        save_interface(&interface_dir_path, &module_name, &mv)?;
 
         // save the abi
         let abi_path = interface_dir_path.join(&module_name).with_extension("abi");
@@ -118,28 +130,16 @@ impl CmdConvert {
 }
 
 #[inline]
-fn replacing_self_with_an_address(args: &str, self_address: &AccountAddress) -> String {
-    let address_str = self_address.to_hex_literal();
-
-    let mut init_args = args.to_string();
-    while let Some(pos) = init_args.to_lowercase().find("self") {
-        init_args.replace_range(pos..pos + 4, &address_str);
-    }
-    init_args
-}
-
-#[inline]
-fn save_interface(base_dir: &Path, target: &Target) -> Result<()> {
-    let name = base_dir
-        .file_name()
-        .ok_or_else(|| anyhow!("Invalid path"))?;
-
+fn save_interface(base_dir: &Path, module_name: &str, target: &Target) -> Result<()> {
     fs::create_dir_all(base_dir)?;
     fs::write(base_dir.join("Move.toml"), &target.manifest)?;
 
     let sources = base_dir.join("sources");
     fs::create_dir_all(&sources)?;
-    fs::write(sources.join(name).with_extension("move"), &target.interface)?;
+    fs::write(
+        sources.join(module_name).with_extension("move"),
+        &target.interface,
+    )?;
 
     Ok(())
 }

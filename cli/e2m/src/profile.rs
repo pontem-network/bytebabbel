@@ -44,6 +44,11 @@ impl ProfileValue {
             ProfileValue::Profile { name, .. } => Ok(name),
         }
     }
+
+    pub fn default_profile() -> Result<ProfileValue> {
+        log::debug!("ProfileValue::default");
+        ProfileValue::from_str("default")
+    }
 }
 
 impl FromStr for ProfileValue {

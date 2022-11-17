@@ -8,7 +8,7 @@ use ethabi::Contract;
 use itertools::Itertools;
 use move_core_types::account_address::AccountAddress;
 
-mod args;
+pub(crate) mod args;
 pub(crate) mod function_id;
 
 use crate::call::args::FunctionArgs;
@@ -292,13 +292,13 @@ fn find_by_ext(root_path: &Path, ext_str: &str) -> Option<PathBuf> {
 fn find_abi(path: &Path) -> Result<Contract> {
     let abi_path =
         find_by_ext(path, "abi").ok_or_else(|| anyhow!("Expected <FILE>.abi in the {path:?}"))?;
-    let abi: Contract = serde_json::from_str(&fs::read_to_string(&abi_path)?)?;
+    let abi: Contract = serde_json::from_str(&fs::read_to_string(abi_path)?)?;
     Ok(abi)
 }
 
 fn find_mv(path: &Path) -> Result<Vec<u8>> {
     let mv_binarycode =
         find_by_ext(path, "mv").ok_or_else(|| anyhow!("Expected <FILE>.mv in the {path:?}"))?;
-    let mv = fs::read(&mv_binarycode)?;
+    let mv = fs::read(mv_binarycode)?;
     Ok(mv)
 }
