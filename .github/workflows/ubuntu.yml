@@ -32,10 +32,10 @@ jobs:
           os: ${{ runner.os }}
 
       - name: Test
-        run: RUST_BACKTRACE=1 cargo test
+        run: RUST_BACKTRACE=1 cargo +nightly test
         shell: bash
 
-      - run: cargo fmt -- --check
+      - run: cargo +nightly fmt -- --check
         shell: bash
 
       - name: Clippy
