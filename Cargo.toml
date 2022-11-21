@@ -39,7 +39,7 @@ evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2mo
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
 
 
-anyhow = "<=1.0.65"
+anyhow = { version = "~1.0.65", features = ["backtrace"] }
 log = "0.4"
 hex = "0.4"
 bcs = "0.1.3"

@@ -82,4 +82,4 @@
     - [x] Move interface maker. (Creates a move project with interfaces from abi)
     - [ ] Event mapping.
 - [x] E2m
-  - [ ] Local call of a remote function
+  - [x] Local call of a remote function
