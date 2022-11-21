@@ -14,9 +14,7 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
-          ~/work/eth2move/eth2move/target
           ~/.solc
-          ~/.cargo
           ~/.aptos
           ~/.move
         key: ${{ inputs.os }}-compile
