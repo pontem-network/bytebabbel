@@ -4,7 +4,6 @@
 /// $ ```aptos node run-local-testnet --with-faucet --force-restart --assume-yes```
 ///
 use anyhow::Result;
-use serde_yaml::to_string;
 use std::fs;
 use std::path::Path;
 use tempfile::tempdir;
@@ -394,12 +393,30 @@ fn test_native_types() {
     .last_line();
     assert_eq!("Uint(1)", &output);
 
-    // sol
     let output = e2m(
         &[
             "call",
             "--function-id",
             "default::UsersNative::get_id",
+            "--path",
+            &native_abi,
+            "--how",
+            "local",
+            "--native",
+            "--init-args",
+            "default",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+    // sol
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::Users::get_id",
             "--path",
             "../../examples/users.sol",
             "--how",
@@ -413,46 +430,6 @@ fn test_native_types() {
     .unwrap()
     .last_line();
     assert_eq!("Uint(1)", &output);
-
-    let output = e2m(
-        &[
-            "call",
-            "--function-id",
-            "default::UsersNative::get_id",
-            "--path",
-            &native_abi,
-            "--how",
-            "local-source",
-            "--native",
-            "--init-args",
-            "default",
-        ],
-        &tmp_project_folder,
-    )
-    .unwrap()
-    .last_line();
-    assert_eq!("Uint(1)", &output);
-
-    let output = e2m(
-        &[
-            "call",
-            "--function-id",
-            "default::UsersNative::get_id",
-            "--path",
-            &native_abi,
-            "--how",
-            "local-source",
-            "--native",
-            "--init-args",
-            "default",
-        ],
-        &tmp_project_folder,
-    )
-    .unwrap()
-    .last_line();
-    assert_eq!("Uint(1)", &output);
-
-    todo!();
 }
 
 /// Module will support "move" types
