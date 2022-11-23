@@ -187,7 +187,7 @@ impl CmdCall {
             vm
         };
 
-        log::info!("{:?}", &self.how_to_call);
+        log::trace!("{:?}", &self.how_to_call);
         match self.how_to_call {
             // [local] - Call a remote contract locally and display the return value
             HowToCall::Local => {
