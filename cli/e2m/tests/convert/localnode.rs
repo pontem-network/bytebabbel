@@ -4,13 +4,14 @@
 /// $ ```aptos node run-local-testnet --with-faucet --force-restart --assume-yes```
 ///
 use anyhow::Result;
+use serde_yaml::to_string;
 use std::fs;
 use std::path::Path;
 use tempfile::tempdir;
 
 use crate::{
     aptos_add_coins, aptos_init_local_profile, aptos_profile_name_and_account_address,
-    aptos_publish_package, checking_the_file_structure, e2m, run_cli,
+    aptos_publish_package, checking_the_file_structure, e2m, run_cli, StrLastLine,
 };
 use test_infra::color::font_blue;
 
@@ -345,6 +346,113 @@ fn test_native_types() {
     // --profile demo
     e2m_script_native_check_balance(600, Some("demo"), &tmp_project_folder).unwrap();
     aptos_script_check_balance(600, Some("demo"), &tmp_project_folder).unwrap();
+
+    // local call: native
+    let native_abi = tmp_project_folder
+        .as_ref()
+        .join("i_users_native/UsersNative.abi")
+        .to_string_lossy()
+        .to_string();
+
+    // dir with abi
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            tmp_project_folder
+                .as_ref()
+                .join("i_users_native")
+                .to_string_lossy()
+                .as_ref(),
+            "--how",
+            "local",
+            "--native",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    // abi
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            &native_abi,
+            "--how",
+            "local",
+            "--native",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    // sol
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            "../../examples/users.sol",
+            "--how",
+            "local-source",
+            "--native",
+            "--init-args",
+            "self",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            &native_abi,
+            "--how",
+            "local-source",
+            "--native",
+            "--init-args",
+            "default",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            &native_abi,
+            "--how",
+            "local-source",
+            "--native",
+            "--init-args",
+            "default",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    todo!();
 }
 
 /// Module will support "move" types

@@ -176,3 +176,18 @@ fn checking_the_file_structure(project_dir: &Path, module_name: &str) {
     assert!(project_dir.join(format!("{module_name}.abi")).exists());
     assert!(project_dir.join(format!("{module_name}.mv")).exists());
 }
+
+trait StrLastLine {
+    fn last_line(&self) -> String;
+}
+
+impl StrLastLine for String {
+    fn last_line(&self) -> String {
+        self.lines()
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .last()
+            .unwrap_or_default()
+            .to_string()
+    }
+}
