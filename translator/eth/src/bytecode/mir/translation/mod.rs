@@ -163,6 +163,14 @@ impl<'a> MirTranslator<'a> {
                 Stmt::Brunch(label) => {
                     self.mir.push(Statement::Br(label).loc(self.loc));
                 }
+                Stmt::CodeCopy(dest, data) => {
+                    let code_copy = Statement::CodeCopy {
+                        memory: self.mem_var,
+                        dest: self.translate_expr(dest)?,
+                        data,
+                    };
+                    self.mir.push(code_copy.loc(self.loc));
+                }
             }
         }
         Ok(())

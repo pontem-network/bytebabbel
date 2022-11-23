@@ -12,6 +12,7 @@ sha3 = "0.10.1"
 itertools.workspace = true
 log.workspace = true
 ethabi.workspace = true
+bcs.workspace = true
 
 # local dependencies
 eth = { path = "../eth" }

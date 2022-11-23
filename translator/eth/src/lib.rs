@@ -42,21 +42,21 @@ pub fn transpile_program(
     if log_enabled!(log::Level::Trace) {
         trace!("Bytecode: {}", &hex::encode(&contract_code));
     }
-    let contract_code_len = contract_code.len();
 
     let abi = MoveAbi::new(name, abi_entries)?;
 
-    let contract = BlockIter::new(InstructionIter::new(contract_code))
+    let mut instructions = InstructionIter::new(contract_code);
+    let contract = BlockIter::new(&mut instructions)
         .map(|block| (block.start, block))
         .collect::<HashMap<_, _>>();
 
-    let hir = HirBuilder::new(contract, flags)?;
+    let contract_code = instructions.into_inner();
+    let hir = HirBuilder::new(contract, flags, contract_code)?;
     let functions = abi
         .functions()
         .iter()
         .map(|(hash, fun)| {
-            translate_function(&hir, fun, contract_addr, contract_code_len as u128, flags)
-                .map(|mir| (*hash, mir))
+            translate_function(&hir, fun, contract_addr, flags).map(|mir| (*hash, mir))
         })
         .collect::<Result<HashMap<FunHash, Mir>, _>>()?;
     Program::new(constructor, functions, abi)
@@ -66,10 +66,9 @@ pub fn translate_function(
     hir: &HirBuilder,
     fun: &Function,
     contract_addr: U256,
-    code_size: u128,
     flags: Flags,
 ) -> Result<Mir, Error> {
-    let hir = hir.translate_fun(fun, contract_addr, code_size)?;
+    let hir = hir.translate_fun(fun, contract_addr)?;
     let mut buff = String::new();
     hir.print(&mut buff)?;
     trace!("{}", buff);

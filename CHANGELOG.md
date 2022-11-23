@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Constant support.
 
 ## [0.0.5] - 2022-11-17
 ### Added

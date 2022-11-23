@@ -21,25 +21,26 @@ pub struct HirBuilder {
     contract: HashMap<Offset, InstructionBlock>,
     flags: Flags,
     flow: FlowTrace,
+    contract_code: Vec<u8>,
 }
 
 impl HirBuilder {
-    pub fn new(contract: HashMap<Offset, InstructionBlock>, flags: Flags) -> Result<Self, Error> {
+    pub fn new(
+        contract: HashMap<Offset, InstructionBlock>,
+        flags: Flags,
+        contract_code: Vec<u8>,
+    ) -> Result<Self, Error> {
         let flow = Tracer::new(&contract).trace()?;
         Ok(Self {
             contract,
             flags,
             flow,
+            contract_code,
         })
     }
 
-    pub fn translate_fun(
-        &self,
-        fun: &Function,
-        contract_address: U256,
-        code_size: u128,
-    ) -> Result<Hir, Error> {
-        let mut ctx = Context::new(fun, contract_address, code_size, self.flags);
+    pub fn translate_fun(&self, fun: &Function, contract_address: U256) -> Result<Hir, Error> {
+        let mut ctx = Context::new(fun, contract_address, self.flags, &self.contract_code);
         let mut ir = Hir::default();
         self.translate_blocks(Offset::default(), &mut ir, &mut ctx)?;
         Ok(ir)

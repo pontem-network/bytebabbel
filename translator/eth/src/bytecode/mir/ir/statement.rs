@@ -14,6 +14,11 @@ pub enum Statement {
         offset: Loc<TypedExpr>,
         val: Loc<TypedExpr>,
     },
+    CodeCopy {
+        memory: Variable,
+        dest: Loc<TypedExpr>,
+        data: Vec<u8>,
+    },
     MStore8 {
         memory: Variable,
         offset: Loc<TypedExpr>,

@@ -66,7 +66,7 @@ impl ###ENUM_NAME### {
 }
 ";
 
-const MEMORY_TABLE: [(&str, &str); 9] = [
+const MEMORY_TABLE: [(&str, &str); 10] = [
     ("New", "new_mem"),
     ("Size", "effective_len"),
     ("Load", "mload"),
@@ -76,6 +76,7 @@ const MEMORY_TABLE: [(&str, &str); 9] = [
     ("Slice", "mslice"),
     ("RequestBufferLen", "request_buffer_len"),
     ("ReadRequestBuffer", "read_request_buffer"),
+    ("CodeCopy", "code_copy"),
 ];
 
 const PERSIST_TABLE: [(&str, &str); 8] = [

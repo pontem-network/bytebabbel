@@ -6,13 +6,13 @@ use primitive_types::U256;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
-pub struct Context<'a> {
+pub struct Context<'a, 'b> {
     address: U256,
+    contract: &'b [u8],
     fun: &'a Function,
     loops: HashMap<Offset, (Offset, Offset)>,
     loop_stack_size: usize,
     static_analysis: bool,
-    code_size: u128,
     flags: Flags,
     pub loc: Loc<()>,
     pub stack: Stack,
@@ -20,13 +20,13 @@ pub struct Context<'a> {
     jmp_id: usize,
 }
 
-impl<'a> Context<'a> {
+impl<'a, 'b> Context<'a, 'b> {
     pub fn new(
         fun: &'a Function,
         contract_address: U256,
-        code_size: u128,
         flags: Flags,
-    ) -> Context {
+        contract: &'b [u8],
+    ) -> Context<'a, 'b> {
         Context {
             address: contract_address,
             stack: Stack::default(),
@@ -34,11 +34,11 @@ impl<'a> Context<'a> {
             loops: Default::default(),
             loop_stack_size: 0,
             static_analysis: true,
-            code_size,
             flags,
             vars: Default::default(),
             loc: Loc::new(0u128, 0u128, ()),
             jmp_id: 0,
+            contract,
         }
     }
 
@@ -64,7 +64,11 @@ impl<'a> Context<'a> {
     }
 
     pub fn code_size(&self) -> u128 {
-        self.code_size
+        self.contract.len() as u128
+    }
+
+    pub fn contract_slice(&self, offset: u128, len: u128) -> &[u8] {
+        &self.contract[offset as usize..(offset + len) as usize]
     }
 
     pub fn is_in_loop(&self) -> bool {

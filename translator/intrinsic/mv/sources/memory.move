@@ -82,20 +82,9 @@ module self::memory {
     // API
     public fun mstore(mem: &mut Memory, position: U256, value: U256) {
         let position = as_u64(position);
-        resize_offset(mem, position, WORD_SIZE);
         assert!(position + WORD_SIZE < mem.limit, OUT_OF_MEMORY);
 
-        let data_len = std::vector::length(&mem.data);
-
-        if (data_len < position) {
-            let diff = position - data_len;
-            let i = 0;
-            while (i < diff) {
-                std::vector::push_back(&mut mem.data, 0);
-                i = i + 1;
-            }
-        };
-
+        let data_len = resize(mem, position);
 
         let byte_offset = 0u64;
         let word = 4;
@@ -181,5 +170,53 @@ module self::memory {
             };
         };
         return
+    }
+
+    // API
+    public fun code_copy(mem: &mut Memory, position: U256, code: vector<u8>) {
+        let position = as_u64(position);
+        let mem_size = resize(mem, position);
+        let data_len = std::vector::length(&code);
+        assert!(position + data_len < mem.limit, OUT_OF_MEMORY);
+
+        let offset = 0u64;
+        while (offset < data_len) {
+            let global_offset = position + offset;
+            if (global_offset >= mem_size) {
+                std::vector::push_back(&mut mem.data, *std::vector::borrow(&code, offset));
+            } else {
+                *std::vector::borrow_mut(&mut mem.data, global_offset) = *std::vector::borrow(&code, offset);
+            };
+            offset = offset + 1;
+        };
+    }
+
+    fun resize(mem: &mut Memory, len: u64): u64 {
+        resize_offset(mem, len, WORD_SIZE);
+
+        let data_len = std::vector::length(&mem.data);
+
+        if (len == 0) {
+            return data_len
+        };
+
+        if (data_len < len) {
+            let diff = len - data_len;
+            let i = 0;
+            while (i < diff) {
+                std::vector::push_back(&mut mem.data, 0);
+                i = i + 1;
+            }
+        };
+        if (len > data_len) {
+            len
+        } else {
+            data_len
+        }
+    }
+
+    #[test_only]
+    public fun get_data(mem: &Memory): &vector<u8> {
+        &mem.data
     }
 }

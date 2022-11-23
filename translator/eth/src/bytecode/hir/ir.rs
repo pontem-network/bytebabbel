@@ -20,6 +20,7 @@ pub enum Stmt {
     Label(Label),
     StoreStack(BTreeMap<VarId, Expr>),
     Assign(VarId, Expr),
+    CodeCopy(Expr, Vec<u8>),
     MemStore8 {
         addr: Expr,
         val: Expr,
@@ -147,12 +148,12 @@ impl Expr {
 }
 
 impl _Expr {
-    pub fn resolve(&self, _ir: &Hir, ctx: &Context) -> Option<U256> {
+    pub fn resolve(&self, ctx: &Context) -> Option<U256> {
         match self {
             _Expr::Val(val) => Some(*val),
             _Expr::Var(var) => {
                 let expr = ctx.vars.get(var)?;
-                expr.resolve(_ir, ctx)
+                expr.resolve(ctx)
             }
             _Expr::MLoad(_) => None,
             _Expr::SLoad(_) => None,
@@ -161,22 +162,22 @@ impl _Expr {
             _Expr::ArgsSize => None,
             _Expr::Args(_) => None,
             _Expr::UnaryOp(cnd, arg) => {
-                let arg = arg.resolve(_ir, ctx)?;
+                let arg = arg.resolve(ctx)?;
                 Some(cnd.calc(arg))
             }
             _Expr::BinaryOp(cnd, arg1, arg2) => {
-                let arg1 = arg1.resolve(_ir, ctx)?;
-                let arg2 = arg2.resolve(_ir, ctx)?;
+                let arg1 = arg1.resolve(ctx)?;
+                let arg2 = arg2.resolve(ctx)?;
                 Some(cnd.calc(arg1, arg2))
             }
             _Expr::TernaryOp(cnd, arg1, arg2, arg3) => {
-                let arg1 = arg1.resolve(_ir, ctx)?;
-                let arg2 = arg2.resolve(_ir, ctx)?;
-                let arg3 = arg3.resolve(_ir, ctx)?;
+                let arg1 = arg1.resolve(ctx)?;
+                let arg2 = arg2.resolve(ctx)?;
+                let arg3 = arg3.resolve(ctx)?;
                 Some(cnd.calc(arg1, arg2, arg3))
             }
             _Expr::Hash(_, _) => None,
-            _Expr::Copy(expr) => expr.resolve(_ir, ctx),
+            _Expr::Copy(expr) => expr.resolve(ctx),
 
             _Expr::Balance(_) => None,
             _Expr::Gas => None,
@@ -264,6 +265,10 @@ impl Hir {
     pub fn mstore8(&mut self, loc: &Loc<()>, addr: Expr, var: Expr) {
         self.statement
             .push(loc.wrap(Stmt::MemStore8 { addr, val: var }));
+    }
+
+    pub fn code_copy(&mut self, loc: &Loc<()>, dest: Expr, code: Vec<u8>) {
+        self.statement.push(loc.wrap(Stmt::CodeCopy(dest, code)));
     }
 
     pub fn save_stack(&mut self, loc: &Loc<()>, context: BTreeMap<VarId, Expr>) {

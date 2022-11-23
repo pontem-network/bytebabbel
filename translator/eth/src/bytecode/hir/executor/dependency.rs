@@ -88,10 +88,10 @@ fn call_data_size(ctx: &mut Context) -> ExecutionResult {
     ExecutionResult::Output(expr)
 }
 
-fn call_data_load(mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+fn call_data_load(mut params: Vec<Expr>, _ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
     let offset = params.remove(0);
     if ctx.flags().native_input {
-        if let Some(offset) = offset.resolve(ir, ctx) {
+        if let Some(offset) = offset.resolve(ctx) {
             if offset.is_zero() {
                 ExecutionResult::Output(ctx.fun().hash().as_frame().into())
             } else {
@@ -104,7 +104,7 @@ fn call_data_load(mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> Exe
     } else {
         if ctx.is_static_analysis_enable() {
             ctx.disable_static_analysis();
-            if let Some(offset) = offset.resolve(ir, ctx) {
+            if let Some(offset) = offset.resolve(ctx) {
                 if offset.is_zero() {
                     return ExecutionResult::Output(ctx.fun().hash().as_frame().into());
                 }

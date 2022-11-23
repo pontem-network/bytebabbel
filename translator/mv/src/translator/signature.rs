@@ -42,10 +42,8 @@ pub struct SignatureWriter {
 }
 
 impl SignatureWriter {
-    pub fn new(signatures: &[Signature]) -> Self {
-        Self {
-            signatures: signatures.to_vec(),
-        }
+    pub fn new(signatures: Vec<Signature>) -> Self {
+        Self { signatures }
     }
 
     pub fn make_signature(&mut self, sign: Vec<SignatureToken>) -> SignatureIndex {

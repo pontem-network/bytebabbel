@@ -62,13 +62,13 @@ pub enum BinaryOp {
 }
 
 impl InstructionHandler for BinaryOp {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let b = params.remove(1);
         let a = params.remove(0);
         if !ctx.is_in_loop() {
             {
-                let a = a.resolve(ir, ctx);
-                let b = b.resolve(ir, ctx);
+                let a = a.resolve(ctx);
+                let b = b.resolve(ctx);
                 if let (Some(a), Some(b)) = (a, b) {
                     return ExecutionResult::Output(self.calc(a, b).into());
                 }
@@ -215,15 +215,15 @@ pub enum TernaryOp {
 }
 
 impl InstructionHandler for TernaryOp {
-    fn handle(&self, mut params: Vec<Expr>, ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
+    fn handle(&self, mut params: Vec<Expr>, _ir: &mut Hir, ctx: &mut Context) -> ExecutionResult {
         let op3 = params.remove(2);
         let op2 = params.remove(1);
         let op1 = params.remove(0);
 
         if !ctx.is_in_loop() {
-            let op1 = op1.resolve(ir, ctx);
-            let op2 = op2.resolve(ir, ctx);
-            let op3 = op3.resolve(ir, ctx);
+            let op1 = op1.resolve(ctx);
+            let op2 = op2.resolve(ctx);
+            let op3 = op3.resolve(ctx);
             if let (Some(op1), Some(op2), Some(op3)) = (op1, op2, op3) {
                 let res = self.calc(op1, op2, op3);
                 return ExecutionResult::Output(res.into());
