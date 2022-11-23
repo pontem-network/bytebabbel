@@ -11,6 +11,10 @@ impl InstructionIter {
     pub fn new(buffer: Vec<u8>) -> InstructionIter {
         Self { offset: 0, buffer }
     }
+
+    pub fn into_inner(self) -> Vec<u8> {
+        self.buffer
+    }
 }
 
 impl Iterator for InstructionIter {

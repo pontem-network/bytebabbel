@@ -136,6 +136,15 @@ impl Display for Statement {
             Statement::Br(l) => {
                 write!(f, "goto '{};", l)
             }
+            Statement::CodeCopy { memory, dest, data } => {
+                write!(
+                    f,
+                    "{}.CodeCopy({}, {});",
+                    memory,
+                    dest.as_ref(),
+                    hex::encode(data),
+                )
+            }
         }
     }
 }

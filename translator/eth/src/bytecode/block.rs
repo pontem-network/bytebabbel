@@ -9,13 +9,13 @@ use crate::OpCode;
 
 pub type InstructionBlock = Loc<Vec<Instruction>>;
 
-pub struct BlockIter<I: Iterator<Item = Instruction>> {
-    inst: I,
+pub struct BlockIter<'a, I: Iterator<Item = Instruction>> {
+    inst: &'a mut I,
     next: Option<Instruction>,
 }
 
-impl<I: Iterator<Item = Instruction>> BlockIter<I> {
-    pub fn new(iter: I) -> Self {
+impl<'a, I: Iterator<Item = Instruction>> BlockIter<'a, I> {
+    pub fn new(iter: &'a mut I) -> Self {
         Self {
             inst: iter,
             next: None,
@@ -23,7 +23,7 @@ impl<I: Iterator<Item = Instruction>> BlockIter<I> {
     }
 }
 
-impl<I: Iterator<Item = Instruction>> Iterator for BlockIter<I> {
+impl<'a, I: Iterator<Item = Instruction>> Iterator for BlockIter<'a, I> {
     type Item = InstructionBlock;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,9 +1,12 @@
 use anyhow::{anyhow, Error, Result};
-use move_binary_format::file_format::{Bytecode, SignatureIndex, SignatureToken, Visibility};
+use move_binary_format::file_format::{
+    Bytecode, ConstantPoolIndex, SignatureIndex, SignatureToken, Visibility,
+};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use std::collections::BTreeMap;
+use std::mem;
 
 use eth::abi::call::FunHash;
 use eth::bytecode::hir::executor::math::{BinaryOp, TernaryOp, UnaryOp};
@@ -21,16 +24,19 @@ use intrinsic::{template, Function};
 
 use crate::mv_ir::func::Func;
 use crate::mv_ir::Module;
+use crate::translator::constants::ConstantPool;
 use crate::translator::signature::{map_signature, signer, SignatureWriter};
 use crate::translator::writer::Code;
 
 pub mod bytecode;
+pub mod constants;
 pub mod identifier;
 pub mod signature;
 pub mod writer;
 
 pub struct MvIrTranslator {
     sign_writer: SignatureWriter,
+    constant_pool: ConstantPool,
     code: Code,
     template: CompiledModule,
     max_memory: u64,
@@ -45,9 +51,10 @@ impl MvIrTranslator {
         program: Program,
         flags: Flags,
     ) -> Result<MvIrTranslator> {
-        let template = template(address, program.name(), program.identifiers())?;
+        let mut template = template(address, program.name(), program.identifiers())?;
         Ok(Self {
-            sign_writer: SignatureWriter::new(&template.signatures),
+            sign_writer: SignatureWriter::new(mem::take(&mut template.signatures)),
+            constant_pool: ConstantPool::new(mem::take(&mut template.constant_pool)),
             code: Default::default(),
             template,
             max_memory,
@@ -67,7 +74,12 @@ impl MvIrTranslator {
 
         funcs.push(self.translate_constructor(&program)?);
 
-        Ok(Module::new(funcs, self.sign_writer.freeze(), self.template))
+        Ok(Module::new(
+            funcs,
+            self.sign_writer.freeze(),
+            self.constant_pool.freeze(),
+            self.template,
+        ))
     }
 
     fn translate_constructor(&mut self, program: &Program) -> Result<Func, Error> {
@@ -241,6 +253,18 @@ impl MvIrTranslator {
             }
             Statement::Br(goto) => {
                 self.code.jmp(*goto, false);
+            }
+            Statement::CodeCopy { memory, dest, data } => {
+                let idx = self.constant_pool.make_vec_constant(data.as_slice());
+
+                self.call(
+                    Mem::CodeCopy,
+                    vec![
+                        CallOp::MutBorrow(*memory),
+                        CallOp::Expr(dest),
+                        CallOp::Constant(idx),
+                    ],
+                );
             }
         }
     }
@@ -523,6 +547,9 @@ impl MvIrTranslator {
                 CallOp::Copy(var) => {
                     self.code.copy_loc(var.index());
                 }
+                CallOp::Constant(idx) => {
+                    self.code.write(Bytecode::LdConst(idx));
+                }
             }
         }
         self.code.write(Bytecode::Call(fun.handler()));
@@ -537,4 +564,5 @@ pub enum CallOp<'a> {
     MutBorrow(Variable),
     Borrow(Variable),
     ConstU64(u64),
+    Constant(ConstantPoolIndex),
 }

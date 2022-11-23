@@ -185,6 +185,11 @@ pub fn print_stmt<B: Write>(buf: &mut B, stmt: &Loc<Stmt>) -> Result<(), Error> 
             print_expr(buf, cnd)?;
             writeln!(buf, "\nBrTrue {};", true_br)?;
         }
+        Stmt::CodeCopy(dest, vec) => {
+            write!(buf, "codecopy(")?;
+            print_expr(buf, dest)?;
+            writeln!(buf, ", {});", hex::encode(vec))?;
+        }
     }
     Ok(())
 }

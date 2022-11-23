@@ -572,7 +572,7 @@ fn reindex_identifiers(module: &mut CompiledModule) -> Result<(), Error> {
 }
 
 fn reindex_signatures(module: &mut CompiledModule) -> Result<(), Error> {
-    let mut writer = SignatureWriter::new(&[]);
+    let mut writer = SignatureWriter::new(vec![]);
     let old_signatures = mem::take(&mut module.signatures);
 
     for fun_insta in module.function_instantiations.iter_mut() {

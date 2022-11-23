@@ -3,7 +3,7 @@ module self::memory_tests {
     use self::u256::{from_u128, as_u128, U256, from_bytes, zero, eq};
 
     #[test_only]
-    use self::memory::{request_buffer_len};
+    use self::memory::{request_buffer_len, code_copy, get_data};
 
     #[test]
     fun test_buff_len() {
@@ -175,5 +175,25 @@ module self::memory_tests {
     #[expected_failure(abort_code = 1)]
     fun init_zero_size() {
         new_mem(0);
+    }
+
+    #[test]
+    fun test_code_copy() {
+        let memory = new_mem(1024);
+        let code = b"This is the large string that we are testing. And it is bigger than 32 bytes.";
+        code_copy(&mut memory, from_u128(0), code);
+        let mem = get_data(&memory);
+        assert!(mem == &code, 1);
+
+        let code2 = b"Never ask strings for their size....";
+        code_copy(&mut memory, from_u128(46), code2);
+        let mem = get_data(&memory);
+        assert!(mem == &b"This is the large string that we are testing. Never ask strings for their size....", 2);
+
+        let code3 = b"ps";
+        code_copy(&mut memory, from_u128(100), code3);
+
+        let mem = get_data(&memory);
+        assert!(mem == &b"This is the large string that we are testing. Never ask strings for their size....\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0ps", 3);
     }
 }

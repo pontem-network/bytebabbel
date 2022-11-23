@@ -2,8 +2,8 @@ use anyhow::{anyhow, Error};
 use log::{log_enabled, Level};
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::check_bounds::BoundsChecker;
-use move_binary_format::file_format::CompiledModule;
 use move_binary_format::file_format::Signature;
+use move_binary_format::file_format::{CompiledModule, Constant};
 use move_bytecode_source_map::mapping::SourceMapping;
 use move_bytecode_verifier::{CodeUnitVerifier, VerifierConfig};
 use move_disassembler::disassembler::Disassembler;
@@ -20,14 +20,21 @@ pub mod interface;
 pub struct Module {
     funcs: Vec<Func>,
     signatures: Vec<Signature>,
+    constants: Vec<Constant>,
     template: CompiledModule,
 }
 
 impl Module {
-    pub fn new(funcs: Vec<Func>, signatures: Vec<Signature>, template: CompiledModule) -> Self {
+    pub fn new(
+        funcs: Vec<Func>,
+        signatures: Vec<Signature>,
+        constants: Vec<Constant>,
+        template: CompiledModule,
+    ) -> Self {
         Self {
             funcs,
             signatures,
+            constants,
             template,
         }
     }
@@ -38,9 +45,11 @@ impl Module {
             func.write_function(&mut module)?;
         }
         module.signatures = self.signatures;
+        module.constant_pool = self.constants;
 
         crop::crop(&mut module)?;
 
+        print_move_module(&module);
         CodeUnitVerifier::verify_module(&VerifierConfig::default(), &module).map_err(|err| {
             anyhow!(
                 "Verification error:{:?}-{:?}. Message:{:?}. Location: {:?} -{:?}",

@@ -36,11 +36,14 @@
     - [x] Byte
     - [x] AddMod (a + b) % N
     - [x] MulMod (a * b) % N
-- [ ] Looping
+- [x] Looping
     - [x] For
     - [x] While
     - [x] Do-While
 - [ ] Dynamic types (string, bytes, etc.)
+  - [x] Consts
+  - [ ] Dynamic input
+  - [ ] Dynamic output
 - [ ] Dependency
     - [x] Message signer
     - [x] Balance
@@ -80,6 +83,5 @@
     - [ ] Structs
     - [ ] Dynamic types (string, bytes, etc.)
     - [x] Move interface maker. (Creates a move project with interfaces from abi)
-    - [ ] Event mapping.
 - [x] E2m
   - [ ] Local call of a remote function

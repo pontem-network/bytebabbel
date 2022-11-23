@@ -4,7 +4,7 @@ use mv::translator::signature::SignatureWriter;
 
 #[test]
 pub fn test_signature() {
-    let mut sign = SignatureWriter::new(&[]);
+    let mut sign = SignatureWriter::new(vec![]);
     sign.make_signature(vec![SignatureToken::U64]);
     sign.make_signature(vec![SignatureToken::U128]);
     sign.make_signature(vec![SignatureToken::U128]);
