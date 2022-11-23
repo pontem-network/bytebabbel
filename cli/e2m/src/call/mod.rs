@@ -174,11 +174,7 @@ impl CmdCall {
             Flags::default()
         };
 
-        let mut vm = if path.is_file() {
-            ensure!(
-                ext(path).as_deref() == Some("sol"),
-                "Specify the path to sol file. Invalid file path {path:?}"
-            );
+        let mut vm = if path.is_file() && ext(path).as_deref() == Some("sol") {
             let init_args = FunctionArgs::from((self.profile_name.as_str(), &self.init_args))
                 .value()
                 .join(" ");
@@ -281,6 +277,11 @@ fn ext(path: &Path) -> Option<String> {
 }
 
 fn find_by_ext(root_path: &Path, ext_str: &str) -> Option<PathBuf> {
+    if root_path.is_file() {
+        let parent = root_path.parent()?;
+        return find_by_ext(parent, ext_str);
+    }
+
     root_path
         .read_dir()
         .ok()?
