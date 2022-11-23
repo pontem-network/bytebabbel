@@ -14,9 +14,7 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
-          ~/work/eth2move/eth2move/target
           ~/.solc
-          ~/.cargo
           ~/.aptos
           ~/.move
         key: ${{ inputs.os }}-compile
@@ -24,7 +22,7 @@ runs:
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: stable
         override: true
         components: rustfmt, clippy
 

@@ -32,9 +32,9 @@ jobs:
           os: ${{ runner.os }}
 
       - name: Build
-        run: RUST_BACKTRACE=1 cargo +nightly build
+        run: RUST_BACKTRACE=1 cargo build
         shell: bash
 
       - name: Test
-        run: RUST_BACKTRACE=1 cargo +nightly test
+        run: RUST_BACKTRACE=1 cargo test
         shell: bash
