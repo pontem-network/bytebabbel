@@ -11,13 +11,15 @@ use move_core_types::account_address::AccountAddress;
 pub(crate) mod args;
 pub(crate) mod function_id;
 
+use eth::Flags;
+use move_executor::load::LoadRemoteData;
+use move_executor::profile::ProfileConfig;
+use move_executor::solidity::FromSolidity;
+use move_executor::{MoveExecutor, MoveExecutorInstance};
+
 use crate::call::args::FunctionArgs;
 use crate::call::function_id::FunctionId;
 use crate::{wait, Cmd};
-use eth::Flags;
-use move_executor::load::LoadRemoteData;
-use move_executor::solidity::FromSolidity;
-use move_executor::{MoveExecutor, MoveExecutorInstance};
 
 #[derive(Parser, Debug)]
 pub struct CmdCall {
@@ -161,7 +163,15 @@ impl CmdCall {
         ensure!(path.exists(), "{path:?} not exist");
         log::trace!("{path:?}");
 
-        let profile = move_executor::profile::load_profile(&self.profile_name)?;
+        let profile = match move_executor::profile::load_profile(&self.profile_name) {
+            Ok(p) => p,
+            Err(err) => {
+                if !self.profile_name.starts_with("0x") {
+                    return Err(err);
+                }
+                ProfileConfig::vm(AccountAddress::from_hex_literal(&self.profile_name)?)
+            }
+        };
         let signer_address = move_executor::profile::profile_to_address(&profile)?;
         let signer_address_hex = signer_address.to_hex_literal();
         log::trace!("{signer_address_hex}");
