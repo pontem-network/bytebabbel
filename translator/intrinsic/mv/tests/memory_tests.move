@@ -143,11 +143,11 @@ module self::memory_tests {
     #[test(
         s1 = @0x6261be5de65349dedcf98dad3041f331b4a397546079ef17542df4fbbf359787,
         s2 = @0x81dbecc6aee62dfb2250aeca0ca406d6dc61788004aaf116fa9c2c61d00a5897,
-        hash_1 = @0xb039179a8a4ce2c252aa6f2f25798251c19b75fc1508d9d511a191e0487d64a7,
-        hash_2 = @0xcc636d0dc01c94023106c1459b926e17d25572e9cbf154ec7489c6264e83ec7d,
-        hash_3 = @0x1cdfbfb2fdbcc015c6c45e292d5927b775f9d6595a0c9d3ff9c029e1fe2ff7f3,
-        hash_4 = @0x5129046912a39ba87d481c3c8d8cd626cbfba7f089c9879d853d40ab63ab3775,
-        hash_5 = @0xc1545e05e6777d834652396ad104e7e971a78d084a9b9df34f7a16fd493bf2b0,
+        hash_1 = @0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510,
+        hash_2 = @0x177c65462e6af6bb2b626ead9d5ce6b98ec801e505e39db4a6d2a19881207143,
+        hash_3 = @0xec608c46eab7d1b8ece1573a1436f4e5506c146cf372fb15e656cc768a6ccac0,
+        hash_4 = @0x3463f25cc43520278476551251fefecc2df492f39142f907aabafdd31d7bf365,
+        hash_5 = @0x5037e1a5e02e081b1b850b130eca7ac17335fdf4c61cc5ff6ae765196fb0d5b3,
     )]
     fun test_hash(s1: &signer, s2: &signer, hash_1: &signer, hash_2: &signer, hash_3: &signer, hash_4: &signer, hash_5: &signer) {
         let memory = new_mem(1024);

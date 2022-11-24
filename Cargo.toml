@@ -34,8 +34,9 @@ move-vm-runtime = { git = "https://github.com/move-language/move", rev = "a6e1ff
 move-vm-types = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
 
 #EVM
-evm = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
-evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "evm2move" }
+# @todo
+evm = { git = "https://github.com/pontem-network/evm.git", branch = "Keccak256" }
+evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "Keccak256" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }
 
 
