@@ -11,13 +11,15 @@ use move_core_types::account_address::AccountAddress;
 pub(crate) mod args;
 pub(crate) mod function_id;
 
+use eth::Flags;
+use move_executor::load::LoadRemoteData;
+use move_executor::profile::ProfileConfig;
+use move_executor::solidity::FromSolidity;
+use move_executor::{MoveExecutor, MoveExecutorInstance};
+
 use crate::call::args::FunctionArgs;
 use crate::call::function_id::FunctionId;
 use crate::{wait, Cmd};
-use eth::Flags;
-use move_executor::load::LoadRemoteData;
-use move_executor::solidity::FromSolidity;
-use move_executor::{MoveExecutor, MoveExecutorInstance};
 
 #[derive(Parser, Debug)]
 pub struct CmdCall {
@@ -101,7 +103,7 @@ pub struct CmdCall {
 }
 
 impl Cmd for CmdCall {
-    fn execute(&self) -> Result<String> {
+    fn execute(&mut self) -> Result<String> {
         match self.how_to_call {
             HowToCall::Node => self.call_remote_node(),
             HowToCall::Local | HowToCall::LocalSource | HowToCall::VM => self.call_local(),
@@ -111,8 +113,10 @@ impl Cmd for CmdCall {
 
 impl CmdCall {
     /// [node] - Call a remote contract on a node
-    fn call_remote_node(&self) -> Result<String> {
+    fn call_remote_node(&mut self) -> Result<String> {
         use aptos::move_tool::RunFunction;
+
+        self.function_id.replace_self_to(self.profile_name.clone());
 
         let mut move_run_args = [
             "subcommand",
@@ -152,8 +156,12 @@ impl CmdCall {
     /// [local] - Call a remote contract locally and display the return value
     /// [local-source] - Call a local contract with remote resources and display the return value
     /// [vm] - Call a local contract and display the return value
-    fn call_local(&self) -> Result<String> {
+    fn call_local(&mut self) -> Result<String> {
         log::trace!("call_local:");
+
+        self.function_id.replace_self_to(self.profile_name.clone());
+
+        dbg!(&self.function_id);
 
         let path = self.path_to_convert.as_deref().ok_or_else(|| {
             anyhow!("Specify the path to the converted project or sol file. `--path <PATH/TO>`")
@@ -161,7 +169,15 @@ impl CmdCall {
         ensure!(path.exists(), "{path:?} not exist");
         log::trace!("{path:?}");
 
-        let profile = move_executor::profile::load_profile(&self.profile_name)?;
+        let profile = match move_executor::profile::load_profile(&self.profile_name) {
+            Ok(p) => p,
+            Err(err) => {
+                if !self.profile_name.starts_with("0x") {
+                    return Err(err);
+                }
+                ProfileConfig::vm(AccountAddress::from_hex_literal(&self.profile_name)?)
+            }
+        };
         let signer_address = move_executor::profile::profile_to_address(&profile)?;
         let signer_address_hex = signer_address.to_hex_literal();
         log::trace!("{signer_address_hex}");
@@ -174,11 +190,7 @@ impl CmdCall {
             Flags::default()
         };
 
-        let mut vm = if path.is_file() {
-            ensure!(
-                ext(path).as_deref() == Some("sol"),
-                "Specify the path to sol file. Invalid file path {path:?}"
-            );
+        let mut vm = if path.is_file() && ext(path).as_deref() == Some("sol") {
             let init_args = FunctionArgs::from((self.profile_name.as_str(), &self.init_args))
                 .value()
                 .join(" ");
@@ -191,7 +203,7 @@ impl CmdCall {
             vm
         };
 
-        log::info!("{:?}", &self.how_to_call);
+        log::trace!("{:?}", &self.how_to_call);
         match self.how_to_call {
             // [local] - Call a remote contract locally and display the return value
             HowToCall::Local => {
@@ -281,6 +293,11 @@ fn ext(path: &Path) -> Option<String> {
 }
 
 fn find_by_ext(root_path: &Path, ext_str: &str) -> Option<PathBuf> {
+    if root_path.is_file() {
+        let parent = root_path.parent()?;
+        return find_by_ext(parent, ext_str);
+    }
+
     root_path
         .read_dir()
         .ok()?

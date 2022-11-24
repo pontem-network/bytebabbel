@@ -3,7 +3,7 @@ use tempfile::tempdir;
 
 pub mod localnode;
 
-use crate::{add_aptos_config_for_test, checking_the_file_structure, e2m};
+use crate::{add_aptos_config_for_test, checking_the_file_structure, e2m, StrLastLine};
 
 #[test]
 fn test_default_profile_not_found() {
@@ -277,4 +277,48 @@ fn test_param_init_arts() {
     .unwrap();
 
     checking_the_file_structure(&tmp_project_folder.as_ref().join("Users"), "Users");
+}
+
+/// $ e2m call .. --how vm
+#[test]
+fn test_loval_vm() {
+    // After the test is completed, it will be deleted
+    let tmp_project_folder = tempdir().unwrap();
+
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "0x42::ConstFn::const_fn_10",
+            "--path",
+            "../../examples/const_fn.sol",
+            "--how",
+            "vm",
+            "--native",
+            "--profile",
+            "0x42",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(10)", &output);
+
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "self::APlusB::plus",
+            "--path",
+            "../../examples/a_plus_b.sol",
+            "--how",
+            "vm",
+            "--profile",
+            "0x42",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(27)", &output);
 }

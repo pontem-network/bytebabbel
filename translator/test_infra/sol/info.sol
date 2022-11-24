@@ -48,7 +48,7 @@ library Info {
         return block.number;
     }
 
-    // #block# epoch_interval_secs()
+    // # ignore_epoch_interval_secs()
     function epoch_interval_secs() public view returns (uint){
         return block.timestamp;
     }

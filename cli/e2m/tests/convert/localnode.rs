@@ -10,7 +10,7 @@ use tempfile::tempdir;
 
 use crate::{
     aptos_add_coins, aptos_init_local_profile, aptos_profile_name_and_account_address,
-    aptos_publish_package, checking_the_file_structure, e2m, run_cli,
+    aptos_publish_package, checking_the_file_structure, e2m, run_cli, StrLastLine,
 };
 use test_infra::color::font_blue;
 
@@ -345,6 +345,92 @@ fn test_native_types() {
     // --profile demo
     e2m_script_native_check_balance(600, Some("demo"), &tmp_project_folder).unwrap();
     aptos_script_check_balance(600, Some("demo"), &tmp_project_folder).unwrap();
+
+    // local call: native
+    let native_abi = tmp_project_folder
+        .as_ref()
+        .join("i_users_native/UsersNative.abi")
+        .to_string_lossy()
+        .to_string();
+
+    // dir with abi
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            tmp_project_folder
+                .as_ref()
+                .join("i_users_native")
+                .to_string_lossy()
+                .as_ref(),
+            "--how",
+            "local",
+            "--native",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    // abi
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            &native_abi,
+            "--how",
+            "local",
+            "--native",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersNative::get_id",
+            "--path",
+            &native_abi,
+            "--how",
+            "local",
+            "--native",
+            "--init-args",
+            "default",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    // sol
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::Users::get_id",
+            "--path",
+            "../../examples/users.sol",
+            "--how",
+            "local-source",
+            "--native",
+            "--init-args",
+            "self",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
 }
 
 /// Module will support "move" types
@@ -563,6 +649,113 @@ fn test_ethereum_types() {
 
     // --profile demo
     e2m_script_check_balance(400, Some("demo"), &tmp_project_folder).unwrap();
+
+    // local call: native
+    let abi_path = tmp_project_folder
+        .as_ref()
+        .join("i_users_ethtypes/UsersEth.abi")
+        .to_string_lossy()
+        .to_string();
+
+    // dir with abi
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersEth::get_id",
+            "--path",
+            tmp_project_folder
+                .as_ref()
+                .join("i_users_ethtypes")
+                .to_string_lossy()
+                .as_ref(),
+            "--how",
+            "local",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    // abi
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersEth::get_id",
+            "--path",
+            &abi_path,
+            "--how",
+            "local",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    let output = e2m(
+        &[
+            "call",
+            "--function-id",
+            "default::UsersEth::get_id",
+            "--path",
+            &abi_path,
+            "--how",
+            "local",
+            "--init-args",
+            "default",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap()
+    .last_line();
+    assert_eq!("Uint(1)", &output);
+
+    // view resources
+    e2m(
+        &[
+            "resources",
+            "--query",
+            "events",
+            "--resource-path",
+            "default::UsersEth::Persist::events",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap();
+
+    let output = e2m(
+        &[
+            "resources",
+            "--query",
+            "events",
+            "--resource-path",
+            "default::UsersEth::Persist::events",
+            "--abi",
+            &abi_path,
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap();
+    assert!(output.contains("from"));
+    assert!(output.contains("Uint(200)"));
+
+    let output = e2m(
+        &[
+            "resources",
+            "--query",
+            "events",
+            "--resource-path",
+            "default::UsersEth::Persist::events",
+            "--decode-types",
+            "data:address,address,u256 topics:bytes",
+        ],
+        &tmp_project_folder,
+    )
+    .unwrap();
+    assert!(output.contains("Uint(200)]"));
 }
 
 fn e2m_script_native_check_balance<P: AsRef<Path>>(

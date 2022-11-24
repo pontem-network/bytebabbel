@@ -65,7 +65,7 @@ pub struct CmdResources {
 }
 
 impl Cmd for CmdResources {
-    fn execute(&self) -> Result<String> {
+    fn execute(&mut self) -> Result<String> {
         match self.query {
             // The request will be made via the "aptos cli`
             ListQuery::Balance | ListQuery::Modules | ListQuery::Resources => self.parent(),

@@ -3,6 +3,7 @@ module self::info {
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_framework::account;
+    use aptos_framework::timestamp;
 
     use self::u256::{U256, from_u64, to_address};
 
@@ -41,7 +42,7 @@ module self::info {
 
     // block.timestamp (uint): current block timestamp
     fun block_timestamp(): U256 {
-        from_u64(block::get_epoch_interval_secs())
+        from_u64(timestamp::now_seconds())
     }
 
     // block.number (uint): current block number

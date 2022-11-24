@@ -75,6 +75,19 @@ pub struct ProfileConfig {
     pub faucet_url: Option<String>,
 }
 
+impl ProfileConfig {
+    pub fn vm(address: AccountAddress) -> ProfileConfig {
+        ProfileConfig {
+            network: Some(Network::Devnet),
+            private_key: None,
+            public_key: None,
+            account: Some(address),
+            rest_url: None,
+            faucet_url: None,
+        }
+    }
+}
+
 /// A simplified list of all networks supported by the CLI
 ///
 /// Any command using this, will be simpler to setup as profiles
