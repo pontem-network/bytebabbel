@@ -5,6 +5,7 @@ module self::memory {
     use self::u256::{U256, new_u256, from_bytes, get, zero, as_u64, from_u128};
 
     use self::utiles::split_u128;
+    use aptos_std::aptos_hash;
 
     const ELENGTH: u64 = 0x1;
     const OUT_OF_MEMORY: u64 = 0x2;
@@ -151,7 +152,7 @@ module self::memory {
     // API
     public fun hash(mem: &mut Memory, position: U256, length: U256): U256 {
         let slice = mslice(mem, position, length);
-        let res = std::hash::sha3_256(slice);
+        let res = aptos_hash::keccak256(slice);
         from_bytes(&res, zero())
     }
 
