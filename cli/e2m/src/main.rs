@@ -17,7 +17,7 @@ pub mod resources;
 pub mod txflags;
 
 pub trait Cmd {
-    fn execute(&self) -> Result<String>;
+    fn execute(&mut self) -> Result<String>;
 }
 
 #[derive(Parser, Debug)]
@@ -34,7 +34,7 @@ pub enum Args {
 }
 
 impl Cmd for Args {
-    fn execute(&self) -> Result<String> {
+    fn execute(&mut self) -> Result<String> {
         match self {
             Args::Convert(data) => data.execute(),
             Args::Call(data) => data.execute(),

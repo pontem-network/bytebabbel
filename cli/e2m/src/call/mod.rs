@@ -103,7 +103,7 @@ pub struct CmdCall {
 }
 
 impl Cmd for CmdCall {
-    fn execute(&self) -> Result<String> {
+    fn execute(&mut self) -> Result<String> {
         match self.how_to_call {
             HowToCall::Node => self.call_remote_node(),
             HowToCall::Local | HowToCall::LocalSource | HowToCall::VM => self.call_local(),
@@ -113,8 +113,10 @@ impl Cmd for CmdCall {
 
 impl CmdCall {
     /// [node] - Call a remote contract on a node
-    fn call_remote_node(&self) -> Result<String> {
+    fn call_remote_node(&mut self) -> Result<String> {
         use aptos::move_tool::RunFunction;
+
+        self.function_id.replace_self_to(self.profile_name.clone());
 
         let mut move_run_args = [
             "subcommand",
@@ -154,8 +156,12 @@ impl CmdCall {
     /// [local] - Call a remote contract locally and display the return value
     /// [local-source] - Call a local contract with remote resources and display the return value
     /// [vm] - Call a local contract and display the return value
-    fn call_local(&self) -> Result<String> {
+    fn call_local(&mut self) -> Result<String> {
         log::trace!("call_local:");
+
+        self.function_id.replace_self_to(self.profile_name.clone());
+
+        dbg!(&self.function_id);
 
         let path = self.path_to_convert.as_deref().ok_or_else(|| {
             anyhow!("Specify the path to the converted project or sol file. `--path <PATH/TO>`")

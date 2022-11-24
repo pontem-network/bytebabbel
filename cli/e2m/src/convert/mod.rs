@@ -53,7 +53,7 @@ pub struct CmdConvert {
 }
 
 impl Cmd for CmdConvert {
-    fn execute(&self) -> Result<String> {
+    fn execute(&mut self) -> Result<String> {
         let result = self.convert()?;
 
         if self.deploy {

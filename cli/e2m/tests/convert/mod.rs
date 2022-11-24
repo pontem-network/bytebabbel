@@ -3,10 +3,7 @@ use tempfile::tempdir;
 
 pub mod localnode;
 
-use crate::{
-    add_aptos_config_for_test, aptos_add_coins, aptos_init_local_profile,
-    checking_the_file_structure, e2m, StrLastLine,
-};
+use crate::{add_aptos_config_for_test, checking_the_file_structure, e2m, StrLastLine};
 
 #[test]
 fn test_default_profile_not_found() {
@@ -288,20 +285,18 @@ fn test_loval_vm() {
     // After the test is completed, it will be deleted
     let tmp_project_folder = tempdir().unwrap();
 
-    println!("Creating a `default` profile ");
-    aptos_init_local_profile(&tmp_project_folder, "default").unwrap();
-    aptos_add_coins(&tmp_project_folder, "default").unwrap();
-
     let output = e2m(
         &[
             "call",
             "--function-id",
-            "default::ConstFn::const_fn_10",
+            "0x42::ConstFn::const_fn_10",
             "--path",
             "../../examples/const_fn.sol",
             "--how",
             "vm",
             "--native",
+            "--profile",
+            "0x42",
         ],
         &tmp_project_folder,
     )
@@ -313,11 +308,13 @@ fn test_loval_vm() {
         &[
             "call",
             "--function-id",
-            "default::APlusB::plus",
+            "self::APlusB::plus",
             "--path",
             "../../examples/a_plus_b.sol",
             "--how",
             "vm",
+            "--profile",
+            "0x42",
         ],
         &tmp_project_folder,
     )
