@@ -3,6 +3,14 @@
 ## [Unreleased]
 ### Added
 - Constant support.
+- Added the alias `self` for the parameter `--function-id`. `e2m .. --function-id self::Module::script --profile 0x42`
+
+### Changed
+-  hash function from sha to keccak
+
+### Fixed
+- calling a local contract without a profile configuration file ".aptos/config.yaml". `e2m call .. --how vm --profile 0x42`
+- block.timestamp
 
 ## [0.0.5] - 2022-11-17
 ### Added
