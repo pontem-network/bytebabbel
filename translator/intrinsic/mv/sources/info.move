@@ -4,7 +4,7 @@ module self::info {
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_framework::account;
 
-    use self::u256::{U256, from_u64, to_address};
+    use external::u256::{from_u64, to_address};
 
 
     /// AptosCoin - balance

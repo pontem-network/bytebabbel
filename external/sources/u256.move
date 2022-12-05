@@ -1,4 +1,4 @@
-module self::u256 {
+module external::u256 {
     // U256.
     //=================================================================================================================
 
@@ -99,7 +99,7 @@ module self::u256 {
         }
     }
 
-    use self::utiles::split_u128;
+    use external::u64::split_u128;
 
 
     /// Returns a `U256` from `u128` value.
@@ -127,7 +127,7 @@ module self::u256 {
     }
 
     // API
-    fun from_address(addr: address): U256 {
+    public fun from_address(addr: address): U256 {
         let encoded = std::bcs::to_bytes(&addr);
         let i = 0u64;
 
@@ -150,7 +150,7 @@ module self::u256 {
         }
     }
 
-    fun from_u64s(v0: u64, v1: u64, v2: u64, v3: u64): U256 {
+    public fun from_u64s(v0: u64, v1: u64, v2: u64, v3: u64): U256 {
         return U256 {
             v0,
             v1,
@@ -179,7 +179,7 @@ module self::u256 {
     }
 
     // API
-    fun to_bool(a: U256): bool {
+    public fun to_bool(a: U256): bool {
         if (a.v0 == 0 && a.v1 == 0 && a.v2 == 0 && a.v3 == 0) {
             false
         } else {
@@ -406,7 +406,7 @@ module self::u256 {
         ret
     }
 
-    use self::utiles::leading_zeros_u64;
+    use external::u64::leading_zeros_u64;
 
     // Private functions.
     /// Get bits used to store `a`.
@@ -447,22 +447,22 @@ module self::u256 {
     }
 
     // API
-    fun lt(a: U256, b: U256): bool {
+    public fun lt(a: U256, b: U256): bool {
         compare(&a, &b) == LESS_THAN
     }
 
     // API
-    fun le(a: U256, b: U256): bool {
+    public fun le(a: U256, b: U256): bool {
         compare(&a, &b) != GREATER_THAN
     }
 
     // API
-    fun gt(a: U256, b: U256): bool {
+    public fun gt(a: U256, b: U256): bool {
         compare(&a, &b) == GREATER_THAN
     }
 
     // API
-    fun ge(a: U256, b: U256): bool {
+    public fun ge(a: U256, b: U256): bool {
         compare(&a, &b) != LESS_THAN
     }
 
@@ -519,7 +519,7 @@ module self::u256 {
         EQUAL
     }
 
-    use self::utiles::overflowing_add_u64;
+    use external::u64::overflowing_add_u64;
 
     // API
     /// Adds two `U256` and returns sum.
@@ -560,7 +560,7 @@ module self::u256 {
         ret
     }
 
-    use self::u512::{zero_d, get_d, put_d};
+    use external::u512::{zero_d, get_d, put_d};
 
     // API
     /// Multiples two `U256`.
@@ -620,7 +620,7 @@ module self::u256 {
         ret
     }
 
-    use self::utiles::overflowing_sub_u64;
+    use external::u64::overflowing_sub_u64;
 
     // API
     /// Subtracts two `U256`, returns result.
@@ -828,7 +828,7 @@ module self::u256 {
     }
 
     // API
-    fun shr(a: U256, shift: U256): U256 {
+    public fun shr(a: U256, shift: U256): U256 {
         let ret = zero();
         let (shift, o) = as_u128_safe(shift);
 
@@ -840,7 +840,7 @@ module self::u256 {
     }
 
     // API
-    fun shl(a: U256, shift: U256): U256 {
+    public fun shl(a: U256, shift: U256): U256 {
         let ret = zero();
         let (shift, o) = as_u128_safe(shift);
 
@@ -852,7 +852,7 @@ module self::u256 {
     }
 
     // API
-    fun is_zero(a: U256): bool {
+    public fun is_zero(a: U256): bool {
         a.v0 == 0 && a.v1 == 0 && a.v2 == 0 && a.v3 == 0
     }
 
@@ -897,7 +897,7 @@ module self::u256 {
         *std::vector::borrow_mut(vec, offset + 7) = ((a & 0xFF) as u8);
     }
 
-    use self::u512::overflowing_add_d;
+    use external::u512::overflowing_add_d;
 
     public fun add_mod(a: U256, b: U256, mod: U256): U256 {
         if (eq(mod, zero())) {
@@ -920,7 +920,7 @@ module self::u256 {
         }
     }
 
-    use self::u512::mod_d;
+    use external::u512::mod_d;
 
     public fun mul_mod(a: U256, b: U256, mod: U256): U256 {
         if (eq(mod, zero())) {
@@ -940,7 +940,7 @@ module self::u256 {
     }
 
 
-    use self::u512::{U512, new_u512};
+    use external::u512::{U512, new_u512};
 
     /// Convert `U512` to `U256`.
     public fun u512_to_u256(a: U512): (U256, bool) {

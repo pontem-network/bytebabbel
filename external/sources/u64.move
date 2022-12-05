@@ -1,4 +1,4 @@
-module self::utiles {
+module external::u64 {
     /// Max `u64` value.
     const U64_MAX: u128 = 18446744073709551615;
 

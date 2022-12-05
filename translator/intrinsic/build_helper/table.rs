@@ -2,7 +2,9 @@ use std::fs;
 
 use anyhow::{anyhow, Result};
 use move_binary_format::access::ModuleAccess;
-use move_binary_format::file_format::{ConstantPoolIndex, SignatureToken};
+use move_binary_format::file_format::{
+    ConstantPoolIndex, SignatureToken, StructHandleIndex, TableIndex,
+};
 use move_binary_format::CompiledModule;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
@@ -184,11 +186,6 @@ pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
             mut_token: true,
             table: PERSIST_TABLE.to_vec(),
         },
-        EnumType::Structure {
-            name: "U256",
-            mut_token: false,
-            table: U256_TABLE.to_vec(),
-        },
         EnumType::Module {
             name: "Info",
             table: INFO_TABLE.to_vec(),
@@ -198,6 +195,15 @@ pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
     .map(|data| gen_enum_code(&template, data))
     .collect::<Result<Vec<String>>>()?
     .join("\n");
+
+    result += &get_enum_code_external(
+        &template,
+        EnumType::Structure {
+            name: "U256",
+            mut_token: false,
+            table: U256_TABLE.to_vec(),
+        },
+    )?;
 
     let index = find_address_const(&template, SELF_ADDRESS).ok_or_else(|| {
         anyhow!(
@@ -211,6 +217,84 @@ pub(crate) fn generate_table(paths: &Paths) -> Result<()> {
     fs::write(&paths.intrinsic_table, format!("{TEMPLATE_USE}{result}"))?;
 
     Ok(())
+}
+
+fn get_enum_code_external(template_mv: &CompiledModule, data: EnumType) -> Result<String> {
+    let name = data.name();
+    let table = data.talbe_ref();
+
+    let enum_body = table
+        .iter()
+        .map(|(name, ..)| format!("{name},"))
+        .collect::<Vec<String>>()
+        .join("\n    ");
+
+    let enum_fn_name = table
+        .iter()
+        .map(|(name, move_fn)| format!("Self::{name} => \"{move_fn}\","))
+        .collect::<Vec<String>>()
+        .join("\n            ");
+
+    let mut reserved_handler_index = template_mv.function_handles.len() - 1;
+    let enum_fn_handler = table
+        .iter()
+        .map(|(name, move_fn)| {
+            let fn_index = match find_function_index(template_mv, move_fn) {
+                Some(idx) => idx,
+                None => {
+                    reserved_handler_index += 1;
+                    reserved_handler_index
+                }
+            };
+
+            Ok(format!("Self::{name} => FunctionHandleIndex({fn_index}),"))
+        })
+        .collect::<Result<Vec<String>>>()?
+        .join("\n            ");
+
+    let mut result = TEMPLATE_ENUM
+        .replace("###ENUM_NAME###", name)
+        .replace("###ENUM_BODY###", &enum_body)
+        .replace("###ENUM_FN_NAME###", &enum_fn_name)
+        .replace("###ENUM_FN_HANDLER###", &enum_fn_handler);
+
+    // structure
+    if let EnumType::Structure { mut_token, .. } = data {
+        let structure_handle_index = match template_mv
+            .struct_handles
+            .iter()
+            .position(|h| template_mv.identifier_at(h.name).as_str() == name)
+        {
+            Some(pos) => StructHandleIndex(pos as TableIndex),
+            None => StructHandleIndex(template_mv.struct_handles.len() as TableIndex),
+        };
+
+        let enum_index_handle = structure_handle_index.to_string();
+        let enum_index_definition = match template_mv
+            .struct_defs
+            .iter()
+            .position(|item| item.struct_handle == structure_handle_index)
+        {
+            Some(pos) => pos.to_string(),
+            None => template_mv.struct_defs.len().to_string(),
+        };
+
+        result += TEMPLATE_ENUM_STRUCTURE
+            .replace("###ENUM_NAME###", name)
+            .replace(
+                "###ENUM_INDEX_TOKEN###",
+                if mut_token {
+                    TEMPLATE_ENUM_TOKEN_MUT
+                } else {
+                    TEMPLATE_ENUM_TOKEN
+                },
+            )
+            .replace("###ENUM_INDEX_HANDLE###", &enum_index_handle)
+            .replace("###ENUM_INDEX_DEFINITION###", &enum_index_definition)
+            .as_str();
+    }
+
+    Ok(result)
 }
 
 fn gen_enum_code(template_mv: &CompiledModule, data: EnumType) -> Result<String> {

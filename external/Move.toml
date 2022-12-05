@@ -1,0 +1,12 @@
+[package]
+name = "EthMathTypes"
+version = "1.0.0"
+
+[dependencies]
+[dependencies.AptosFramework]
+git = 'https://github.com/aptos-labs/aptos-core.git'
+rev = 'main'
+subdir = 'aptos-move/framework/aptos-framework'
+
+[addresses]
+external = "_"

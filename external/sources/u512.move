@@ -1,4 +1,4 @@
-module self::u512 {
+module external::u512 {
     // Errors.
     /// When trying to get or put word into U256 but it's out of index.
     const EWORDS_OVERFLOW: u64 = 1;
@@ -126,7 +126,7 @@ module self::u512 {
         EQUAL
     }
 
-    use self::utiles::overflowing_add_u64;
+    use external::u64::overflowing_add_u64;
 
     /// Add two `U512`, returns result.
     public fun overflowing_add_d(a: U512, b: U512): U512 {
@@ -166,7 +166,7 @@ module self::u512 {
         ret
     }
 
-    use self::utiles::overflowing_sub_u64;
+    use external::u64::overflowing_sub_u64;
 
     /// Subtracts two `U512`, returns result.
     public fun overflowing_sub_d(a: U512, b: U512): U512 {
@@ -240,7 +240,7 @@ module self::u512 {
         a
     }
 
-    use self::utiles::leading_zeros_u64;
+    use external::u64::leading_zeros_u64;
 
     /// Get bits used to store `a` in U512.
     public fun bits_d(a: &U512): u64 {

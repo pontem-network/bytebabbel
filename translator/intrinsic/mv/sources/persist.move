@@ -2,11 +2,11 @@ module self::persist {
     // Storage.
     //=================================================================================================================
 
-    use self::u256::{U256, zero};
+    use external::u256::{U256, zero};
     use self::memory::{Memory, mslice};
 
     #[test_only]
-    use self::u256::{from_u128, as_u128};
+    use external::u256::{from_u128, as_u128};
 
     struct Persist has store, key {
         tbl: aptos_std::table::Table<U256, U256>,
