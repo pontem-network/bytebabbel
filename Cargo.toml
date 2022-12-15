@@ -11,30 +11,29 @@ members = [
 
 [workspace.dependencies]
 #Aptos
-aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
-aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "23d258d1f2440267f866eeb27f9830be48682af8" }
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
 
 #MOVE
-move-binary-format = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-core-types = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b", features = ["address32"] }
-move-bytecode-source-map = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-dependencies = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-bytecode-verifier = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-disassembler = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-ir-types = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-stdlib = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-vm-runtime = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
-move-vm-types = { git = "https://github.com/move-language/move", rev = "a6e1ffba1dab6b5d9f2804a91cd48e6b928e1b3b" }
+move-binary-format = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-core-types = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0", features = ["address32"] }
+move-bytecode-source-map = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+dependencies = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-bytecode-verifier = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-disassembler = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-ir-types = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-stdlib = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-vm-runtime = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
+move-vm-types = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
 
 #EVM
-# @todo
 evm = { git = "https://github.com/pontem-network/evm.git", branch = "Keccak256" }
 evm-core = { git = "https://github.com/pontem-network/evm.git", branch = "Keccak256" }
 primitive-types = { version = "0.11", default-features = false, features = ["rlp"] }

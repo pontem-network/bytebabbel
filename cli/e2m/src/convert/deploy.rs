@@ -1,10 +1,10 @@
 use std::fs;
 
 use anyhow::{anyhow, Result};
-use framework::natives::code::{
+use aptos_framework::natives::code::{
     ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy,
 };
-use framework::zip_metadata_str;
+use aptos_framework::zip_metadata_str;
 use move_binary_format::access::ModuleAccess;
 
 use crate::convert::ResultConvert;
@@ -52,7 +52,7 @@ impl CmdConvert {
         let metadata = gen_meta(result_convert, &binarycode)?;
         let compiled_units = vec![binarycode];
 
-        let payload = cached_packages::aptos_stdlib::code_publish_package_txn(
+        let payload = aptos_cached_packages::aptos_stdlib::code_publish_package_txn(
             bcs::to_bytes(&metadata).expect("PackageMetadata has BCS"),
             compiled_units,
         );

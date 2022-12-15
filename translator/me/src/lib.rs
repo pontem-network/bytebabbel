@@ -6,7 +6,7 @@ use once_cell::sync::OnceCell;
 use serde::Deserialize;
 
 use aptos_crypto::HashValue;
-use aptos_gas::{AbstractValueSizeGasParameters, NativeGasParameters};
+use aptos_gas::{AbstractValueSizeGasParameters, ChangeSetConfigs, NativeGasParameters};
 use aptos_vm::{
     data_cache::StorageAdapter,
     move_vm_ext::{MoveVmExt, SessionId},
@@ -75,7 +75,10 @@ impl MoveExecutor {
                         let output = session
                             .finish()
                             .unwrap()
-                            .into_change_set(&mut (), 3)
+                            .into_change_set(
+                                &mut (),
+                                &ChangeSetConfigs::unlimited_at_gas_feature_version(3),
+                            )
                             .unwrap();
                         resolver.apply(output);
                     }
@@ -124,7 +127,10 @@ impl MoveExecutor {
         let adapter = StorageAdapter::new(&self.resolver);
         let mut session = self.vm.new_session(&adapter, id);
         session.publish_module(module, addr, &mut UnmeteredGasMeter)?;
-        let output = session.finish()?.into_change_set(&mut (), 3)?;
+        let output = session.finish()?.into_change_set(
+            &mut (),
+            &ChangeSetConfigs::unlimited_at_gas_feature_version(3),
+        )?;
 
         self.resolver.apply(output);
         Ok(())
@@ -138,6 +144,7 @@ impl MoveExecutor {
             aptos_gas::LATEST_GAS_FEATURE_VERSION,
             aptos_types::on_chain_config::Features::default()
                 .is_enabled(aptos_types::on_chain_config::FeatureFlag::TREAT_FRIEND_AS_PRIVATE),
+            true,
             0,
         )
         .unwrap()
@@ -176,7 +183,12 @@ impl MoveExecutor {
 
         let result = session.finish().unwrap();
         let events = result.events.clone();
-        let output = result.into_change_set(&mut (), 3).unwrap();
+        let output = result
+            .into_change_set(
+                &mut (),
+                &ChangeSetConfigs::unlimited_at_gas_feature_version(3),
+            )
+            .unwrap();
 
         let returns = if flag.hidden_output {
             vec![]

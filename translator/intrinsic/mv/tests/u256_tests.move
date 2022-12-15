@@ -531,7 +531,7 @@ module self::u256_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure]
     fun test_byte_aborts() {
         let m = (U64_MAX as u64);
         let max = new_u256(m, m, m, m);
@@ -600,7 +600,7 @@ module self::u256_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure]
     fun test_get_aborts() {
         let _ = get(&zero(), 4);
     }
@@ -651,7 +651,7 @@ module self::u256_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure]
     fun test_put_overflow() {
         let a = zero();
         put(&mut a, 6, 255);
