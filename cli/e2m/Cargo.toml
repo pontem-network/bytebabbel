@@ -31,8 +31,8 @@ ethabi.workspace = true
 aptos.workspace = true
 aptos-vm.workspace = true
 aptos-types.workspace = true
-framework.workspace = true
-cached-packages.workspace = true
+aptos-framework.workspace = true
+aptos-cached-packages.workspace = true
 
 # Move
 move-core-types.workspace = true

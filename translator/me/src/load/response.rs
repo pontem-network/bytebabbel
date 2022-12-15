@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{
     collections::BTreeMap,
     convert::{From, Into},
@@ -9,10 +11,11 @@ use std::{
 use anyhow::format_err;
 use serde::{de::Error as _, Deserialize, Deserializer};
 
+use move_core_types::language_storage::TypeTag;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
+    language_storage::StructTag,
     parser::{parse_struct_tag, parse_type_tag},
 };
 
@@ -83,17 +86,22 @@ impl<'de> Deserialize<'de> for MoveStructTag {
 }
 
 /// An enum of Move's possible types on-chain
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MoveType {
     /// A bool type
     Bool,
     /// An 8-bit unsigned int
     U8,
+    /// A 16-bit unsigned int
+    U16,
+    /// A 32-bit unsigned int
+    U32,
     /// A 64-bit unsigned int
     U64,
     /// A 128-bit unsigned int
     U128,
+    /// A 256-bit unsigned int
+    U256,
     /// A 32-byte account address
     Address,
     /// An account signer
@@ -117,8 +125,11 @@ impl fmt::Display for MoveType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MoveType::U8 => write!(f, "u8"),
+            MoveType::U16 => write!(f, "u16"),
+            MoveType::U32 => write!(f, "u32"),
             MoveType::U64 => write!(f, "u64"),
             MoveType::U128 => write!(f, "u128"),
+            MoveType::U256 => write!(f, "u256"),
             MoveType::Address => write!(f, "address"),
             MoveType::Signer => write!(f, "signer"),
             MoveType::Bool => write!(f, "bool"),
@@ -192,7 +203,10 @@ impl From<TypeTag> for MoveType {
         match tag {
             TypeTag::Bool => MoveType::Bool,
             TypeTag::U8 => MoveType::U8,
+            TypeTag::U16 => MoveType::U16,
+            TypeTag::U32 => MoveType::U32,
             TypeTag::U64 => MoveType::U64,
+            TypeTag::U256 => MoveType::U256,
             TypeTag::U128 => MoveType::U128,
             TypeTag::Address => MoveType::Address,
             TypeTag::Signer => MoveType::Signer,

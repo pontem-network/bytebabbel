@@ -172,7 +172,7 @@ module self::memory_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure]
     fun init_zero_size() {
         new_mem(0);
     }

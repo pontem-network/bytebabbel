@@ -45,7 +45,7 @@ module self::u512_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure]
     fun test_get_d_overflow() {
         let a = new_u512(1, 2, 3, 4, 5, 6, 7, 8);
 
@@ -76,7 +76,7 @@ module self::u512_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure]
     fun test_put_d_overflow() {
         let a = new_u512(1, 2, 3, 4, 5, 6, 7, 8);
 
