@@ -11,15 +11,15 @@ members = [
 
 [workspace.dependencies]
 #Aptos
-aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
-aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "1798cfade82b55a5e484eddb73e1667fd429a77a" }
+aptos = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-vm = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-types = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-framework = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-cached-packages = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-aggregator = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-gas = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
+aptos-state-view = { git = "https://github.com/aptos-labs/aptos-core", rev = "c22cfa5ac018f0affe35a3f7e9e8b9e89f8f49f4" }
 
 #MOVE
 move-binary-format = { git = "https://github.com/move-language/move", rev = "81d19fce20d73675b7ac129abe6b6797513cc8d0" }
