@@ -12,6 +12,9 @@
 - calling a local contract without a profile configuration file ".aptos/config.yaml". `e2m call .. --how vm --profile 0x42`
 - block.timestamp
 
+### Updated
+- to aptos-cli 1.0.3
+
 ## [0.0.5] - 2022-11-17
 ### Added
 - Running a locally remote/local contract
