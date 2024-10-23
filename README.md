@@ -2,6 +2,16 @@
 
 EVM to Move static bytecode translator.
 
+### This version is significantly outdated, as it relies on old versions of Aptos and ETH!
+We are working on updating the project.  
+Development roadmap:
+
+1. Update dependencies
+2. We plan to abandon parsing the Ether bytecode and switch to Yul
+3. Implement all control flow instructions
+4. Call other contracts with a known address at compile time
+5. Move call
+
 # e2m
 
 Converts **solidity file** to **binary move** code. You can convert from **abi + bin** files or a **sol** file
