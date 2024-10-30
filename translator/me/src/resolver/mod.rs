@@ -4,7 +4,7 @@ use anyhow::Result;
 use reqwest::Url;
 
 use aptos_aggregator::transaction::ChangeSetExt;
-use aptos_state_view::StateView;
+use aptos_state_view::TStateView;
 use aptos_types::state_store::{state_key::StateKey, state_storage_usage::StateStorageUsage};
 use aptos_types::write_set::WriteOp;
 
@@ -20,7 +20,9 @@ pub struct Resolver {
     pub handler_data: HashMap<AccountAddress, HandleRequest>,
 }
 
-impl StateView for Resolver {
+impl TStateView for Resolver {
+    type Key = StateKey;
+
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         log::info!("get_state_value: {}", state_key.to_string());
 

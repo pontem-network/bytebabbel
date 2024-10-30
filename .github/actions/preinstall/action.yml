@@ -19,10 +19,10 @@ runs:
           ~/.move
         key: ${{ inputs.os }}-compile
 
-    - name: Install Rust toolchain
+    - name: Install Rust toolchain 1.64.0
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.64.0
         override: true
         components: rustfmt, clippy
 
